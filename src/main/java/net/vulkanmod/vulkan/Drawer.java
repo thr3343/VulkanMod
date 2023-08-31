@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -151,20 +152,7 @@ public class Drawer {
 
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("Frame_fence");
-        try (MemoryStack stack = stackPush()) {
 
-            IntBuffer width = stack.ints(0);
-            IntBuffer height = stack.ints(0);
-
-            glfwGetFramebufferSize(window, width, height);
-            if (width.get(0) == 0 && height.get(0) == 0) {
-                skipRendering = true;
-                Minecraft.getInstance().noRender = true;
-            } else {
-                skipRendering = false;
-                Minecraft.getInstance().noRender = false;
-            }
-        }
 
         if(skipRendering) return;
 
@@ -368,9 +356,9 @@ public class Drawer {
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR) {
                 shouldRecreate = false;
-                recreateSwapChain();
+                skipRendering = true;
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
@@ -410,9 +398,9 @@ public class Drawer {
 
             vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR) {
                 shouldRecreate = false;
-                recreateSwapChain();
+                skipRendering = true;
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
@@ -422,7 +410,7 @@ public class Drawer {
         }
     }
 
-    private void recreateSwapChain() {
+    public void recreateSwapChain() {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
@@ -460,7 +448,8 @@ public class Drawer {
             AreaUploadManager.INSTANCE.waitAllUploads();
             AreaUploadManager.createInstance(MAX_FRAMES_IN_FLIGHT);
         }
-
+        skipRendering=false;
+        Minecraft.getInstance().noRender = false;
         currentFrame = 0;
     }
 

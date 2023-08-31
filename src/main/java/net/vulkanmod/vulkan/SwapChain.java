@@ -383,5 +383,6 @@ public class SwapChain extends Framebuffer {
 
     public void setVsync(boolean vsync) {
         this.vsync = vsync;
+        Drawer.getInstance().recreateSwapChain();
     }
 }

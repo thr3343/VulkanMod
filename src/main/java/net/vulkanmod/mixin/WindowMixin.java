@@ -2,21 +2,18 @@ package net.vulkanmod.mixin;
 
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -74,7 +71,16 @@ public abstract class WindowMixin {
         this.vsync = vsync;
         Vulkan.setVsync(vsync);
     }
-
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void onResize(long l, int i, int j) {
+        this.width = i;
+        this.height = j;
+        if (Drawer.skipRendering || width > 0 && height > 0) Drawer.getInstance().recreateSwapChain();
+    }
     /**
      * @author
      */
