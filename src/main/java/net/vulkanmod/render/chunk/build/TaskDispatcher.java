@@ -1,85 +1,85 @@
 package net.vulkanmod.render.chunk.build;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.logging.LogUtils;
-import net.minecraft.CrashReport;
-import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ChunkBufferBuilderPack;
-import net.minecraft.util.thread.ProcessorMailbox;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingDeque;
+
 
 public class TaskDispatcher {
-    private static final Logger LOGGER = LogUtils.getLogger();
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final int availableProcessors = Runtime.getRuntime().availableProcessors();
     private int highPriorityQuota = 2;
 
     private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
     public final ThreadBuilderPack fixedBuffers;
 
     //TODO volatile?
-    private boolean stopThreads;
-    private Thread[] threads;
+    public volatile boolean stopThreads;
+    private Thread[] threads = new Thread[Initializer.CONFIG.chunkLoadFactor];
     private int idleThreads;
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
+    //    public boolean idle=false;
+    private int availableJobSlots = threads.length * 2;
 
     public TaskDispatcher() {
         this.fixedBuffers = new ThreadBuilderPack();
-
+        Arrays.setAll(threads, i -> new Thread(
+                () -> runTaskThread(new ThreadBuilderPack())));
         this.stopThreads = true;
     }
 
-    public void createThreads() {
+    public void resizeThreads(int size) {
+        if(size==this.threads.length) return;
+        this.threads=new Thread[size];
+        Arrays.setAll(threads, i -> new Thread(
+                () -> runTaskThread(new ThreadBuilderPack())));
+        availableJobSlots=threads.length*2;
+    }
+
+    public void initThreads() {
         if(!this.stopThreads)
             return;
 
         this.stopThreads = false;
 
-        int j = Math.max((Runtime.getRuntime().availableProcessors() - 1) / 2, 1);
 
-        this.threads = new Thread[j];
-
-        for (int i = 0; i < j; i++) {
-            ThreadBuilderPack builderPack = new ThreadBuilderPack();
-            Thread thread = new Thread(
-                    () -> runTaskThread(builderPack));
-
-            this.threads[i] = thread;
+        for(var thread: threads) {;
+            LOGGER.info("INVOKE"+ thread.getState());
             thread.start();
         }
     }
 
     private void runTaskThread(ThreadBuilderPack builderPack) {
-        while(!this.stopThreads) {
-            ChunkTask task = this.pollTask();
-
-            if(task == null)
-                synchronized (this) {
+        while(!stopThreads) {
+            ChunkTask task1 = (this.highPriorityTasks.isEmpty()? this.lowPriorityTasks : this.highPriorityTasks).poll();
+            if(task1!=null)
+            {
+                availableJobSlots--;
+                task1.doTask(builderPack);
+            }
+            else
+            {
+                //Avoid busy wait (may cause loading perf overhead.regression)
+                //seems to cause deadlock/contention issues with flickering Segment Allocations
+                availableJobSlots++;
+                synchronized (this){
                     try {
-                        this.idleThreads++;
-                        this.wait();
+                        Thread.onSpinWait();
+                        this.wait(1000);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    this.idleThreads--;
                 }
-
-            if(task == null)
-                continue;
-
-            task.doTask(builderPack);
+            }
         }
     }
 
@@ -87,25 +87,15 @@ public class TaskDispatcher {
         if(chunkTask == null)
             return;
 
-        if (chunkTask.highPriority) {
-                this.highPriorityTasks.offer(chunkTask);
-            } else {
-                this.lowPriorityTasks.offer(chunkTask);
-            }
+        (chunkTask.highPriority ? this.highPriorityTasks : this.lowPriorityTasks).offer(chunkTask);
 
+        //TODO Scale number of launched threads based on available workGroupSlots (to avoid stuttering with Small/incremental chunk loads)
+        //Wakeup thread
         synchronized (this) {
-            notify();
+            this.notify();
+            availableJobSlots++;
+//            idle=false;
         }
-    }
-
-    @Nullable
-    private ChunkTask pollTask() {
-        ChunkTask task = this.highPriorityTasks.poll();
-
-        if(task == null)
-            task = this.lowPriorityTasks.poll();
-
-        return task;
     }
 
     public void stopThreads() {
@@ -114,27 +104,24 @@ public class TaskDispatcher {
 
         this.stopThreads = true;
 
-        synchronized (this) {
-            notifyAll();
-        }
 
-        for (Thread thread : this.threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//        LOGGER.info(String.valueOf(this.threads.getState()));
+        for(var thread : threads) {
+            LOGGER.info("JOIN"+ thread.getState());
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
         }
 
     }
 
     public boolean uploadAllPendingUploads() {
 
-        Runnable runnable;
-        boolean flag = false;
-        while((runnable = this.toUpload.poll()) != null) {
-            flag = true;
-            runnable.run();
+        boolean flag = !this.toUpload.isEmpty();
+        while(!this.toUpload.isEmpty()) {
+            this.toUpload.poll().run();
         }
 
         AreaUploadManager.INSTANCE.submitUploads();
@@ -177,7 +164,7 @@ public class TaskDispatcher {
     }
 
     public int getIdleThreadsCount() {
-        return this.idleThreads;
+        return this.availableJobSlots;
     }
 
     public void clearBatchQueue() {
@@ -201,7 +188,6 @@ public class TaskDispatcher {
     public String getStats() {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("iT: %d", this.idleThreads);
+        return String.format("iT: %d", this.availableJobSlots);
     }
-
 }
