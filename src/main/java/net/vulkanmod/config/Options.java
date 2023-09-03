@@ -221,8 +221,8 @@ public class Options {
                 () -> config.chunkLoadFactor)
                 .setTooltip(Component.nullToEmpty(
                 "The number of Threads utilized for uploading chunks \n" +
-                "More threads will greatly improve Chunk load speed" +
-                "But may cause stuttering if set to high\n" +
+                "More threads will greatly improve Chunk load speed \n" +
+                "But may cause stuttering if set too high\n" +
                 "Max Recommended value is "+max/2+" threads on This CPU")),
         };
 

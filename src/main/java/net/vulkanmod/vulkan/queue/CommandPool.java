@@ -19,7 +19,7 @@ public class CommandPool {
 
     private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
-    private final long aLong;
+
 
     CommandPool(int queueFamilyIndex) {
 
@@ -36,7 +36,7 @@ public class CommandPool {
             if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
             }
-            aLong=device.getCapabilities().vkQueueSubmit;
+
             this.id = pCommandPool.get(0);
         }
     }
@@ -87,7 +87,7 @@ public class CommandPool {
         }
     }
 
-    public synchronized long submitCommands(CommandBuffer commandBuffer, long queue) {
+    public synchronized long submitCommands(Queue queue1, CommandBuffer commandBuffer, long queue) {
 
         try(MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
@@ -100,16 +100,12 @@ public class CommandPool {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            queue1.vkQueueSubmit(submitInfo, fence);
             //vkQueueWaitIdle(graphicsQueue);
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
             return fence;
         }
-    }
-
-    private void vkQueueSubmit(long queue, VkSubmitInfo submitInfo, long fence) {
-        callPPJI(queue, 1, submitInfo.address(), fence, aLong);
     }
 
     public void addToAvailable(CommandBuffer commandBuffer) {

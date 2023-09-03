@@ -418,7 +418,7 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(Device.graphicsQueue, submitInfo, immediateFence);
+            GraphicsQueue.vkQueueSubmit(submitInfo, immediateFence);
 
             vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
             vkResetFences(Device.device, immediateFence);
@@ -456,11 +456,6 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static VkQueue getPresentQueue() { return Device.presentQueue; }
-
-    public static VkQueue getGraphicsQueue() { return Device.graphicsQueue; }
-
-    public static VkQueue getTransferQueue() { return Device.transferQueue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 

@@ -7,6 +7,9 @@ import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPI;
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -17,17 +20,19 @@ public enum Queue {
     TransferQueue(QueueFamilyIndices.transferFamily),
     PresentQueue(QueueFamilyIndices.presentFamily);
 
+    public final long Queue; //CPU optimization: Use VkQueue handle (8 Bytes) instead of full VkQueue object (>3KB) to be more CacheLine friendly
     public final CommandPool commandPool;
-    public final long Queue;
+    private static final long vkQueueSubmit = Vulkan.getDevice().getCapabilities().vkQueueSubmit;
+    private static final long vkQueuePresentKHR = Vulkan.getDevice().getCapabilities().vkQueuePresentKHR;
     private CommandPool.CommandBuffer currentCmdBuffer;
 
     Queue(int computeFamily) {
 
         commandPool = new CommandPool(computeFamily);
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            final VkDevice DEVICE = Vulkan.getDevice();
             PointerBuffer pQueue = stack.mallocPointer(1);
-            JNI.callPPV(DEVICE.address(), computeFamily, 0, pQueue.address(), DEVICE.getCapabilities().vkGetDeviceQueue);
+            final VkDevice device = Vulkan.getDevice();
+            JNI.callPPV(device.address(), computeFamily, 0, pQueue.address(), device.getCapabilities().vkGetDeviceQueue);
             this.Queue = pQueue.get(0);
         }
 
@@ -130,7 +135,7 @@ public enum Queue {
 
     public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
 
-        return commandPool.submitCommands(commandBuffer, this.Queue);
+        return commandPool.submitCommands(this, commandBuffer, this.Queue);
     }
 
     public void waitIdle() {
@@ -140,5 +145,12 @@ public enum Queue {
     public void uploadSuperSet(CommandPool.CommandBuffer commandBuffer, VkBufferCopy.Buffer copyRegions, long srcBuffer, long dstBuffer) {
         vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegions);
 
+    }
+
+    public int vkQueuePresentKHR(VkPresentInfoKHR presentInfo) {
+        return callPPI(this.Queue, presentInfo.address(), vkQueuePresentKHR);
+    }
+    public int vkQueueSubmit(VkSubmitInfo submitInfo, long fence) {
+       return callPPJI(this.Queue, 1, submitInfo.address(), fence, vkQueueSubmit);
     }
 }
