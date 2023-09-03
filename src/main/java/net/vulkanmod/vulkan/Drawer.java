@@ -27,7 +27,11 @@ import java.util.List;
 import java.util.Set;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.PresentQueue;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -393,7 +397,7 @@ public class Drawer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if((vkResult = GraphicsQueue.vkQueueSubmit(submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -408,7 +412,7 @@ public class Drawer {
 
             presentInfo.pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = PresentQueue.vkQueuePresentKHR(presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;

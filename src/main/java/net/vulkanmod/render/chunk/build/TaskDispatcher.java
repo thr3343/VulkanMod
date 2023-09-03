@@ -28,7 +28,7 @@ public class TaskDispatcher {
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
     //    public boolean idle=false;
-    private int availableJobSlots = threads.length * 2;
+    private int availableJobSlots = threads.length;
 
     public TaskDispatcher() {
         this.fixedBuffers = new ThreadBuilderPack();
@@ -42,7 +42,7 @@ public class TaskDispatcher {
         this.threads=new Thread[size];
         Arrays.setAll(threads, i -> new Thread(
                 () -> runTaskThread(new ThreadBuilderPack())));
-        availableJobSlots=threads.length*2;
+        availableJobSlots=threads.length;
     }
 
     public void initThreads() {
@@ -63,7 +63,6 @@ public class TaskDispatcher {
             ChunkTask task1 = (this.highPriorityTasks.isEmpty()? this.lowPriorityTasks : this.highPriorityTasks).poll();
             if(task1!=null)
             {
-                availableJobSlots--;
                 task1.doTask(builderPack);
             }
             else

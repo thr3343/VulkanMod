@@ -105,6 +105,14 @@ public class Vulkan {
         return device;
     }
 
+    public static long getDevicePtr() {
+        return devicePtr;
+    }
+
+    public static VKCapabilitiesDevice getFunctionPointers() {
+        return functionPointers;
+    }
+
     public static long getAllocator() {
         return allocator;
     }
@@ -117,15 +125,13 @@ public class Vulkan {
 
     private static VkPhysicalDevice physicalDevice;
     private static VkDevice device;
+    private static long devicePtr;
+    private static VKCapabilitiesDevice functionPointers;
 
     private static DeviceInfo deviceInfo;
 
     public static VkPhysicalDeviceProperties deviceProperties;
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
-
-    private static VkQueue graphicsQueue;
-    private static VkQueue presentQueue;
-    private static VkQueue transferQueue;
 
     private static SwapChain swapChain;
 
@@ -440,17 +446,8 @@ public class Vulkan {
             }
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
-
-            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
-
-            vkGetDeviceQueue(device, QueueFamilyIndices.graphicsFamily, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, QueueFamilyIndices.presentFamily, 0, pQueue);
-            presentQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, QueueFamilyIndices.transferFamily, 0, pQueue);
-            transferQueue = new VkQueue(pQueue.get(0), device);
+            devicePtr = device.address();
+            functionPointers = device.getCapabilities();
 
         }
     }
@@ -520,10 +517,10 @@ public class Vulkan {
 
         throw new RuntimeException("Failed to find supported format");
     }
-
+    //Test D24 format first (Nvidia is documented to be faster with 24-Bit Depth Attachments)
     public static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT),
+                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
@@ -571,7 +568,7 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(graphicsQueue, submitInfo, immediateFence);
+            GraphicsQueue.vkQueueSubmit(submitInfo, immediateFence);
 
             vkWaitForFences(device, immediateFence, true, VUtil.UINT64_MAX);
             vkResetFences(device, immediateFence);
@@ -676,12 +673,6 @@ public class Vulkan {
     }
 
     public static long getSurface() { return surface; }
-
-    public static VkQueue getPresentQueue() { return presentQueue; }
-
-    public static VkQueue getGraphicsQueue() { return graphicsQueue; }
-
-    public static VkQueue getTransferQueue() { return transferQueue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 
