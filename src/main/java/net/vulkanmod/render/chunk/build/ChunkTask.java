@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkTask {
-    private static TaskDispatcher taskDispatcher;
+    private static final TaskDispatcher taskDispatcher = WorldRenderer.taskDispatcher;
 
     protected AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final RenderSection renderSection;
@@ -55,9 +55,9 @@ public class ChunkTask {
         this.cancelled.set(true);
     }
 
-    public static void setTaskDispatcher(TaskDispatcher dispatcher) {
-        taskDispatcher = dispatcher;
-    }
+//    public static void setTaskDispatcher(TaskDispatcher dispatcher) {
+//        taskDispatcher = dispatcher;
+//    }
 
     public static class BuildTask extends ChunkTask {
         @Nullable

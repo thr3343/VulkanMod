@@ -3,16 +3,18 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
+
+import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+    private static final int max = Runtime.getRuntime().availableProcessors();
 
 
     public static Option<?>[] getVideoOpts() {
@@ -206,6 +208,19 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
+                new RangeOption("Chunk Load Threads", 1, max, 1,
+                value -> {
+                    config.chunkLoadFactor = value;
+                    taskDispatcher.stopThreads();
+                    taskDispatcher.resizeThreads(value);
+                    WorldRenderer.getInstance().allChanged();
+                },
+                () -> config.chunkLoadFactor)
+                .setTooltip(Component.nullToEmpty(
+                "The number of Threads utilized for uploading chunks \n" +
+                "More threads will greatly improve Chunk load speed" +
+                "But may cause stuttering if set to high\n" +
+                "Max Recommended value is "+max/2+" threads on This CPU")),
         };
 
     }
