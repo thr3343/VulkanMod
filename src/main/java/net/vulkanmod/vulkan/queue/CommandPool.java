@@ -10,6 +10,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -18,26 +19,24 @@ public class CommandPool {
 
     private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
+    private final long aLong;
 
     CommandPool(int queueFamilyIndex) {
-        this.createCommandPool(queueFamilyIndex);
-    }
-
-    public void createCommandPool(int familyIndex) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(familyIndex);
+            poolInfo.queueFamilyIndex(queueFamilyIndex);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
 
-            if (vkCreateCommandPool(Vulkan.getDevice(), poolInfo, null, pCommandPool) != VK_SUCCESS) {
+            final VkDevice device = Vulkan.getDevice();
+            if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
             }
-
+            aLong=device.getCapabilities().vkQueueSubmit;
             this.id = pCommandPool.get(0);
         }
     }
@@ -88,7 +87,7 @@ public class CommandPool {
         }
     }
 
-    public synchronized long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
+    public synchronized long submitCommands(CommandBuffer commandBuffer, long queue) {
 
         try(MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
@@ -107,6 +106,10 @@ public class CommandPool {
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
             return fence;
         }
+    }
+
+    private void vkQueueSubmit(long queue, VkSubmitInfo submitInfo, long fence) {
+        callPPJI(queue, 1, submitInfo.address(), fence, aLong);
     }
 
     public void addToAvailable(CommandBuffer commandBuffer) {

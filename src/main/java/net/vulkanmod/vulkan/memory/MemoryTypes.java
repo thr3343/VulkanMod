@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryType;
@@ -67,7 +67,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-            TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+            TransferQueue.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
         }
 
         @Override
@@ -80,7 +80,7 @@ public class MemoryTypes {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 
-            return TransferQueue.INSTANCE.copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
+            return TransferQueue.copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
         }
 
         @Override
@@ -89,7 +89,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
-            TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
+            TransferQueue.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
 
         }
 

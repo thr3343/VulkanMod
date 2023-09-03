@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -23,8 +21,8 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
-import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -37,8 +35,6 @@ import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
@@ -150,7 +146,6 @@ public class Vulkan {
         createVma();
         MemoryTypes.createMemoryTypes();
 
-        Queue.initQueues();
         createCommandPool();
         allocateImmediateCmdBuffer();
 
@@ -189,8 +184,8 @@ public class Vulkan {
         vkDestroyCommandPool(device, commandPool, null);
         vkDestroyFence(device, immediateFence, null);
 
-        GraphicsQueue.INSTANCE.cleanUp();
-        TransferQueue.INSTANCE.cleanUp();
+        GraphicsQueue.cleanUp();
+        TransferQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
@@ -377,9 +372,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
@@ -450,13 +443,13 @@ public class Vulkan {
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
-            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
+            vkGetDeviceQueue(device, QueueFamilyIndices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
+            vkGetDeviceQueue(device, QueueFamilyIndices.presentFamily, 0, pQueue);
             presentQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
+            vkGetDeviceQueue(device, QueueFamilyIndices.transferFamily, 0, pQueue);
             transferQueue = new VkQueue(pQueue.get(0), device);
 
         }
@@ -489,11 +482,9 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            Queue.QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
-
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(QueueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -611,7 +602,6 @@ public class Vulkan {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
 
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
@@ -630,7 +620,7 @@ public class Vulkan {
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {

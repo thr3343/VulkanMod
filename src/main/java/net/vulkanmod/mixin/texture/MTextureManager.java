@@ -7,13 +7,14 @@ import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Set;
+
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 @Mixin(TextureManager.class)
 public abstract class MTextureManager {
@@ -33,13 +34,13 @@ public abstract class MTextureManager {
             return;
 
         if(SpriteUtil.shouldUpload())
-            GraphicsQueue.getInstance().startRecording();
+            TransferQueue.startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
         if(SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(GraphicsQueue.getInstance().getCommandBuffer());
-            GraphicsQueue.getInstance().endRecordingAndSubmit();
+            SpriteUtil.transitionLayouts(TransferQueue.getCommandBuffer());
+            TransferQueue.endRecordingAndSubmit();
 //            Synchronization.INSTANCE.waitFences();
         }
     }
