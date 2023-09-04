@@ -138,7 +138,7 @@ public class TaskDispatcher {
         ChunkArea renderArea = section.getChunkArea();
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
-        for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
+        for(TerrainRenderType renderType : TerrainRenderType.values()) {
             UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
 
             if(uploadBuffer != null) {

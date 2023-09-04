@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -71,7 +70,7 @@ public class DrawBuffers {
         return drawParameters;
     }
 
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, ChunkArea chunkArea, RenderType renderType, double camX, double camY, double camZ) {
+    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, ChunkArea chunkArea, TerrainRenderType renderType, double camX, double camY, double camZ) {
         int stride = 20;
 
         int drawCount = 0;
@@ -86,9 +85,8 @@ public class DrawBuffers {
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
         long uboPtr = MemoryUtil.memAddress0(uboBuffer);
 
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-        terrainRenderType.setCutoutUniform();
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+        renderType.setCutoutUniform();
+        boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
         if(isTranslucent) {
             vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
@@ -97,7 +95,7 @@ public class DrawBuffers {
         var iterator = queue.iterator(isTranslucent);
         while (iterator.hasNext()) {
             RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+            DrawParameters drawParameters = section.getDrawParameters(renderType);
 
             //Debug
 //            BlockPos o = section.origin;
@@ -206,10 +204,9 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(ChunkArea chunkArea, RenderType renderType, double camX, double camY, double camZ) {
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-        terrainRenderType.setCutoutUniform();
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+    public void buildDrawBatchesDirect(ChunkArea chunkArea, TerrainRenderType renderType, double camX, double camY, double camZ) {
+        renderType.setCutoutUniform();
+        boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
@@ -238,7 +235,7 @@ public class DrawBuffers {
         var iterator = queue.iterator(isTranslucent);
         while (iterator.hasNext()) {
             RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+            DrawParameters drawParameters = section.getDrawParameters(renderType);
 
             if(drawParameters.indexCount == 0) {
                 continue;
