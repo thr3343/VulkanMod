@@ -3,7 +3,7 @@ package net.vulkanmod.render.chunk;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
@@ -14,8 +14,6 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
-import static org.lwjgl.system.JNI.callPJPV;
-import static org.lwjgl.system.JNI.callPV;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -29,7 +27,6 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
-//        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 10000000, VERTEX_SIZE);
         this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
         this.allocated = true;
@@ -63,7 +60,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        Drawer.getInstance().getQuadsIndexBuffer().checkCapacity(buffer.indexCount * 2 / 3);
+        Renderer.getDrawer().getQuadsIndexBuffer().checkCapacity(buffer.indexCount * 2 / 3);
 
         buffer.release();
 
@@ -74,8 +71,6 @@ public class DrawBuffers {
         int stride = 20;
 
         int drawCount = 0;
-
-        Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
 
         ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
 
@@ -88,8 +83,10 @@ public class DrawBuffers {
         renderType.setCutoutUniform();
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
+        Pipeline pipeline = ShaderManager.getInstance().getTerrainIndirectShader();
+
         if(isTranslucent) {
-            vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(Renderer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
         var iterator = queue.iterator(isTranslucent);
@@ -154,11 +151,11 @@ public class DrawBuffers {
 
         LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
         LongBuffer pOffset = stack.longs(0);
-        vkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
+        vkCmdBindVertexBuffers(Renderer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
-        vkCmdDrawIndexedIndirect(Drawer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
+        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
+        vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
 
@@ -171,7 +168,7 @@ public class DrawBuffers {
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
         Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
 //        Drawer.getInstance().bindPipeline(pipeline);
-        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 //        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
 
         ByteBuffer buffer = indirectBuffer.getByteBuffer();
@@ -204,28 +201,30 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(ChunkArea chunkArea, TerrainRenderType renderType, double camX, double camY, double camZ) {
+
+    public void buildDrawBatchesDirect(ResettableQueue<RenderSection> queue, Pipeline pipeline, TerrainRenderType renderType, double camX, double camY, double camZ) {
         renderType.setCutoutUniform();
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
             LongBuffer pOffset = stack.longs(0);
-            vkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
+            vkCmdBindVertexBuffers(Renderer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
 
         }
 
         if(isTranslucent) {
-            vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(Renderer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
-        VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
+        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
-        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
+//        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
+//        Pipeline pipeline = TestShaders.getShaderPipeline(renderType);
 //        Drawer.getInstance().bindPipeline(pipeline);
-        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 
-        ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
+//        ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
 
         int drawCount = 0;
         MemoryStack stack = MemoryStack.stackGet().push();
@@ -252,7 +251,6 @@ public class DrawBuffers {
 
             drawCount++;
 
-//            drawCount = drawParameters.indexCount == 0 ? drawCount : drawCount + 1;
         }
 
         if(drawCount > 0) {

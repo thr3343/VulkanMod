@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Renderer;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 
@@ -171,12 +172,14 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("RenderFrameQueue", 2,
+                new RangeOption("Queue Frames", 2,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
+                            Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
-                        .setTooltip(Component.nullToEmpty("Restart is needed to take effect")),
+                        .setTooltip(Component.nullToEmpty("""
+                        Sets the number of queue frames""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
