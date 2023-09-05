@@ -1,172 +1,144 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.nio.IntBuffer;
-import java.util.ArrayDeque;
-import java.util.stream.IntStream;
-
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
-public abstract class Queue {
-    private static VkDevice DEVICE;
+public enum Queue {
 
-    private static QueueFamilyIndices queueFamilyIndices;
-    protected CommandPool commandPool;
 
-    public synchronized CommandPool.CommandBuffer beginCommands() {
+    GraphicsQueue(QueueFamilyIndices.graphicsFamily),
+    TransferQueue(QueueFamilyIndices.transferFamily),
+    PresentQueue(QueueFamilyIndices.presentFamily);
 
-        return this.commandPool.beginCommands();
+    public final CommandPool commandPool;
+    public final long Queue;
+    private CommandPool.CommandBuffer currentCmdBuffer;
+
+    Queue(int computeFamily) {
+
+        commandPool = new CommandPool(computeFamily);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            final VkDevice DEVICE = Vulkan.getDevice();
+            PointerBuffer pQueue = stack.mallocPointer(1);
+            JNI.callPPV(DEVICE.address(), computeFamily, 0, pQueue.address(), DEVICE.getCapabilities().vkGetDeviceQueue);
+            this.Queue = pQueue.get(0);
+        }
+
     }
 
-    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+    public CommandPool.CommandBuffer beginCommands() {
+
+        return commandPool.beginCommands();
+    }
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
 
     public void cleanUp() {
         commandPool.cleanUp();
     }
 
-    public enum Family {
-        Graphics,
-        Transfer,
-        Compute
-    }
 
-    public static void initQueues() {
-        GraphicsQueue.createInstance();
-        TransferQueue.createInstance();
-    }
+    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
-    public static QueueFamilyIndices getQueueFamilies() {
-        if(DEVICE == null)
-            DEVICE = Vulkan.getDevice();
+        try (MemoryStack stack = stackPush()) {
 
-        if(queueFamilyIndices == null) {
-            queueFamilyIndices = findQueueFamilies(DEVICE.getPhysicalDevice());
-        }
-        return queueFamilyIndices;
-    }
+            CommandPool.CommandBuffer commandBuffer = beginCommands();
 
-    public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
 
-        QueueFamilyIndices indices = new QueueFamilyIndices();
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-        try(MemoryStack stack = stackPush()) {
+            submitCommands(commandBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            IntBuffer queueFamilyCount = stack.ints(0);
-
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
-
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.mallocStack(queueFamilyCount.get(0), stack);
-
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
-
-            IntBuffer presentSupport = stack.ints(VK_FALSE);
-
-//            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
-            for(int i = 0; i < queueFamilies.capacity(); i++) {
-                int queueFlags = queueFamilies.get(i).queueFlags();
-
-                if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    indices.graphicsFamily = i;
-
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if(presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                    indices.computeFamily = i;
-                } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                    indices.transferFamily = i;
-                }
-
-                if(indices.presentFamily == null) {
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if(presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                }
-
-                if(indices.isComplete()) break;
-            }
-
-            if(indices.transferFamily == null) {
-
-                int fallback = -1;
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if(fallback == -1)
-                            fallback = i;
-
-                        if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
-                            indices.transferFamily = i;
-
-                            if(i != indices.computeFamily)
-                                break;
-                            fallback = i;
-                        }
-                    }
-
-                    if(fallback == -1)
-                        throw new RuntimeException("Failed to find queue family with transfer support");
-
-                    indices.transferFamily = fallback;
-                }
-            }
-            
-            if(indices.computeFamily == null) {
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                        indices.computeFamily = i;
-                        break;
-                    }
-                }
-            }
-
-            if (indices.graphicsFamily == null)
-                throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == null)
-                throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == null)
-                throw new RuntimeException("Unable to find queue family with compute support.");
-
-            return indices;
+            return commandBuffer.fence;
         }
     }
 
-    public static class QueueFamilyIndices {
+    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
-        // We use Integer to use null as the empty value
-        public Integer graphicsFamily;
-        public Integer presentFamily;
-        public Integer transferFamily;
-        public Integer computeFamily;
+        try (MemoryStack stack = stackPush()) {
+            CommandPool.CommandBuffer commandBuffer = beginCommands();
 
-        public boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+            submitCommands(commandBuffer);
+            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, -1);
+            commandBuffer.reset();
         }
+    }
 
-        public boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
-        }
 
-        public int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily, transferFamily, computeFamily).distinct().toArray();
-        }
+    public void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
-        public int[] array() {
-            return new int[] {graphicsFamily, presentFamily};
+        try (MemoryStack stack = stackPush()) {
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
         }
+    }
+
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+
+
+    public void startRecording() {
+        currentCmdBuffer = beginCommands();
+    }
+
+    public void endRecordingAndSubmit() {
+        long fence = submitCommands(currentCmdBuffer);
+        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+
+        currentCmdBuffer = null;
+    }
+
+    public CommandPool.CommandBuffer getCommandBuffer() {
+        if (currentCmdBuffer != null) {
+            return currentCmdBuffer;
+        } else {
+            return beginCommands();
+        }
+    }
+
+    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+        if (currentCmdBuffer != null) {
+            return VK_NULL_HANDLE;
+        } else {
+            return submitCommands(commandBuffer);
+        }
+    }
+
+    public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
+
+        return commandPool.submitCommands(commandBuffer, this.Queue);
+    }
+
+    public void waitIdle() {
+//        vkQueueWaitIdle(Vulkan.getTransferQueue());
+    }
+
+    public void uploadSuperSet(CommandPool.CommandBuffer commandBuffer, VkBufferCopy.Buffer copyRegions, long srcBuffer, long dstBuffer) {
+        vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegions);
+
     }
 }

@@ -7,7 +7,8 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -149,7 +150,7 @@ public class VulkanImage {
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
-        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = TransferQueue.getCommandBuffer();
         transferDstLayout(commandBuffer);
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
@@ -160,7 +161,7 @@ public class VulkanImage {
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
-        long fence = GraphicsQueue.getInstance().endIfNeeded(commandBuffer);
+        long fence = TransferQueue.endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
@@ -237,9 +238,9 @@ public class VulkanImage {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
-        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = TransferQueue.getCommandBuffer();
         readOnlyLayout(commandBuffer);
-        GraphicsQueue.getInstance().submitCommands(commandBuffer);
+        TransferQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
@@ -355,7 +356,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.malloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -364,7 +365,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -374,9 +375,9 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.malloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -385,11 +386,11 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
-            long fence = GraphicsQueue.getInstance().submitCommands(commandBuffer);
+            long fence = TransferQueue.submitCommands(commandBuffer);
 
             vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
