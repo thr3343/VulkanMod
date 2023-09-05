@@ -9,8 +9,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static net.vulkanmod.Initializer.LOGGER;
+import static org.lwjgl.glfw.GLFW.*;
+
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
+
+    //Make sure Wayland is ALWAYS preferred in 100% of cases (and only fallback to X11 if Wayland isn't available)
+    private static final int[] plats = new int[]{
+            GLFW_PLATFORM_WIN32,
+            GLFW_PLATFORM_WAYLAND,
+            GLFW_PLATFORM_X11,
+            GLFW_PLATFORM_COCOA};
+
+    private static final int activePlat = getSupportedPlat();
 
     int width;
     int height;
@@ -52,9 +64,59 @@ public class VideoResolution {
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
+        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
+//        determineDsiplayServer();
+        LOGGER.info(GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
+
+    //Actually detect the currently active Display Server (if both Wayland and X11 are present on the system and/or GLFW is compiled to support both)
+    private static int determineDisplayServer() {
+//        LOGGER.info("XDG_SESSION_TYPE: "+System.getenv("XDG_SESSION_TYPE"));
+
+        //Return Null platform if not on Linux (i.e. no X11 or Wayland)
+        return switch (System.getenv("XDG_SESSION_TYPE")) {
+            case "wayland" -> GLFW_PLATFORM_WAYLAND;
+            case "x11" -> GLFW_PLATFORM_X11;
+            default -> GLFW_PLATFORM_NULL;
+        };
+    }
+
+    private static int getSupportedPlat() {
+        int displayServerEnv = determineDisplayServer();
+        if(displayServerEnv==GLFW_PLATFORM_NULL) {
+            for (int plat : plats) {
+                if (GLFW.glfwPlatformSupported(plat)) {
+                    LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
+                    return plat;
+                }
+            }
+        }
+        else {
+            LOGGER.info("Selecting Platform: "+getStringFromPlat(displayServerEnv));
+            return displayServerEnv;
+        }
+        throw new RuntimeException("No Supported Platforms Present!");
+    }
+
+    private static String getStringFromPlat(int plat) {
+        return switch (plat)
+        {
+            case GLFW_PLATFORM_WIN32 -> "WIN32";
+            case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
+            case GLFW_PLATFORM_X11 -> "X11";
+            case GLFW_PLATFORM_COCOA -> "macOS";
+            default -> throw new IllegalStateException("Unexpected value: " + plat);
+        };
+    }
+
+    public static int getActivePlat() { return activePlat; }
+    //Allows platform specific checks to be handles (is missing macOS, however that may not be important due to macOS only version))
+    public static boolean isWayLand() { return activePlat == GLFW_PLATFORM_WAYLAND; }
+    public static boolean isX11() { return activePlat == GLFW_PLATFORM_X11; }
+    public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
+    public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;

@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -26,7 +24,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
+import static net.vulkanmod.vulkan.DeviceInfo.vkVer;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -39,7 +38,6 @@ import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
@@ -149,7 +147,7 @@ public class Vulkan {
         allocateImmediateCmdBuffer();
 
         createSwapChain();
-        MemoryManager.createInstance(swapChain.getFramesNum());
+        MemoryManager.createInstance(swapChain.getFrameNum());
 
         createStagingBuffers();
         Renderer.initRenderer();
@@ -160,7 +158,7 @@ public class Vulkan {
             Arrays.stream(stagingBuffers).forEach(Buffer::freeBuffer);
         }
 
-        stagingBuffers = new StagingBuffer[getSwapChainImages().size()];
+        stagingBuffers = new StagingBuffer[getSwapChain().getFrameNum()];
 
         for(int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
@@ -170,7 +168,7 @@ public class Vulkan {
     private static void createSwapChain() {
         swapChain = new SwapChain();
 
-        FramesNum = swapChain.getFramesNum();
+        FramesNum = swapChain.getFrameNum();
     }
 
     public static void recreateSwapChain() {
@@ -236,7 +234,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_2);
+            appInfo.apiVersion(vkVer);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack);
 
@@ -334,16 +332,17 @@ public class Vulkan {
     private static void createVma() {
         try(MemoryStack stack = stackPush()) {
 
-            VmaVulkanFunctions vulkanFunctions = VmaVulkanFunctions.calloc(stack);
-            vulkanFunctions.set(instance, Device.device);
+            VmaVulkanFunctions vulkanFunctions = VmaVulkanFunctions.malloc(stack)
+                    .set(instance, Device.device);
 
-            VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.calloc(stack);
-            allocatorCreateInfo.physicalDevice(Device.physicalDevice);
-            allocatorCreateInfo.device(Device.device);
-            allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
-            allocatorCreateInfo.instance(instance);
+            VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.malloc(stack)
+                    .physicalDevice(Device.physicalDevice)
+                    .device(Device.device)
+                    .pVulkanFunctions(vulkanFunctions)
+                    .instance(instance)
+                    .vulkanApiVersion(vkVer);
 
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pAllocator = stack.mallocPointer(1);
 
             if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
@@ -357,11 +356,9 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            Queue.QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
-
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(QueueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -417,7 +414,7 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, immediateFence);
+            vkQueueSubmit(GraphicsQueue.queue(), submitInfo, immediateFence);
 
             vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
             vkResetFences(Device.device, immediateFence);
@@ -472,5 +469,6 @@ public class Vulkan {
     public static StagingBuffer getStagingBuffer(int i) { return stagingBuffers[i]; }
 
     public static DeviceInfo getDeviceInfo() { return Device.deviceInfo; }
+
 }
 

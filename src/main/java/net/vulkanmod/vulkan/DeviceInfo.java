@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan;
 
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.Initializer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -26,9 +26,11 @@ public class DeviceInfo {
 
     public static final String cpuInfo;
     public static final List<GraphicsCard> graphicsCards;
+    public static final int vkVer = getVkVer();
 
     private final VkPhysicalDevice device;
-    public final String vendorId;
+    public final int vendorId;
+    public final String vendorIdString;
     public final String deviceName;
     public final String driverVersion;
     public final String vkVersion;
@@ -57,10 +59,11 @@ public class DeviceInfo {
         }
 
         this.device = device;
-        this.vendorId = decodeVendor(properties.vendorID());
+        this.vendorId = properties.vendorID();
+        this.vendorIdString = decodeVendor(this.vendorId);
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+        this.vkVersion = decDefVersion(vkVer);
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -129,8 +132,9 @@ public class DeviceInfo {
             int vkVer1 = a.get(0);
             if(VK_VERSION_MINOR(vkVer1)<2)
             {
-                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ decDefVersion(vkVer1));
+                Initializer.LOGGER.warn("WARNING: Vulkan 1.2 is not supported on this Device!: Only has "+ decDefVersion(vkVer1));
             }
+            else Initializer.LOGGER.info("Using Vulkan: "+ decDefVersion(vkVer1));
             return vkVer1;
         }
     }
@@ -184,5 +188,17 @@ public class DeviceInfo {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    //Added these to allow GPU and vendor specific fixes to be applied
+    // (e.g. if we run into a bug that only occurs on a specific GPU, and only on Wayland for example e.g.)
+    public boolean isAMD() {
+        return this.vendorId==0x1022;
+    }
+    public boolean isNvidia() {
+        return this.vendorId==0x10DE;
+    }
+    public boolean isIntel() {
+        return this.vendorId==0x8086;
     }
 }

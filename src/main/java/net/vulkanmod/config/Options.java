@@ -3,17 +3,48 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.KHRSurface;
+
+import java.nio.IntBuffer;
+
+import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
+
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    private static final int minImages;
+
+    private static final int maxImages;
+
+    private static final boolean hasMailbox;
+
+    static
+    {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            minImages = surfaceProperties.capabilities.minImageCount();
+            maxImages = surfaceProperties.capabilities.maxImageCount() ==0 ? 64 : surfaceProperties.capabilities.maxImageCount();
+            hasMailbox = getPresentModes(surfaceProperties.presentModes, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
+        }
+    }
+
+    private static boolean getPresentModes(IntBuffer surfaceProperties, int requestedMode) {
+        for(int i = 0;i < surfaceProperties.capacity();i++) {
+            if(surfaceProperties.get(i) == requestedMode) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 
     public static Option<?>[] getVideoOpts() {
@@ -48,12 +79,21 @@ public class Options {
                             window.setFramerateLimit(value);
                         },
                         () -> minecraftOptions.framerateLimit().get()),
+                new SwitchOption("FastSync",
+                        value -> {
+                            config.fastSync = hasMailbox && value;
+                            Renderer.scheduleSwapChainUpdate();
+                        },
+                        () -> config.fastSync).setTooltip(Component.nullToEmpty("Supported on this Device?: " +hasMailbox+"\n"+
+                        "Prevents screen tearing from occurring when enabled\n"+
+                        "Has no effect when VSync is enabled\n"+
+                        "can be used as a low-latency alternative to VSync"+
+                       " Not always supported on all GPU Drivers, so availability may vary on your device\n"+
+                        "(Always force enabled on Wayland)\n")),
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
-                            if (Minecraft.getInstance().getWindow() != null) {
-                                Minecraft.getInstance().getWindow().updateVsync(value);
-                            }
+                            Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",
@@ -65,11 +105,11 @@ public class Options {
                         },
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
-                        value -> {
-                          if(value == 0) return Component.translatable("options.gamma.min").getString();
-                          else if(value == 50) return Component.translatable("options.gamma.default").getString();
-                          else if(value == 100) return Component.translatable("options.gamma.max").getString();
-                          return value.toString();
+                        value -> switch (value) {
+                            case 0 -> Component.translatable("options.gamma.min").getString();
+                            case 50 -> Component.translatable("options.gamma.default").getString();
+                            case 100 -> Component.translatable("options.gamma.max").getString();
+                            default -> value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -170,14 +210,26 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 2,
+                new RangeOption("Queue Frames", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Manages the tradeoff between FPS and input lag
+                        Higher = improved FPS but more input lag
+                        Lower = decreased FPS but less input lag""")),
+                new RangeOption("Image Count", minImages,
+                        maxImages, 1,
+                        value -> {
+                            config.minImageCount = value;
+                            Renderer.scheduleSwapChainUpdate();
+                        }, () -> config.minImageCount)
+                        .setTooltip(Component.nullToEmpty("""
+                        Sets the number of swapchain images
+                        Higher values may help reduce VSync stutter
+                        But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)

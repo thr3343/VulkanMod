@@ -2,14 +2,14 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
@@ -21,7 +21,7 @@ public class UniformBuffers {
     private List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) Device.deviceProperties.limits().minUniformBufferOffsetAlignment();
-    private final int imagesSize = getSwapChainImages().size();
+    private final int imagesSize = getSwapChain().getFrameNum();
 
     CommandPool.CommandBuffer commandBuffer;
 
@@ -83,7 +83,7 @@ public class UniformBuffers {
         if(commandBuffer == null)
             return;
 
-        Device.getTransferQueue().submitCommands(commandBuffer);
+        TransferQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
@@ -123,7 +123,7 @@ public class UniformBuffers {
             }
             else {
                 if(commandBuffer == null)
-                    commandBuffer = Device.getTransferQueue().beginCommands();
+                    commandBuffer = TransferQueue.beginCommands();
 
                 int size = buffer.remaining();
 

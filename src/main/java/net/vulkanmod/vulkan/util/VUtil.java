@@ -14,7 +14,7 @@ import static org.lwjgl.system.MemoryStack.stackGet;
 
 public class VUtil {
     public static final int UINT32_MAX = 0xFFFFFFFF;
-    public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
+    public static final long UINT64_MAX = -1L;
 
     public static final Unsafe UNSAFE;
 

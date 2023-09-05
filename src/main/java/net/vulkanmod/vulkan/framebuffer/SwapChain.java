@@ -6,7 +6,8 @@ import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.config.VideoResolution;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -22,6 +23,8 @@ import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -34,8 +37,9 @@ public class SwapChain extends Framebuffer {
     }
 
     private RenderPass renderPass;
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
-
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
     private VkExtent2D extent2D;
@@ -70,11 +74,10 @@ public class SwapChain extends Framebuffer {
 
         createSwapChain();
 
-        return this.swapChainImages.size();
+        return this.getFrameNum();
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -96,13 +99,16 @@ public class SwapChain extends Framebuffer {
                 return;
             }
 
-            //Workaround for Mesa
+            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
+
+            int requestedFrames = Initializer.CONFIG.minImageCount;
+
+            Initializer.LOGGER.info("requestedFrames" + requestedFrames);
+
+
             IntBuffer imageCount = stack.ints(requestedFrames);
 //            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
-
-            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
-                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
-            }
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
@@ -120,11 +126,9 @@ public class SwapChain extends Framebuffer {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
-
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if(QueueFamilyIndices.graphicsFamily != (QueueFamilyIndices.presentFamily)) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
@@ -157,6 +161,8 @@ public class SwapChain extends Framebuffer {
 
             swapChainImages = new ArrayList<>(imageCount.get(0));
 
+            Initializer.LOGGER.info("requested Images: "+pSwapchainImages.capacity());
+
             this.width = extent2D.width();
             this.height = extent2D.height();
 
@@ -179,7 +185,18 @@ public class SwapChain extends Framebuffer {
 
         }
     }
-
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "VK_PRESENT_MODE_IMMEDIATE_KHR";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "VK_PRESENT_MODE_MAILBOX_KHR";
+            case VK_PRESENT_MODE_FIFO_KHR -> "VK_PRESENT_MODE_FIFO_KHR";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+            case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR -> "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+            case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR ->  "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+            default -> throw new IllegalStateException("Unexpected value: " + requestedMode);
+        };
+    }
     private void createRenderPass() {
         this.hasColorAttachment = true;
         this.hasDepthAttachment = true;
@@ -226,7 +243,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getImageIndex()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
@@ -328,7 +345,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getImageIndex());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -353,14 +370,18 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : Initializer.CONFIG.fastSync ? VK_PRESENT_MODE_MAILBOX_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
+        {
+            Initializer.LOGGER.info(getDisplayModeString(VK_PRESENT_MODE_FIFO_KHR));
             return VK_PRESENT_MODE_FIFO_KHR;
+        }
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info(getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }
@@ -405,5 +426,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getFrameNum() { return Initializer.CONFIG.frameQueueSize; }
+    public int getImageNum() { return this.swapChainImages.size(); }
 }
