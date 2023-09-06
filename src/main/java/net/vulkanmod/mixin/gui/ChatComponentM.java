@@ -230,8 +230,8 @@ public abstract class ChatComponentM {
     private void drawTagIcon(Matrix4f mat4f, int i, int j, GuiMessageTag.Icon icon) {
         int k = j - icon.height - 1;
         RenderSystem.setShaderTexture(0, TEXTURE_LOCATION);
-
-        GuiBatchRenderer.blit(mat4f, i, k, icon.u, icon.v, icon.width, icon.height, 32, 32);
+//TODO
+        GuiBatchRenderer.blit(mat4f, i, k, 0, 0, icon.width, icon.height, 32, 32);
     }
 
     private static double getTimeFactor(int i) {

@@ -140,7 +140,7 @@ public class OptionScreenV extends Screen {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
-        this.renderBackground(guiGraphics);
+        this.renderBackground(guiGraphics, mouseX, mouseY, delta);
         this.currentList.render(guiGraphics, mouseX, mouseY, delta);
 //        guiGraphics.fill(0, 0, width, height, VUtil.packColor(0.6f, 0.2f, 0.2f, 0.5f));
 

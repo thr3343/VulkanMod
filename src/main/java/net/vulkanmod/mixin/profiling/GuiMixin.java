@@ -26,7 +26,7 @@ public class GuiMixin {
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
     private void renderProfilerOverlay(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
-        if(ProfilerOverlay.shouldRender && !this.minecraft.options.renderDebug)
+        if(ProfilerOverlay.shouldRender && !this.minecraft.getDebugOverlay().showDebugScreen())
             ProfilerOverlay.INSTANCE.render(guiGraphics.pose());
     }
 }

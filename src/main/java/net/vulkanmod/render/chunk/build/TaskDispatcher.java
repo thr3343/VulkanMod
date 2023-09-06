@@ -6,7 +6,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.CrashReport;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ChunkBufferBuilderPack;
+import net.minecraft.client.renderer.SectionBufferBuilderPack;
 import net.minecraft.util.thread.ProcessorMailbox;
 import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.vertex.TerrainRenderType;

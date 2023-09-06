@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -52,6 +53,7 @@ public abstract class LevelRendererMixin {
 
     @Shadow public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
 
+    @Shadow private @Nullable ViewArea viewArea;
     private WorldRenderer worldRenderer;
 
     @Unique
@@ -99,7 +101,7 @@ public abstract class LevelRendererMixin {
      * @reason
      */
     @Overwrite
-    private void compileChunks(Camera camera) {
+    private void compileSections(Camera camera) {
         this.worldRenderer.compileChunks(camera);
     }
 
@@ -108,7 +110,7 @@ public abstract class LevelRendererMixin {
      * @reason
      */
     @Overwrite
-    public boolean isChunkCompiled(BlockPos blockPos) {
+    public boolean isSectionCompiled(BlockPos blockPos) {
         return this.worldRenderer.isChunkCompiled(blockPos);
     }
 
@@ -117,7 +119,7 @@ public abstract class LevelRendererMixin {
      * @reason
      */
     @Overwrite
-    private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
+    private void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
         this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
     }
 
@@ -136,9 +138,9 @@ public abstract class LevelRendererMixin {
 //            this.recentlyCompiledChunks.clear();
             ItemBlockRenderTypes.setFancy(Minecraft.useFancyGraphics());
             this.lastViewDistance = this.minecraft.options.getEffectiveRenderDistance();
-//         if (this.viewArea != null) {
-//            this.viewArea.releaseAllBuffers();
-//         }
+         if (this.viewArea != null) {
+            this.viewArea.releaseAllBuffers();
+         }
 //
 //         this.chunkRenderDispatcher.blockUntilClear();
             synchronized(this.globalBlockEntities) {
@@ -157,12 +159,17 @@ public abstract class LevelRendererMixin {
         this.worldRenderer.setSectionDirty(x, y, z, flag);
     }
 
+    @Overwrite
+    public void onChunkLoaded(ChunkPos chunkPos) {
+//        this.sectionOcclusionGraph.waitAndReset();
+    }
+
     /**
      * @author
      * @reason
      */
     @Overwrite
-    public String getChunkStatistics() {
+    public String getSectionStatistics() {
         return this.worldRenderer.getChunkStatistics();
     }
 
@@ -270,7 +277,7 @@ public abstract class LevelRendererMixin {
 //        for(Entity entity : this.level.entitiesForRendering()) {
 //            if (this.entityRenderDispatcher.shouldRender(entity, frustum, d0, d1, d2) || entity.hasIndirectPassenger(this.minecraft.player)) {
 //                BlockPos blockpos = entity.blockPosition();
-//                if ((this.level.isOutsideBuildHeight(blockpos.getY()) || this.isChunkCompiled(blockpos)) && (entity != p_109604_.getEntity() || p_109604_.isDetached() || p_109604_.getEntity() instanceof LivingEntity && ((LivingEntity)p_109604_.getEntity()).isSleeping()) && (!(entity instanceof LocalPlayer) || p_109604_.getEntity() == entity)) {
+//                if ((this.level.isOutsideBuildHeight(blockpos.getY()) || this.isSectionCompiled(blockpos)) && (entity != p_109604_.getEntity() || p_109604_.isDetached() || p_109604_.getEntity() instanceof LivingEntity && ((LivingEntity)p_109604_.getEntity()).isSleeping()) && (!(entity instanceof LocalPlayer) || p_109604_.getEntity() == entity)) {
 //                    ++this.renderedEntities;
 //                    if (entity.tickCount == 0) {
 //                        entity.xOld = entity.getX();
