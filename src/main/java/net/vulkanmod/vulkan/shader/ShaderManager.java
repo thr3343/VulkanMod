@@ -43,7 +43,7 @@ public class ShaderManager {
         return pipelineBuilder.createPipeline();
     }
 
-    public Pipeline getTerrainShader(RenderType renderType) {
+    public Pipeline getTerrainShader() {
         if(Initializer.CONFIG.indirectDraw) {
             return this.terrainIndirectShader;
         }
@@ -53,7 +53,7 @@ public class ShaderManager {
 
     }
 
-    public Pipeline getTerrainIndirectShader(RenderType renderType) {
+    public Pipeline getTerrainIndirectShader() {
         return terrainIndirectShader;
     }
 
