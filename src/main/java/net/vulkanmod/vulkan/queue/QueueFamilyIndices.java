@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
@@ -40,11 +41,9 @@ public class QueueFamilyIndices {
                     if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         presentFamily = i;
                     }
-                } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                } else if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                     computeFamily = i;
-                } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
+                } else if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
                     hasTransferQueue=true;
                     transferFamily = i;
                 }
@@ -104,11 +103,11 @@ public class QueueFamilyIndices {
             if (computeFamily == -1)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
-            System.out.println("-==Queue Family Configuration==-");
-            System.out.println("    graphicsFamily -> "+graphicsFamily);
-            System.out.println("    transferFamily -> "+transferFamily);
-            System.out.println("    presentFamily  -> "+presentFamily);
-            System.out.println("    computeFamily  -> "+computeFamily);
+            Initializer.LOGGER.info("-==Queue Family Configuration==-");
+            Initializer.LOGGER.info("    graphicsFamily -> "+graphicsFamily);
+            Initializer.LOGGER.info("    transferFamily -> "+transferFamily);
+            Initializer.LOGGER.info("    presentFamily  -> "+presentFamily);
+            Initializer.LOGGER.info("    computeFamily  -> "+computeFamily);
 
         }
         return isComplete();
