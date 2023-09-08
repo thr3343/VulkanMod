@@ -36,7 +36,10 @@ public class RenderSection {
     private boolean completelyEmpty = true;
     private long visibility;
 
-    int xOffset, yOffset, zOffset;
+    public final int index;
+    int xOffset;
+    int yOffset;
+    int zOffset;
 
 //    private final DrawBuffers.DrawParameters[] drawParametersArray =
 //            Arrays.stream(TerrainRenderType.VALUES)
@@ -53,13 +56,14 @@ public class RenderSection {
 
 
     public RenderSection(int index, int x, int y, int z) {
+        this.index = index;
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
 
         this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
         for(int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(index,TerrainRenderType.VALUES[i]);
         }
     }
 

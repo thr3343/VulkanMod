@@ -20,7 +20,7 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager();
     }
 
-    ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
+    ObjectArrayList<virtualSegment>[] recordedUploads;
     ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
     ObjectArrayList<Runnable>[] frameOps;
     CommandPool.CommandBuffer[] commandBuffers;
@@ -49,7 +49,7 @@ public class AreaUploadManager {
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void uploadAsync(virtualSegment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
@@ -102,15 +102,18 @@ public class AreaUploadManager {
         this.frameOps[frame].clear();
     }
 
+    void waitUploads() {
+        this.waitUploads(currentFrame);
+    }
     private void waitUploads(int frame) {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
         Synchronization.waitFence(commandBuffers[frame].getFence());
 
-        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
-            uploadSegment.setReady();
-        }
+//        for(virtualSegment uploadSegment : this.recordedUploads[frame]) {
+//            uploadSegment.setReady();
+//        }
 
         for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
             parametersUpdate.setDrawParameters();
