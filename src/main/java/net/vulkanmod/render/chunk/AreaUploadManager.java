@@ -1,11 +1,8 @@
 package net.vulkanmod.render.chunk;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -16,10 +13,14 @@ import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferCopy;
 
+import java.util.Arrays;
+
 import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;
+
+    //TODO: Might replace this with custom implementation later (to allow faster Key Swapping)
     private final Long2ObjectArrayMap<ObjectArrayFIFOQueue<ATst>> DistinctBuffers = new Long2ObjectArrayMap<>(8);
 
     public static void createInstance() {
@@ -47,67 +48,72 @@ public class AreaUploadManager {
     }
 
 
+    public void editkey(long ik, long k) {
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
+        if(!this.DistinctBuffers.containsKey(ik)) return;
 
-    public void submitUploadsAsync(ObjectArrayList<ATst> uploadsed, long id) {
-        if(uploadsed.isEmpty())
-            return;
+        final ObjectArrayFIFOQueue<ATst> aTstObjectArrayFIFOQueue = DistinctBuffers.remove(ik);
+
+//        for(var id : DistinctBuffers[currentFrame.values()) {
+//            id.clear();
+//        }
+        this.DistinctBuffers.put(k, aTstObjectArrayFIFOQueue);
+//        waitUploads();
+    }
+    public void submitUpload(long k) {
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
+        if(!this.DistinctBuffers.containsKey(k)) return;
+        beginIfNeeded();
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+
+            final long l = Vulkan.getStagingBuffer(currentFrame).getId();
+            final ObjectArrayFIFOQueue<ATst> aTstObjectArrayFIFOQueue = DistinctBuffers.get(k);
+
+                final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(aTstObjectArrayFIFOQueue.size(), stack);
+                for (VkBufferCopy vkBufferCopy : copyRegions) {
+                    var a = aTstObjectArrayFIFOQueue.dequeue();
+                    vkBufferCopy.srcOffset(a.offset())
+                            .dstOffset(a.dstOffset())
+                            .size(a.bufferSize());
+                }
+
+                TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, k);
+            }
+
+//        for(var id : DistinctBuffers[currentFrame.values()) {
+//            id.clear();
+//        }
+        this.DistinctBuffers.remove(k);
+//        waitUploads();
+        this.submit2();
+    }
+
+    private void beginIfNeeded() {
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-            final int size = uploadsed.size();
-            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
-            int i = 0;
-//            int rem=0;
-//            long src=0;
-//            long dst=0;
-            for(var copyRegion : copyRegions)
-            {
-//                var a =this.activeRanges.pop();
-                final var virtualSegmentBuffer = uploadsed.get(i);
-                copyRegion.srcOffset(virtualSegmentBuffer.offset())
-                        .dstOffset(virtualSegmentBuffer.dstOffset())
-                        .size(virtualSegmentBuffer.bufferSize());
-
-//                rem+=virtualSegmentBuffer.bufferSize();
-//                src=virtualSegmentBuffer.id();
-//                dst=virtualSegmentBuffer.bufferId();
-                i++;
-            }
-//            Initializer.LOGGER.info(size+"+"+rem);
-
-            TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, Vulkan.getStagingBuffer(currentFrame).getId(), id);
-        }
-        uploadsed.clear();
     }
 
     public void submitUploads() {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         if(this.DistinctBuffers.isEmpty()) return;
-        if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+        beginIfNeeded();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
             final long l = Vulkan.getStagingBuffer(currentFrame).getId();
-            final var itr = DistinctBuffers.values().iterator();
-            DistinctBuffers.keySet().forEach(aLong -> {
-                var SubBufferSet = itr.next();
+            for (Long2ObjectMap.Entry<ObjectArrayFIFOQueue<ATst>> objectArrayFIFOQueueEntry : DistinctBuffers.long2ObjectEntrySet()) {
+                final ObjectArrayFIFOQueue<ATst> value = objectArrayFIFOQueueEntry.getValue();
+                final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(value.size(), stack);
+                for (VkBufferCopy vkBufferCopy : copyRegions) {
+                    var a = value.dequeue();
+                    vkBufferCopy.srcOffset(a.offset())
+                            .dstOffset(a.dstOffset())
+                            .size(a.bufferSize());
+                }
 
-                final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(SubBufferSet.size(), stack);
-                copyRegions.forEach(vkBufferCopy -> {
-                   var a = SubBufferSet.dequeue();
-                        vkBufferCopy.srcOffset(a.offset())
-                                .dstOffset(a.dstOffset())
-                                .size(a.bufferSize());
-//                    TransferQueue.uploadBufferCmd(commandBuffers[currentFrame], l, a.offset(), a.bufferId(), a.dstOffset(), a.bufferSize());
-
-                });
-                TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, aLong);
-
-
-            });
+                TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, objectArrayFIFOQueueEntry.getLongKey());
+            }
         }
-//        for(var id : DistinctBuffers.values()) {
+//        for(var id : DistinctBuffers[currentFrame.values()) {
 //            id.clear();
 //        }
         this.DistinctBuffers.clear();
@@ -119,33 +125,17 @@ public class AreaUploadManager {
        if(this.commandBuffers[currentFrame]!=null) TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public ATst uploadAsync2(long bufferId, long dstOffset, int bufferSize, long src, virtualSegment uploadSegment) {
+    public void uploadAsync(long bufferId, int dstOffset, int bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
-        if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+        beginIfNeeded();
 //            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
         stagingBuffer.copyBuffer2(bufferSize, src);
 
 //        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-        final ATst aTst = new ATst(stagingBuffer.offset, dstOffset, bufferSize, bufferId);
-//        this.recordedUploads[this.currentFrame].add(aTst);
-        return aTst;
-    }
-    public void uploadAsync(long bufferId, long dstOffset, int bufferSize, long src, virtualSegment uploadSegment) {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
-
-        if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
-//            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
-
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
-        stagingBuffer.copyBuffer2(bufferSize, src);
-
-//        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-        final ATst aTst = new ATst(stagingBuffer.offset, dstOffset, bufferSize, bufferId);
+        final ATst aTst = new ATst(stagingBuffer.offset, dstOffset, bufferSize);
 //        this.recordedUploads[this.currentFrame].enqueue(aTst);
         if(!this.DistinctBuffers.containsKey(bufferId)) this.DistinctBuffers.put(bufferId, new ObjectArrayFIFOQueue<>());
         this.DistinctBuffers.get(bufferId).enqueue(aTst);
@@ -165,8 +155,7 @@ public class AreaUploadManager {
             throw new IllegalArgumentException("dst buffer is smaller than src buffer.");
         }
 
-        if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+        beginIfNeeded();
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], src.getId(), 0, dst.getId(), 0, src.getBufferSize());
     }
@@ -190,9 +179,6 @@ public class AreaUploadManager {
 //        this.frameOps[frame].clear();
     }
 
-    void waitUploads() {
-        this.waitUploads(currentFrame);
-    }
     private void waitUploads(int frame) {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)

@@ -1,11 +1,8 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.render.chunk.build.CompiledSection;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.apache.commons.lang3.Validate;
@@ -83,7 +80,7 @@ public class AreaBuffer {
         Validate.isTrue(v.offset() < this.buffer.getBufferSize());
         Validate.isTrue(v.size() < this.buffer.getBufferSize());
 
-        AreaUploadManager.INSTANCE.uploadAsync(this.buffer.getId(), v.offset(), vertSize, byteBuffer, uploadSegment);
+        AreaUploadManager.INSTANCE.uploadAsync(this.buffer.getId(), v.offset(), vertSize, byteBuffer);
 
 //        uploadSegment.offset() = segment.offset();
 //        uploadSegment.size = size;
@@ -145,12 +142,7 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-//        WorldRenderer.taskDispatcher.uploadAllPendingUploads();
-//        AreaUploadManager.INSTANCE.submitUploadsAsync(this.uploadsed, this.buffer.getId());
-        AreaUploadManager.INSTANCE.submitUploads();
-
-//        uploadSubset(Vulkan.getStagingBuffer(AreaUploadManager.INSTANCE.currentFrame).getId(), AreaUploadManager.INSTANCE.commandBuffers[AreaUploadManager.INSTANCE.currentFrame]);
-        AreaUploadManager.INSTANCE.waitUploads(); //TODO: Check if this Optimisation is overaggressive and causes miss-alignments
+        AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
         AreaUploadManager.INSTANCE.copy(this.buffer, buffer);
 
         this.buffer.freeBuffer();
