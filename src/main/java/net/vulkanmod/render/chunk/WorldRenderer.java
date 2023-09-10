@@ -679,9 +679,9 @@ public class WorldRenderer {
     public void setNeedsUpdate() {
         this.needsUpdate = true;
     }
-
+    //Stop crash when changing world
     public void setSectionDirty(int x, int y, int z, boolean flag) {
-        this.sectionGrid.setDirty(x, y, z, flag);
+        if(this.sectionGrid!=null) this.sectionGrid.setDirty(x, y, z, flag);
     }
 
     public void setSectionsLightReady(int x, int z) {

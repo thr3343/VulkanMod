@@ -27,7 +27,7 @@ public class AreaBuffer {
 
     int size;
     int used;
-    public final ObjectArrayList<ATst> uploadsed = new ObjectArrayList<>();
+//    public final ObjectArrayList<ATst> uploadsed = new ObjectArrayList<>();
 
 
     public AreaBuffer(int usage, int size, int elementSize) {
@@ -47,7 +47,7 @@ public class AreaBuffer {
         return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized virtualSegment upload(long byteBuffer, int vertSize, TerrainRenderType r, virtualSegment uploadSegment, int index) {
+    public virtualSegment upload(long byteBuffer, int vertSize, TerrainRenderType r, virtualSegment uploadSegment, int index) {
 
         if(vertSize % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
@@ -157,49 +157,42 @@ public class AreaBuffer {
         freeSegments.add(new Segment(offset + segment.size(), increment - segment.size()));
         return segment;
     }
-    public void uploadSubset(long src, CommandPool.CommandBuffer commandBuffer) {
-        if(this.uploadsed.isEmpty())
-            return;
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-            final int size = this.uploadsed.size();
-            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
-            int i = 0;
-//            int rem=0;
-//            long src=0;
-//            long dst=0;
-            for(var copyRegion : copyRegions)
-            {
-//                var a =this.activeRanges.pop();
-                final var virtualSegmentBuffer = this.uploadsed.get(i);
-                copyRegion.srcOffset(virtualSegmentBuffer.offset())
-                        .dstOffset(virtualSegmentBuffer.dstOffset())
-                        .size(virtualSegmentBuffer.bufferSize());
 
-//                rem+=virtualSegmentBuffer.bufferSize();
-//                src=virtualSegmentBuffer.id();
-//                dst=virtualSegmentBuffer.bufferId();
-                i++;
-            }
-//            Initializer.LOGGER.info(size+"+"+rem);
-
-            TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.buffer.getId());
-        }
-        this.uploadsed.clear();
-    }
-    public synchronized void setSegmentFree(int k, TerrainRenderType r) {
+    public void setSegmentFree(int k, TerrainRenderType r) {
+        Segment e = null;
         for (int i = 0; i < usedSegments.size(); i++) {
             var a = usedSegments.get(i);
             if (a.subIndex() == k && a.r() == r) {
                 var segment = usedSegments.remove(i);
-                this.freeSegments.add(new Segment(segment.offset(), segment.size()));
+                e = new Segment(segment.offset(), segment.size());
+                extracted(e);
                 this.used -= segment.size();
                 break;
             }
 
         }
+        if(e!=null)
+        {
+            extracted(e);
+        }
 
 
+    }
+
+    private void extracted(Segment e) {
+        for (int i = 0; i < freeSegments.size(); i++) {
+            final Segment segment = freeSegments.get(i);
+            if(isAdjacent(e, segment))
+            {
+                freeSegments.set(i, new Segment(segment.offset, segment.size + e.size));
+                return;
+            }
+        }
+//        freeSegments.add(e);
+    }
+
+    private boolean isAdjacent(Segment e, Segment segment) {
+        return segment.offset + segment.size == e.offset;
     }
 
     public long getId() {
