@@ -1,12 +1,17 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.chunk.build.CompiledSection;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.queue.CommandPool;
 import org.apache.commons.lang3.Validate;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkBufferCopy;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
@@ -25,6 +30,8 @@ public class AreaBuffer {
 
     int size;
     int used;
+    public final ObjectArrayList<ATst> uploadsed = new ObjectArrayList<>();
+
 
     public AreaBuffer(int usage, int size, int elementSize) {
 
@@ -43,18 +50,16 @@ public class AreaBuffer {
         return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized virtualSegment upload(ByteBuffer byteBuffer, TerrainRenderType r, virtualSegment uploadSegment, int index) {
+    public synchronized virtualSegment upload(long byteBuffer, int vertSize, TerrainRenderType r, virtualSegment uploadSegment, int index) {
 
-        int size = byteBuffer.remaining();
-
-        if(size % elementSize != 0)
+        if(vertSize % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
 
 
         final virtualSegment v;
-        if(uploadSegment==null || !this.isAlreadyLoaded(index, size, r))
+        if(uploadSegment==null || !this.isAlreadyLoaded(index, vertSize, r))
         {
-            v = findSegment(size, index, r);
+            v = findSegment(vertSize, index, r);
             usedSegments.add(v);
             this.used += v.size();
         }
@@ -78,7 +83,7 @@ public class AreaBuffer {
         Validate.isTrue(v.offset() < this.buffer.getBufferSize());
         Validate.isTrue(v.size() < this.buffer.getBufferSize());
 
-        AreaUploadManager.INSTANCE.uploadAsync(v, this.buffer.getId(), v.offset(), size, byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync(this.buffer.getId(), v.offset(), vertSize, byteBuffer, uploadSegment);
 
 //        uploadSegment.offset() = segment.offset();
 //        uploadSegment.size = size;
@@ -140,9 +145,13 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-//        AreaUploadManager.INSTANCE.submitUploads();
+//        WorldRenderer.taskDispatcher.uploadAllPendingUploads();
+//        AreaUploadManager.INSTANCE.submitUploadsAsync(this.uploadsed, this.buffer.getId());
+        AreaUploadManager.INSTANCE.submitUploads();
+
+//        uploadSubset(Vulkan.getStagingBuffer(AreaUploadManager.INSTANCE.currentFrame).getId(), AreaUploadManager.INSTANCE.commandBuffers[AreaUploadManager.INSTANCE.currentFrame]);
+        AreaUploadManager.INSTANCE.waitUploads(); //TODO: Check if this Optimisation is overaggressive and causes miss-alignments
         AreaUploadManager.INSTANCE.copy(this.buffer, buffer);
-//        AreaUploadManager.INSTANCE.waitUploads(); //TODO: Check if this Optimisation is overaggressive and causes miss-alignments
 
         this.buffer.freeBuffer();
         this.buffer = buffer;
@@ -156,7 +165,36 @@ public class AreaBuffer {
         freeSegments.add(new Segment(offset + segment.size(), increment - segment.size()));
         return segment;
     }
+    public void uploadSubset(long src, CommandPool.CommandBuffer commandBuffer) {
+        if(this.uploadsed.isEmpty())
+            return;
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            final int size = this.uploadsed.size();
+            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
+            int i = 0;
+//            int rem=0;
+//            long src=0;
+//            long dst=0;
+            for(var copyRegion : copyRegions)
+            {
+//                var a =this.activeRanges.pop();
+                final var virtualSegmentBuffer = this.uploadsed.get(i);
+                copyRegion.srcOffset(virtualSegmentBuffer.offset())
+                        .dstOffset(virtualSegmentBuffer.dstOffset())
+                        .size(virtualSegmentBuffer.bufferSize());
 
+//                rem+=virtualSegmentBuffer.bufferSize();
+//                src=virtualSegmentBuffer.id();
+//                dst=virtualSegmentBuffer.bufferId();
+                i++;
+            }
+//            Initializer.LOGGER.info(size+"+"+rem);
+
+            TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.buffer.getId());
+        }
+        this.uploadsed.clear();
+    }
     public synchronized void setSegmentFree(int k, TerrainRenderType r) {
         for (int i = 0; i < usedSegments.size(); i++) {
             var a = usedSegments.get(i);

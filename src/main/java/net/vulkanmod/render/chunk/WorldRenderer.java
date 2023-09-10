@@ -76,7 +76,7 @@ public class WorldRenderer {
 
     public static final TaskDispatcher taskDispatcher = new TaskDispatcher();
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    public AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
     private double xTransparentOld;

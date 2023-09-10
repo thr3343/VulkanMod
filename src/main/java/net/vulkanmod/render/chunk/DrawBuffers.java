@@ -22,8 +22,8 @@ public class DrawBuffers {
     private static final int INDEX_SIZE = Short.BYTES;
 
     private boolean allocated = false;
-    AreaBuffer vertexBuffer;
-    AreaBuffer indexBuffer;
+    public AreaBuffer vertexBuffer;
+    public AreaBuffer indexBuffer;
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
@@ -37,7 +37,7 @@ public class DrawBuffers {
         int firstIndex = 0;
 
         if(!buffer.indexOnly) {
-            drawParameters.vertexBufferSegment = this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.translucent, drawParameters.vertexBufferSegment, index);
+            drawParameters.vertexBufferSegment = this.vertexBuffer.upload(buffer.getVertexBuffer(), buffer.vertSize, drawParameters.translucent, drawParameters.vertexBufferSegment, index);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.offset() / VERTEX_SIZE;
 
@@ -48,7 +48,7 @@ public class DrawBuffers {
         }
 
         if(!buffer.autoIndices) {
-            drawParameters.indexBufferSegment = this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.translucent, drawParameters.indexBufferSegment, index);
+            drawParameters.indexBufferSegment = this.indexBuffer.upload(buffer.getIndexBuffer(), buffer.indexSize, drawParameters.translucent, drawParameters.indexBufferSegment, index);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.offset() / INDEX_SIZE;
         }
