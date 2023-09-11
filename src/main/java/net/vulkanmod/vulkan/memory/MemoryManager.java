@@ -2,22 +2,21 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import jdk.jfr.StackTrace;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.lwjgl.system.JNI.callPJPV;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryManager {
@@ -96,7 +95,8 @@ public class MemoryManager {
 //        images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+
+    public void createBuffer(int size, int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -104,18 +104,28 @@ public class MemoryManager {
             bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
             bufferInfo.size(size);
             bufferInfo.usage(usage);
-            //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
-            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
-            allocationInfo.requiredFlags(properties);
-
-            int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
+            int result = vkCreateBuffer(device, bufferInfo, null, pBuffer);
             if(result != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create buffer:" + result);
             }
 
+
+            VkMemoryRequirements vkMemoryRequirements = getMemRequirements(pBuffer, stack, device.getCapabilities().vkGetBufferMemoryRequirements);
+            allocateMemHandle(stack, vkMemoryRequirements.size(), findMemoryType(vkMemoryRequirements.memoryTypeBits(), properties), pBufferMemory);
+
+
+
+
+            bindBufferMem(pBuffer, pBufferMemory);
+
+
         }
+    }
+
+    private void bindBufferMem(LongBuffer pBuffer, LongBuffer pBufferMemory) {
+        vkBindBufferMemory(device, pBuffer.get(0), pBufferMemory.get(0), 0);
     }
 
     public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
@@ -124,7 +134,7 @@ public class MemoryManager {
             buffer.setBufferSize(size);
 
             LongBuffer pBuffer = stack.mallocLong(1);
-            PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
+            LongBuffer pAllocation = stack.mallocLong(1);
 
             this.createBuffer(size, usage, properties, pBuffer, pAllocation);
 
@@ -142,7 +152,7 @@ public class MemoryManager {
     }
 
     public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                                                LongBuffer pTextureImage, LongBuffer pTextureImageMemory) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -159,16 +169,43 @@ public class MemoryManager {
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-//            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            imageInfo.pQueueFamilyIndices(stack.ints(0,1));
+            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
-            allocationInfo.requiredFlags(memProperties);
 
-            vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+
+
+            vkCreateImage(device, imageInfo, null, pTextureImage);
+//            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack).requiredFlags(memProperties);
+
+            VkMemoryRequirements vkMemoryRequirements = getMemRequirements(pTextureImage, stack, device.getCapabilities().vkGetImageMemoryRequirements);
+
+            allocateMemHandle(stack, vkMemoryRequirements.size(), findMemoryType(vkMemoryRequirements.memoryTypeBits(), memProperties), pTextureImageMemory);
+            bindImageMem(pTextureImage, pTextureImageMemory);
+
+//            vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
 
         }
+    }
+
+
+    private static VkMemoryRequirements getMemRequirements(LongBuffer pHandle, MemoryStack stack, long vkGetBufferMemoryRequirements) {
+        VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.malloc(stack);
+        callPJPV(device.address(), pHandle.get(0), vkMemoryRequirements.address(), vkGetBufferMemoryRequirements);
+        return vkMemoryRequirements;
+    }
+
+    private static void bindImageMem(LongBuffer pTextureImage, LongBuffer pTextureImageMemory) {
+        vkBindImageMemory(device, pTextureImage.get(0), pTextureImageMemory.get(0), 0);
+    }
+
+    private static void allocateMemHandle(MemoryStack stack, long size_t, int memoryType, LongBuffer pTextureImageMemory) {
+        
+        VkMemoryAllocateInfo vkMemoryAllocateInfo = VkMemoryAllocateInfo.calloc(stack)
+                .sType$Default()
+                .allocationSize(size_t)
+                .memoryTypeIndex(memoryType);
+        
+         vkAllocateMemory(device, vkMemoryAllocateInfo, null, pTextureImageMemory);
     }
 
     public static void addImage(VulkanImage image) {
@@ -180,9 +217,9 @@ public class MemoryManager {
         try(MemoryStack stack = stackPush()) {
             PointerBuffer data = stack.mallocPointer(1);
 
-            vmaMapMemory(allocator, allocation, data);
+            vkMapMemory(device, allocation, 0, bufferSize, 0, data);
             consumer.accept(data);
-            vmaUnmapMemory(allocator, allocation);
+            vkUnmapMemory(device, allocation);
         }
 
     }
@@ -190,19 +227,21 @@ public class MemoryManager {
     public PointerBuffer Map(long allocation) {
         PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
-        vmaMapMemory(allocator, allocation, data);
+        vkMapMemory(device, allocation, 0, VK_WHOLE_SIZE, 0, data);
 
         return data;
     }
 
     public static void freeBuffer(long buffer, long allocation) {
-        vmaDestroyBuffer(allocator, buffer, allocation);
+        vkFreeMemory(device, allocation, null);
+        vkDestroyBuffer(device, buffer, null);
 
         buffers.remove(buffer);
     }
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
-        vmaDestroyBuffer(allocator, bufferInfo.id(), bufferInfo.allocation());
+        vkFreeMemory(device, bufferInfo.allocation(), null);
+        vkDestroyBuffer(device, bufferInfo.id(), null);
 
         if(bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
             deviceMemory -= bufferInfo.bufferSize();
@@ -214,8 +253,8 @@ public class MemoryManager {
     }
 
     public static void freeImage(long image, long allocation) {
-        vmaDestroyImage(allocator, image, allocation);
-
+        vkFreeMemory(device, allocation, null);
+        vkDestroyImage(device, image, null);
         images.remove(image);
     }
 

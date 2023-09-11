@@ -4,6 +4,12 @@ import java.nio.ByteBuffer;
 
 public abstract class MemoryType {
     protected Type type;
+    private final long propertyFlags;
+
+    public MemoryType(Type type, long propertyFlags) {
+        this.type = type;
+        this.propertyFlags = propertyFlags;
+    }
 
     abstract void createBuffer(Buffer buffer, int size);
     abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
@@ -24,7 +30,14 @@ public abstract class MemoryType {
     }
 
     public enum Type {
-        DEVICE_LOCAL,
-        HOST_LOCAL
+        DEVICE_LOCAL(0),
+        HOST_LOCAL(1);
+
+        private final int index;
+
+        Type(int index) {
+
+            this.index = index;
+        }
     }
 }

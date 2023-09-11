@@ -9,7 +9,6 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -102,7 +101,7 @@ public class VulkanImage {
         try(MemoryStack stack = stackPush()) {
 
             LongBuffer pTextureImage = stack.mallocLong(1);
-            PointerBuffer pAllocation = stack.pointers(0L);
+            LongBuffer pAllocation = stack.mallocLong(1);
 
             MemoryManager.getInstance().createImage(width, height, mipLevels,
                     format, VK_IMAGE_TILING_OPTIMAL,
@@ -168,10 +167,10 @@ public class VulkanImage {
 
     public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
+            int imageSize = width * height * formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
-            PointerBuffer pStagingAllocation = stack.pointers(0L);
+            LongBuffer pStagingAllocation = stack.mallocLong(1);
             MemoryManager.getInstance().createBuffer(imageSize,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,

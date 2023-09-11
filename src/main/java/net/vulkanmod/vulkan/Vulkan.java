@@ -13,8 +13,6 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
-import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
@@ -33,8 +31,6 @@ import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
-import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
@@ -142,7 +138,6 @@ public class Vulkan {
         Device.pickPhysicalDevice(instance);
         Device.createLogicalDevice();
 
-        createVma();
         MemoryTypes.createMemoryTypes();
 
         Queue.initQueues();
@@ -209,7 +204,7 @@ public class Vulkan {
             e.printStackTrace();
         }
 
-        vmaDestroyAllocator(allocator);
+//        vmaDestroyAllocator(allocator);
 
         vkDestroyDevice(Device.device, null);
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
@@ -332,28 +327,6 @@ public class Vulkan {
             }
 
             surface = pSurface.get(0);
-        }
-    }
-
-    private static void createVma() {
-        try(MemoryStack stack = stackPush()) {
-
-            VmaVulkanFunctions vulkanFunctions = VmaVulkanFunctions.calloc(stack);
-            vulkanFunctions.set(instance, Device.device);
-
-            VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.calloc(stack);
-            allocatorCreateInfo.physicalDevice(Device.physicalDevice);
-            allocatorCreateInfo.device(Device.device);
-            allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
-            allocatorCreateInfo.instance(instance);
-
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
-
-            if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool");
-            }
-
-            allocator = pAllocator.get(0);
         }
     }
 
