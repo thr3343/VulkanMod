@@ -47,7 +47,7 @@ public class ShaderSPIRVUtils {
             throw new RuntimeException("Failed to create compiler options");
         }
 
-//        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
         shaderc_compile_options_set_generate_debug_info(options);
 

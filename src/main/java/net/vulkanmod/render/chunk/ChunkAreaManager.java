@@ -180,7 +180,8 @@ public class ChunkAreaManager {
 
     public void resetQueues() {
         for(ChunkArea chunkArea : this.chunkAreasArr) {
-            chunkArea.sectionQueue.clear();
+            chunkArea.getDrawBuffers().sSectionQueue.clear();
+            chunkArea.getDrawBuffers().tSectionQueue.clear();
         }
     }
 

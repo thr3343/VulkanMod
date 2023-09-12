@@ -21,7 +21,7 @@ public class ShaderManager {
 
     public static ShaderManager getInstance() { return shaderManager; }
 
-    Pipeline terrainIndirectShader;
+//    Pipeline terrainIndirectShader;
     public Pipeline terrainDirectShader;
 
     public ShaderManager() {
@@ -29,7 +29,7 @@ public class ShaderManager {
     }
 
     private void createBasicPipelines() {
-        this.terrainIndirectShader = createPipeline("terrain");
+//        this.terrainIndirectShader = createPipeline("terrain_direct");
 
         this.terrainDirectShader = createPipeline("terrain_direct");
     }
@@ -43,22 +43,17 @@ public class ShaderManager {
         return pipelineBuilder.createPipeline();
     }
 
-    public Pipeline getTerrainShader(RenderType renderType) {
-        if(Initializer.CONFIG.indirectDraw) {
-            return this.terrainIndirectShader;
-        }
-        else {
-            return this.terrainDirectShader;
-        }
+    public Pipeline getTerrainShader() {
+        return this.terrainDirectShader;
 
     }
 
-    public Pipeline getTerrainIndirectShader(RenderType renderType) {
-        return terrainIndirectShader;
-    }
+//    public Pipeline getTerrainIndirectShader(RenderType renderType) {
+//        return terrainIndirectShader;
+//    }
 
     public void destroyPipelines() {
-        this.terrainIndirectShader.cleanUp();
+//        this.terrainIndirectShader.cleanUp();
         this.terrainDirectShader.cleanUp();
     }
 }

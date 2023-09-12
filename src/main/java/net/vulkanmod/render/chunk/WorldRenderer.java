@@ -8,7 +8,6 @@ import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -306,7 +305,15 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
+            for(TerrainRenderType a : renderSection.getCompiledSection().renderTypes)
+            {
+                var drawParameters = renderSection.getDrawParameters(a);
+                if(drawParameters.indexCount>0)
+                {
+                    (a==TerrainRenderType.TRANSLUCENT ? renderSection.getChunkArea().getDrawBuffers().tSectionQueue : renderSection.getChunkArea().getDrawBuffers().sSectionQueue).add(drawParameters);
+                }
+
+            }
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
@@ -349,7 +356,15 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
+            for(TerrainRenderType a : renderSection.getCompiledSection().renderTypes)
+            {
+                var drawParameters = renderSection.getDrawParameters(a);
+                if(drawParameters.indexCount>0)
+                {
+                    (a==TerrainRenderType.TRANSLUCENT ? renderSection.getChunkArea().getDrawBuffers().tSectionQueue : renderSection.getChunkArea().getDrawBuffers().sSectionQueue).add(drawParameters);
+                }
+
+            }
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
@@ -568,34 +583,31 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean flag = renderType == RenderType.translucent();
-        boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
-        Renderer renderer = Renderer.getInstance();
-        Pipeline pipeline = ShaderManager.getInstance().getTerrainShader(renderType);
-        renderer.bindPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+        final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
+        final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+        final Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
+        Renderer.getInstance().bindPipeline(pipeline);
+        if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+        final long layout = pipeline.getLayout();
+
+        terrainRenderType.setCutoutUniform();
+        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 
         p.push("draw batches");
 
-        ObjectArrayList<RenderType> renderTypes;
-        if(Initializer.CONFIG.uniqueOpaqueLayer) {
-            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
-        } else {
-            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
-        }
 
-        if(renderTypes.contains(renderType)) {
-            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-            while(iterator.hasNext()) {
-                ChunkArea chunkArea = iterator.next();
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
+            for (Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext(); ) {
+                DrawBuffers drawBuffers = iterator.next().getDrawBuffers();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], camX, camY, camZ, isTranslucent, layout);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
+                    drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout);
                 }
             }
         }
@@ -606,11 +618,7 @@ public class WorldRenderer {
         }
         p.pop();
 
-        //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
-        }
+
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
