@@ -193,7 +193,7 @@ public class VRenderSystem {
     }
 
     public static void clearColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
+        ColorUtil.setRGBA_Buffer(clearColor, 0, 0, 0, 1);
     }
 
     public static void clear(int v) {

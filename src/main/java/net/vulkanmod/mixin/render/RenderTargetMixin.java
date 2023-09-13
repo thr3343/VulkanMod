@@ -64,10 +64,10 @@ public class RenderTargetMixin {
      */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
-        RenderSystem.depthMask(false);
-
-        DrawUtil.drawFramebuffer(this.framebuffer);
-
-        RenderSystem.depthMask(true);
+//        RenderSystem.depthMask(false);
+//
+//        DrawUtil.drawFramebuffer(this.framebuffer);
+//
+//        RenderSystem.depthMask(true);
     }
 }

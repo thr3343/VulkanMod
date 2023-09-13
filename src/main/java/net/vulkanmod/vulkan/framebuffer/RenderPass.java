@@ -119,27 +119,18 @@ public class RenderPass {
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
 
-        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
-        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
 
-        VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
+        VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
         renderPassInfo.sType$Default();
         renderPassInfo.renderPass(this.id);
         renderPassInfo.framebuffer(framebufferId);
 
-        VkRect2D renderArea = VkRect2D.calloc(stack);
-        renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
-        renderArea.extent(VkExtent2D.calloc(stack).set(framebuffer.getWidth(), framebuffer.getHeight()));
+        VkRect2D renderArea = VkRect2D.malloc(stack);
+        renderArea.offset().set(0, 0);
+        renderArea.extent().set(framebuffer.getWidth(), framebuffer.getHeight());
         renderPassInfo.renderArea(renderArea);
 
-        VkClearValue.Buffer clearValues;
-        clearValues = VkClearValue.calloc(2, stack);
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
         clearValues.get(0).color().float32(VRenderSystem.clearColor);
         clearValues.get(1).depthStencil().set(1.0f, 0);
 
@@ -164,8 +155,8 @@ public class RenderPass {
 
     public void beginDynamicRendering(VkCommandBuffer commandBuffer, MemoryStack stack) {
         VkRect2D renderArea = VkRect2D.calloc(stack);
-        renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
-        renderArea.extent(VkExtent2D.calloc(stack).set(framebuffer.getWidth(), framebuffer.getHeight()));
+        renderArea.offset().set(0, 0);
+        renderArea.extent().set(framebuffer.getWidth(), framebuffer.getHeight());
 
         VkClearValue.Buffer clearValues;
         clearValues = VkClearValue.calloc(2, stack);
