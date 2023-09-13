@@ -19,7 +19,7 @@ public class CompiledSection {
             return false;
         }
     };
-    public final Set<TerrainRenderType> renderTypes = new ObjectArraySet<>();
+    public final Set<TerrainRenderType> renderTypes = EnumSet.noneOf(TerrainRenderType.class);
     boolean isCompletelyEmpty = true;
     final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
     VisibilitySet visibilitySet = new VisibilitySet();

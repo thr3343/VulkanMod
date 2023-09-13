@@ -776,6 +776,11 @@ public class Pipeline {
             this.samplers = samplers;
         }
 
+        public void compileShaders2(SPIRV vertShaderSPIRV1, SPIRV fragShaderSPIRV1) {
+            this.vertShaderSPIRV = vertShaderSPIRV1;
+            this.fragShaderSPIRV = fragShaderSPIRV1;
+        }
+
         public void compileShaders() {
             this.vertShaderSPIRV = compileShaderFile(this.shaderPath + ".vsh", ShaderKind.VERTEX_SHADER);
             this.fragShaderSPIRV = compileShaderFile(this.shaderPath + ".fsh", ShaderKind.FRAGMENT_SHADER);

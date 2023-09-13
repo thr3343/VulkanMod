@@ -48,7 +48,7 @@ public class AreaUploadManager {
         TransferQueue.getInstance().submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
@@ -56,7 +56,7 @@ public class AreaUploadManager {
 //            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
-        stagingBuffer.copyBuffer((int) bufferSize, src);
+        stagingBuffer.copyBuffer2((int) bufferSize, src);
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
 

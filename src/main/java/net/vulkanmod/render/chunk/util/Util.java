@@ -4,6 +4,7 @@ import net.minecraft.core.Direction;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.libc.LibCString;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -51,6 +52,11 @@ public class Util {
     public static ByteBuffer createCopy(ByteBuffer src) {
         ByteBuffer ret = MemoryUtil.memAlloc(src.remaining());
         MemoryUtil.memCopy(src, ret);
+        return ret;
+    }
+    public static long createCopy(long src, int size) {
+        long ret = MemoryUtil.nmemAlloc(size);
+        LibCString.nmemcpy(ret, src, size);
         return ret;
     }
 }
