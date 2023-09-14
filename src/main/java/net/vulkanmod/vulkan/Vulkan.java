@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -26,7 +24,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
+import static net.vulkanmod.vulkan.queue.Queues.*;
+import static net.vulkanmod.vulkan.queue.Queues.PresentQueue;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -145,7 +144,6 @@ public class Vulkan {
         createVma();
         MemoryTypes.createMemoryTypes();
 
-        Queue.initQueues();
         createCommandPool();
         allocateImmediateCmdBuffer();
 
@@ -194,8 +192,8 @@ public class Vulkan {
         vkDestroyCommandPool(Device.device, commandPool, null);
         vkDestroyFence(Device.device, immediateFence, null);
 
-        GraphicsQueue.INSTANCE.cleanUp();
-        TransferQueue.INSTANCE.cleanUp();
+        GraphicsQueue.cleanUp();
+        TransferQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
@@ -361,11 +359,10 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            Queue.QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(QueueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -403,32 +400,32 @@ public class Vulkan {
         }
     }
 
-    public static VkCommandBuffer beginImmediateCmd() {
-        try (MemoryStack stack = stackPush()) {
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-
-            vkBeginCommandBuffer(immediateCmdBuffer, beginInfo);
-        }
-        return immediateCmdBuffer;
-    }
-
-    public static void endImmediateCmd() {
-        try (MemoryStack stack = stackPush()) {
-            vkEndCommandBuffer(immediateCmdBuffer);
-
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
-
-            vkQueueSubmit(Device.graphicsQueue, submitInfo, immediateFence);
-
-            vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
-            vkResetFences(Device.device, immediateFence);
-            vkResetCommandBuffer(immediateCmdBuffer, 0);
-        }
-
-    }
+//    public static VkCommandBuffer beginImmediateCmd() {
+//        try (MemoryStack stack = stackPush()) {
+//            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
+//            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+//
+//            vkBeginCommandBuffer(immediateCmdBuffer, beginInfo);
+//        }
+//        return immediateCmdBuffer;
+//    }
+//
+//    public static void endImmediateCmd() {
+//        try (MemoryStack stack = stackPush()) {
+//            vkEndCommandBuffer(immediateCmdBuffer);
+//
+//            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+//            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+//            submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
+//
+//            vkQueueSubmit(Device.graphicsQueue, submitInfo, immediateFence);
+//
+//            vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
+//            vkResetFences(Device.device, immediateFence);
+//            vkResetCommandBuffer(immediateCmdBuffer, 0);
+//        }
+//
+//    }
 
     private static PointerBuffer getRequiredExtensions() {
 
@@ -459,11 +456,11 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static VkQueue getPresentQueue() { return Device.presentQueue; }
+    public static long getPresentQueue() { return PresentQueue.Queue; }
 
-    public static VkQueue getGraphicsQueue() { return Device.graphicsQueue; }
+    public static long getGraphicsQueue() { return GraphicsQueue.Queue; }
 
-    public static VkQueue getTransferQueue() { return Device.transferQueue; }
+    public static long getTransferQueue() { return TransferQueue.Queue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 

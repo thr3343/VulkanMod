@@ -1,16 +1,15 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.apache.commons.lang3.Validate;
 
-import java.nio.ByteBuffer;
-
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;
@@ -45,14 +44,14 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
 
-        TransferQueue.getInstance().submitCommands(this.commandBuffers[currentFrame]);
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.getInstance().beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 //            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
@@ -77,7 +76,7 @@ public class AreaUploadManager {
         }
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.getInstance().beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], src.getId(), 0, dst.getId(), 0, src.getBufferSize());
     }

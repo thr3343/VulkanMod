@@ -4,13 +4,17 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
@@ -88,20 +92,26 @@ public class CommandPool {
         }
     }
 
-    public synchronized long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
+    public synchronized long submitCommands(CommandBuffer commandBuffer, long queue) {
 
         try(MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-            vkResetFences(Vulkan.getDevice(), commandBuffer.fence);
+            final VkDevice device = Vulkan.getDevice();
+            vkResetFences(device, commandBuffer.fence);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            long pSubmits = submitInfo.address();
+            long __functionAddress = device.getCapabilities().vkQueueSubmit;
+            if (CHECKS) {
+                if (pSubmits != NULL) { Struct.validate(pSubmits, 1, VkSubmitInfo.SIZEOF, VkSubmitInfo::validate); }
+            }
+            callPPJI(queue, 1, pSubmits, fence, __functionAddress);
             //vkQueueWaitIdle(graphicsQueue);
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
