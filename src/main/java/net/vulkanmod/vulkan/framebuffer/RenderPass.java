@@ -130,11 +130,11 @@ public class RenderPass {
         renderArea.extent().set(framebuffer.getWidth(), framebuffer.getHeight());
         renderPassInfo.renderArea(renderArea);
 
-        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
-        clearValues.get(0).color().float32(VRenderSystem.clearColor);
-        clearValues.get(1).depthStencil().set(1.0f, 0);
-
-        renderPassInfo.pClearValues(clearValues);
+//        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
+//        clearValues.get(0).color().float32(VRenderSystem.clearColor);
+//        clearValues.get(1).depthStencil().set(1.0f, 0);
+//
+//        renderPassInfo.pClearValues(clearValues);
 
         vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

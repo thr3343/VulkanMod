@@ -22,6 +22,8 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
+    private static final int depthFmt = Device.findDepthFormat();
+    private static final int vkImageAspectDepthBit = depthFmt ==VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static VkDevice device = Vulkan.getDevice();
@@ -78,7 +80,7 @@ public class VulkanImage {
         VulkanImage image = new VulkanImage(format, 1, width, height, usage, 0);
 
         image.createImage(1, width, height, format, usage);
-        image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+        image.imageView = createImageView(image.id, format, vkImageAspectDepthBit, 1);
         image.createTextureSampler(blur, clamp, false);
 
         return image;
@@ -421,11 +423,7 @@ public class VulkanImage {
         barrier.subresourceRange().baseArrayLayer(0);
         barrier.subresourceRange().layerCount(1);
 
-        if(format == VK_FORMAT_D32_SFLOAT) {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-        } else {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        }
+        barrier.subresourceRange().aspectMask(format == depthFmt ? vkImageAspectDepthBit : VK_IMAGE_ASPECT_COLOR_BIT);
 
         int sourceStage;
         int destinationStage;
