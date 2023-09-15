@@ -1,11 +1,9 @@
 package net.vulkanmod.render.chunk;
 
-import net.vulkanmod.render.VBOUtil;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.render.virtualSegmentBuffer;
-import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -91,7 +89,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        Renderer.getDrawer().getQuadsIndexBuffer().checkCapacity(buffer.indexCount() * 2 / 3);
+//        Renderer.getDrawer().getQuadsIndexBuffer().checkCapacity(buffer.indexCount() * 2 / 3);
 
         buffer.release();
 
@@ -230,6 +228,8 @@ public class DrawBuffers {
 
             final long npointer = stack.npointer(SVertexBuffer.getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
+            VUtil.UNSAFE.putInt(nmalloc, 0);
+            callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
             if(isTranslucent) drawTranslucent(address1, npointer, nmalloc);
             else drawSolid(address1, npointer, nmalloc);
         }
@@ -239,17 +239,13 @@ public class DrawBuffers {
     private void drawTranslucent(long address, long pVertexBuffer, long pointerAddress) {
         for (Iterator<DrawParameters> iterator = this.tSectionQueue.iterator(true); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
-            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset*20);
-            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
-            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, vkCmdDrawIndexed);
         }
-    }    
+    }
     private void drawSolid(long address, long pVertexBuffer, long pointerAddress) {
         for (Iterator<DrawParameters> iterator = this.sSectionQueue.iterator(); iterator.hasNext(); ) {
             DrawParameters drawParameters = iterator.next();
-            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset * 20);
-            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
-            callPV(address, drawParameters.indexCount, 1, 0, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, vkCmdDrawIndexed);
         }
     }
 
