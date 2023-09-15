@@ -6,11 +6,11 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import java.util.*;
 
 public enum TerrainRenderType {
-    SOLID(RenderType.solid(), 0.0f),
+//    SOLID(RenderType.solid(), 0.0f),
     CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
-    CUTOUT(RenderType.cutout(), 0.1f),
-    TRANSLUCENT(RenderType.translucent(), 0.0f),
-    TRIPWIRE(RenderType.tripwire(), 0.1f);
+//    CUTOUT(RenderType.cutout(), 0.1f),
+    TRANSLUCENT(RenderType.translucent(), 0.0f);
+//    TRIPWIRE(RenderType.tripwire(), 0.1f);
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 //    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT, CUTOUT_MIPPED, TRANSLUCENT);
@@ -27,11 +27,8 @@ public enum TerrainRenderType {
     public static TerrainRenderType get(String renderType) {
         return switch (renderType)
         {
-            case "solid" -> SOLID;
-            case "cutout_mipped" -> CUTOUT;
-            case "cutout" -> CUTOUT_MIPPED;
-            case "translucent" -> TRANSLUCENT;
-            case "tripwire" -> TRIPWIRE;
+            case "solid", "cutout_mipped", "cutout" -> CUTOUT_MIPPED;
+            case "translucent", "tripwire" -> TRANSLUCENT;
             default -> throw new IllegalStateException("Unexpected value: " + renderType);
         };
     }

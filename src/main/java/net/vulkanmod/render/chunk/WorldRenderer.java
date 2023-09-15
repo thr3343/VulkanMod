@@ -541,13 +541,18 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        final TerrainRenderType terrainRenderType = get(renderType.name);
+        final TerrainRenderType terrainRenderType=switch (renderType.name)
+        {
+            case "cutout_mipped" -> CUTOUT_MIPPED;
+            case "translucent" -> TRANSLUCENT;
+            default -> null;
+        };
+        if(!COMPACT_RENDER_TYPES.contains(terrainRenderType)) return;
 
 
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        if(!COMPACT_RENDER_TYPES.contains(terrainRenderType)) return;
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         if(isTranslucent) this.sortTranslucentSections(camX, camY, camZ);
 
