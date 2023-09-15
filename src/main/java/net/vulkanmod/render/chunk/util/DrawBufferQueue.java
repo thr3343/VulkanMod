@@ -19,13 +19,13 @@ public class DrawBufferQueue {
     }
 
     public void add(DrawBuffers chunkArea) {
-        if(chunkArea.index >= this.size)
+        if(chunkArea.areaIndex >= this.size)
             throw new IndexOutOfBoundsException();
 
-        int i = chunkArea.index >> 5;
-        if((this.set[i] & (1 << (chunkArea.index & 31))) == 0) {
+        int i = chunkArea.areaIndex >> 5;
+        if((this.set[i] & (1 << (chunkArea.areaIndex & 31))) == 0) {
             queue.add(chunkArea);
-            this.set[i] |= (1 << (chunkArea.index & 31));
+            this.set[i] |= (1 << (chunkArea.areaIndex & 31));
         }
     }
 

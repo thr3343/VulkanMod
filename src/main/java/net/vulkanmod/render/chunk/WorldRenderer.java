@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
+import net.vulkanmod.render.VBOUtil;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.util.DrawBufferQueue;
@@ -34,12 +35,10 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import org.joml.FrustumIntersection;
@@ -89,7 +88,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+//    IndirectBuffer[] indirectBuffers;
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -102,22 +101,22 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Vulkan.getSwapChain().getFramesNum())
-                allocateIndirectBuffers();
-        });
+//        Renderer.getInstance().addOnResizeCallback(() -> {
+//            if(this.indirectBuffers.length != Vulkan.getSwapChain().getFramesNum())
+//                allocateIndirectBuffers();
+//        });
     }
 
     private void allocateIndirectBuffers() {
-        if(this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
-
-        this.indirectBuffers = new IndirectBuffer[Vulkan.getSwapChain().getFramesNum()];
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
-        }
+//        if(this.indirectBuffers != null)
+//            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+//
+//        this.indirectBuffers = new IndirectBuffer[Vulkan.getSwapChain().getFramesNum()];
+//
+//        for(int i = 0; i < this.indirectBuffers.length; ++i) {
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+//        }
 
 //        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
     }
@@ -235,7 +234,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+//        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
@@ -557,30 +556,24 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
+        final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+        final Pipeline pipeline = isTranslucent?  ShaderManager.shaderManager.terrainDirectShader2: ShaderManager.shaderManager.terrainDirectShader;
+        Renderer.getInstance().bindPipeline(pipeline);
+        pipeline.bindDescriptorSets(commandBuffer, Renderer.getCurrentFrame());
 
+        vkCmdBindIndexBuffer(commandBuffer, isTranslucent ? VBOUtil.TvirtualBufferIdx.bufferPointerSuperSet : Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
+        //            terrainRenderType.setCutoutUniform();
 
 
         p.push("draw batches");
 
 
-        final int currentFrame = Renderer.getCurrentFrame();
+
+        final long layout = pipeline.getLayout();
+        final long address = commandBuffer.address();
         if(COMPACT_RENDER_TYPES.contains(terrainRenderType)) {
-
-            final Pipeline pipeline = isTranslucent?  ShaderManager.shaderManager.terrainDirectShader2: ShaderManager.shaderManager.terrainDirectShader;
-
-            final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-            Renderer.getInstance().bindPipeline(pipeline);
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            final long layout = pipeline.getLayout();
-
-//            terrainRenderType.setCutoutUniform();
-            pipeline.bindDescriptorSets(commandBuffer, currentFrame);
             for (Iterator<DrawBuffers> iterator = this.drawBufferQueue.iterator(isTranslucent); iterator.hasNext(); ) {
-                final DrawBuffers next = iterator.next();
-                if(isTranslucent) {
-                    vkCmdBindIndexBuffer(commandBuffer, next.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-                }
-                next.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, commandBuffer.address());
+                iterator.next().buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address);
             }
         }
 

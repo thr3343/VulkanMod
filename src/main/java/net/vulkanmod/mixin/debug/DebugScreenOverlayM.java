@@ -12,14 +12,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.VBOUtil;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -34,6 +33,9 @@ import static net.vulkanmod.Initializer.getVersion;
 
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugScreenOverlayM {
+
+    @Unique
+    private static final long maxVRAM = Device.memoryProperties.memoryHeaps(0).size();
 
     @Shadow @Final private Minecraft minecraft;
 
@@ -63,6 +65,10 @@ public abstract class DebugScreenOverlayM {
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
         strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
+        strings.add("UsedVRAM: "  + (VBOUtil.TvirtualBufferIdx.usedBytes>>20)+ "MB");
+        strings.add("ReservedVRAM:" + (VBOUtil.TvirtualBufferIdx.size_t>>20)+ "MB");
+        strings.add("TotalVRAM: " + (maxVRAM >>20)+"MB");
+
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
