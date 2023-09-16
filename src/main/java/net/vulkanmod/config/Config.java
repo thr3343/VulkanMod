@@ -26,6 +26,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
+    public boolean vertexFetchFix = false;
 
     public static Config load(Path path) {
         Config config;

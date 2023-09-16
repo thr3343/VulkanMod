@@ -209,6 +209,10 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
+                new SwitchOption("Vertex fetch Fix",
+                        value -> config.vertexFetchFix = value,
+                        () -> config.vertexFetchFix)
+                        .setTooltip(Component.nullToEmpty("")),
         };
 
     }

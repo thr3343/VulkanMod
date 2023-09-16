@@ -35,14 +35,13 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
@@ -51,8 +50,9 @@ import java.util.*;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 //import static net.vulkanmod.render.vertex.TerrainRenderType.SOLID;
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
-import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
-import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
+import static org.lwjgl.system.JNI.callPJPV;
+import static org.lwjgl.system.MemoryUtil.memAddress0;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -572,13 +572,13 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-
+        final boolean noBindless = Initializer.CONFIG.vertexFetchFix;
 
         final long layout = pipeline.getLayout();
         final long address = commandBuffer.address();
         if(COMPACT_RENDER_TYPES.contains(terrainRenderType)) {
             for (Iterator<DrawBuffers> iterator = this.drawBufferQueue.iterator(isTranslucent); iterator.hasNext(); ) {
-                iterator.next().buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address);
+                iterator.next().buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, noBindless);
             }
         }
 

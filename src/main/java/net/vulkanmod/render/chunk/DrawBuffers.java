@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import net.vulkanmod.render.VBOUtil;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -219,7 +218,7 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1) {
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1, boolean noBindless) {
 
 
 
@@ -230,27 +229,30 @@ public class DrawBuffers {
 
             final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
+            VUtil.UNSAFE.putLong(nmalloc, 0);
+            if (!noBindless) {
+                callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
+            }
 
-            if(isTranslucent) drawTranslucent(address1, npointer, nmalloc);
-            else drawSolid(address1, npointer, nmalloc);
+            if (noBindless) drawIndexed(isTranslucent, address1, npointer, nmalloc);
+            else drawIndexedBindless(isTranslucent, address1);
+
         }
 
     }
 
-    private void drawTranslucent(long address, long pVertexBuffer, long pointerAddress) {
-        for (Iterator<DrawParameters> iterator = this.tSectionQueue.iterator(true); iterator.hasNext(); ) {
-            final DrawParameters drawParameters = iterator.next();
-            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset * 20);
-            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
-            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
-        }
-    }
-    private void drawSolid(long address, long pVertexBuffer, long pointerAddress) {
-        for (Iterator<DrawParameters> iterator = this.sSectionQueue.iterator(); iterator.hasNext(); ) {
+    private void drawIndexedBindless(boolean isTranslucent, long address1) {
+        for (Iterator<DrawParameters> iterator = (isTranslucent ? this.tSectionQueue : sSectionQueue).iterator(isTranslucent); iterator.hasNext(); ) {
             DrawParameters drawParameters = iterator.next();
-            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset * 20);
-            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
-            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
+            callPV(address1, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, vkCmdDrawIndexed);
+        }
+    }
+    private void drawIndexed(boolean isTranslucent, long address1, long npointer, long nmalloc) {
+        for (Iterator<DrawParameters> iterator = (isTranslucent ? this.tSectionQueue : sSectionQueue).iterator(isTranslucent); iterator.hasNext(); ) {
+            DrawParameters drawParameters = iterator.next();
+            VUtil.UNSAFE.putInt(nmalloc, drawParameters.vertexOffset * 20);
+            callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
+            callPV(address1, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
         }
     }
 
