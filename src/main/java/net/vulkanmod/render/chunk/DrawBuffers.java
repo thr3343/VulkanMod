@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.render.VBOUtil;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -41,7 +42,7 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     public AreaBuffer SVertexBuffer;
-//    public AreaBuffer TVertexBuffer;
+    public AreaBuffer TVertexBuffer;
 //    public AreaBuffer indexBuffer;
 
     public DrawBuffers(int index, Vector3i origin) {
@@ -52,6 +53,7 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.SVertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 4194304, VERTEX_SIZE);
+        this.TVertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 1048576, VERTEX_SIZE);
 
         this.allocated = true;
     }
@@ -66,8 +68,8 @@ public class DrawBuffers {
 //        drawParameters.yOffset= yOffset;
 //        drawParameters.zOffset= zOffset1;
         if(!buffer.indexOnly()) {
-            this.SVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
-//           else this.TVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
+           if(renderType!=TerrainRenderType.TRANSLUCENT) this.SVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
+           else this.TVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
            //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -226,10 +228,9 @@ public class DrawBuffers {
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
             callPJPV(address1, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, memAddress0(pValues), functionAddress);
 
-            final long npointer = stack.npointer(SVertexBuffer.getId());
+            final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
-            VUtil.UNSAFE.putInt(nmalloc, 0);
-            callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
+
             if(isTranslucent) drawTranslucent(address1, npointer, nmalloc);
             else drawSolid(address1, npointer, nmalloc);
         }
@@ -239,13 +240,17 @@ public class DrawBuffers {
     private void drawTranslucent(long address, long pVertexBuffer, long pointerAddress) {
         for (Iterator<DrawParameters> iterator = this.tSectionQueue.iterator(true); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
-            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, vkCmdDrawIndexed);
+            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset * 20);
+            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
         }
     }
     private void drawSolid(long address, long pVertexBuffer, long pointerAddress) {
         for (Iterator<DrawParameters> iterator = this.sSectionQueue.iterator(); iterator.hasNext(); ) {
             DrawParameters drawParameters = iterator.next();
-            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, vkCmdDrawIndexed);
+            VUtil.UNSAFE.putInt(pointerAddress, drawParameters.vertexOffset * 20);
+            callPPPV(address, 0, 1, pVertexBuffer, pointerAddress, vkCmdBindVertexBuffers);
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, vkCmdDrawIndexed);
         }
     }
 
@@ -293,7 +298,12 @@ public class DrawBuffers {
             int segmentOffset = this.vertexBufferSegment.getOffset();
             if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers.SVertexBuffer.setSegmentFree(this.vertexBufferSegment);
+              if(indexBufferSegment==null)  chunkArea.drawBuffers.SVertexBuffer.setSegmentFree(this.vertexBufferSegment);
+              else
+              {
+                  chunkArea.drawBuffers.TVertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                  TvirtualBufferIdx.addFreeableRange(indexBufferSegment);
+              }
             }
         }
     }
