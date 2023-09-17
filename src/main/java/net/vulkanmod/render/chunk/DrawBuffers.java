@@ -129,9 +129,7 @@ public class DrawBuffers {
 
 
 
-                if (drawParameters.indexCount == 0) {
-                    continue;
-                }
+
 
             //TODO
             if(!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
@@ -163,7 +161,7 @@ public class DrawBuffers {
             indirectBuffer.recordCopyCmd(byteBuffer);
 
 
-            LongBuffer pVertexBuffer = stack.longs(SVertexBuffer.getId());
+            LongBuffer pVertexBuffer = stack.longs((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             LongBuffer pOffset = stack.longs(0);
             vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
             float a = (float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX);
