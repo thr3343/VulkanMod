@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -47,6 +48,12 @@ public class SwapChain extends Framebuffer {
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
     private VkExtent2D extent2D;
+    // A matrix that describes the transformations that should be applied
+    // to the output of the game.
+    private Matrix4f pretransformMatrix = new Matrix4f();
+    // The pretransform flags that were given to the swapchain,
+    // masked (see "setupPreRotation(VkExtent2D, VkSurfaceCapabilitiesKHR)")
+    private int pretransformFlags;
     public boolean isBGRAformat;
     private boolean vsync = false;
 
@@ -88,6 +95,7 @@ public class SwapChain extends Framebuffer {
             VkSurfaceFormatKHR surfaceFormat = getFormat(surfaceProperties.formats);
             int presentMode = getPresentMode(surfaceProperties.presentModes);
             VkExtent2D extent = getExtent(surfaceProperties.capabilities);
+            setupPreRotation(extent, surfaceProperties.capabilities);
 
             if(extent.width() == 0 && extent.height() == 0) {
                 if(swapChain != VK_NULL_HANDLE) {
@@ -329,6 +337,14 @@ public class SwapChain extends Framebuffer {
         return extent2D;
     }
 
+    public Matrix4f getPretransformMatrix(){
+        return pretransformMatrix;
+    }
+
+    public int getPretransformFlags() {
+        return pretransformFlags;
+    }
+
     public VulkanImage getColorAttachment() {
         return this.swapChainImages.get(Renderer.getCurrentImage());
     }
@@ -407,6 +423,38 @@ public class SwapChain extends Framebuffer {
                 }
             }
             return VK_PRESENT_MODE_FIFO_KHR; //If None of the request modes exist/are supported by Driver
+        }
+    }
+    private void setupPreRotation(VkExtent2D extent, VkSurfaceCapabilitiesKHR surfaceCapabilities) {
+        // Mask off anything else that does not interest us in the transform
+        pretransformFlags = surfaceCapabilities.currentTransform() &
+                (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR |
+                VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR |
+                VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR);
+        int rotateDegrees = 0;
+        boolean swapXY = false;
+        switch (pretransformFlags) {
+            case VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR -> {
+                rotateDegrees = 90;
+                swapXY = true;
+            }
+            case VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR -> {
+                rotateDegrees = 270;
+                swapXY = true;
+            }
+            case VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR -> rotateDegrees = 180;
+        }
+        pretransformMatrix = pretransformMatrix.identity();
+        if(rotateDegrees != 0) {
+            pretransformMatrix.rotate((float) Math.toRadians(rotateDegrees), 0, 0, 1);
+            pretransformMatrix.invert();
+        }
+        if(swapXY) {
+            int originalWidth = extent.width();
+            int originalHeight = extent.height();
+            extent.width(originalHeight);
+            extent.height(originalWidth);
+
         }
     }
 
