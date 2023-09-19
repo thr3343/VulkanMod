@@ -7,6 +7,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -34,8 +35,9 @@ public class SwapChain extends Framebuffer {
     }
 
     private RenderPass renderPass;
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
-
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
     private VkExtent2D extent2D;
@@ -295,7 +297,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)

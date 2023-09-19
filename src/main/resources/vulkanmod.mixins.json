@@ -8,6 +8,7 @@
     "chunk.CubicSamplerM"
   ],
   "client": [
+    "InputConstantsM",
     "WindowMixin",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
