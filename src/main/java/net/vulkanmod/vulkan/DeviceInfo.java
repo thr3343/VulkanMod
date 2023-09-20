@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan;
 
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -62,7 +61,7 @@ public class DeviceInfo {
         this.vendorIdString = decodeVendor(this.vendorId);
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+        this.vkVersion = decDefVersion(Vulkan.getVkVer());
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -121,20 +120,6 @@ public class DeviceInfo {
 
     private static String decodeNvidia(int v) {
         return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + "." + (v & 0xff);
-    }
-
-    static int getVkVer() {
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-            var a = stack.mallocInt(1);
-            vkEnumerateInstanceVersion(a);
-            int vkVer1 = a.get(0);
-            if(VK_VERSION_MINOR(vkVer1)<2)
-            {
-                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ decDefVersion(vkVer1));
-            }
-            return vkVer1;
-        }
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {

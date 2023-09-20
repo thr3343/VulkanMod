@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.Vulkan.vkVer;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -18,7 +19,6 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Device {
 
@@ -171,7 +171,7 @@ public class Device {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
         }
     }

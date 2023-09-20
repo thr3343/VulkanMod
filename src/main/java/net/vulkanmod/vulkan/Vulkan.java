@@ -8,7 +8,6 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
@@ -38,7 +37,7 @@ import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -46,6 +45,8 @@ public class Vulkan {
 //    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
 //    public static final boolean DYNAMIC_RENDERING = true;
+
+    public static final int vkVer = getVkVer();
     public static final boolean DYNAMIC_RENDERING = false;
 
     public static final Set<String> VALIDATION_LAYERS;
@@ -238,7 +239,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_2);
+            appInfo.apiVersion(vkVer);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack);
 
@@ -479,5 +480,19 @@ public class Vulkan {
     public static StagingBuffer getStagingBuffer(int i) { return stagingBuffers[i]; }
 
     public static DeviceInfo getDeviceInfo() { return Device.deviceInfo; }
+
+    static int getVkVer() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            int vkVer1 = a.get(0);
+            if(VK_VERSION_MINOR(vkVer1)<1)
+            {
+                throw new RuntimeException("Vulkan 1.1 not supported!: "+"Only Has: "+ DeviceInfo.decDefVersion(vkVer1));
+            }
+            return vkVer1;
+        }
+    }
 }
 
