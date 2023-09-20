@@ -47,7 +47,7 @@ public class AreaUploadManager {
         var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
         VBOUtil.TvirtualBufferIdx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
 
-        if(this.recordedUploads[this.currentFrame].isEmpty())
+        if(this.commandBuffers[currentFrame]==null)
             return;
 
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
