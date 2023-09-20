@@ -78,7 +78,8 @@ public class VideoResolution {
                 return plat;
             }
         }
-        throw new RuntimeException("No Supported Platforms Present!");
+        LOGGER.warn("Couldn't detect any platforms!: (Possibly using Android)");
+        return GLFW_ANY_PLATFORM;
     }
 
     private static String getStringFromPlat(int plat) {
@@ -87,7 +88,7 @@ public class VideoResolution {
             case GLFW_PLATFORM_WIN32 -> "WIN32";
             case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
             case GLFW_PLATFORM_X11 -> "X11";
-            default -> throw new IllegalStateException("Unexpected value: " + plat);
+            default -> "Unknown Platform!: Either Android or an unsupported Platform!";
         };
     }
 
