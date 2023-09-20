@@ -212,7 +212,10 @@ public class Options {
                 new SwitchOption("Vertex fetch Fix",
                         value -> config.vertexFetchFix = value,
                         () -> config.vertexFetchFix)
-                        .setTooltip(Component.nullToEmpty("")),
+                        .setTooltip(Component.nullToEmpty("""
+                        Only required to fix a performance regression with specific GPUs sensitive to Random Read Access latency
+                        (e.g. Nvidia GTX 1000 Pascal series or older)
+                        All other GPUs and hardware will use increased CPU and exhibit performance regressions when this is enabled""")),
         };
 
     }
