@@ -345,6 +345,7 @@ public class Vulkan {
             allocatorCreateInfo.device(Device.device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(vkVer);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
