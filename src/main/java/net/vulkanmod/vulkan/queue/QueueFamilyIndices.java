@@ -14,7 +14,7 @@ public class QueueFamilyIndices {
 
     // We use Integer to use null as the empty value
     public static int graphicsFamily, presentFamily, transferFamily, computeFamily = -1;
-    public static boolean hasTransferQueue;
+    public static boolean hasTransferQueue = false;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
@@ -40,10 +40,11 @@ public class QueueFamilyIndices {
                     if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         presentFamily = i;
                     }
-                } else if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
+                        && (queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                     computeFamily = i;
-                } else if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                    hasTransferQueue=true;
+                } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
+                        && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
                     transferFamily = i;
                 }
 
