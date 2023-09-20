@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.system.MemoryStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,8 @@ public class VideoResolution {
             GLFW_PLATFORM_WIN32,
             GLFW_PLATFORM_WAYLAND,
             GLFW_PLATFORM_X11};
+
+    private static final boolean canUsePlats = getGLFWVersionStats();
 
     private static final int activePlat = getSupportedPlat();
 
@@ -69,8 +72,24 @@ public class VideoResolution {
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
 
-    private static int getSupportedPlat() {
 
+    private static boolean getGLFWVersionStats() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var min = stack.mallocInt(1);
+            var maj = stack.mallocInt(1);
+            var ptc = stack.mallocInt(1);
+            GLFW.glfwGetVersion(maj, min, ptc);
+            LOGGER.info("GLFW VERSION: "+maj.get(0)+"."+min.get(0)+"."+ptc.get(0));
+            return min.get(0)>=4;
+        }
+
+    }
+
+    private static int getSupportedPlat() {
+        if(!canUsePlats) {
+            return GLFW_ANY_PLATFORM;
+        }
         for (int plat : plats) {
             if(GLFW.glfwPlatformSupported(plat))
             {
