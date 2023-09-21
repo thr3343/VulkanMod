@@ -64,7 +64,7 @@ public class Vulkan {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
             .collect(toSet())
             : Stream.of(
-                    VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+                    VK_KHR_SWAPCHAIN_EXTENSION_NAME, KHRImagelessFramebuffer.VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {

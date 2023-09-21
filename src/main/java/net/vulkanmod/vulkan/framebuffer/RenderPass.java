@@ -60,8 +60,8 @@ public class RenderPass {
                 VkAttachmentDescription colorAttachment = attachments.get(i);
                 colorAttachment.format(colorAttachmentInfo.format);
                 colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                colorAttachment.loadOp(colorAttachmentInfo.loadOp);
-                colorAttachment.storeOp(colorAttachmentInfo.storeOp);
+                colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+                colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
 
@@ -84,8 +84,8 @@ public class RenderPass {
                 VkAttachmentDescription depthAttachment = attachments.get(i);
                 depthAttachment.format(depthAttachmentInfo.format);
                 depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                depthAttachment.loadOp(depthAttachmentInfo.loadOp);
-                depthAttachment.storeOp(depthAttachmentInfo.storeOp);
+                depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+                depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 depthAttachment.initialLayout(depthAttachmentInfo.initialLayout);
@@ -117,7 +117,12 @@ public class RenderPass {
         }
     }
 
-    public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
+    public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack, long colorImageView, long depthImageView) {
+
+
+        VkRenderPassAttachmentBeginInfoKHR vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfoKHR.calloc(stack)
+                .sType$Default()
+                .pAttachments(stack.longs(colorImageView, depthImageView));
 
 //        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
 //                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
@@ -130,16 +135,17 @@ public class RenderPass {
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
         renderPassInfo.sType$Default();
+        renderPassInfo.pNext(vkRenderPassAttachmentBeginInfo);
         renderPassInfo.renderPass(this.id);
         renderPassInfo.framebuffer(framebufferId);
 
         VkRect2D renderArea = VkRect2D.calloc(stack);
-        renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
-        renderArea.extent(VkExtent2D.calloc(stack).set(framebuffer.getWidth(), framebuffer.getHeight()));
+        renderArea.offset().set(0, 0);
+        renderArea.extent().set(framebuffer.getWidth(), framebuffer.getHeight());
         renderPassInfo.renderArea(renderArea);
 
-        VkClearValue.Buffer clearValues;
-        clearValues = VkClearValue.calloc(2, stack);
+
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
         clearValues.get(0).color().float32(VRenderSystem.clearColor);
         clearValues.get(1).depthStencil().set(1.0f, 0);
 
