@@ -61,11 +61,8 @@ public class Vulkan {
     }
 
     static final Set<String> REQUIRED_EXTENSION = DYNAMIC_RENDERING ? Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
-            .collect(toSet())
-            : Stream.of(
-                    VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-            .collect(toSet());
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME).collect(toSet())
+            : Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME).collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
 

@@ -45,7 +45,7 @@ public class Framebuffer {
 
         this.depthFormat = SwapChain.getDefaultDepthFormat();
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 false, false);
     }
 
@@ -71,13 +71,13 @@ public class Framebuffer {
     public void createImages() {
         if(this.hasColorAttachment) {
             this.colorAttachment = VulkanImage.createTextureImage(format, 1, width, height,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     0, linearFiltering, true);
         }
 
         if(this.hasDepthAttachment) {
             this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                     linearFiltering, true);
 
             this.attachmentCount++;
@@ -127,7 +127,7 @@ public class Framebuffer {
     public void beginRenderPass(VkCommandBuffer commandBuffer, RenderPass renderPass, MemoryStack stack) {
         if(!DYNAMIC_RENDERING) {
             long framebufferId = framebufferIds.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
-            renderPass.beginRenderPass(commandBuffer, framebufferId, stack);
+            renderPass.beginRenderPass(commandBuffer, framebufferId, stack, colorAttachment.getImageView(), depthAttachment.getImageView());
         }
         else
             renderPass.beginDynamicRendering(commandBuffer, stack);
