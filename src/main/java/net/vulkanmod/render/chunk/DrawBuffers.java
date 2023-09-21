@@ -216,7 +216,7 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1) {
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1, boolean noBindless) {
 
 
 
@@ -228,9 +228,12 @@ public class DrawBuffers {
             final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
             MemoryUtil.memPutAddress(nmalloc, 0);
-            callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
+            if (!noBindless) {
+                callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
+            }
 
-            drawIndexedBindless(isTranslucent, address1);
+            if (noBindless) drawIndexed(isTranslucent, address1, npointer, nmalloc);
+            else drawIndexedBindless(isTranslucent, address1);
 
         }
 
