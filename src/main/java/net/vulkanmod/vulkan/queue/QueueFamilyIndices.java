@@ -14,7 +14,7 @@ public class QueueFamilyIndices {
 
     // We use Integer to use null as the empty value
     public static int graphicsFamily, presentFamily, transferFamily, computeFamily = -1;
-    public static boolean hasTransferQueue = false;
+    public static boolean hasTransferQueue;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
@@ -60,7 +60,6 @@ public class QueueFamilyIndices {
             }
 
             if (transferFamily == -1) {
-                hasTransferQueue=false;
                 int fallback = -1;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
@@ -102,7 +101,7 @@ public class QueueFamilyIndices {
                 throw new RuntimeException("Unable to find queue family with present support.");
             if (computeFamily == -1)
                 throw new RuntimeException("Unable to find queue family with compute support.");
-
+            hasTransferQueue=graphicsFamily!=transferFamily;
             System.out.println("-==Queue Family Configuration==-");
             System.out.println("    graphicsFamily -> "+graphicsFamily);
             System.out.println("    transferFamily -> "+transferFamily);

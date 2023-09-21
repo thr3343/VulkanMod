@@ -140,12 +140,15 @@ public class Device {
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
+            VkPhysicalDeviceImagelessFramebufferFeaturesKHR imagelessFramebufferFeaturesKHR = VkPhysicalDeviceImagelessFramebufferFeaturesKHR.calloc(stack)
+                    .sType$Default()
+                    .imagelessFramebuffer(true);
+//            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
+//            dynamicRenderingFeaturesKHR.sType$Default();
+//            dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
             createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            deviceVulkan11Features.pNext(imagelessFramebufferFeaturesKHR.address());
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);

@@ -61,8 +61,8 @@ public class RenderPass {
                 VkAttachmentDescription colorAttachment = attachments.get(i);
                 colorAttachment.format(colorAttachmentInfo.format);
                 colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                colorAttachment.loadOp(colorAttachmentInfo.loadOp);
-                colorAttachment.storeOp(colorAttachmentInfo.storeOp);
+                colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+                colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
 
@@ -85,8 +85,8 @@ public class RenderPass {
                 VkAttachmentDescription depthAttachment = attachments.get(i);
                 depthAttachment.format(depthAttachmentInfo.format);
                 depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                depthAttachment.loadOp(depthAttachmentInfo.loadOp);
-                depthAttachment.storeOp(depthAttachmentInfo.storeOp);
+                depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+                depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 depthAttachment.initialLayout(depthAttachmentInfo.initialLayout);
@@ -118,11 +118,17 @@ public class RenderPass {
         }
     }
 
-    public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
+    public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack, long colorImageView, long depthImageView) {
+
+
+        VkRenderPassAttachmentBeginInfoKHR vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfoKHR.calloc(stack)
+                .sType$Default()
+                .pAttachments(stack.longs(colorImageView, depthImageView));
 
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
         renderPassInfo.sType$Default();
+        renderPassInfo.pNext(vkRenderPassAttachmentBeginInfo);
         renderPassInfo.renderPass(this.id);
         renderPassInfo.framebuffer(framebufferId);
 
@@ -131,11 +137,11 @@ public class RenderPass {
         renderArea.extent().set(framebuffer.getWidth(), framebuffer.getHeight());
         renderPassInfo.renderArea(renderArea);
 
-//        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
-//        clearValues.get(0).color().float32(VRenderSystem.clearColor);
-//        clearValues.get(1).depthStencil().set(1.0f, 0);
-//
-//        renderPassInfo.pClearValues(clearValues);
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
+        clearValues.get(0).color().float32(VRenderSystem.clearColor);
+        clearValues.get(1).depthStencil().set(1.0f, 0);
+
+        renderPassInfo.pClearValues(clearValues);
 
         vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
