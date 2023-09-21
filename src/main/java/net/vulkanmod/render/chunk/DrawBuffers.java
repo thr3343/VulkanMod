@@ -119,7 +119,7 @@ public class DrawBuffers {
         int drawCount = 0;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ByteBuffer byteBuffer = stack.calloc(20 * sSectionQueue.size());
+            ByteBuffer byteBuffer = stack.calloc(20 * (isTranslucent ? this.tSectionQueue : this.sSectionQueue).size());
             long bufferPtr = memAddress0(byteBuffer);
 
 
@@ -141,7 +141,7 @@ public class DrawBuffers {
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
                 MemoryUtil.memPutInt(ptr + 4, 1);
-                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
+                MemoryUtil.memPutInt(ptr + 8, isTranslucent ? drawParameters.firstIndex : 0);
     //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
                 MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
     //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
@@ -216,7 +216,7 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1, boolean noBindless) {
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address1) {
 
 
 
@@ -228,12 +228,9 @@ public class DrawBuffers {
             final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
             MemoryUtil.memPutAddress(nmalloc, 0);
-            if (!noBindless) {
-                callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
-            }
+            callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
 
-            if (noBindless) drawIndexed(isTranslucent, address1, npointer, nmalloc);
-            else drawIndexedBindless(isTranslucent, address1);
+            drawIndexedBindless(isTranslucent, address1);
 
         }
 

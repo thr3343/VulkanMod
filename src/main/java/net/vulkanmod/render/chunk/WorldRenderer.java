@@ -46,7 +46,6 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
@@ -56,7 +55,6 @@ import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 //import static net.vulkanmod.render.vertex.TerrainRenderType.SOLID;
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static org.lwjgl.system.JNI.callPJPV;
-import static org.lwjgl.system.MemoryUtil.memAddress0;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class WorldRenderer {
@@ -588,14 +586,14 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
-        final boolean noBindless = Initializer.CONFIG.vertexFetchFix;
+//        final boolean noBindless = false;
 
         final long layout = pipeline.getLayout();
         final long address = commandBuffer.address();
         if(COMPACT_RENDER_TYPES.contains(terrainRenderType)) {
             for (Iterator<DrawBuffers> iterator = this.drawBufferQueue.iterator(isTranslucent); iterator.hasNext(); ) {
                 final DrawBuffers next = iterator.next();
-                if(!indirectDraw) next.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, noBindless);
+                if(!indirectDraw) next.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address);
                 else next.buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], camX, camY, camZ, isTranslucent, layout, commandBuffer);
             }
         }

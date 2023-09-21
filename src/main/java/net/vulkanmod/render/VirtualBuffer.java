@@ -171,27 +171,27 @@ public final class VirtualBuffer {
                     .flags(VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
 
-            long pAlloc = stack.nmalloc(POINTER_SIZE);
-            long pOffset = stack.nmalloc(POINTER_SIZE);
+            PointerBuffer pAlloc = stack.pointers(1);
+            LongBuffer pOffset = stack.longs(1);
 
 
             
-            if(nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            if(vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
             {
                 reload(size_t);
-                nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
+                vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset);
             }
 
 
             subAllocs++;
 //            updateStatistics(stack);
             VmaVirtualAllocationInfo allocInfo = VmaVirtualAllocationInfo.malloc(stack);
-            final long allocation = MemoryUtil.memGetAddress(pAlloc);
-            vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocInfo);
+
+            vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, pAlloc.get(0), allocInfo);
             final int actualSize_t = (int) allocInfo.size();
             usedBytes+= (actualSize_t);
             virtualSegmentBuffer virtualSegmentBuffer
-                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), actualSize_t, allocation, r);
+                    = new virtualSegmentBuffer(areaIndex, subIndex, (int) pOffset.get(0), actualSize_t, pAlloc.get(0), r);
             activeRanges.add(virtualSegmentBuffer);
             return virtualSegmentBuffer;
         }
