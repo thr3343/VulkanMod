@@ -22,9 +22,9 @@ public class VideoResolution {
             GLFW_PLATFORM_WAYLAND,
             GLFW_PLATFORM_X11};
 
-    private static final boolean canUsePlats = getGLFWVersionStats();
+//    private static final boolean canUsePlats = getGLFWVersionStats();
 
-    private static final int activePlat = getSupportedPlat();
+    private static final int activePlat = GLFW_ANY_PLATFORM;//getSupportedPlat();
 
     int width;
     int height;
@@ -66,8 +66,8 @@ public class VideoResolution {
     //Prioritise Wayland over X11 if xWayland (if correct) is present
 
     public static void init() {
-        RenderSystem.assertOnRenderThread();
-        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
+//        RenderSystem.assertOnRenderThread();
+        GLFW.glfwInitHint(GLFW_PLATFORM, GLFW_ANY_PLATFORM);
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
@@ -81,25 +81,26 @@ public class VideoResolution {
             var ptc = stack.mallocInt(1);
             GLFW.glfwGetVersion(maj, min, ptc);
             LOGGER.info("GLFW VERSION: "+maj.get(0)+"."+min.get(0)+"."+ptc.get(0));
+            LOGGER.info(glfwGetVersionString());
             return min.get(0)>=4;
         }
 
     }
 
-    private static int getSupportedPlat() {
-        if(!canUsePlats) {
-            return GLFW_ANY_PLATFORM;
-        }
-        for (int plat : plats) {
-            if(GLFW.glfwPlatformSupported(plat))
-            {
-                LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
-                return plat;
-            }
-        }
-        LOGGER.warn("Couldn't detect any platforms!: (Possibly using Android)");
-        return GLFW_ANY_PLATFORM;
-    }
+//    private static int getSupportedPlat() {
+//        if(!canUsePlats) {
+//            return GLFW_ANY_PLATFORM;
+//        }
+//        for (int plat : plats) {
+//            if(GLFW.glfwPlatformSupported(plat))
+//            {
+//                LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
+//                return plat;
+//            }
+//        }
+//        LOGGER.warn("Couldn't detect any platforms!: (Possibly using Android)");
+//        return GLFW_ANY_PLATFORM;
+//    }
 
     private static String getStringFromPlat(int plat) {
         return switch (plat)

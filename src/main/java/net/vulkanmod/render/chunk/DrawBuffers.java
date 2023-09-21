@@ -227,7 +227,7 @@ public class DrawBuffers {
 
             final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
             final long nmalloc = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
-            VUtil.UNSAFE.putLong(nmalloc, 0);
+            MemoryUtil.memPutAddress(nmalloc, 0);
             if (!noBindless) {
                 callPPPV(address1, 0, 1, npointer, nmalloc, vkCmdBindVertexBuffers);
             }
