@@ -222,9 +222,13 @@ public class DrawBuffers {
             callPJPV(address, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, pValues1, functionAddress2);
 
             final long npointer = stack.npointer((isTranslucent ? TVertexBuffer : SVertexBuffer).getId());
+
             final long npointer1 = stack.nmalloc(POINTER_SIZE, POINTER_SIZE);
 
-            callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
+            MemoryUtil.memPutAddress(npointer1, 0);
+            if (!vertexFetchFix) {
+                callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
+            }
 
 
 

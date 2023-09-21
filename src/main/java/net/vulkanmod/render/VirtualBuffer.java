@@ -75,7 +75,7 @@ public final class VirtualBuffer {
             PointerBuffer block = stack.mallocPointer(1);
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
-            VUtil.UNSAFE.putLong(Ptr, bufferPointerSuperSet);
+            MemoryUtil.memPutAddress(Ptr, bufferPointerSuperSet);
 //            size_t=size;
 //            bound=true;
 
@@ -181,7 +181,7 @@ public final class VirtualBuffer {
             subAllocs++;
 //            updateStatistics(stack);
             VmaVirtualAllocationInfo allocInfo = VmaVirtualAllocationInfo.malloc(stack);
-            final long allocation = memGetLong(pAlloc);
+            final long allocation = MemoryUtil.memGetAddress(pAlloc);
             vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocInfo);
             final int actualSize_t = (int) allocInfo.size();
             usedBytes+= (actualSize_t);
