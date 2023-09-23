@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -47,14 +46,14 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
 
-        Device.getTransferQueue().submitCommands(this.commandBuffers[currentFrame]);
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 //            this.commandBuffers[currentFrame] = Device.getGraphicsQueue().beginCommands();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
@@ -79,7 +78,7 @@ public class AreaUploadManager {
         }
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], src.getId(), 0, dst.getId(), 0, src.getBufferSize());
     }

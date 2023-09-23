@@ -83,7 +83,7 @@ public class UniformBuffers {
         if(commandBuffer == null)
             return;
 
-        Device.getTransferQueue().submitCommands(commandBuffer);
+        TransferQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
@@ -123,7 +123,7 @@ public class UniformBuffers {
             }
             else {
                 if(commandBuffer == null)
-                    commandBuffer = Device.getTransferQueue().beginCommands();
+                    commandBuffer = TransferQueue.beginCommands();
 
                 int size = buffer.remaining();
 
