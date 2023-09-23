@@ -3,11 +3,13 @@ package net.vulkanmod.vulkan.texture;
 import com.mojang.blaze3d.platform.NativeImage;
 import it.unimi.dsi.fastutil.bytes.Byte2LongArrayMap;
 import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
-import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -17,7 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.Objects;
 
-import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 

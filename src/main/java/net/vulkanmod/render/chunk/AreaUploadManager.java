@@ -1,16 +1,18 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.apache.commons.lang3.Validate;
 
 import java.nio.ByteBuffer;
 
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;
