@@ -28,6 +28,7 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
     public boolean vertexFetchFix = false;
+    public boolean useImmediate = !VideoResolution.isWayLand();
 
     public static Config load(Path path) {
         Config config;
