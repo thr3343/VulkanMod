@@ -14,6 +14,7 @@ public class Config {
 
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
+    public boolean useImmediate = !VideoResolution.isWayLand(); //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
@@ -28,7 +29,6 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
     public boolean vertexFetchFix = false;
-    public boolean useImmediate = !VideoResolution.isWayLand();
 
     public static Config load(Path path) {
         Config config;
