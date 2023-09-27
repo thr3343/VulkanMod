@@ -23,6 +23,8 @@ import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -76,7 +78,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
+        int requestedFrames = Initializer.CONFIG.frameQueueSize = vsync ? 2 : 4;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -157,6 +159,8 @@ public class SwapChain extends Framebuffer {
 
             swapChainImages = new ArrayList<>(imageCount.get(0));
 
+            Initializer.LOGGER.info("requested Images: "+pSwapchainImages.capacity());
+
             this.width = extent2D.width();
             this.height = extent2D.height();
 
@@ -179,7 +183,18 @@ public class SwapChain extends Framebuffer {
 
         }
     }
-
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "VK_PRESENT_MODE_IMMEDIATE_KHR";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "VK_PRESENT_MODE_MAILBOX_KHR";
+            case VK_PRESENT_MODE_FIFO_KHR -> "VK_PRESENT_MODE_FIFO_KHR";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+            case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR -> "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+            case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR ->  "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+            default -> throw new IllegalStateException("Unexpected value: " + requestedMode);
+        };
+    }
     private void createRenderPass() {
         this.hasColorAttachment = true;
         this.hasDepthAttachment = true;
@@ -353,14 +368,18 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
+        {
+            Initializer.LOGGER.info(getDisplayModeString(VK_PRESENT_MODE_FIFO_KHR));
             return VK_PRESENT_MODE_FIFO_KHR;
+        }
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info(getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }

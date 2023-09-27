@@ -14,7 +14,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public enum Queue {
 
     GraphicsQueue(QueueFamilyIndices.graphicsFamily),
-    TransferQueue(QueueFamilyIndices.presentFamily),
+    TransferQueue(QueueFamilyIndices.transferFamily),
     ComputeQueue(QueueFamilyIndices.computeFamily),
     PresentQueue(QueueFamilyIndices.presentFamily, false);
 
