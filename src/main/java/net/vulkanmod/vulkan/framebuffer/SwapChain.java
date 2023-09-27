@@ -79,7 +79,7 @@ public class SwapChain extends Framebuffer {
 
     public void createSwapChain() {
 
-        int requestedFrames = Initializer.CONFIG.minImageCount = vsync ? 2 : 4;
+        int requestedFrames = Initializer.CONFIG.minImageCount;
 
         Initializer.LOGGER.info("requestedFrames" + requestedFrames);
 
@@ -371,7 +371,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
