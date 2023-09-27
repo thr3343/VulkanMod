@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryType;

@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import java.nio.ByteBuffer;
@@ -10,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
