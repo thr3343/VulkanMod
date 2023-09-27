@@ -146,7 +146,7 @@ public class Vulkan {
         allocateImmediateCmdBuffer();
 
         createSwapChain();
-        MemoryManager.createInstance(swapChain.getFramesNum());
+        MemoryManager.createInstance(swapChain.getFrameNum());
 
         createStagingBuffers();
         Renderer.initRenderer();
@@ -167,7 +167,7 @@ public class Vulkan {
     private static void createSwapChain() {
         swapChain = new SwapChain();
 
-        FramesNum = swapChain.getFramesNum();
+        FramesNum = swapChain.getFrameNum();
     }
 
     public static void recreateSwapChain() {

@@ -71,11 +71,16 @@ public class SwapChain extends Framebuffer {
 
         createSwapChain();
 
-        return this.swapChainImages.size();
+        return this.getFrameNum();
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
+
+
+        int requestedFrames = Initializer.CONFIG.minImageCount = vsync ? 2 : 4;
+
+        Initializer.LOGGER.info("requestedFrames" + requestedFrames);
+
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -225,7 +230,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getImageIndex()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
@@ -327,7 +332,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getImageIndex());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -352,6 +357,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
+
         int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
         //fifo mode is the only mode that has to be supported
@@ -404,5 +410,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getFrameNum() { return Initializer.CONFIG.frameQueueSize; }
+    public int getImageNum() { return this.swapChainImages.size(); }
 }

@@ -49,6 +49,7 @@ public class Renderer {
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
     public static int getCurrentFrame() { return currentFrame; }
+    public static int getImageIndex() { return imageIndex; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
@@ -64,6 +65,7 @@ public class Renderer {
     private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
+    private static int imageIndex = 0;
     private VkCommandBuffer currentCmdBuffer;
 
     MainPass mainPass = DefaultMainPass.PASS;
@@ -77,7 +79,7 @@ public class Renderer {
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
 
-        framesNum = getSwapChainImages().size();
+        framesNum = getSwapChain().getFrameNum();
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -287,35 +289,22 @@ public class Renderer {
         try(MemoryStack stack = stackPush()) {
 
             IntBuffer pImageIndex = stack.mallocInt(1);
+            imageIndex = aquireNextImage(pImageIndex);
+            int vkResult;
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
-                return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
-            }
-
-            final int imageIndex = pImageIndex.get(0);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, (inFlightFences.get(currentFrame)));
 
             Synchronization.INSTANCE.waitFences();
 
@@ -346,7 +335,25 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+
+
         }
+    }
+
+    private int aquireNextImage(IntBuffer pImageIndex) {
+        int vkResult;
+        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+                imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+        if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+            swapCahinUpdate = true;
+//                shouldRecreate = false;
+//                recreateSwapChain();
+            return vkResult;
+        } else if(vkResult != VK_SUCCESS) {
+            throw new RuntimeException("Failed to present swap chain image");
+        }
+        return pImageIndex.get(0);
     }
 
     void waitForSwapChain()
@@ -380,11 +387,10 @@ public class Renderer {
 //            vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
 //        }
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
         Vulkan.recreateSwapChain();
 
-        int newFramesNum = getSwapChain().getFramesNum();
+        int newFramesNum = getSwapChain().getFrameNum();
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitAllUploads();

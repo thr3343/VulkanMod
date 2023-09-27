@@ -66,7 +66,7 @@ public class RenderPass {
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
 
                 colorAttachment.initialLayout(colorAttachmentInfo.initialLayout);
-                colorAttachment.finalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                colorAttachment.finalLayout(KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
                 VkAttachmentReference colorAttachmentRef = attachmentRefs.get(0);
                 colorAttachmentRef.attachment(0);
@@ -119,14 +119,14 @@ public class RenderPass {
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
 
-        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
-        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
+//        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
+//                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
+////            throw new RuntimeException("current layout does not match expected initial layout");
+//            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
+//        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
+//                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
+////            throw new RuntimeException("current layout does not match expected initial layout");
+//            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
         renderPassInfo.sType$Default();

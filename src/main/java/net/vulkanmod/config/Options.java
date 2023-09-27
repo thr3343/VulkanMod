@@ -172,12 +172,20 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 2,
+                new RangeOption("Queue Frames", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
+                        .setTooltip(Component.nullToEmpty("""
+                        Sets the number of queue frames""")),
+                new RangeOption("minImageCount", 2,
+                        8, 1,
+                        value -> {
+                            config.minImageCount = value;
+                            Renderer.scheduleSwapChainUpdate();
+                        }, () -> config.minImageCount)
                         .setTooltip(Component.nullToEmpty("""
                         Sets the number of queue frames""")),
                 new SwitchOption("Gui Optimizations",
