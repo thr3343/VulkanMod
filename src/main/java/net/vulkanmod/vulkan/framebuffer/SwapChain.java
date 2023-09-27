@@ -77,7 +77,8 @@ public class SwapChain extends Framebuffer {
     public void createSwapChain() {
 
 
-        int requestedFrames = Initializer.CONFIG.minImageCount = vsync ? 2 : 4;
+        int requestedFrames = Initializer.CONFIG.minImageCount;
+
 
         Initializer.LOGGER.info("requestedFrames" + requestedFrames);
 

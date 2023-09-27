@@ -199,6 +199,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
+            imageIndex = aquireNextImage(stack.mallocInt(1));
 
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -288,8 +289,8 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer pImageIndex = stack.mallocInt(1);
-            imageIndex = aquireNextImage(pImageIndex);
+            IntBuffer pImageIndex = stack.ints(imageIndex);
+
             int vkResult;
 
 
