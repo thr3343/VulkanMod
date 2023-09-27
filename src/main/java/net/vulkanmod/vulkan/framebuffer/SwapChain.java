@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -35,8 +36,9 @@ public class SwapChain extends Framebuffer {
     }
 
     private RenderPass renderPass;
+
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    private static final int defUncappedMode = VideoResolution.isWayLand() ? checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR) : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
@@ -54,6 +56,18 @@ public class SwapChain extends Framebuffer {
         this.depthFormat = DEFAULT_DEPTH_FORMAT;
         createSwapChain();
 
+    }
+
+    public static int checkPresentMode(int requestedMode, int fallback) {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
+            for (int i = 0; i < surfaceProperties.capacity(); i++) {
+                if (surfaceProperties.get(i) == requestedMode) {
+                    return requestedMode;
+                }
+            }
+            return fallback;
+        }
     }
 
     public int recreateSwapChain() {
@@ -76,7 +90,6 @@ public class SwapChain extends Framebuffer {
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -98,13 +111,13 @@ public class SwapChain extends Framebuffer {
                 return;
             }
 
-            //Workaround for Mesa
+            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
+
+            int requestedFrames = Initializer.CONFIG.minImageCount;
+
             IntBuffer imageCount = stack.ints(requestedFrames);
 //            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
-
-            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
-                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
-            }
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
@@ -228,21 +241,21 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getImageIndex()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
         Renderer.getInstance().setBoundFramebuffer(this);
     }
 
-    public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {
+    public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int imageIndex) {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-            barrier.oldLayout(this.currentLayout[frame]);
+            barrier.oldLayout(this.currentLayout[imageIndex]);
 //            barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            barrier.image(this.swapChainImages.get(frame).getId());
+            barrier.image(this.swapChainImages.get(imageIndex).getId());
 //            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
             barrier.subresourceRange().baseMipLevel(0);
@@ -261,17 +274,17 @@ public class SwapChain extends Framebuffer {
                     barrier// pImageMemoryBarriers
             );
 
-            this.currentLayout[frame] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            this.currentLayout[imageIndex] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
 
-    public void presentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {
+    public void presentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int imageIndex) {
 
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
         barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
         barrier.oldLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         barrier.newLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        barrier.image(this.swapChainImages.get(frame).getId());
+        barrier.image(this.swapChainImages.get(imageIndex).getId());
 
         barrier.subresourceRange().baseMipLevel(0);
         barrier.subresourceRange().levelCount(1);
@@ -289,7 +302,7 @@ public class SwapChain extends Framebuffer {
                 barrier// pImageMemoryBarriers
         );
 
-        this.currentLayout[frame] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        this.currentLayout[imageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
 
     public void cleanUp() {
@@ -330,7 +343,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getImageIndex());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -407,5 +420,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getFramesNum() { return Initializer.CONFIG.frameQueueSize; }
+    public int getImagesNum() { return Initializer.CONFIG.minImageCount; }
 }

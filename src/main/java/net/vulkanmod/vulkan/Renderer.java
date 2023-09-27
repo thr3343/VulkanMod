@@ -49,6 +49,7 @@ public class Renderer {
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
     public static int getCurrentFrame() { return currentFrame; }
+    public static int getImageIndex() { return imageIndex; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
@@ -64,6 +65,7 @@ public class Renderer {
     private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
+    private static int imageIndex = 0;
     private VkCommandBuffer currentCmdBuffer;
 
     MainPass mainPass = DefaultMainPass.PASS;
@@ -77,7 +79,7 @@ public class Renderer {
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
 
-        framesNum = getSwapChainImages().size();
+        framesNum = getSwapChain().getFramesNum();
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -197,7 +199,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-
+            imageIndex = aquireNextImage(stack.mallocInt(1));
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -286,23 +288,8 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer pImageIndex = stack.mallocInt(1);
+            int vkResult;
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
-                return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
-            }
-
-            final int imageIndex = pImageIndex.get(0);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -332,7 +319,7 @@ public class Renderer {
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain().getId()));
 
-            presentInfo.pImageIndices(pImageIndex);
+            presentInfo.pImageIndices(stack.ints(imageIndex));
 
             vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
@@ -346,7 +333,25 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+
+
         }
+    }
+
+    private int aquireNextImage(IntBuffer pImageIndex) {
+        int vkResult;
+        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+                imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+        if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+            swapCahinUpdate = true;
+//                shouldRecreate = false;
+//                recreateSwapChain();
+            return vkResult;
+        } else if(vkResult != VK_SUCCESS) {
+            throw new RuntimeException("Failed to present swap chain image");
+        }
+        return pImageIndex.get(0);
     }
 
     void waitForSwapChain()
