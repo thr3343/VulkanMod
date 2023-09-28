@@ -8,6 +8,9 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.KHRSurface;
+
+import java.nio.IntBuffer;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 import static net.vulkanmod.vulkan.Device.device;
@@ -64,6 +67,17 @@ public class Options {
                             window.setFramerateLimit(value);
                         },
                         () -> minecraftOptions.framerateLimit().get()),
+                new SwitchOption("FastSync",
+                        value -> {
+                            config.fastSync = VideoResolution.isWayLand() || value;
+                            Renderer.scheduleSwapChainUpdate();
+                        },
+                        () -> config.fastSync).setTooltip(Component.nullToEmpty("""
+                        (Applicable only when VSync is disabled)
+                        Prevents screen tearing from occurring when enabled
+                        Has no effect when VSync is enabled
+                        Not always supported on all GPU Drivers, so availability may vary on your device
+                        (Always force enabled on Wayland)""")),
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
