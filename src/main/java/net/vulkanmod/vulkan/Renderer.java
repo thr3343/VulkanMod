@@ -61,7 +61,7 @@ public class Renderer {
     private List<VkCommandBuffer> commandBuffers;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
-    private ArrayList<Long> inFlightFences;
+    private PointerBuffer inFlightFences;
 
     private Framebuffer boundFramebuffer;
     private RenderPass boundRenderPass;
@@ -122,7 +122,7 @@ public class Renderer {
     private void createSyncObjects() {
         imageAvailableSemaphores = new ArrayList<>(framesNum);
         renderFinishedSemaphores = new ArrayList<>(framesNum);
-        inFlightFences = new ArrayList<>(framesNum);
+        inFlightFences = MemoryUtil.memAllocPointer(framesNum);
 
         try(MemoryStack stack = stackPush()) {
 
@@ -148,7 +148,7 @@ public class Renderer {
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
                 renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
-                inFlightFences.add(pFence.get(0));
+                inFlightFences.put(i, pFence.get(0));
 
             }
 
@@ -177,7 +177,7 @@ public class Renderer {
         if(skipRendering)
             return;
 
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+        nvkWaitForFences(device, inFlightFences.capacity(), inFlightFences.address0(), 0, VUtil.UINT64_MAX);
 
         p.pop();
         p.start();
@@ -312,7 +312,7 @@ public class Renderer {
             Synchronization.INSTANCE.waitFences();
 
             if((vkResult = vkQueueSubmit(GraphicsQueue.queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+                vkResetFences(device,(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
@@ -352,7 +352,6 @@ public class Renderer {
             swapCahinUpdate = true;
 //                shouldRecreate = false;
 //                recreateSwapChain();
-            return vkResult;
         } else if(vkResult != VK_SUCCESS) {
             throw new RuntimeException("Failed to present swap chain image");
         }
@@ -429,6 +428,7 @@ public class Renderer {
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
+        inFlightFences.free();
     }
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {
