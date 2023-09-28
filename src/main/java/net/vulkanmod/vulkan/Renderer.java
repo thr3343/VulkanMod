@@ -177,7 +177,7 @@ public class Renderer {
         if(skipRendering)
             return;
 
-        nvkWaitForFences(device, inFlightFences.capacity(), inFlightFences.address0(), 0, VUtil.UINT64_MAX);
+        nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 1, VUtil.UINT64_MAX);
 
         p.pop();
         p.start();
