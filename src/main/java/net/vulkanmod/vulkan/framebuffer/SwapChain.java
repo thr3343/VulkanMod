@@ -102,15 +102,7 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
-
-            //Workaround for Mesa
-            IntBuffer imageCount = stack.ints(requestedFrames);
-//            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
-
-            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
-                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
-            }
-
+            
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -120,7 +112,7 @@ public class SwapChain extends Framebuffer {
             this.format = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(imageCount.get(0));
+            createInfo.minImageCount(stack.ints(Initializer.CONFIG.minImageCount).get(0));
             createInfo.imageFormat(this.format);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
@@ -154,13 +146,13 @@ public class SwapChain extends Framebuffer {
 
             swapChain = pSwapChain.get(0);
 
-            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
+            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), null);
 
-            LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
+            LongBuffer pSwapchainImages = stack.mallocLong(stack.ints(Initializer.CONFIG.minImageCount).get(0));
 
-            vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
+            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), pSwapchainImages);
 
-            swapChainImages = new ArrayList<>(imageCount.get(0));
+            swapChainImages = new ArrayList<>(stack.ints(Initializer.CONFIG.minImageCount).get(0));
 
             this.width = extent2D.width();
             this.height = extent2D.height();

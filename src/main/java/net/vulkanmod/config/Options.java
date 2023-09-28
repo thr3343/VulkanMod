@@ -5,21 +5,35 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
+import org.lwjgl.system.MemoryStack;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
-
+import static net.vulkanmod.vulkan.Device.device;
 public class Options {
+
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
     private static final int max = Runtime.getRuntime().availableProcessors();
 
+    private static final int minImages;
+
+    private static final int maxImages;
+
+    static {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            minImages = surfaceProperties.capabilities.minImageCount();
+            maxImages = surfaceProperties.capabilities.maxImageCount() == 0 ? 64 : surfaceProperties.capabilities.maxImageCount();
+        }
+    }
+
 
     public static Option<?>[] getVideoOpts() {
-        return new Option[] {
+        return new Option[]{
                 new CyclingOption<>("Resolution",
                         VideoResolution.getVideoResolutions(),
                         resolution -> Component.literal(resolution.toString()),
@@ -53,9 +67,7 @@ public class Options {
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
-                            if (Minecraft.getInstance().getWindow() != null) {
-                                Minecraft.getInstance().getWindow().updateVsync(value);
-                            }
+                            Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",
@@ -68,10 +80,10 @@ public class Options {
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
                         value -> {
-                          if(value == 0) return Component.translatable("options.gamma.min").getString();
-                          else if(value == 50) return Component.translatable("options.gamma.default").getString();
-                          else if(value == 100) return Component.translatable("options.gamma.max").getString();
-                          return value.toString();
+                            if (value == 0) return Component.translatable("options.gamma.min").getString();
+                            else if (value == 50) return Component.translatable("options.gamma.default").getString();
+                            else if (value == 100) return Component.translatable("options.gamma.max").getString();
+                            return value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -91,17 +103,17 @@ public class Options {
                         () -> minecraftOptions.showAutosaveIndicator().get()),
                 new RangeOption("Distortion Effects", 0, 100, 1,
                         value -> minecraftOptions.screenEffectScale().set(value * 0.01),
-                        () -> (int)(minecraftOptions.screenEffectScale().get() * 100.0f))
+                        () -> (int) (minecraftOptions.screenEffectScale().get() * 100.0f))
                         .setTooltip(Component.translatable("options.screenEffectScale.tooltip")),
                 new RangeOption("FOV Effects", 0, 100, 1,
                         value -> minecraftOptions.fovEffectScale().set(value * 0.01),
-                        () -> (int)(minecraftOptions.fovEffectScale().get() * 100.0f))
+                        () -> (int) (minecraftOptions.fovEffectScale().get() * 100.0f))
                         .setTooltip(Component.translatable("options.fovEffectScale.tooltip"))
         };
     }
 
     public static Option<?>[] getGraphicsOpts() {
-        return new Option[] {
+        return new Option[]{
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
@@ -110,8 +122,8 @@ public class Options {
                 ),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
-                    int v = value * 2 + 1;
-                    return v + " x " + v;
+                            int v = value * 2 + 1;
+                            return v + " x " + v;
                         },
                         (value) -> {
                             minecraftOptions.biomeBlendRadius().set(value);
@@ -171,7 +183,7 @@ public class Options {
     }
 
     public static Option<?>[] getOtherOpts() {
-        return new Option[] {
+        return new Option[]{
                 new RangeOption("Queue Frames", 1,
                         5, 1,
                         value -> {
@@ -179,15 +191,19 @@ public class Options {
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
-                new RangeOption("minImageCount", 2,
-                        8, 1,
+                        Manages the tradeoff between FPS and input lag
+                        Higher = improved FPS but more input lag
+                        Lower = decreased FPS but less input lag""")),
+                new RangeOption("Image Count", minImages,
+                        maxImages, 1,
                         value -> {
                             config.minImageCount = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.minImageCount)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Sets the number of swapchain images
+                        Higher values may help reduce VSync stutter
+                        But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
@@ -225,29 +241,30 @@ public class Options {
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
                 new RangeOption("Chunk Load Threads", 1, max, 1,
-                value -> {
-                    config.chunkLoadFactor = value;
-                    taskDispatcher.stopThreads();
-                    taskDispatcher.resizeThreads(value);
-                    WorldRenderer.getInstance().allChanged();
-                },
-                () -> config.chunkLoadFactor)
-                .setTooltip(Component.nullToEmpty(
-                "The number of Threads utilized for uploading chunks \n" +
-                "More threads will greatly improve Chunk load speed" +
-                "But may cause stuttering if set to high\n" +
-                "Max Recommended value is "+max/2+" threads on This CPU"))
+                        value -> {
+                            config.chunkLoadFactor = value;
+                            taskDispatcher.stopThreads();
+                            taskDispatcher.resizeThreads(value);
+                            WorldRenderer.getInstance().allChanged();
+                        },
+                        () -> config.chunkLoadFactor)
+                        .setTooltip(Component.nullToEmpty(
+                        "The number of Threads utilized for uploading chunks \n" +
+                                "More threads will greatly improve Chunk load speed" +
+                                "But may cause stuttering if set to high\n" +
+                                "Max Recommended value is " + max / 2 + " threads on This CPU"))
         };
 
     }
 
     public static void applyOptions(Config config, Option<?>[][] optionPages) {
-        for(Option<?>[] options : optionPages) {
-            for(Option<?> option : options) {
+        for (Option<?>[] options : optionPages) {
+            for (Option<?> option : options) {
                 option.apply();
             }
         }
 
         config.write();
     }
+
 }
