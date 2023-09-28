@@ -5,10 +5,11 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Device;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.KHRSurface;
+
+import java.nio.IntBuffer;
 
 import static net.vulkanmod.vulkan.Device.device;
 
@@ -23,6 +24,8 @@ public class Options {
 
     private static final int maxImages;
 
+    private static final boolean hasMailbox;
+
     static
     {
         try(MemoryStack stack = MemoryStack.stackPush())
@@ -30,7 +33,17 @@ public class Options {
             Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
             minImages = surfaceProperties.capabilities.minImageCount();
             maxImages = surfaceProperties.capabilities.maxImageCount() ==0 ? 64 : surfaceProperties.capabilities.maxImageCount();
+            hasMailbox = getPresentModes(surfaceProperties.presentModes, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
         }
+    }
+
+    private static boolean getPresentModes(IntBuffer surfaceProperties, int requestedMode) {
+        for(int i = 0;i < surfaceProperties.capacity();i++) {
+            if(surfaceProperties.get(i) == requestedMode) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -66,6 +79,17 @@ public class Options {
                             window.setFramerateLimit(value);
                         },
                         () -> minecraftOptions.framerateLimit().get()),
+                new SwitchOption("FastSync",
+                        value -> {
+                            config.fastSync = VideoResolution.isWayLand() || value;
+                            Renderer.scheduleSwapChainUpdate();
+                        },
+                        () -> config.fastSync).setTooltip(Component.nullToEmpty("""
+                        (Applicable only when VSync is disabled)
+                        Prevents screen tearing from occurring when enabled
+                        Has no effect when VSync is enabled
+                        Not always supported on all GPU Drivers, so availability may vary on your device
+                        (Always force enabled on Wayland)""")),
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
@@ -81,11 +105,11 @@ public class Options {
                         },
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
-                        value -> {
-                          if(value == 0) return Component.translatable("options.gamma.min").getString();
-                          else if(value == 50) return Component.translatable("options.gamma.default").getString();
-                          else if(value == 100) return Component.translatable("options.gamma.max").getString();
-                          return value.toString();
+                        value -> switch (value) {
+                            case 0 -> Component.translatable("options.gamma.min").getString();
+                            case 50 -> Component.translatable("options.gamma.default").getString();
+                            case 100 -> Component.translatable("options.gamma.max").getString();
+                            default -> value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
