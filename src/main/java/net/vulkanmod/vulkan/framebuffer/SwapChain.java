@@ -98,7 +98,22 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
-            
+
+            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
+
+            int requestedFrames = Initializer.CONFIG.minImageCount;
+
+            Initializer.LOGGER.info("requestedFrames" + requestedFrames);
+
+
+            IntBuffer imageCount = stack.ints(requestedFrames);
+//            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
+
+            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
+                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
+            }
+
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -108,7 +123,7 @@ public class SwapChain extends Framebuffer {
             this.format = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            createInfo.minImageCount(imageCount.get(0));
             createInfo.imageFormat(this.format);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
@@ -142,13 +157,13 @@ public class SwapChain extends Framebuffer {
 
             swapChain = pSwapChain.get(0);
 
-            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), null);
+            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
-            LongBuffer pSwapchainImages = stack.mallocLong(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
 
-            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), pSwapchainImages);
+            vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
 
-            swapChainImages = new ArrayList<>(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            swapChainImages = new ArrayList<>(imageCount.get(0));
 
             Initializer.LOGGER.info("requested Images: "+pSwapchainImages.capacity());
 
