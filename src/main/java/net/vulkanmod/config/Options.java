@@ -4,18 +4,34 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.system.MemoryStack;
+
+import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
 
-    //Fix Glitches+Crashes if Wayland and the Mesa RADV driver are used, and Queue Frames is set above 2 (possible RADV Bug?)
-    private static final boolean limitSwapChain = VideoResolution.isWayLand() && Vulkan.getDeviceInfo().isAMD();
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    private static final int minImages;
+
+    private static final int maxImages;
+
+    static
+    {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            minImages = surfaceProperties.capabilities.minImageCount();
+            maxImages = surfaceProperties.capabilities.maxImageCount() ==0 ? 64 : surfaceProperties.capabilities.maxImageCount();
+        }
+    }
 
 
     public static Option<?>[] getVideoOpts() {
@@ -171,21 +187,25 @@ public class Options {
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
                 new RangeOption("Queue Frames", 1,
-                        limitSwapChain ? 2 : 5, 1,
+                        5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
-                new RangeOption("minImageCount", 2,
-                        limitSwapChain ? 2 : 8, 1,
+                        Manages the tradeoff between FPS and input lag
+                        Higher = improved FPS but also increased input lag
+                        Lower = decreased FPS but less input lag""")),
+                new RangeOption("Image Count", minImages,
+                        maxImages, 1,
                         value -> {
                             config.minImageCount = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.minImageCount)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Sets the number of swapchain images
+                        Higher values may help reduce VSync stutter
+                        But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
