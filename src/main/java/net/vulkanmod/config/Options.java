@@ -81,15 +81,15 @@ public class Options {
                         () -> minecraftOptions.framerateLimit().get()),
                 new SwitchOption("FastSync",
                         value -> {
-                            config.fastSync = VideoResolution.isWayLand() || value;
+                            config.fastSync = hasMailbox && value;
                             Renderer.scheduleSwapChainUpdate();
                         },
-                        () -> config.fastSync).setTooltip(Component.nullToEmpty("""
-                        (Applicable only when VSync is disabled)
-                        Prevents screen tearing from occurring when enabled
-                        Has no effect when VSync is enabled
-                        Not always supported on all GPU Drivers, so availability may vary on your device
-                        (Always force enabled on Wayland)""")),
+                        () -> config.fastSync).setTooltip(Component.nullToEmpty("Supported on this Device?: " +hasMailbox+"\n"+
+                        "Prevents screen tearing from occurring when enabled\n"+
+                        "Has no effect when VSync is enabled\n"+
+                        "can be used as a low-latency alternative to VSync"+
+                       " Not always supported on all GPU Drivers, so availability may vary on your device\n"+
+                        "(Always force enabled on Wayland)\n")),
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
