@@ -98,10 +98,7 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
-
-            if(Initializer.CONFIG.minImageCount == -1)
-                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
-
+            
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);

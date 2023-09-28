@@ -194,7 +194,7 @@ public class Options {
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
                         Manages the tradeoff between FPS and input lag
-                        Higher = improved FPS but also increased input lag
+                        Higher = improved FPS but more input lag
                         Lower = decreased FPS but less input lag""")),
                 new RangeOption("Image Count", minImages,
                         maxImages, 1,
