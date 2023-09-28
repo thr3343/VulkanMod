@@ -97,7 +97,7 @@ public class WorldRenderer {
         allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Vulkan.getSwapChain().getImageNum())
+            if(this.indirectBuffers.length != Vulkan.getSwapChain().getFrameNum())
                 allocateIndirectBuffers();
         });
     }
@@ -106,7 +106,7 @@ public class WorldRenderer {
         if(this.indirectBuffers != null)
             Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
 
-        this.indirectBuffers = new IndirectBuffer[Vulkan.getSwapChain().getImageNum()];
+        this.indirectBuffers = new IndirectBuffer[Vulkan.getSwapChain().getFrameNum()];
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
             this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
