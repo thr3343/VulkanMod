@@ -61,23 +61,41 @@ public class VideoResolution {
 
         return arr;
     }
-    //Prioritise Wayland over X11 if xWayland (if correct) is present
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
         GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
+//        determineDsiplayServer();
+        LOGGER.info(GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
 
-    private static int getSupportedPlat() {
+    //Actually detect the currently active Display Server (if both Wayland and X11 are present on the system and/or GLFW is compiled to support both)
+    private static int determineDisplayServer() {
+//        LOGGER.info("XDG_SESSION_TYPE: "+System.getenv("XDG_SESSION_TYPE"));
 
-        for (int plat : plats) {
-            if(GLFW.glfwPlatformSupported(plat))
-            {
-                LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
-                return plat;
+        //Return Null platform if not on Linux (i.e. no X11 or Wayland)
+        return switch (System.getenv("XDG_SESSION_TYPE")) {
+            case "wayland" -> GLFW_PLATFORM_WAYLAND;
+            case "x11" -> GLFW_PLATFORM_X11;
+            default -> GLFW_PLATFORM_NULL;
+        };
+    }
+
+    private static int getSupportedPlat() {
+        int displayServerEnv = determineDisplayServer();
+        if(displayServerEnv==GLFW_PLATFORM_NULL) {
+            for (int plat : plats) {
+                if (GLFW.glfwPlatformSupported(plat)) {
+                    LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
+                    return plat;
+                }
             }
+        }
+        else {
+            LOGGER.info("Selecting Platform: "+getStringFromPlat(displayServerEnv));
+            return displayServerEnv;
         }
         throw new RuntimeException("No Supported Platforms Present!");
     }
