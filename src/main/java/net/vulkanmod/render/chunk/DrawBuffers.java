@@ -1,20 +1,20 @@
 package net.vulkanmod.render.chunk;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
-import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.*;
@@ -72,7 +72,7 @@ public class DrawBuffers {
         return drawParameters;
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, RenderType renderType, double camX, double camY, double camZ) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType renderType, double camX, double camY, double camZ, boolean isTranslucent) {
         int stride = 20;
 
         int drawCount = 0;
@@ -83,10 +83,6 @@ public class DrawBuffers {
             LongBuffer pVertexBuffer;
             LongBuffer pOffset;
 
-            TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-            terrainRenderType.setCutoutUniform();
-
-            boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
             StaticQueue<DrawParameters> drawParameters1 = isTranslucent ? Tqueue : Squeue;
 
             ByteBuffer byteBuffer = stack.calloc(20 * drawParameters1.size());
@@ -95,7 +91,7 @@ public class DrawBuffers {
             long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
             long uboPtr = MemoryUtil.memAddress0(uboBuffer);
 
-            pipeline = TerrainShaderManager.getTerrainIndirectShader(renderType);
+            pipeline = TerrainShaderManager.getTerrainIndirectShader();
 
             if (isTranslucent) {
                 vkCmdBindIndexBuffer(Renderer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
@@ -151,7 +147,7 @@ public class DrawBuffers {
             vkCmdBindVertexBuffers(Renderer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-            pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
+
             vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
@@ -161,7 +157,7 @@ public class DrawBuffers {
     }
 
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
-        Pipeline pipeline = TerrainShaderManager.getTerrainDirectShader(null);
+        Pipeline pipeline = TerrainShaderManager.getTerrainDirectShader();
 //        Drawer.getInstance().bindPipeline(pipeline);
         pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 //        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
@@ -196,50 +192,29 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(Pipeline pipeline, RenderType renderType, double camX, double camY, double camZ) {
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-        terrainRenderType.setCutoutUniform();
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+    public void buildDrawBatchesDirect(Pipeline pipeline, double camX, double camY, double camZ, boolean isTranslucent) {
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            long pVertexBuffer = stack.npointer(vertexBuffer.getId());
-            long pOffset = stack.npointer(0);
-
-            nvkCmdBindVertexBuffers(Renderer.getCommandBuffer(), 0, 1, pVertexBuffer, pOffset);
-
-        }
-
-        if(isTranslucent) {
+        if(isTranslucent)
             vkCmdBindIndexBuffer(Renderer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
-        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 
-        int drawCount = 0;
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
-            ByteBuffer byteBuffer = stack.malloc(24 * (isTranslucent ? Tqueue : Squeue).size());
-            long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
+            final long bufferPtr = stack.nmalloc(12);
 
-            var iterator = (isTranslucent ? Tqueue : Squeue).iterator(isTranslucent);
-            while (iterator.hasNext()) {
-    //            RenderSection section = iterator.next();
-                DrawParameters drawParameters = iterator.next();
+            final long npointer = stack.npointer(vertexBuffer.getId());
+            final long npointer1 = stack.nmalloc(Pointer.POINTER_SIZE);
+            for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
-                long ptr = bufferPtr + (drawCount * 24L);
+                MemoryUtil.memPutFloat(bufferPtr + 0, (float) (drawParameters.x - camX));
+                MemoryUtil.memPutFloat(bufferPtr + 4, (float) (drawParameters.y - camY));
+                MemoryUtil.memPutFloat(bufferPtr + 8, (float) (drawParameters.z - camZ));
 
-
-                MemoryUtil.memPutFloat(ptr + 12, (float) ((double) drawParameters.x - camX));
-                MemoryUtil.memPutFloat(ptr + 16, (float) ((double) drawParameters.y - camY));
-                MemoryUtil.memPutFloat(ptr + 20, (float) ((double) drawParameters.z - camZ));
-
-
-                nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, drawCount * 24 + bufferPtr + 12);
-
-                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
-
-                drawCount++;
+                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*VERTEX_SIZE);
+                nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, bufferPtr);
+                nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
+                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, 0);
 
             }
 

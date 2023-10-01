@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,20 +23,17 @@ public enum TerrainRenderType {
             Arrays.stream(TerrainRenderType.values()).collect(Collectors.toMap(
                     (terrainRenderType) -> terrainRenderType.renderType, (terrainRenderType) -> terrainRenderType)));
 
-    public static final ObjectArrayList<RenderType> COMPACT_RENDER_TYPES = new ObjectArrayList<>();
+    public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 //    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
-
-    static {
-        COMPACT_RENDER_TYPES.add(RenderType.cutoutMipped());
-        COMPACT_RENDER_TYPES.add(RenderType.translucent());
-    }
 
     final RenderType renderType;
     final float alphaCutout;
+    public final int maxSize;
 
     TerrainRenderType(RenderType renderType, float alphaCutout) {
         this.renderType = renderType;
         this.alphaCutout = alphaCutout;
+        this.maxSize=renderType.bufferSize();
     }
 
     public void setCutoutUniform() {
@@ -44,5 +42,17 @@ public enum TerrainRenderType {
 
     public static TerrainRenderType get(RenderType renderType) {
         return RENDER_TYPE_MAP.get(renderType);
+    }
+
+    public static TerrainRenderType get(String renderType) {
+        return switch (renderType)
+        {
+            case "solid" -> SOLID;
+            case "cutout_mipped" -> CUTOUT_MIPPED;
+            case "cutout" -> CUTOUT;
+            case "translucent" -> TRANSLUCENT;
+            case "tripwire" -> TRIPWIRE;
+            default -> throw new IllegalStateException("Unexpected value: " + renderType);
+        };
     }
 }

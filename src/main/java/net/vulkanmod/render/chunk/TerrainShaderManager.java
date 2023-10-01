@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 
@@ -20,7 +21,7 @@ public abstract class TerrainShaderManager {
     static GraphicsPipeline terrainIndirectShader;
     public static GraphicsPipeline terrainDirectShader;
 
-    private static Function<RenderType, GraphicsPipeline> shaderGetter;
+    private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
 
     public static void init() {
         setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
@@ -46,19 +47,19 @@ public abstract class TerrainShaderManager {
         return pipelineBuilder.createGraphicsPipeline();
     }
 
-    public static GraphicsPipeline getTerrainShader(RenderType renderType) {
+    public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
         return shaderGetter.apply(renderType);
     }
 
-    public static void setShaderGetter(Function<RenderType, GraphicsPipeline> consumer) {
+    public static void setShaderGetter(Function<TerrainRenderType, GraphicsPipeline> consumer) {
         shaderGetter = consumer;
     }
 
-    public static GraphicsPipeline getTerrainDirectShader(RenderType renderType) {
+    public static GraphicsPipeline getTerrainDirectShader() {
         return terrainDirectShader;
     }
 
-    public static GraphicsPipeline getTerrainIndirectShader(RenderType renderType) {
+    public static GraphicsPipeline getTerrainIndirectShader() {
         return terrainIndirectShader;
     }
 
