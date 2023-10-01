@@ -59,12 +59,12 @@ public class RenderSection {
 
         this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
         for(int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(x,y,z,TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
         }
     }
 
     public void setOrigin(int x, int y, int z) {
-        this.reset();
+        this.reset(x,y,z);
 
         this.xOffset = x;
         this.yOffset = y;
@@ -255,19 +255,19 @@ public class RenderSection {
         }
     }
 
-    private void reset() {
+    private void reset(int x, int y, int z) {
         this.cancelTasks();
         this.compileStatus.compiledSection = CompiledSection.UNCOMPILED;
         this.dirty = true;
         this.visibility = 0;
         this.completelyEmpty = true;
 
-        this.resetDrawParameters();
+        this.resetDrawParameters(x, y, z);
     }
 
-    private void resetDrawParameters() {
+    private void resetDrawParameters(int x, int y, int z) {
         for(DrawBuffers.DrawParameters drawParameters : this.drawParametersArray) {
-            drawParameters.reset(this.chunkArea);
+            drawParameters.reset(x, y, z, this.chunkArea);
 
         }
     }

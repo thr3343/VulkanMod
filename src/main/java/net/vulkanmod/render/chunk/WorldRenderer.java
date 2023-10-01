@@ -307,7 +307,15 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
+            for(TerrainRenderType a : renderSection.getCompiledSection().renderTypes)
+            {
+                DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(a);
+                if(drawParameters.indexCount>0)
+                {
+                    renderSection.getChunkArea().drawBuffers.addMeshlet(drawParameters, a);
+                }
+
+            }
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
@@ -348,7 +356,15 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
+            for(TerrainRenderType a : renderSection.getCompiledSection().renderTypes)
+            {
+                DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(a);
+                if(drawParameters.indexCount>0)
+                {
+                    renderSection.getChunkArea().drawBuffers.addMeshlet(drawParameters, a);
+                }
+
+            }
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
@@ -571,22 +587,15 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        ObjectArrayList<RenderType> renderTypes;
-        if(Initializer.CONFIG.uniqueOpaqueLayer) {
-            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
-        } else {
-            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
-        }
-
-        if(renderTypes.contains(renderType)) {
+        if(TerrainRenderType.COMPACT_RENDER_TYPES.contains(renderType)) {
             Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             while(iterator.hasNext()) {
                 ChunkArea chunkArea = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], renderType, camX, camY, camZ);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
+                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(pipeline, renderType, camX, camY, camZ);
                 }
             }
         }
