@@ -3,10 +3,10 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -42,8 +42,8 @@ public class GraphicsPipeline extends Pipeline {
 
         createDescriptorSetLayout();
         createPipelineLayout();
-        this.vertSPIRV = builder.vertShaderSPIRV;
-        this.fragSPIRV = builder.fragShaderSPIRV;
+        this.vertSPIRV=(builder.vertShaderSPIRV);
+        this.fragSPIRV=(builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
@@ -95,12 +95,10 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
             rasterizer.lineWidth(1.0f);
 
-            if(state.cullState) {
+            if(state.cullState)
                 rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
-            }
-            else {
+            else
                 rasterizer.cullMode(VK_CULL_MODE_NONE);
-            }
 
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
@@ -193,7 +191,7 @@ public class GraphicsPipeline extends Pipeline {
         }
     }
 
-    private VkPipelineShaderStageCreateInfo.@NotNull Buffer getShaderStages(MemoryStack stack, SPIRVUtils.SPIRV... spirvs) {
+    private VkPipelineShaderStageCreateInfo.Buffer getShaderStages(MemoryStack stack, SPIRVUtils.SPIRV... spirvs) {
         final ByteBuffer entryPoint = stack.ASCII("main");
         VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(spirvs.length, stack);
         int i = 0;
@@ -209,7 +207,7 @@ public class GraphicsPipeline extends Pipeline {
         return shaderStages;
     }
 
-    @NotNull
+
     private VkShaderModuleCreateInfo getShaderModule(MemoryStack stack, SPIRVUtils.SPIRV v) {
         return VkShaderModuleCreateInfo.malloc(stack).sType$Default().pCode(v.bytecode());
     }
@@ -241,45 +239,87 @@ public class GraphicsPipeline extends Pipeline {
         }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.malloc(size, stackGet());
+                VkVertexInputAttributeDescription.calloc(size, stackGet());
 
         int offset = 0;
-        int i = 0;
 
-        for(VertexFormatElement formatElement : elements) {
-
+        for(int i = 0; i < size; ++i) {
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
-            posDescription.offset(offset);
-            posDescription.format(getValue(formatElement, formatElement.getType()));
 
-            offset+=formatElement.getByteSize();
-            i++;
+            VertexFormatElement formatElement = elements.get(i);
+            VertexFormatElement.Usage usage = formatElement.getUsage();
+            VertexFormatElement.Type type = formatElement.getType();
+            switch (usage) {
+                case POSITION :
+                    if(type == VertexFormatElement.Type.FLOAT) {
+                        posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+                        posDescription.offset(offset);
+
+                        offset += 12;
+                    }
+                    else if (type == VertexFormatElement.Type.SHORT) {
+                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 8;
+                    }
+                    else if (type == VertexFormatElement.Type.BYTE) {
+                        posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+
+                    break;
+
+                case COLOR:
+                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                    posDescription.offset(offset);
+
+//                offset += 16;
+                    offset += 4;
+                    break;
+
+                case UV:
+                    if(type == VertexFormatElement.Type.FLOAT){
+                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                        posDescription.offset(offset);
+
+                        offset += 8;
+                    }
+                    else if(type == VertexFormatElement.Type.SHORT){
+                        posDescription.format(VK_FORMAT_R16G16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+                    else if(type == VertexFormatElement.Type.USHORT){
+                        posDescription.format(VK_FORMAT_R16G16_UINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+                    break;
+
+                case NORMAL:
+                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                    posDescription.offset(offset);
+
+                    offset += 4;
+                    break;
+
+                case PADDING:
+
+                default:
+                    throw new RuntimeException(String.format("Unknown format: %s", usage));
+            }
+
+            posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
         }
 
         return attributeDescriptions.rewind();
-    }
-
-    private static int getValue(VertexFormatElement formatElement, VertexFormatElement.Type type) {
-        return switch (formatElement.getUsage()) {
-            case POSITION -> switch (type) {
-                case FLOAT -> (VK_FORMAT_R32G32B32_SFLOAT);
-                case SHORT -> (VK_FORMAT_R16G16B16A16_SINT);
-                case BYTE -> (VK_FORMAT_R8G8B8A8_SINT);
-                default -> (VK_FORMAT_UNDEFINED);
-            };
-            case COLOR -> (VK_FORMAT_R8G8B8A8_UNORM);
-            case UV -> switch (type) {
-                case FLOAT -> (VK_FORMAT_R32G32_SFLOAT);
-                case SHORT -> (VK_FORMAT_R16G16_SINT);
-                case USHORT -> (VK_FORMAT_R16G16_UINT);
-                default -> (VK_FORMAT_UNDEFINED);
-            };
-
-            case NORMAL -> (VK_FORMAT_R8G8B8A8_SNORM);
-            default -> throw new RuntimeException(String.format("Unknown format: %s", formatElement.getUsage()));
-        };
     }
 
     public void cleanUp() {
