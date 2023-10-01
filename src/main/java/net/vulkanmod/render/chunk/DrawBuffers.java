@@ -7,15 +7,18 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPJPV;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -23,12 +26,19 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
+    public final int index;
+    private final Vector3i origin;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
     AreaBuffer indexBuffer;
     private final StaticQueue<DrawParameters> Squeue = new StaticQueue<>(512);
     private final StaticQueue<DrawParameters> Tqueue = new StaticQueue<>(512);
+
+    public DrawBuffers(int index, Vector3i origin) {
+        this.index=index;
+        this.origin = origin;
+    }
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
@@ -37,9 +47,12 @@ public class DrawBuffers {
         this.allocated = true;
     }
 
-    public DrawParameters upload(UploadBuffer buffer, DrawParameters drawParameters) {
+    public DrawParameters upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType) {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
+        final int xOffset1 = (xOffset & 127);
+        final int zOffset1 = (zOffset & 127);
+        drawParameters.baseInstance= yOffset<<14|zOffset1<<7|xOffset1;
 
         if(!buffer.indexOnly) {
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
@@ -201,20 +214,16 @@ public class DrawBuffers {
 
 
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
-            final long bufferPtr = stack.nmalloc(12);
-
+            FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
+            vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
             final long npointer = stack.npointer(vertexBuffer.getId());
             final long npointer1 = stack.nmalloc(Pointer.POINTER_SIZE);
             for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
-                MemoryUtil.memPutFloat(bufferPtr + 0, (float) (drawParameters.x - camX));
-                MemoryUtil.memPutFloat(bufferPtr + 4, (float) (drawParameters.y - camY));
-                MemoryUtil.memPutFloat(bufferPtr + 8, (float) (drawParameters.z - camZ));
+                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
 
-                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*VERTEX_SIZE);
-                nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, bufferPtr);
                 nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
-                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, 0);
+                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance);
 
             }
 
@@ -248,6 +257,7 @@ public class DrawBuffers {
 
 
     public static class DrawParameters {
+        public int baseInstance;
         private int x;
         private int y;
         private int z;

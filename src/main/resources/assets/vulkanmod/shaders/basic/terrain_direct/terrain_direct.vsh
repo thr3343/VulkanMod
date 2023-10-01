@@ -37,10 +37,11 @@ const float UV_INV = 1.0 / 65536.0;
 const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
-    vec3 pos = (Position * POSITION_INV);
-    gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
+    vec3 a =ivec3(gl_InstanceIndex) >> ivec3(0, 14, 7) & ivec3(0x7f, -1, 0x7f);
+    vec3 pos = (Position * POSITION_INV)+ChunkOffset;
+    gl_Position = MVP * vec4(pos + a, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);
+    vertexDistance = length((ModelViewMat * vec4(pos + a, 1.0)).xyz);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);

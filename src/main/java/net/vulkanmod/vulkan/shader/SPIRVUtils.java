@@ -15,8 +15,8 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class SPIRVUtils {
-    private static final boolean DEBUG = true;
-    private static final boolean OPTIMIZATIONS = false;
+    private static final boolean DEBUG = false;
+    private static final boolean OPTIMIZATIONS = true;
 
     private static long compiler;
 

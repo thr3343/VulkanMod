@@ -320,7 +320,7 @@ public class WorldRenderer {
             }
 
             if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                this.chunkAreaQueue.add(renderSection.getChunkArea().drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -369,7 +369,7 @@ public class WorldRenderer {
             }
 
             if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                this.chunkAreaQueue.add(renderSection.getChunkArea().drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -560,16 +560,16 @@ public class WorldRenderer {
         {
             return;
         }
-        Profiler2 p = Profiler2.getMainProfiler();
+//        Profiler2 p = Profiler2.getMainProfiler();
 
 //        p.pushMilestone("layer " + layerName);
-        if(rType.equals(CUTOUT_MIPPED))
-            p.push("Opaque_terrain_pass");
-        else if(rType.equals(TRANSLUCENT))
-        {
-            p.pop();
-            p.push("Translucent_terrain_pass");
-        }
+//        if(rType.equals(CUTOUT_MIPPED))
+//            p.push("Opaque_terrain_pass");
+//        else if(rType.equals(TRANSLUCENT))
+//        {
+//            p.pop();
+//            p.push("Translucent_terrain_pass");
+//        }
 
 
         RenderSystem.assertOnRenderThread();
@@ -577,10 +577,10 @@ public class WorldRenderer {
 
         this.sortTranslucentSections(camX, camY, camZ);
 
-        this.minecraft.getProfiler().push("filterempty");
-        this.minecraft.getProfiler().popPush(() -> {
-            return "render_" + renderType;
-        });
+//        this.minecraft.getProfiler().push("filterempty");
+//        this.minecraft.getProfiler().popPush(() -> {
+//            return "render_" + renderType;
+//        });
         final boolean isTranslucent = rType == TRANSLUCENT;
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
@@ -591,45 +591,46 @@ public class WorldRenderer {
         renderer.bindGraphicsPipeline(pipeline);
         Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
 
-        p.push("draw batches");
+//        p.push("draw batches");
 
         rType.setCutoutUniform();
+        final int currentFrame = Renderer.getCurrentFrame();
         if(TerrainRenderType.COMPACT_RENDER_TYPES.contains(rType)) {
 
-            pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
-            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent);
+            pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), currentFrame);
+            Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent);
             while(iterator.hasNext()) {
-                ChunkArea chunkArea = iterator.next();
+                DrawBuffers drawBuffers = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], rType, camX, camY, camZ, isTranslucent);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ, isTranslucent);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(pipeline, camX, camY, camZ, isTranslucent);
+                    drawBuffers.buildDrawBatchesDirect(pipeline, camX, camY, camZ, isTranslucent);
                 }
             }
         }
 
         if(rType.equals(CUTOUT_MIPPED) || rType.equals(TRANSLUCENT)) {
-            indirectBuffers[Renderer.getCurrentFrame()].submitUploads();
+            indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
-        p.pop();
+//        p.pop();
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
-        switch (rType) {
-            case CUTOUT_MIPPED -> {
-                p.pop();
+//        switch (rType) {
+//            case CUTOUT_MIPPED -> {
 //                p.pop();
-//                p.push("Render_level_2");
-                p.push("entities");
-            }
+////                p.pop();
+////                p.push("Render_level_2");
+//                p.push("entities");
+//            }
+////            case TRANSLUCENT -> p.pop();
 //            case TRANSLUCENT -> p.pop();
-            case TRANSLUCENT -> p.pop();
-        }
+//        }
 
     }
 
