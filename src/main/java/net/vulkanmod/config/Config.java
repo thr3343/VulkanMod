@@ -20,7 +20,7 @@ public class Config {
     public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean indirectDraw = false;
-    public boolean uniqueOpaqueLayer = true;
+//    public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
 
     private static Path path;

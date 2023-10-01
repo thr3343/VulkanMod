@@ -23,14 +23,11 @@ public enum TerrainRenderType {
                     (terrainRenderType) -> terrainRenderType.renderType, (terrainRenderType) -> terrainRenderType)));
 
     public static final ObjectArrayList<RenderType> COMPACT_RENDER_TYPES = new ObjectArrayList<>();
-    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
+//    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
 
     static {
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.cutout());
         COMPACT_RENDER_TYPES.add(RenderType.cutoutMipped());
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.cutoutMipped());
         COMPACT_RENDER_TYPES.add(RenderType.translucent());
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.translucent());
     }
 
     final RenderType renderType;
