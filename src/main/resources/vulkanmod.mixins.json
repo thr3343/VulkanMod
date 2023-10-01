@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
   "mixins": [
+    "chunk.CubicSamplerM"
   ],
   "client": [
     "InputConstantsM",
@@ -18,26 +19,15 @@
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
     "debug.ChunkBorderRendererM",
+    "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
-    "debug.DebugScreenOverlayM",
-
     "gui.ChatComponentM",
     "gui.DebugHudM",
     "gui.GuiM",
     "matrix.Matrix4fM",
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
-
-    "render.entity.EntityRendererM",
-    "render.model.ModelPartCubeM",
-    "render.model.ModelPartM",
-    "render.vertex.FaceBakeryM",
-    "render.vertex.BufferBuilderM",
-    "render.vertex.VertexBufferM",
-    "render.vertex.VertexConsumerM",
-    "render.vertex.LiquidBlockRendererM",
-    "render.vertex.VertexFormatMixin",
     "render.BufferUploaderM",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
@@ -48,6 +38,7 @@
     "render.RenderSystemMixin",
     "render.RenderTargetMixin",
     "render.ShaderInstanceM",
+    "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
     "render.vertex.BufferBuilderM",
