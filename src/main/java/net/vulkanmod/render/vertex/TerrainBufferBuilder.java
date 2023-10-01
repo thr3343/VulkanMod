@@ -1,15 +1,22 @@
 package net.vulkanmod.render.vertex;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Floats;
 import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
-import net.vulkanmod.render.util.SortUtil;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
+import net.vulkanmod.render.util.SortUtil;
+
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 
@@ -518,7 +525,20 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			int j = this.pointer + this.drawState.vertexBufferEnd();
 			return TerrainBufferBuilder.this.bufferSlice(i, j);
 		}
+		public long vertexBufferPtr() {
+			return TerrainBufferBuilder.this.bufferPtr +  this.pointer + this.drawState.vertexBufferStart();
+		}
 
+		public long indexBufferPtr() {
+			return TerrainBufferBuilder.this.bufferPtr +  this.pointer + this.drawState.indexBufferStart();
+		}
+		public int size() {
+			return (this.pointer + this.drawState.vertexBufferEnd()) - (this.pointer + this.drawState.vertexBufferStart());
+		}
+
+		public int size2() {
+			return (this.pointer + this.drawState.indexBufferEnd()) - (this.pointer + this.drawState.indexBufferStart());
+		}
 		public ByteBuffer indexBuffer() {
 			int i = this.pointer + this.drawState.indexBufferStart();
 			int j = this.pointer + this.drawState.indexBufferEnd();
