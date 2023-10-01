@@ -3,10 +3,10 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -26,9 +26,11 @@ public class GraphicsPipeline extends Pipeline {
 
     private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private final VertexFormat vertexFormat;
+    private final SPIRVUtils.SPIRV vertSPIRV;
+    private final SPIRVUtils.SPIRV fragSPIRV;
 
-    private long vertShaderModule = 0;
-    private long fragShaderModule = 0;
+//    private long vertShaderModule = 0;
+//    private long fragShaderModule = 0;
 
     GraphicsPipeline(Builder builder) {
         super(builder.shaderPath);
@@ -40,7 +42,8 @@ public class GraphicsPipeline extends Pipeline {
 
         createDescriptorSetLayout();
         createPipelineLayout();
-        createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
+        this.vertSPIRV = builder.vertShaderSPIRV;
+        this.fragSPIRV = builder.fragShaderSPIRV;
 
         if(builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
@@ -59,23 +62,7 @@ public class GraphicsPipeline extends Pipeline {
 
         try(MemoryStack stack = stackPush()) {
 
-            ByteBuffer entryPoint = stack.UTF8("main");
-
-            VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
-
-            VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
-
-            vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-            vertShaderStageInfo.stage(VK_SHADER_STAGE_VERTEX_BIT);
-            vertShaderStageInfo.module(vertShaderModule);
-            vertShaderStageInfo.pName(entryPoint);
-
-            VkPipelineShaderStageCreateInfo fragShaderStageInfo = shaderStages.get(1);
-
-            fragShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-            fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
-            fragShaderStageInfo.module(fragShaderModule);
-            fragShaderStageInfo.pName(entryPoint);
+            final VkPipelineShaderStageCreateInfo.Buffer shaderStages = getShaderStages(stack, this.vertSPIRV, this.fragSPIRV);
 
             // ===> VERTEX STAGE <===
 
@@ -108,10 +95,12 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
             rasterizer.lineWidth(1.0f);
 
-            if(state.cullState)
+            if(state.cullState) {
                 rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
-            else
+            }
+            else {
                 rasterizer.cullMode(VK_CULL_MODE_NONE);
+            }
 
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
@@ -204,10 +193,31 @@ public class GraphicsPipeline extends Pipeline {
         }
     }
 
-    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
+    private VkPipelineShaderStageCreateInfo.@NotNull Buffer getShaderStages(MemoryStack stack, SPIRVUtils.SPIRV... spirvs) {
+        final ByteBuffer entryPoint = stack.ASCII("main");
+        VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(spirvs.length, stack);
+        int i = 0;
+        for (VkPipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo :shaderStages) {
+            SPIRVUtils.SPIRV spirv = spirvs[i++];
+            vkPipelineShaderStageCreateInfo
+                    .sType$Default()
+                    .pNext(getShaderModule(stack, spirv))
+                    .stage(spirv.shaderStageBit())
+                    .pName(entryPoint);
+        }
+
+        return shaderStages;
     }
+
+    @NotNull
+    private VkShaderModuleCreateInfo getShaderModule(MemoryStack stack, SPIRVUtils.SPIRV v) {
+        return VkShaderModuleCreateInfo.malloc(stack).sType$Default().pCode(v.bytecode());
+    }
+
+//    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
+//        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
+//        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
+//    }
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
 
@@ -231,92 +241,50 @@ public class GraphicsPipeline extends Pipeline {
         }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.calloc(size, stackGet());
+                VkVertexInputAttributeDescription.malloc(size, stackGet());
 
         int offset = 0;
+        int i = 0;
 
-        for(int i = 0; i < size; ++i) {
+        for(VertexFormatElement formatElement : elements) {
+
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
+            posDescription.offset(offset);
+            posDescription.format(getValue(formatElement, formatElement.getType()));
 
-            VertexFormatElement formatElement = elements.get(i);
-            VertexFormatElement.Usage usage = formatElement.getUsage();
-            VertexFormatElement.Type type = formatElement.getType();
-            switch (usage) {
-                case POSITION :
-                    if(type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 12;
-                    }
-                    else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    }
-                    else if (type == VertexFormatElement.Type.BYTE) {
-                        posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-
-                    break;
-
-                case COLOR:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                    posDescription.offset(offset);
-
-//                offset += 16;
-                    offset += 4;
-                    break;
-
-                case UV:
-                    if(type == VertexFormatElement.Type.FLOAT){
-                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    }
-                    else if(type == VertexFormatElement.Type.SHORT){
-                        posDescription.format(VK_FORMAT_R16G16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-                    else if(type == VertexFormatElement.Type.USHORT){
-                        posDescription.format(VK_FORMAT_R16G16_UINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-                    break;
-
-                case NORMAL:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
-                    posDescription.offset(offset);
-
-                    offset += 4;
-                    break;
-
-                case PADDING:
-
-                default:
-                    throw new RuntimeException(String.format("Unknown format: %s", usage));
-            }
-
-            posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
+            offset+=formatElement.getByteSize();
+            i++;
         }
 
         return attributeDescriptions.rewind();
     }
 
+    private static int getValue(VertexFormatElement formatElement, VertexFormatElement.Type type) {
+        return switch (formatElement.getUsage()) {
+            case POSITION -> switch (type) {
+                case FLOAT -> (VK_FORMAT_R32G32B32_SFLOAT);
+                case SHORT -> (VK_FORMAT_R16G16B16A16_SINT);
+                case BYTE -> (VK_FORMAT_R8G8B8A8_SINT);
+                default -> (VK_FORMAT_UNDEFINED);
+            };
+            case COLOR -> (VK_FORMAT_R8G8B8A8_UNORM);
+            case UV -> switch (type) {
+                case FLOAT -> (VK_FORMAT_R32G32_SFLOAT);
+                case SHORT -> (VK_FORMAT_R16G16_SINT);
+                case USHORT -> (VK_FORMAT_R16G16_UINT);
+                default -> (VK_FORMAT_UNDEFINED);
+            };
+
+            case NORMAL -> (VK_FORMAT_R8G8B8A8_SNORM);
+            default -> throw new RuntimeException(String.format("Unknown format: %s", formatElement.getUsage()));
+        };
+    }
+
     public void cleanUp() {
-        vkDestroyShaderModule(Device.device, vertShaderModule, null);
-        vkDestroyShaderModule(Device.device, fragShaderModule, null);
+        vertSPIRV.free();
+        fragSPIRV.free();
 
         destroyDescriptorSets();
 

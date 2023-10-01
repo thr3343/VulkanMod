@@ -7,7 +7,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
@@ -25,7 +24,6 @@ import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
@@ -184,25 +182,6 @@ public abstract class Pipeline {
 
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame) {
         this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers);
-    }
-
-    static long createShaderModule(ByteBuffer spirvCode) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            createInfo.pCode(spirvCode);
-
-            LongBuffer pShaderModule = stack.mallocLong(1);
-
-            if(vkCreateShaderModule(DEVICE, createInfo, null, pShaderModule) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create shader module");
-            }
-
-            return pShaderModule.get(0);
-        }
     }
 
     private class DescriptorSets {
