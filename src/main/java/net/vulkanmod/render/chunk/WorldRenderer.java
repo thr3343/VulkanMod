@@ -29,7 +29,7 @@ import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.profiling.Profiler2;
-import net.vulkanmod.render.chunk.util.AreaSetQueue;
+import net.vulkanmod.render.chunk.util.DrawBufferQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -74,7 +74,7 @@ public class WorldRenderer {
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    private DrawBufferQueue chunkAreaQueue;
     private short lastFrame = 0;
 
     private double xTransparentOld;
@@ -507,7 +507,7 @@ public class WorldRenderer {
             }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
-            this.chunkAreaQueue = new AreaSetQueue(this.sectionGrid.chunkAreaManager.size);
+            this.chunkAreaQueue = new DrawBufferQueue(this.sectionGrid.chunkAreaManager.size);
 
             this.onAllChangedCallbacks.forEach(Runnable::run);
 
