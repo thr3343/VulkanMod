@@ -19,10 +19,6 @@ public enum TerrainRenderType {
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
-    private static final Map<RenderType, TerrainRenderType> RENDER_TYPE_MAP = new Hashtable<>(
-            Arrays.stream(TerrainRenderType.values()).collect(Collectors.toMap(
-                    (terrainRenderType) -> terrainRenderType.renderType, (terrainRenderType) -> terrainRenderType)));
-
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 //    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
 
@@ -38,10 +34,6 @@ public enum TerrainRenderType {
 
     public void setCutoutUniform() {
         VRenderSystem.alphaCutout = this.alphaCutout;
-    }
-
-    public static TerrainRenderType get(RenderType renderType) {
-        return RENDER_TYPE_MAP.get(renderType);
     }
 
     public static TerrainRenderType get(String renderType) {
