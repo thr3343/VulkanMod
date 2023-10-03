@@ -1,14 +1,14 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.apache.commons.lang3.Validate;
 
-import java.nio.ByteBuffer;
-
+import static net.vulkanmod.render.chunk.DrawBuffers.tVirtualBufferIdx;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
@@ -40,11 +40,30 @@ public class AreaUploadManager {
 
     public synchronized void submitUploads() {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
-
-        if(this.recordedUploads[this.currentFrame].isEmpty())
+        if(this.commandBuffers[currentFrame]==null)
             return;
+        var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
+        tVirtualBufferIdx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
+
 
         Device.getTransferQueue().submitCommands(this.commandBuffers[currentFrame]);
+    }
+
+    public void uploadAsync2(VirtualBuffer virtualBuffer, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
+        Validate.isTrue(dstOffset<dstBufferSize);
+
+        if(commandBuffers[currentFrame] == null)
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+//            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
+
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
+        stagingBuffer.copyBuffer2((int) bufferSize, src);
+
+//        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
+        final SubCopyCommand k = new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize);
+//        this.recordedUploads[this.currentFrame].add(k);
+        virtualBuffer.addSubCpy(k);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
@@ -100,6 +119,9 @@ public class AreaUploadManager {
         this.frameOps[frame].clear();
     }
 
+    void waitUploads() {
+        this.waitUploads(currentFrame);
+    }
     private void waitUploads(int frame) {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)

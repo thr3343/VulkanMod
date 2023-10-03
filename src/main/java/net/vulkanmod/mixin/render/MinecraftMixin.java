@@ -25,6 +25,7 @@ import net.minecraft.server.packs.VanillaPackResources;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.VideoResolution;
+import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.texture.SpriteUtil;
@@ -145,7 +146,7 @@ public class MinecraftMixin {
     }
     @Inject(method = "close", at = @At(value = "RETURN"))
     public void close2(CallbackInfo ci) {
-
+        DrawBuffers.cleanUp();
         Vulkan.cleanUp();
 
         Util.shutdownExecutors();
