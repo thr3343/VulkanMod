@@ -5,7 +5,7 @@
 #define MINECRAFT_AMBIENT_LIGHT 0.4
 
 vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
-    return texelFetch(lightMap, (uv & 255) >> 4, 0);
+    return texelFetch(lightMap, bitfieldExtract(uv, 4, 8), 0);
 }
 
 layout(binding = 0) uniform UniformBufferObject {
@@ -37,8 +37,8 @@ const float UV_INV = 1.0 / 65536.0;
 const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
-    vec3 a =ivec3(gl_InstanceIndex) >> ivec3(0, 14, 7) & ivec3(0x7f, -1, 0x7f);
-    vec3 pos = (Position * POSITION_INV)+ChunkOffset;
+    const ivec3 a = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 18, 9), 0, 9);
+    const vec3 pos = fma(Position, vec3(POSITION_INV), ChunkOffset);
     gl_Position = MVP * vec4(pos + a, 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(pos + a, 1.0)).xyz);

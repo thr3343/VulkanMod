@@ -57,7 +57,7 @@ public class DrawBuffers {
         int firstIndex = 0;
         final int xOffset1 = (xOffset & 127);
         final int zOffset1 = (zOffset & 127);
-        drawParameters.baseInstance= yOffset<<14|zOffset1<<7|xOffset1;
+        drawParameters.baseInstance= yOffset<<18|zOffset1<<9|xOffset1;
 
         if(!buffer.indexOnly()) {
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
