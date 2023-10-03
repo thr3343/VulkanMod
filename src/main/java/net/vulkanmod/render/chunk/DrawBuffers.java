@@ -23,13 +23,12 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
-    private static final int INDEX_SIZE = Short.BYTES;
     public final int index;
     private final Vector3i origin;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
-    AreaBuffer indexBuffer;
+//    AreaBuffer indexBuffer;
     private final StaticQueue<DrawParameters> Squeue = new StaticQueue<>(512);
     private final StaticQueue<DrawParameters> Tqueue = new StaticQueue<>(512);
 
@@ -39,8 +38,8 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 4194304, VERTEX_SIZE);
-        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 524288, INDEX_SIZE);
+        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152, VERTEX_SIZE);
+//        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 524288, INDEX_SIZE);
 
         this.allocated = true;
     }
@@ -63,11 +62,11 @@ public class DrawBuffers {
 //            }
         }
 
-        if(!buffer.autoIndices()) {
-            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, buffer.indexSize());
-//            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
-            firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
-        }
+//        if(!buffer.autoIndices()) {
+//            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, buffer.indexSize());
+////            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
+//            firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
+//        }
 
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
@@ -101,9 +100,9 @@ public class DrawBuffers {
 
             Pipeline pipeline = TerrainShaderManager.getTerrainIndirectShader();
 
-            if (isTranslucent) {
-                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-            }
+//            if (isTranslucent) {
+//                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+//            }
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
             vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
             var iterator = drawParameters1.iterator(isTranslucent);
@@ -195,15 +194,13 @@ public class DrawBuffers {
 
     public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer, long layout) {
 
-        if(isTranslucent)
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-
 
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
             final long npointer = stack.npointer(vertexBuffer.getId());
             final long npointer1 = stack.npointer(0);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
             for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
                 VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
@@ -221,10 +218,8 @@ public class DrawBuffers {
             return;
 
         this.vertexBuffer.freeBuffer();
-        this.indexBuffer.freeBuffer();
 
         this.vertexBuffer = null;
-        this.indexBuffer = null;
         this.allocated = false;
     }
 
