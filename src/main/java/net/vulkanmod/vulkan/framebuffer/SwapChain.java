@@ -267,7 +267,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffer, stack, this.swapChainImages.get(Renderer.getCurrentFrame()).getImageView(), depthAttachment.getImageView());
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffer, stack, this.swapChainImages.get(Renderer.getImageIndex()).getImageView(), depthAttachment.getImageView());
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
