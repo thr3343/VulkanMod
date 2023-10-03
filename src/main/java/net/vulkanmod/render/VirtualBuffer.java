@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 //import net.vulkanmod.render.chunk.SubCopyCommand;
+import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
@@ -21,6 +22,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 
 //import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.system.Pointer.POINTER_SIZE;
@@ -53,7 +55,7 @@ public final class VirtualBuffer {
     public final ObjectArrayList<virtualSegmentBuffer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
     private final TerrainRenderType r;
-//    private final ObjectArrayFIFOQueue<SubCopyCommand> recordedUploads=new ObjectArrayFIFOQueue<>(8);
+    private final ObjectArrayFIFOQueue<SubCopyCommand> recordedUploads=new ObjectArrayFIFOQueue<>(8);
 
 
     public VirtualBuffer(long size_t, int type, TerrainRenderType r)
@@ -265,7 +267,7 @@ public final class VirtualBuffer {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
         {
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
-            AreaUploadManager.INSTANCE.enqueueFrameOp(() -> vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc));
+            /*AreaUploadManager.INSTANCE.enqueueFrameOp(() -> */vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc);
             MemoryUtil.nmemAlignedFree(this.Ptr);
         }
         System.out.println("FREED");
@@ -309,37 +311,37 @@ public final class VirtualBuffer {
         usedBytes-= vertexBufferSegment.size_t();
     }
 
-//    public void uploadSubset(long src, CommandPool.CommandBuffer commandBuffer) {
-//        if(this.recordedUploads.isEmpty())
-//            return;
-//        try(MemoryStack stack = MemoryStack.stackPush())
-//        {
-//            final int size = this.recordedUploads.size();
-//            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
-////            int i = 0;
-////            int rem=0;
-////            long src=0;
-////            long dst=0;
-//            for(var copyRegion : copyRegions)
-//            {
-////                var a =this.activeRanges.pop();
-//                final SubCopyCommand virtualSegmentBuffer = this.recordedUploads.dequeue();
-//                copyRegion.srcOffset(virtualSegmentBuffer.offset())
-//                        .dstOffset(virtualSegmentBuffer.dstOffset())
-//                        .size(virtualSegmentBuffer.bufferSize());
-//
-////                rem+=virtualSegmentBuffer.bufferSize();
-////                src=virtualSegmentBuffer.id();
-////                dst=virtualSegmentBuffer.bufferId();
-//            }
-////            Initializer.LOGGER.info(size+"+"+rem);
-//
-//            TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
-//        }
-//        this.recordedUploads.clear();
-//    }
-//
-//    public void addSubCpy(SubCopyCommand subCopyCommand) {
-//        this.recordedUploads.enqueue(subCopyCommand);
-//    }
+    public void uploadSubset(long src, CommandPool.CommandBuffer commandBuffer) {
+        if(this.recordedUploads.isEmpty())
+            return;
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            final int size = this.recordedUploads.size();
+            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
+//            int i = 0;
+//            int rem=0;
+//            long src=0;
+//            long dst=0;
+            for(var copyRegion : copyRegions)
+            {
+//                var a =this.activeRanges.pop();
+                final SubCopyCommand virtualSegmentBuffer = this.recordedUploads.dequeue();
+                copyRegion.srcOffset(virtualSegmentBuffer.offset())
+                        .dstOffset(virtualSegmentBuffer.dstOffset())
+                        .size(virtualSegmentBuffer.bufferSize());
+
+//                rem+=virtualSegmentBuffer.bufferSize();
+//                src=virtualSegmentBuffer.id();
+//                dst=virtualSegmentBuffer.bufferId();
+            }
+//            Initializer.LOGGER.info(size+"+"+rem);
+
+            TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
+        }
+        this.recordedUploads.clear();
+    }
+
+    public void addSubCpy(SubCopyCommand subCopyCommand) {
+        this.recordedUploads.enqueue(subCopyCommand);
+    }
 }

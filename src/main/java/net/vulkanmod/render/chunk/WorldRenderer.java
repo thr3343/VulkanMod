@@ -48,6 +48,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
+import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -593,7 +595,10 @@ public class WorldRenderer {
         final int currentFrame = Renderer.getCurrentFrame();
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         long layout = pipeline.getLayout();
-        Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+        vkCmdBindIndexBuffer(commandBuffer,
+                !isTranslucent ? Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId() : DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet,
+                0,
+                VK_INDEX_TYPE_UINT16);
         rType.setCutoutUniform();
         pipeline.bindDescriptorSets(commandBuffer, currentFrame);
 //        p.push("draw batches");
