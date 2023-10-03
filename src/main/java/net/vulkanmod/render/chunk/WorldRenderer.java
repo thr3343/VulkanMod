@@ -42,6 +42,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -582,30 +583,29 @@ public class WorldRenderer {
 //            return "render_" + renderType;
 //        });
         final boolean isTranslucent = rType == TRANSLUCENT;
-        boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         Renderer renderer = Renderer.getInstance();
         GraphicsPipeline pipeline = TerrainShaderManager.getTerrainShader(rType);
         renderer.bindGraphicsPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
-
+        final int currentFrame = Renderer.getCurrentFrame();
+        final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+        long layout = pipeline.getLayout();
+        Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+        rType.setCutoutUniform();
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
 //        p.push("draw batches");
 
-        rType.setCutoutUniform();
-        final int currentFrame = Renderer.getCurrentFrame();
         if(TerrainRenderType.COMPACT_RENDER_TYPES.contains(rType)) {
 
-            pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), currentFrame);
-            Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent);
-            while(iterator.hasNext()) {
+            for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
                 DrawBuffers drawBuffers = iterator.next();
-
                 if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ, isTranslucent);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer);
                 } else {
-                    drawBuffers.buildDrawBatchesDirect(pipeline, camX, camY, camZ, isTranslucent);
+                    drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
                 }
             }
         }
@@ -616,7 +616,7 @@ public class WorldRenderer {
         }
 //        p.pop();
 
-        this.minecraft.getProfiler().pop();
+
         renderType.clearRenderState();
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
