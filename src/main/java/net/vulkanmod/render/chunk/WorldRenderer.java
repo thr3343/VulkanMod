@@ -588,6 +588,8 @@ public class WorldRenderer {
 
         final boolean drawIndirect = Initializer.CONFIG.indirectDraw;
 
+        final boolean vertexFetchFix = Initializer.CONFIG.vertexFetchFix;
+
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         Renderer renderer = Renderer.getInstance();
@@ -597,7 +599,7 @@ public class WorldRenderer {
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         long layout = pipeline.getLayout();
         vkCmdBindIndexBuffer(commandBuffer,
-                !isTranslucent ? Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId() : DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet,
+                isTranslucent ? DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet : Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId(),
                 0,
                 VK_INDEX_TYPE_UINT16);
 
@@ -610,7 +612,7 @@ public class WorldRenderer {
 
                 final DrawBuffers drawBuffers = iterator.next();
                 if(drawIndirect) drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer, layout);
-                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
+                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout, vertexFetchFix);
             }
         }
 

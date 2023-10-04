@@ -7,6 +7,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
@@ -26,7 +27,8 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
+//    static final VirtualBuffer drawIndirectCmdBuffer = new VirtualBuffer(1048576, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
     public final int index;
     private final Vector3i origin;
 
@@ -207,23 +209,35 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer, long layout) {
-
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer, long layout, boolean vertexFetchFix) {
 
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
             final long npointer = stack.npointer(vertexBuffer.getId());
             final long npointer1 = stack.npointer(0);
+
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
-            for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
-                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
 
-                nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
-                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance);
+            if (vertexFetchFix) drawIndexedBatched(isTranslucent, commandBuffer, npointer1, npointer);
+            else drawIndexedBatchedBindless(isTranslucent, commandBuffer);
 
-            }
+        }
+    }
+
+    private void drawIndexedBatchedBindless(boolean isTranslucent, VkCommandBuffer address) {
+        for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
+            vkCmdDrawIndexed(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+        }
+    }
+    private void drawIndexedBatched(boolean isTranslucent, VkCommandBuffer commandBuffer, long npointer1, long npointer) {
+        for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
+
+            VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
+
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance);
 
         }
     }
