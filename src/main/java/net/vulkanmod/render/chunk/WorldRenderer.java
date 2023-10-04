@@ -585,7 +585,6 @@ public class WorldRenderer {
 //            return "render_" + renderType;
 //        });
         final boolean isTranslucent = rType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -594,6 +593,7 @@ public class WorldRenderer {
         renderer.bindGraphicsPipeline(pipeline);
         final int currentFrame = Renderer.getCurrentFrame();
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+        long address = commandBuffer.address();
         long layout = pipeline.getLayout();
         vkCmdBindIndexBuffer(commandBuffer,
                 !isTranslucent ? Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId() : DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet,
@@ -606,19 +606,14 @@ public class WorldRenderer {
         if(TerrainRenderType.COMPACT_RENDER_TYPES.contains(rType)) {
 
             for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
-                DrawBuffers drawBuffers = iterator.next();
-                if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer, layout);
-                } else {
-                    drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
-                }
+                iterator.next().buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address);
             }
         }
 
-        if(rType.equals(CUTOUT_MIPPED) || rType.equals(TRANSLUCENT)) {
-            indirectBuffers[currentFrame].submitUploads();
-//            uniformBuffers.submitUploads();
-        }
+//        if(rType.equals(CUTOUT_MIPPED) || rType.equals(TRANSLUCENT)) {
+//            indirectBuffers[currentFrame].submitUploads();
+////            uniformBuffers.submitUploads();
+//        }
 //        p.pop();
 
 
