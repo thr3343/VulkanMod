@@ -99,7 +99,7 @@ public class SPIRVUtils {
 
         @Override
         public void free() {
-            shaderc_result_release(handle);
+//            shaderc_result_release(handle);
         }
     }
 
