@@ -2,13 +2,12 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.Initializer;
-import net.vulkanmod.render.chunk.AreaUploadManager;
 //import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -58,7 +57,7 @@ public final class VirtualBuffer {
     private final ObjectArrayFIFOQueue<SubCopyCommand> recordedUploads=new ObjectArrayFIFOQueue<>(8);
 
 
-    public VirtualBuffer(long size_t, int type, TerrainRenderType r)
+    public VirtualBuffer(long size_t, int type, TerrainRenderType r, MemoryType gpuMem)
     {
         this.size_t=size_t;
         this.vkBufferType =type;

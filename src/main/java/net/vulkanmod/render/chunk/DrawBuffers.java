@@ -8,6 +8,7 @@ import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
@@ -27,7 +28,8 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
+//    static final VirtualBuffer drawIndirectCmdBuffer = new VirtualBuffer(1048576, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
     public final int index;
     private final Vector3i origin;
     private static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
@@ -201,7 +203,7 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address) {
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address, boolean vertexFetchFix) {
 
 
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
@@ -212,14 +214,24 @@ public class DrawBuffers {
             final long npointer1 = stack.npointer(0);
 
             callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
-            for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
+            if(vertexFetchFix) drawIndexedBatched(isTranslucent, address, npointer1, npointer);
+            else drawIndexedBatchedBindless(isTranslucent, address);
 
-                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
+        }
+    }
 
-                callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
-                callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, functionAddress);
+    private void drawIndexedBatchedBindless(boolean isTranslucent, long address) {
+        for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, functionAddress);
+        }
+    }
+    private void drawIndexedBatched(boolean isTranslucent, long address, long npointer1, long npointer) {
+        for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
-            }
+            VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);
+
+            callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
+            callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance, functionAddress);
 
         }
     }

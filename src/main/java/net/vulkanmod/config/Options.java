@@ -265,7 +265,18 @@ public class Options {
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems."""))
+                        Enabling it might help in CPU limited systems.""")),
+                new SwitchOption("Vertex fetch Fix",
+                        value -> config.vertexFetchFix = value,
+                        () -> config.vertexFetchFix)
+                        .setTooltip(Component.nullToEmpty("""
+                        NOT RECOMMENDED FOR MOST GPUS!
+                        (Applies only when Indirect is disabled)
+                        Massively Boosts FPS on specific GPUs when enabled
+                        But is enormously CPU intensive
+                        Only intended for very specific GPUs
+                        (e.g. Old Nvidia cards such as GTX 1000 series)
+                        (So will likely cause FPS drops on other/newer hardware)"""))
         };
 
     }
