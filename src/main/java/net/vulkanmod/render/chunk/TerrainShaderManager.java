@@ -23,18 +23,10 @@ public abstract class TerrainShaderManager {
     static GraphicsPipeline terrainDirectShader2;
     public static GraphicsPipeline terrainDirectShader;
 
-    private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
-
     public static void init() {
         setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
         createBasicPipelines();
-        setDefaultShader();
     }
-
-    public static void setDefaultShader() {
-        setShaderGetter(renderType -> Initializer.CONFIG.indirectDraw ? terrainDirectShader2 : terrainDirectShader);
-    }
-
     private static void createBasicPipelines() {
         String resourcePath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/basic").toExternalForm();
         SPIRVUtils.SPIRV Vert = compileShaderAbsoluteFile(String.format("%s/%s/%s.vsh", resourcePath, "terrain_direct", "terrain_direct"), SPIRVUtils.ShaderKind.VERTEX_SHADER);
@@ -54,10 +46,6 @@ public abstract class TerrainShaderManager {
 
     public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
         return renderType==TerrainRenderType.TRANSLUCENT ? terrainDirectShader2 : terrainDirectShader;
-    }
-
-    public static void setShaderGetter(Function<TerrainRenderType, GraphicsPipeline> consumer) {
-        shaderGetter = consumer;
     }
 
     public static GraphicsPipeline getTerrainDirectShader() {
