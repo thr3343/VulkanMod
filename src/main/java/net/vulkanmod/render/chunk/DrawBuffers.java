@@ -108,7 +108,7 @@ public class DrawBuffers {
         return drawParameters.indexBufferSegment.i2() / INDEX_SIZE;
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer, long layout) {
         int stride = 20;
 
         int drawCount = 0;
@@ -122,15 +122,12 @@ public class DrawBuffers {
             ByteBuffer uboBuffer = stack.calloc(16 * drawParameters1.size());
 
             long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-            long uboPtr = MemoryUtil.memAddress0(uboBuffer);
 
-            Pipeline pipeline = TerrainShaderManager.getTerrainIndirectShader();
-
-//            if (isTranslucent) {
+            //            if (isTranslucent) {
 //                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
 //            }
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
-            vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
+            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
             var iterator = drawParameters1.iterator(isTranslucent);
             while (iterator.hasNext()) {
                 DrawParameters drawParameters = iterator.next();
@@ -167,8 +164,6 @@ public class DrawBuffers {
             byteBuffer.position(0);
 
             indirectBuffer.recordCopyCmd(byteBuffer);
-
-            pipeline.getManualUBO().setSrc(uboPtr, 16 * drawCount);
 
             vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer.getId()), stack.longs(0));
 
