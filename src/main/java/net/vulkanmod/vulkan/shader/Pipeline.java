@@ -481,8 +481,8 @@ public abstract class Pipeline {
         }
 
         public void compileShaders(String vsh, String fsh) {
-            this.vertShaderSPIRV = compileShader("vertex shader", vsh, ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShader("fragment shader", fsh, ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShaderAbsoluteFile(vsh, ShaderKind.VERTEX_SHADER);
+            this.fragShaderSPIRV = compileShaderAbsoluteFile(fsh, ShaderKind.FRAGMENT_SHADER);
         }
 
         public void parseBindingsJSON() {

@@ -590,7 +590,7 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = TerrainShaderManager.getTerrainShader(rType);
+        final GraphicsPipeline pipeline = TerrainShaderManager.getTerrainShader(rType);
         renderer.bindGraphicsPipeline(pipeline);
         final int currentFrame = Renderer.getCurrentFrame();
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -599,7 +599,7 @@ public class WorldRenderer {
                 !isTranslucent ? Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId() : DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet,
                 0,
                 VK_INDEX_TYPE_UINT16);
-        rType.setCutoutUniform();
+
         pipeline.bindDescriptorSets(commandBuffer, currentFrame);
 //        p.push("draw batches");
 
@@ -608,7 +608,7 @@ public class WorldRenderer {
             for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
                 DrawBuffers drawBuffers = iterator.next();
                 if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer, layout);
                 } else {
                     drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
                 }
