@@ -114,7 +114,7 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Vulkan.getSwapChain().getFramesNum()];
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryTypes.HOST_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
@@ -585,7 +585,8 @@ public class WorldRenderer {
 //            return "render_" + renderType;
 //        });
         final boolean isTranslucent = rType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+
+        final boolean drawIndirect = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -606,12 +607,10 @@ public class WorldRenderer {
         if(TerrainRenderType.COMPACT_RENDER_TYPES.contains(rType)) {
 
             for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
-                DrawBuffers drawBuffers = iterator.next();
-                if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer, layout);
-                } else {
-                    drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
-                }
+
+                final DrawBuffers drawBuffers = iterator.next();
+                if(drawIndirect) drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, commandBuffer, layout);
+                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, commandBuffer, layout);
             }
         }
 

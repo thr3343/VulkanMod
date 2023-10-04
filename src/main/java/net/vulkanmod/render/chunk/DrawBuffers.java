@@ -111,8 +111,6 @@ public class DrawBuffers {
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, double camX, double camY, double camZ, boolean isTranslucent, VkCommandBuffer commandBuffer, long layout) {
         int stride = 20;
 
-        int drawCount = 0;
-
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -128,53 +126,49 @@ public class DrawBuffers {
 //            }
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, pValues);
-            var iterator = drawParameters1.iterator(isTranslucent);
-            while (iterator.hasNext()) {
-                DrawParameters drawParameters = iterator.next();
 
+            final int size = (isTranslucent ? Tqueue : Squeue).size();
+            uploadIndirectCommands(indirectBuffer, isTranslucent, stack.malloc(20 * size));
 
-                if (drawParameters.indexCount == 0) {
-                    continue;
-                }
-
-                //TODO
-                if (!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
-                    if (!drawParameters.vertexBufferSegment.isReady())
-                        continue;
-                    drawParameters.ready = true;
-                }
-
-                long ptr = bufferPtr + (drawCount * 20L);
-                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
-                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
-                //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
-                MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-                //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
-                MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
-
-                drawCount++;
-            }
-
-            if (drawCount == 0) {
-                return;
-            }
-
-
-            byteBuffer.position(0);
-
-            indirectBuffer.recordCopyCmd(byteBuffer);
-
-            vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer.getId()), stack.longs(0));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
 
-            vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
+            vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), size, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
 
 //        MemoryUtil.memFree(byteBuffer);
         }
+    }
+
+    private void uploadIndirectCommands(IndirectBuffer indirectBuffer, boolean isTranslucent, ByteBuffer byteBuffer) {
+        int drawCount = 0;
+
+        long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
+
+        //            if (isTranslucent) {
+//                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+//            }
+        for(var iterator = (isTranslucent ? Tqueue : Squeue).iterator(isTranslucent); iterator.hasNext(); ) {
+            DrawParameters drawParameters = iterator.next();
+
+            long ptr = bufferPtr + (drawCount * 20L);
+            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+            MemoryUtil.memPutInt(ptr + 4, 1);
+            MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
+            //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
+            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+            //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
+            MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+
+            drawCount++;
+        }
+
+
+        byteBuffer.position(0);
+
+        indirectBuffer.recordCopyCmd(byteBuffer);
     }
 
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
