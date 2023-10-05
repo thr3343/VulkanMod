@@ -270,13 +270,14 @@ public class Options {
                         value -> config.vertexFetchFix = value,
                         () -> config.vertexFetchFix)
                         .setTooltip(Component.nullToEmpty("""
-                        NOT RECOMMENDED FOR MOST GPUS!
+                        WILL REDUCE FPS ON MOST GPUS:
+                        NOT RECOMMENDED FOR MOST SYSTEMS!
                         (Applies only when Indirect is disabled)
-                        Massively Boosts FPS on specific GPUs when enabled
+                        Boosts FPS on specific GPUs when enabled
                         But is enormously CPU intensive
                         Only intended for very specific GPUs
-                        (e.g. Old Nvidia cards such as GTX 1000 series)
-                        (So will likely cause FPS drops on other/newer hardware)"""))
+                        (e.g. Old Nvidia cards such as GTX 1000)
+                        (Will cause FPS drops on most other GPUs)"""))
         };
 
     }
