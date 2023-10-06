@@ -231,6 +231,7 @@ public class Renderer {
 
     public void endRenderPass() {
         this.boundRenderPass.endRenderPass(currentCmdBuffer);
+
         this.boundRenderPass = null;
     }
 

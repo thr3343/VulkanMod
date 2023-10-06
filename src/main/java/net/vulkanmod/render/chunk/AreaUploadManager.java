@@ -2,6 +2,7 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -20,7 +21,7 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager();
     }
 
-    ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
+    ObjectArrayList<virtualSegmentBuffer>[] recordedUploads;
     ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
     ObjectArrayList<Runnable>[] frameOps;
     CommandPool.CommandBuffer[] commandBuffers;
@@ -40,15 +41,19 @@ public class AreaUploadManager {
         }
     }
 
-    public synchronized void submitUploads() {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
+    public synchronized void submitUploads(boolean ex) {
+//        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         if(this.commandBuffers[currentFrame]==null)
             return;
-        var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
-        tVirtualBufferIdx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
+        if(ex) extracted();
 
 
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
+    }
+
+    public void extracted() {
+        var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
+        tVirtualBufferIdx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync2(VirtualBuffer virtualBuffer, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
@@ -68,7 +73,7 @@ public class AreaUploadManager {
         virtualBuffer.addSubCpy(k);
     }
 
-    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
+    public void uploadAsync(virtualSegmentBuffer uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
@@ -103,8 +108,10 @@ public class AreaUploadManager {
     }
 
     public void updateFrame(int frame) {
+        this.waitUploads(currentFrame);
+//        submitUploads(false); //Submit Prior Frame's pending uploads (i.e. remove the residual uploads)
         this.currentFrame = frame;
-        waitUploads(this.currentFrame);
+
         executeFrameOps(frame);
     }
 
@@ -121,7 +128,7 @@ public class AreaUploadManager {
         this.frameOps[frame].clear();
     }
 
-    void waitUploads() {
+    public void waitUploads() {
         this.waitUploads(currentFrame);
     }
     private void waitUploads(int frame) {
@@ -130,9 +137,9 @@ public class AreaUploadManager {
             return;
         Synchronization.waitFence(commandBuffers[frame].getFence());
 
-        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
-            uploadSegment.setReady();
-        }
+//        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
+//            uploadSegment.setReady();
+//        }
 
         for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
             parametersUpdate.setDrawParameters();
