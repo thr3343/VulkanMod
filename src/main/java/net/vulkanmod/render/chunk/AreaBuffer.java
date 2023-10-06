@@ -140,11 +140,13 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-//        AreaUploadManager.INSTANCE.submitUploads();
-//        AreaUploadManager.INSTANCE.waitUploads();
 
-        AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
-        AreaUploadManager.INSTANCE.copy(this.buffer, buffer);
+//        AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
+
+        AreaUploadManager.INSTANCE.submitUploads();
+        AreaUploadManager.INSTANCE.waitUploads();
+
+        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
 
         this.buffer.freeBuffer();
         this.buffer = buffer;

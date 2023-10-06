@@ -85,6 +85,25 @@ public class AreaUploadManager {
 //        waitUploads();
         this.submit2();
     }
+    public void submitUpload(long k) {
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
+        if(this.DistinctBuffers.isEmpty()) return;
+        if(!this.DistinctBuffers.containsKey(k)) return;
+        if(commandBuffers[currentFrame] == null) return;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            final long l = Vulkan.getStagingBuffer(currentFrame).getId();
+            final ObjectArrayFIFOQueue<SubCopyCommand> value = DistinctBuffers.remove(k);
+            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(value.size(), stack);
+            for (VkBufferCopy vkBufferCopy : copyRegions) {
+                var a = value.dequeue();
+                vkBufferCopy.set(a.offset(), a.dstOffset(), a.bufferSize());
+            }
+
+            TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, k);
+        }
+        submit2();
+
+    }
     public void extracted() {
         if(tVirtualBufferIdx.isEmpty()) return;
         if(commandBuffers[currentFrame] == null) return;
