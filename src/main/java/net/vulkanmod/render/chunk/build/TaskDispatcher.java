@@ -129,8 +129,8 @@ public class TaskDispatcher {
             flag = true;
             runnable.run();
         }
-
-        AreaUploadManager.INSTANCE.submitUploads(true);
+        AreaUploadManager.INSTANCE.extracted();
+        AreaUploadManager.INSTANCE.submitUploads();
 
         return flag;
     }

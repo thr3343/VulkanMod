@@ -397,7 +397,7 @@ public class Renderer {
         int newFramesNum = getSwapChain().getFrameNum();
 
         if(framesNum != newFramesNum) {
-            AreaUploadManager.INSTANCE.waitAllUploads();
+//            AreaUploadManager.INSTANCE.waitAllUploads();
             destroySyncObjects();
 
             framesNum = newFramesNum;

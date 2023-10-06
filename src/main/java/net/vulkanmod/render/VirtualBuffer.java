@@ -340,6 +340,10 @@ public final class VirtualBuffer {
         this.recordedUploads.clear();
     }
 
+    public boolean isEmpty() {
+        return this.recordedUploads.isEmpty();
+    }
+
     public void addSubCpy(SubCopyCommand subCopyCommand) {
         this.recordedUploads.enqueue(subCopyCommand);
     }
