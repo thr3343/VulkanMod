@@ -26,6 +26,9 @@ public class Config {
     public boolean entityCulling = true;
     public boolean animations = true;
 
+    private static final int max = Runtime.getRuntime().availableProcessors();
+    public int chunkLoadFactor = max /2;
+
     private static Path path;
 
     private static final Gson GSON = new GsonBuilder()

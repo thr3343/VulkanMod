@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public abstract class ChunkTask {
-    private static TaskDispatcher taskDispatcher;
+    private static final TaskDispatcher taskDispatcher = WorldRenderer.taskDispatcher;
 
     public static final boolean bench = false;
     public static AtomicInteger totalBuildTime = new AtomicInteger(0);
@@ -60,9 +60,9 @@ public abstract class ChunkTask {
         this.cancelled.set(true);
     }
 
-    public static void setTaskDispatcher(TaskDispatcher dispatcher) {
-        taskDispatcher = dispatcher;
-    }
+//    public static void setTaskDispatcher(TaskDispatcher dispatcher) {
+//        taskDispatcher = dispatcher;
+//    }
 
     public static class BuildTask extends ChunkTask {
         private final BlockPos startBlockPos;
