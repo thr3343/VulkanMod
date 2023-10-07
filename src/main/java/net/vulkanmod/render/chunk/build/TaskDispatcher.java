@@ -20,22 +20,18 @@ public class TaskDispatcher {
 
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final int availableProcessors = Runtime.getRuntime().availableProcessors();
-    private int highPriorityQuota = 2;
 
-    private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
+    private final Queue<Runnable> toUpload = Queues.newConcurrentLinkedQueue();
     public final ThreadBuilderPack fixedBuffers;
 
     //TODO volatile?
     public volatile boolean stopThreads;
     private Thread[] threads = new Thread[Initializer.CONFIG.chunkLoadFactor];
-    private int idleThreads;
 
-    //TODO: newArrayDeque is way faster but Crashed/Lags + is unstable due to lacking Inherent/implicit Synchronisation
+    //TODO: newArrayDeque is way faster, but is massively unstable due to lacking Inherent/implicit Synchronisation
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
-    //    public boolean idle=false;
-    private int availableJobSlots = threads.length * 2;
+
 
     public TaskDispatcher() {
         this.fixedBuffers = new ThreadBuilderPack();
@@ -49,7 +45,6 @@ public class TaskDispatcher {
         this.threads=new Thread[size];
         Arrays.setAll(threads, i -> new Thread(
                 () -> runTaskThread(new ThreadBuilderPack())));
-        availableJobSlots=threads.length*2;
     }
 
     public void createThreads() {
@@ -73,14 +68,12 @@ public class TaskDispatcher {
             ChunkTask task1 = (this.highPriorityTasks.isEmpty()? this.lowPriorityTasks : this.highPriorityTasks).poll();
             if(task1!=null)
             {
-                availableJobSlots--;
                 task1.doTask(builderPack);
             }
             else
             {
                 //Avoid busy wait (may cause loading perf overhead.regression)
-                //This busy wait is suboptimal and legitimately sucks (alot of CPU time is spend on idle/Busy Wait)
-                availableJobSlots++;
+                //This busy wait this Fork adds is suboptimal and legitimately sucks (alot of CPU time is spend on idle/Busy Wait)
                 synchronized (this){
                     try {
                         Thread.onSpinWait();
@@ -102,8 +95,6 @@ public class TaskDispatcher {
         //Wakeup thread
         synchronized (this) {
             this.notify();
-            availableJobSlots++;
-//            idle=false;
         }
     }
 
@@ -113,8 +104,6 @@ public class TaskDispatcher {
 
         this.stopThreads = true;
 
-
-//        LOGGER.info(String.valueOf(this.threads.getState()));
         for(var thread : threads) {
             LOGGER.info("JOIN"+ thread.getState());
                 try {
@@ -173,7 +162,7 @@ public class TaskDispatcher {
     }
 
     public int getIdleThreadsCount() {
-        return this.availableJobSlots;
+        return Integer.MAX_VALUE; //UGLY TEMP HACK: Stop the Build task scheduler from throttling
     }
 
     public boolean isIdle() { return this.idleThreads == this.threads.length && this.toUpload.isEmpty(); }
@@ -192,13 +181,11 @@ public class TaskDispatcher {
                 chunkTask.cancel();
             }
         }
-
-//        this.toBatchCount = 0;
     }
 
     public String getStats() {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("iT: %d", this.availableJobSlots);
+        return String.format("iT: %d", -1);
     }
 }
