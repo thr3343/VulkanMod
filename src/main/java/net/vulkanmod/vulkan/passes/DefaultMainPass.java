@@ -21,7 +21,6 @@ public class DefaultMainPass implements MainPass {
         SwapChain swapChain = Vulkan.getSwapChain();
 //        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getImageIndex());
 
-        Framebuffer framebuffer = swapChain;
         swapChain.beginRenderPass(commandBuffer, stack);
 //        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
 //            Framebuffer framebuffer = this.hdrFinalFramebuffer;
@@ -30,12 +29,12 @@ public class DefaultMainPass implements MainPass {
 //        framebuffer.beginRenderPass(commandBuffer, renderPass, stack);
 
 //        this.boundFramebuffer = framebuffer;
-        Renderer.getInstance().setBoundFramebuffer(framebuffer);
+        Renderer.getInstance().setBoundFramebuffer(swapChain);
 
-        VkViewport.Buffer pViewport = framebuffer.viewport(stack);
+        VkViewport.Buffer pViewport = swapChain.viewport(stack);
         vkCmdSetViewport(commandBuffer, 0, pViewport);
 
-        VkRect2D.Buffer pScissor = framebuffer.scissor(stack);
+        VkRect2D.Buffer pScissor = swapChain.scissor(stack);
         vkCmdSetScissor(commandBuffer, 0, pScissor);
     }
 

@@ -111,7 +111,7 @@ public class AreaUploadManager {
     public void submit2() {
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
-    public void uploadAsync2(VirtualBuffer virtualBuffer, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
+    public SubCopyCommand uploadAsync2(long dstBufferSize, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         Validate.isTrue(dstOffset<dstBufferSize);
 
@@ -122,9 +122,7 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer2((int) bufferSize, src);
 
 //        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-        final SubCopyCommand k = new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize);
-//        this.recordedUploads[this.currentFrame].add(k);
-        virtualBuffer.addSubCpy(k);
+        return new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize);
     }
 
     private void beginIfNeeded() {

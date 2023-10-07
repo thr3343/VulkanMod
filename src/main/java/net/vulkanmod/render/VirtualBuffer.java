@@ -57,7 +57,7 @@ public final class VirtualBuffer {
     private final ObjectArrayFIFOQueue<SubCopyCommand> recordedUploads=new ObjectArrayFIFOQueue<>(8);
 
 
-    public VirtualBuffer(long size_t, int type, TerrainRenderType r, MemoryType gpuMem)
+    public VirtualBuffer(long size_t, int type, TerrainRenderType r)
     {
         this.size_t=size_t;
         this.vkBufferType =type;

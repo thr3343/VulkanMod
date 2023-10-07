@@ -8,7 +8,6 @@ import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
@@ -28,7 +27,7 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
+    static final VirtualBuffer tVirtualBufferIdx = new VirtualBuffer(33554432, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
 //    static final VirtualBuffer drawIndirectCmdBuffer = new VirtualBuffer(1048576, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
     public final int index;
     private final Vector3i origin;
@@ -102,12 +101,11 @@ public class DrawBuffers {
             drawParameters.indexBufferSegment = tVirtualBufferIdx.allocSubSection(this.index, drawParameters.index, indexSize, TerrainRenderType.TRANSLUCENT);
         }
 
-        AreaUploadManager.INSTANCE.uploadAsync2(tVirtualBufferIdx,
-                tVirtualBufferIdx.bufferPointerSuperSet,
+        tVirtualBufferIdx.addSubCpy(AreaUploadManager.INSTANCE.uploadAsync2(
                 tVirtualBufferIdx.size_t,
                 drawParameters.indexBufferSegment.i2(),
                 drawParameters.indexBufferSegment.size_t(),
-                buffer);
+                buffer));
 
 
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
