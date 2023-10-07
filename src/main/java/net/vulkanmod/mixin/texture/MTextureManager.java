@@ -34,13 +34,13 @@ public abstract class MTextureManager {
 
         //Debug D
         if(SpriteUtil.shouldUpload())
-            Device.getGraphicsQueue().startRecording();
+            Device.getTransferQueue().startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
         if(SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(Device.getGraphicsQueue().getCommandBuffer());
-            Device.getGraphicsQueue().endRecordingAndSubmit();
+            SpriteUtil.transitionLayouts(Device.getTransferQueue().getCommandBuffer());
+            Device.getTransferQueue().endRecordingAndSubmit();
 //            Synchronization.INSTANCE.waitFences();
         }
     }

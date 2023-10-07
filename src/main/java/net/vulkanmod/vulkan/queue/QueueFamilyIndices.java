@@ -17,7 +17,7 @@ public class QueueFamilyIndices {
 
     // Remove the Depreciated Boxed Integer Classes and use -1 instead (as a substitute for null)
     public static int graphicsFamily, presentFamily, transferFamily, computeFamily = -1;
-    private static boolean hasDedicatedTransferQueue;
+    public static boolean hasDedicatedTransferQueue;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
