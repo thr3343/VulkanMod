@@ -5,12 +5,11 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.apache.commons.lang3.Validate;
 
 import java.nio.ByteBuffer;
 
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;

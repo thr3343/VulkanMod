@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
