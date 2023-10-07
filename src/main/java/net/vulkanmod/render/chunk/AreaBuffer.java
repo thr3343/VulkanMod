@@ -48,13 +48,11 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
+    public synchronized void upload(long byteBuffer, int size, Segment uploadSegment) {
         //free old segment
         if(uploadSegment.offset != -1) {
             this.setSegmentFree(uploadSegment);
         }
-
-        int size = byteBuffer.remaining();
 
         if(size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
