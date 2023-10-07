@@ -75,7 +75,7 @@ public class WorldRenderer {
     private boolean needsUpdate;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
-    private final TaskDispatcher taskDispatcher;
+    public static final TaskDispatcher taskDispatcher = new TaskDispatcher();
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
     private DrawBufferQueue chunkAreaQueue;
     private short lastFrame = 0;
@@ -97,8 +97,6 @@ public class WorldRenderer {
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
         this.renderBuffers = renderBuffers;
-        this.taskDispatcher = new TaskDispatcher();
-        ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {

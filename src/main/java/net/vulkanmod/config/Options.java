@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import org.lwjgl.system.MemoryStack;
@@ -11,10 +12,11 @@ import org.lwjgl.vulkan.KHRSurface;
 
 import java.nio.IntBuffer;
 
+import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
-
+    private static final int max = Runtime.getRuntime().availableProcessors();
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
@@ -277,7 +279,20 @@ public class Options {
                         But is enormously CPU intensive
                         Only intended for very specific GPUs
                         (e.g. Old Nvidia cards such as GTX 1000)
-                        (Will cause FPS drops on most other GPUs)"""))
+                        (Will cause FPS drops on most other GPUs)""")),
+                new RangeOption("Chunk Load Threads", 1, max, 1,
+                value -> {
+                    config.chunkLoadFactor = value;
+                    taskDispatcher.stopThreads();
+                    taskDispatcher.resizeThreads(value);
+                    WorldRenderer.getInstance().allChanged();
+                },
+                () -> config.chunkLoadFactor)
+                .setTooltip(Component.nullToEmpty(
+                "The number of Threads utilized for uploading chunks \n" +
+                "More threads will greatly improve Chunk load speed" +
+                "But may cause stuttering if set to high\n" +
+                "Max Recommended value is "+max/2+" threads on This CPU"))
         };
 
     }
