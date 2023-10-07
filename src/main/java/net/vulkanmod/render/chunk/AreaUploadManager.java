@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.VirtualBuffer;
@@ -18,6 +17,7 @@ import org.lwjgl.vulkan.VkBufferCopy;
 
 import static net.vulkanmod.render.chunk.DrawBuffers.tVirtualBufferIdx;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;
@@ -62,28 +62,26 @@ public class AreaUploadManager {
     }
     public void submitUploads() {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
-        if(this.DistinctBuffers.isEmpty()) return;
-        if(commandBuffers[currentFrame] == null) return;
+        if(this.DistinctBuffers.isEmpty()|| commandBuffers[currentFrame] == null) return;
+
         try(MemoryStack stack = MemoryStack.stackPush()) {
             final long l = Vulkan.getStagingBuffer(currentFrame).getId();
-            for (Long2ObjectMap.Entry<ObjectArrayFIFOQueue<SubCopyCommand>> objectArrayFIFOQueueEntry : DistinctBuffers.long2ObjectEntrySet()) {
-                final ObjectArrayFIFOQueue<SubCopyCommand> value = objectArrayFIFOQueueEntry.getValue();
+            for (var queueEntry : DistinctBuffers.long2ObjectEntrySet()) {
+                final ObjectArrayFIFOQueue<SubCopyCommand> value = queueEntry.getValue();
                 final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(value.size(), stack);
                 for (VkBufferCopy vkBufferCopy : copyRegions) {
-                    var a = value.dequeue();
+                    SubCopyCommand a = value.dequeue();
                     vkBufferCopy.set(a.offset(), a.dstOffset(), a.bufferSize());
                 }
 
-                TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, objectArrayFIFOQueueEntry.getLongKey());
+                long bufferPointerSuperSet = queueEntry.getLongKey();
+                vkCmdCopyBuffer(commandBuffers[currentFrame].getHandle(), l, bufferPointerSuperSet, copyRegions);
             }
         }
 
-//        for(var id : DistinctBuffers[currentFrame.values()) {
-//            id.clear();
-//        }
         this.DistinctBuffers.clear();
-//        waitUploads();
-        this.submit2();
+
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
     public void submitUpload(long k) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
