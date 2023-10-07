@@ -11,7 +11,8 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
+import static net.vulkanmod.vulkan.DeviceInfo.vkVer;
+import static net.vulkanmod.vulkan.queue.Queue.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -19,7 +20,6 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Device {
 
@@ -32,12 +32,6 @@ public class Device {
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
 
     public static SurfaceProperties surfaceProperties;
-
-    static GraphicsQueue graphicsQueue;
-    static PresentQueue presentQueue;
-    static TransferQueue transferQueue;
-    static ComputeQueue computeQueue;
-
     static void pickPhysicalDevice(VkInstance instance) {
 
         try(MemoryStack stack = stackPush()) {
@@ -106,9 +100,8 @@ public class Device {
 
         try(MemoryStack stack = stackPush()) {
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(uniqueQueueFamilies.length, stack);
 
@@ -175,23 +168,18 @@ public class Device {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
 //            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 //
-//            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
+//            vkGetDeviceQueue(device, QueueFamilyIndices.graphicsFamily, 0, pQueue);
 //            graphicsQueue = new VkQueue(pQueue.get(0), device);
 //
-//            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
+//            vkGetDeviceQueue(device, QueueFamilyIndices.presentFamily, 0, pQueue);
 //            presentQueue = new VkQueue(pQueue.get(0), device);
 //
-//            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
+//            vkGetDeviceQueue(device, QueueFamilyIndices.transferFamily, 0, pQueue);
 //            transferQueue = new VkQueue(pQueue.get(0), device);
-
-            graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
-            transferQueue = new TransferQueue(stack, indices.transferFamily);
-            presentQueue = new PresentQueue(stack, indices.presentFamily);
-            computeQueue = new ComputeQueue(stack, indices.computeFamily);
 
 //            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
 //            TransferQueue.createInstance(stack, indices.transferFamily);
@@ -222,8 +210,6 @@ public class Device {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
-
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
 
@@ -241,7 +227,7 @@ public class Device {
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -301,27 +287,11 @@ public class Device {
     }
 
     public static void destroy() {
-        graphicsQueue.cleanUp();
-        transferQueue.cleanUp();
-        computeQueue.cleanUp();
+        GraphicsQueue.cleanUp();
+        TransferQueue.cleanUp();
+        ComputeQueue.cleanUp();
 
         vkDestroyDevice(device, null);
-    }
-
-    public static GraphicsQueue getGraphicsQueue() {
-        return graphicsQueue;
-    }
-
-    public static PresentQueue getPresentQueue() {
-        return presentQueue;
-    }
-
-    public static TransferQueue getTransferQueue() {
-        return transferQueue;
-    }
-
-    public static ComputeQueue getComputeQueue() {
-        return computeQueue;
     }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {

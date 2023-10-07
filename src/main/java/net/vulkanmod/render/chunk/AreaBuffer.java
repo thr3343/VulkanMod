@@ -2,13 +2,11 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -49,13 +47,11 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
+    public synchronized void upload(long byteBuffer, int size, Segment uploadSegment) {
         //free old segment
         if(uploadSegment.offset != -1) {
             this.setSegmentFree(uploadSegment);
         }
-
-        int size = byteBuffer.remaining();
 
         if(size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
@@ -123,7 +119,7 @@ public class AreaBuffer {
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload
-        Device.getTransferQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

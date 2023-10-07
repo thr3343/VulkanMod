@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan;
 
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.Initializer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -26,6 +26,7 @@ public class DeviceInfo {
 
     public static final String cpuInfo;
     public static final List<GraphicsCard> graphicsCards;
+    public static final int vkVer = getVkVer();
 
     private final VkPhysicalDevice device;
     public final String vendorId;
@@ -60,7 +61,7 @@ public class DeviceInfo {
         this.vendorId = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+        this.vkVersion = decDefVersion(vkVer);
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -129,8 +130,9 @@ public class DeviceInfo {
             int vkVer1 = a.get(0);
             if(VK_VERSION_MINOR(vkVer1)<2)
             {
-                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ decDefVersion(vkVer1));
+                Initializer.LOGGER.warn("WARNING: Vulkan 1.2 is not supported on this Device!: Only has "+ decDefVersion(vkVer1));
             }
+            else Initializer.LOGGER.info("Using Vulkan: "+ decDefVersion(vkVer1));
             return vkVer1;
         }
     }
