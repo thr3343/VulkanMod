@@ -44,7 +44,7 @@ public class TaskDispatcher {
                 () -> runTaskThread(new ThreadBuilderPack())));
     }
 
-    public void createThreads() {
+    public void initThreads() {
         if(!this.stopThreads)
             return;
 
