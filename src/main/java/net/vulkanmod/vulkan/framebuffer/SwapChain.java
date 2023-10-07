@@ -6,7 +6,7 @@ import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -23,6 +23,8 @@ import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -35,8 +37,9 @@ public class SwapChain extends Framebuffer {
     }
 
     private RenderPass renderPass;
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
-
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
     private VkExtent2D extent2D;
@@ -76,13 +79,6 @@ public class SwapChain extends Framebuffer {
 
     public void createSwapChain() {
 
-
-        int requestedFrames = Initializer.CONFIG.minImageCount;
-
-
-        Initializer.LOGGER.info("requestedFrames" + requestedFrames);
-
-
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
             Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
@@ -102,7 +98,18 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
-            
+
+            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
+
+            int requestedFrames = Initializer.CONFIG.minImageCount;
+
+            Initializer.LOGGER.info("requestedFrames" + requestedFrames);
+
+
+            IntBuffer imageCount = stack.ints(requestedFrames);
+//            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
+
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -112,7 +119,7 @@ public class SwapChain extends Framebuffer {
             this.format = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            createInfo.minImageCount(imageCount.get(0));
             createInfo.imageFormat(this.format);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
@@ -146,13 +153,15 @@ public class SwapChain extends Framebuffer {
 
             swapChain = pSwapChain.get(0);
 
-            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), null);
+            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
-            LongBuffer pSwapchainImages = stack.mallocLong(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
 
-            vkGetSwapchainImagesKHR(device, swapChain, stack.ints(Initializer.CONFIG.minImageCount), pSwapchainImages);
+            vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
 
-            swapChainImages = new ArrayList<>(stack.ints(Initializer.CONFIG.minImageCount).get(0));
+            swapChainImages = new ArrayList<>(imageCount.get(0));
+
+            Initializer.LOGGER.info("requested Images: "+pSwapchainImages.capacity());
 
             this.width = extent2D.width();
             this.height = extent2D.height();
@@ -176,7 +185,18 @@ public class SwapChain extends Framebuffer {
 
         }
     }
-
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "VK_PRESENT_MODE_IMMEDIATE_KHR";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "VK_PRESENT_MODE_MAILBOX_KHR";
+            case VK_PRESENT_MODE_FIFO_KHR -> "VK_PRESENT_MODE_FIFO_KHR";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+            case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR -> "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+            case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR ->  "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+            default -> throw new IllegalStateException("Unexpected value: " + requestedMode);
+        };
+    }
     private void createRenderPass() {
         this.hasColorAttachment = true;
         this.hasDepthAttachment = true;
@@ -350,15 +370,18 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : Initializer.CONFIG.fastSync ? VK_PRESENT_MODE_MAILBOX_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
+        {
+            Initializer.LOGGER.info(getDisplayModeString(VK_PRESENT_MODE_FIFO_KHR));
             return VK_PRESENT_MODE_FIFO_KHR;
+        }
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info(getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }

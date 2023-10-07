@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
@@ -10,29 +9,26 @@ import java.nio.IntBuffer;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class QueueFamilyIndices {
 
-    // Remove the Depreciated Boxed Integer Classes and use -1 instead (as a substitute for null)
-    public static int graphicsFamily, presentFamily, transferFamily, computeFamily = -1;
+    // We use Integer to use null as the empty value
+    public static int graphicsFamily, presentFamily, transferFamily, computeFamily = VK_QUEUE_FAMILY_IGNORED;
     public static boolean hasDedicatedTransferQueue;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
-        try(MemoryStack stack = stackPush()) {
+
+        try (MemoryStack stack = stackPush()) {
 
             IntBuffer queueFamilyCount = stack.ints(0);
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
 
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
+            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.mallocStack(queueFamilyCount.get(0), stack);
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
-
-            //Some Android Drivers are bugged and do not support vkGetPhysicalDeviceSurfaceSupportKHR() properly,
-            //So we fallback to Compute Support instead (when determining present capability)
 
             //            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
             for (int i = 0; i < queueFamilies.capacity(); i++) {
@@ -40,8 +36,9 @@ public class QueueFamilyIndices {
 
                 if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
                     graphicsFamily = i;
+//                        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                    if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         presentFamily = i;
                     }
                 } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
@@ -52,61 +49,61 @@ public class QueueFamilyIndices {
                     transferFamily = i;
                 }
 
-                if(presentFamily == -1) {
+                if (presentFamily == VK_QUEUE_FAMILY_IGNORED) {
+//                        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                    if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         presentFamily = i;
                     }
                 }
 
-                if(isComplete()) break;
+                if (isComplete()) break;
             }
 
-            if(transferFamily == -1) {
-
+            if (transferFamily == VK_QUEUE_FAMILY_IGNORED) {
                 int fallback = -1;
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
+                for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
-                    if((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if(fallback == -1)
+                    if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
+                        if (fallback == -1)
                             fallback = i;
 
                         if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
                             transferFamily = i;
 
-                            if(i != computeFamily)
+                            if (i != computeFamily)
                                 break;
                             fallback = i;
                         }
                     }
 
-                    if(fallback == -1)
+                    if (fallback == -1)
                         throw new RuntimeException("Failed to find queue family with transfer support");
 
                     transferFamily = fallback;
                 }
             }
 
-            if(computeFamily == -1) {
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
+            if (computeFamily == VK_QUEUE_FAMILY_IGNORED) {
+                for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
-                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                    if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         computeFamily = i;
                         break;
                     }
                 }
             }
 
-            if (graphicsFamily == -1)
+            if (graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (presentFamily == -1)
+            if (presentFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (computeFamily == -1)
+            if (computeFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
-            hasDedicatedTransferQueue =graphicsFamily!=transferFamily;
+            hasDedicatedTransferQueue=graphicsFamily!=transferFamily;
 
             Initializer.LOGGER.info("-==Queue Family Configuration==-");
             Initializer.LOGGER.info("    graphicsFamily -> "+graphicsFamily);
@@ -119,18 +116,18 @@ public class QueueFamilyIndices {
     }
 
     public static boolean isComplete() {
-        return graphicsFamily != -1 && presentFamily != -1 && transferFamily != -1 && computeFamily != -1;
+        return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED && computeFamily != VK_QUEUE_FAMILY_IGNORED;
     }
 
-    public boolean isSuitable() {
-        return graphicsFamily != -1 && presentFamily != -1;
+    public static boolean isSuitable() {
+        return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED;
     }
 
     public static int[] unique() {
         return IntStream.of(graphicsFamily, presentFamily, transferFamily, computeFamily).distinct().toArray();
     }
 
-    public int[] array() {
+    public static int[] array() {
         return new int[]{graphicsFamily, presentFamily};
     }
 }
