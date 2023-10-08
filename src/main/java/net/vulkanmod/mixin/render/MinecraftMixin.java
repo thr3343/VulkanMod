@@ -80,6 +80,16 @@ public class MinecraftMixin {
     @Redirect(method = "runTick", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void remClear(int i, boolean bl) {}
 
+
+    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
+    private void submitRender(boolean bl, CallbackInfo ci) {
+        Renderer renderer = Renderer.getInstance();
+        Profiler2 p = Profiler2.getMainProfiler();
+        p.push("submitRender");
+        renderer.endFrame();
+        p.pop();
+    }
+
     @Redirect(method="<init>", at=@At(value="INVOKE", target="Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
     private void bypassWaylandIcon(Window instance, PackResources packResources, IconSet iconSet) throws IOException {
         if(!VideoResolution.isWayLand())

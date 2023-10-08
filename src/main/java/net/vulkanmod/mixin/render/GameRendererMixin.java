@@ -30,6 +30,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -337,20 +338,10 @@ public abstract class GameRendererMixin {
 
         ci.cancel();
     }
-    @Inject(method = "render", at=@At(value="FIELD", target = "Lnet/minecraft/client/Minecraft;noRender:Z", shift = At.Shift.AFTER))
+    @Inject(method = "render", at=@At(value="FIELD", target = "Lnet/minecraft/client/Minecraft;noRender:Z", opcode = Opcodes.IF_ACMPEQ, shift = At.Shift.AFTER))
     public void initRender(float f, long l, boolean bl, CallbackInfo ci) {
         Renderer renderer = Renderer.getInstance();
         renderer.beginFrame();
-    }
-
-
-    @Inject(method = "render", at = @At(value = "RETURN"))
-    private void submitRender(float f, long l, boolean bl, CallbackInfo ci) {
-        Renderer renderer = Renderer.getInstance();
-        Profiler2 p = Profiler2.getMainProfiler();
-        p.push("submitRender");
-        renderer.endFrame();
-        p.pop();
     }
 
     /**

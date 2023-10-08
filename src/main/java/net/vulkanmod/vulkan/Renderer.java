@@ -221,7 +221,7 @@ public class Renderer {
     }
 
     public void endFrame() {
-        if(skipRendering)
+        if(skipRendering||this.boundRenderPass==null)
             return;
 
         mainPass.end(currentCmdBuffer);
