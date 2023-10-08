@@ -77,20 +77,8 @@ public class MinecraftMixin {
 
     @Shadow @Final private VanillaPackResources vanillaPackResources;
 
-    @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
-    private void beginRender(int i, boolean bl) {
-        Renderer renderer = Renderer.getInstance();
-        renderer.beginFrame();
-    }
-
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
-    private void submitRender(boolean tick, CallbackInfo ci) {
-        Renderer renderer = Renderer.getInstance();
-        Profiler2 p = Profiler2.getMainProfiler();
-        p.push("submitRender");
-        renderer.endFrame();
-        p.pop();
-    }
+    @Redirect(method = "runTick", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void remClear(int i, boolean bl) {}
 
     @Redirect(method="<init>", at=@At(value="INVOKE", target="Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
     private void bypassWaylandIcon(Window instance, PackResources packResources, IconSet iconSet) throws IOException {

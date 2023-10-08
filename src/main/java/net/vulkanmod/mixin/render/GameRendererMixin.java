@@ -2,17 +2,35 @@ package net.vulkanmod.mixin.render;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffects;
+import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -23,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -94,6 +113,8 @@ public abstract class GameRendererMixin {
     @Shadow public ShaderInstance blitShader;
 
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
+
+    @Shadow @Final private static Logger LOGGER;
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
@@ -315,6 +336,21 @@ public abstract class GameRendererMixin {
         });
 
         ci.cancel();
+    }
+    @Inject(method = "render", at=@At(value="FIELD", target = "Lnet/minecraft/client/Minecraft;noRender:Z", shift = At.Shift.AFTER))
+    public void initRender(float f, long l, boolean bl, CallbackInfo ci) {
+        Renderer renderer = Renderer.getInstance();
+        renderer.beginFrame();
+    }
+
+
+    @Inject(method = "render", at = @At(value = "RETURN"))
+    private void submitRender(float f, long l, boolean bl, CallbackInfo ci) {
+        Renderer renderer = Renderer.getInstance();
+        Profiler2 p = Profiler2.getMainProfiler();
+        p.push("submitRender");
+        renderer.endFrame();
+        p.pop();
     }
 
     /**
