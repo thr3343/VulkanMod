@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -47,7 +48,7 @@ public class CommandPool {
         try(MemoryStack stack = stackPush()) {
             final int size = 10;
 
-            if(availableCmdBuffers.size() == 0) {
+            if(availableCmdBuffers.isEmpty()) {
 
                 VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
                 allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
@@ -81,10 +82,34 @@ public class CommandPool {
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             vkBeginCommandBuffer(commandBuffer.handle, beginInfo);
-
+            commandBuffer.recording=true;
 //            current++;
 
             return commandBuffer;
+        }
+    }
+
+    public synchronized long submitCommands2(VkQueue queue, ObjectArrayList<CommandBuffer> commandBuffer, long fence1) {
+
+        try(MemoryStack stack = stackPush()) {
+            PointerBuffer pointerBuffer = stack.mallocPointer(commandBuffer.size());
+            for(var handle : commandBuffer){
+                vkEndCommandBuffer(handle.getHandle());
+                pointerBuffer.put(handle.getHandle());
+            }
+            pointerBuffer.rewind();
+
+            vkResetFences(Vulkan.getDevice(), fence1);
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pCommandBuffers(pointerBuffer);
+
+            vkQueueSubmit(queue, submitInfo, fence1);
+            //vkQueueWaitIdle(graphicsQueue);
+
+            //vkFreeCommandBuffers(device, commandPool, commandBuffer);
+            return fence1;
         }
     }
 

@@ -9,7 +9,6 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.LinkedList;
 
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -78,7 +77,7 @@ public class AreaBuffer {
         Validate.isTrue(v.i2() < this.buffer.getBufferSize());
         Validate.isTrue(v.size_t() < this.buffer.getBufferSize());
 
-        AreaUploadManager.INSTANCE.uploadAsync(v, this.buffer.getId(), v.i2(), vertSize, byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync(this.buffer.getId(), v.i2(), vertSize, byteBuffer);
 
 //        uploadSegment.offset() = segment.offset();
 //        uploadSegment.size = size;
@@ -143,7 +142,7 @@ public class AreaBuffer {
 
         AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
 
-        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        AreaUploadManager.INSTANCE.copy(this.buffer, buffer);
 
         this.buffer.freeBuffer();
         this.buffer = buffer;
