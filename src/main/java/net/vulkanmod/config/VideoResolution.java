@@ -68,6 +68,7 @@ public class VideoResolution {
 //        determineDsiplayServer();
         LOGGER.info(GLFW.glfwGetVersionString());
         GLFW.glfwInit();
+        GLFW.glfwWindowHintString(GLFW_X11_INSTANCE_NAME, "_NET_WM_BYPASS_COMPOSITOR@:c = 1");
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
 

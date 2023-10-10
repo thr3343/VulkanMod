@@ -121,8 +121,8 @@ public enum Queue {
         }
     }
 
-    public synchronized long submitCommands2(ObjectArrayList<CommandPool.CommandBuffer> handle, long fence1) {
-        return this.commandPool.submitCommands2(queue, handle, fence1);
+    public synchronized long submitCommands2(ObjectArrayList<CommandPool.CommandBuffer> handle, long pSignalSemaphore, long pWaitSemaphore) {
+        return this.commandPool.submitCommands2(queue, handle, pSignalSemaphore, pWaitSemaphore);
     }
 
     public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {

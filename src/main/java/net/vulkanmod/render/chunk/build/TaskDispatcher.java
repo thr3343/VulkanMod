@@ -116,7 +116,7 @@ public class TaskDispatcher {
         while(!this.toUpload.isEmpty()) {
             this.toUpload.poll().run();
         }
-        AreaUploadManager.INSTANCE.extracted();
+
         AreaUploadManager.INSTANCE.submitUploads();
 
         return flag;

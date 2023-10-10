@@ -1,9 +1,9 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -13,7 +13,7 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferCopy;
-import org.lwjgl.vulkan.VkFenceCreateInfo;
+import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
 
 import java.nio.LongBuffer;
 
@@ -26,7 +26,10 @@ public class AreaUploadManager {
 
     //TODO: Might replace this with custom implementation later (to allow faster Key Swapping)
     private final Long2ObjectArrayMap<ObjectArrayFIFOQueue<SubCopyCommand>> DistinctBuffers = new Long2ObjectArrayMap<>(8);
-    private long[] fenceArray;
+//    private long[] waitSemaphoreArray;
+    private long[] signalSemaphoreArray;
+    private final LongArrayFIFOQueue lastSubmits = new LongArrayFIFOQueue(8);
+    private final LongArrayFIFOQueue availableSubmits = new LongArrayFIFOQueue(8);
 
     public static void createInstance() {
         INSTANCE = new AreaUploadManager();
@@ -46,26 +49,30 @@ public class AreaUploadManager {
 //        this.recordedUploads = new ObjectArrayList[frames];
         this.updatedParameters = new ObjectArrayList[frames];
         this.frameOps = new ObjectArrayList[frames];
-        this.fenceArray = new long[frames];
+//        this.waitSemaphoreArray = new long[frames];
+        this.signalSemaphoreArray = new long[frames];
 
         for (int i = 0; i < frames; i++) {
 //            this.recordedUploads[i] = new ObjectArrayList<>();
             this.updatedParameters[i] = new ObjectArrayList<>();
             this.frameOps[i] = new ObjectArrayList<>();
-            this.fenceArray[i] = createFence();
+//            this.waitSemaphoreArray[i] = createSemaphore();
+        }
+        for(int i =0 ;i<100; i++)
+        {
+            this.availableSubmits.enqueue(createSemaphore());
         }
     }
 
-    private long createFence() {
+    private long createSemaphore() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack);
+            semaphoreInfo.sType$Default();
 
-            LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(Vulkan.getDevice(), fenceInfo, null, pFence);
-            return pFence.get(0);
+            LongBuffer pSemaphore = stack.mallocLong(1);
+            vkCreateSemaphore(Vulkan.getDevice(), semaphoreInfo, null, pSemaphore);
+            return pSemaphore.get(0);
         }
     }
 
@@ -85,7 +92,9 @@ public class AreaUploadManager {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         if(!this.DistinctBuffers.isEmpty()) extracted1();
         if(Submits.isEmpty()) return;
-        fenceArray[currentFrame] = TransferQueue.submitCommands2(Submits, fenceArray[currentFrame]);
+        long pWaitSemaphore = lastSubmits.isEmpty() ? VK_NULL_HANDLE : lastSubmits.dequeueLong();
+        long pSignalSemaphore = !availableSubmits.isEmpty() ? availableSubmits.dequeueLong() : lastSubmits.isEmpty() ? pWaitSemaphore : lastSubmits.dequeueLastLong();
+        lastSubmits.enqueue(TransferQueue.submitCommands2(Submits, pSignalSemaphore, pWaitSemaphore));
     }
 
     private void extracted1() {
@@ -187,12 +196,16 @@ public class AreaUploadManager {
 
         CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), 0, dst.getId(), 0, src.getBufferSize());
-        Submits.add(0, commandBuffer);
+        Synchronization.waitFence(TransferQueue.submitCommands(commandBuffer));
     }
 
     public void updateFrame(int frame) {
         this.waitUploads(currentFrame);
 //        submitUploads(false); //Submit Prior Frame's pending uploads (i.e. remove the residual uploads)
+        while (lastSubmits.size()>8)
+        {
+            availableSubmits.enqueue(lastSubmits.dequeueLastLong());
+        }
         this.currentFrame = frame;
 
         executeFrameOps(frame);
@@ -215,12 +228,11 @@ public class AreaUploadManager {
         this.waitUploads(currentFrame);
     }
     private void waitUploads(int frame) {
+        if(Submits.isEmpty()) return;
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
-
 //        if(Synchronization.checkFenceStatus(fenceArray[currentFrame]))
-        Synchronization.waitFence(fenceArray[currentFrame]);
 
         //        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
 //            uploadSegment.setReady();
