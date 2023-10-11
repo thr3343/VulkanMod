@@ -107,37 +107,16 @@ public class AreaUploadManager {
 
         this.DistinctBuffers.clear();
 
-        Submits.push(commandBuffers[currentFrame]);
+        Submits.add(0, commandBuffers[currentFrame]);
     }
 
-    public void submitUpload(long k) {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
-        if(this.DistinctBuffers.isEmpty()) return;
-        if(!this.DistinctBuffers.containsKey(k)) return;
-        if(commandBuffers[currentFrame] == null) return;
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            final long l = Vulkan.getStagingBuffer(currentFrame).getId();
-            final ObjectArrayFIFOQueue<SubCopyCommand> value = DistinctBuffers.remove(k);
-            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(value.size(), stack);
-            for (VkBufferCopy vkBufferCopy : copyRegions) {
-                var a = value.dequeue();
-                vkBufferCopy.set(a.offset(), a.dstOffset(), a.bufferSize());
-            }
-
-            TransferQueue.uploadSuperSet(commandBuffers[currentFrame], copyRegions, l, k);
-        }
-
-
-    }
     public void extracted() {
         if(tVirtualBufferIdx.isEmpty()) return;
-        if(commandBuffers[currentFrame] == null) return;
-        var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
-        tVirtualBufferIdx.uploadSubset(srcStaging, commandBuffers[currentFrame]);
+        CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+        tVirtualBufferIdx.uploadSubset(Vulkan.getStagingBuffer(this.currentFrame).getId(), commandBuffer);
+        Submits.push(commandBuffer);
     }
-    public void submit2() {
-        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
-    }
+
     public SubCopyCommand uploadAsync2(long dstBufferSize, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         Validate.isTrue(dstOffset<dstBufferSize);
@@ -187,7 +166,7 @@ public class AreaUploadManager {
 
         CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), 0, dst.getId(), 0, src.getBufferSize());
-        Submits.add(0, commandBuffer);
+        Synchronization.waitFence(TransferQueue.submitCommands(commandBuffer));
     }
 
     public void updateFrame(int frame) {
@@ -215,6 +194,7 @@ public class AreaUploadManager {
         this.waitUploads(currentFrame);
     }
     private void waitUploads(int frame) {
+        if(Submits.isEmpty()) return;
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
@@ -236,12 +216,6 @@ public class AreaUploadManager {
         this.commandBuffers[frame] = null;
         Submits.clear();
 //        this.recordedUploads[frame].clear();
-    }
-
-    public synchronized void waitAllUploads() {
-        for(int i = 0; i < this.commandBuffers.length; ++i) {
-            waitUploads(i);
-        }
     }
 
 }
