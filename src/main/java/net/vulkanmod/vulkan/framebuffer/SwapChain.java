@@ -143,9 +143,9 @@ public class SwapChain extends Framebuffer {
             createInfo.oldSwapchain(swapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
-
-            if(vkCreateSwapchainKHR(device, createInfo, null, pSwapChain) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create swap chain");
+            int vkResult;
+            if((vkResult = vkCreateSwapchainKHR(device, createInfo, null, pSwapChain)) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create swap chain "+vkResult);
             }
 
             if(swapChain != VK_NULL_HANDLE) {

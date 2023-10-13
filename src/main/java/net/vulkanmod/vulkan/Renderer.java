@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -43,6 +44,7 @@ public class Renderer {
 
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
+    private boolean signalled;
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -90,6 +92,8 @@ public class Renderer {
         createSyncObjects();
 
         AreaUploadManager.INSTANCE.createLists(framesNum);
+
+        imageIndex = aquireNextImage(stackGet().mallocInt(1));
     }
 
     private void allocateCommandBuffers() {
@@ -201,7 +205,6 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-            imageIndex = aquireNextImage(stack.mallocInt(1));
 
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -293,7 +296,7 @@ public class Renderer {
         try(MemoryStack stack = stackPush()) {
 
             IntBuffer pImageIndex = stack.ints(imageIndex);
-
+            if(!signalled) imageIndex = aquireNextImage(pImageIndex);
             int vkResult;
 
 
@@ -340,7 +343,7 @@ public class Renderer {
 
             currentFrame = (currentFrame + 1) % framesNum;
 
-
+            signalled=false;
         }
     }
 
@@ -357,6 +360,8 @@ public class Renderer {
         } else if(vkResult != VK_SUCCESS) {
             throw new RuntimeException("Failed to present swap chain image");
         }
+        signalled=true;
+
         return pImageIndex.get(0);
     }
 
@@ -393,6 +398,7 @@ public class Renderer {
 
 
         Vulkan.recreateSwapChain();
+        imageIndex = aquireNextImage(stackGet().mallocInt(1));
 
         int newFramesNum = getSwapChain().getFrameNum();
 
@@ -427,8 +433,11 @@ public class Renderer {
     private void destroySyncObjects() {
         for (int i = 0; i < framesNum; ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);
-            vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
+        }
+        for(int iu = 0; iu< Initializer.CONFIG.minImageCount; iu++)
+        {
+            vkDestroySemaphore(device, imageAvailableSemaphores.get(iu), null);
         }
     }
 
