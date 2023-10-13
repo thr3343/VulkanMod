@@ -19,8 +19,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK11.*;
 
 public class DeviceInfo {
 
@@ -31,7 +30,8 @@ public class DeviceInfo {
     public final String vendorId;
     public final String deviceName;
     public final String driverVersion;
-    public final String vkVersion;
+    public static final int vkVer = getVkVer();
+    public static final String vkVersion = decDefVersion(vkVer);
 
     public GraphicsCard graphicsCard;
 
@@ -60,7 +60,6 @@ public class DeviceInfo {
         this.vendorId = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();

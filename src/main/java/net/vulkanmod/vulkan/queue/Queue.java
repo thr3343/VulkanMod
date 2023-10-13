@@ -79,22 +79,25 @@ public abstract class Queue {
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
 
+            if(queueFamilyCount.get(0)==1)
+            {
+                indices.computeFamily=indices.transferFamily=indices.presentFamily=indices.graphicsFamily=0;
+                return indices;
+            }
+
             VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.mallocStack(queueFamilyCount.get(0), stack);
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
-            IntBuffer presentSupport = stack.ints(VK_FALSE);
-
-//            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
+            //            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
             for(int i = 0; i < queueFamilies.capacity(); i++) {
                 int queueFlags = queueFamilies.get(i).queueFlags();
 
                 if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
                     indices.graphicsFamily = i;
 
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if(presentSupport.get(0) == VK_TRUE) {
+                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         indices.presentFamily = i;
                     }
                 } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
@@ -106,9 +109,8 @@ public abstract class Queue {
                 }
 
                 if(indices.presentFamily == null) {
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if(presentSupport.get(0) == VK_TRUE) {
+                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         indices.presentFamily = i;
                     }
                 }
