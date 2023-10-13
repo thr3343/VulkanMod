@@ -142,7 +142,7 @@ public class AreaBuffer {
 
         AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
 
-        AreaUploadManager.INSTANCE.copy(this.buffer, buffer);
+        AreaUploadManager.INSTANCE.copyImmediate(this.buffer, buffer);
 
         this.buffer.freeBuffer();
         this.buffer = buffer;

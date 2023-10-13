@@ -3,7 +3,6 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -84,7 +83,7 @@ public class AreaUploadManager {
     public void submitUploads() {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         if(!this.DistinctBuffers.isEmpty()) extracted1();
-        if(Submits.isEmpty()) return;
+        if (commandBuffers[currentFrame] == null) return;
         fenceArray[currentFrame] = TransferQueue.submitCommands2(Submits, fenceArray[currentFrame]);
     }
 
@@ -92,16 +91,15 @@ public class AreaUploadManager {
         beginIfNeeded();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             final long l = Vulkan.getStagingBuffer(currentFrame).getId();
-            for (var queueEntry : DistinctBuffers.long2ObjectEntrySet()) {
-                final ObjectArrayFIFOQueue<SubCopyCommand> value = queueEntry.getValue();
-                final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(value.size(), stack);
+            for (final var queueEntry : DistinctBuffers.long2ObjectEntrySet()) {
+                final var value = queueEntry.getValue();
+                final var copyRegions = VkBufferCopy.malloc(value.size(), stack);
                 for (VkBufferCopy vkBufferCopy : copyRegions) {
                     SubCopyCommand a = value.dequeue();
                     vkBufferCopy.set(a.offset(), a.dstOffset(), a.bufferSize());
                 }
 
-                long bufferPointerSuperSet = queueEntry.getLongKey();
-                vkCmdCopyBuffer(commandBuffers[currentFrame].getHandle(), l, bufferPointerSuperSet, copyRegions);
+                vkCmdCopyBuffer(commandBuffers[currentFrame].getHandle(), l, queueEntry.getLongKey(), copyRegions);
             }
         }
 
@@ -160,6 +158,16 @@ public class AreaUploadManager {
     }
 
     public void copy(Buffer src, Buffer dst) {
+        if(dst.getBufferSize() < src.getBufferSize()) {
+            throw new IllegalArgumentException("dst buffer is smaller than src buffer.");
+        }
+
+        CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+        TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), 0, dst.getId(), 0, src.getBufferSize());
+        Submits.add(0, commandBuffer);
+    }
+
+    public void copyImmediate(Buffer src, Buffer dst) {
         if(dst.getBufferSize() < src.getBufferSize()) {
             throw new IllegalArgumentException("dst buffer is smaller than src buffer.");
         }
