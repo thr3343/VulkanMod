@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
@@ -12,7 +13,10 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
-import net.vulkanmod.vulkan.shader.*;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -28,7 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.Vulkan.getCommandPool;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.PresentQueue;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -44,7 +49,9 @@ public class Renderer {
 
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
+    private final int imageNum;
     private boolean signalled;
+    private ObjectArrayFIFOQueue<imageSet> acquiredImages = new ObjectArrayFIFOQueue<>();
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -93,6 +100,7 @@ public class Renderer {
 
         AreaUploadManager.INSTANCE.createLists(framesNum);
 
+        imageNum = getSwapChain().getImageNum() - 1;
         imageIndex = aquireNextImage(stackGet().mallocInt(1));
     }
 
@@ -124,7 +132,7 @@ public class Renderer {
     }
 
     private void createSyncObjects() {
-        imageAvailableSemaphores = new ArrayList<>(framesNum);
+        imageAvailableSemaphores = new ArrayList<>(3);
         renderFinishedSemaphores = new ArrayList<>(framesNum);
         inFlightFences = new ArrayList<>(framesNum);
 
@@ -141,16 +149,21 @@ public class Renderer {
             LongBuffer pRenderFinishedSemaphore = stack.mallocLong(1);
             LongBuffer pFence = stack.mallocLong(1);
 
+            for(int i = 0;i < 3; i++) {
+                if(vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS)
+                {
+                    throw new RuntimeException("Failed to create synchronization objects for the frame " + i);
+                }
+                imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
+            }
             for(int i = 0;i < framesNum; i++) {
 
-                if(vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS
-                        || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
+                if(vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
                         || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
 
                     throw new RuntimeException("Failed to create synchronization objects for the frame " + i);
                 }
 
-                imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
                 renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
                 inFlightFences.add(pFence.get(0));
 
@@ -205,7 +218,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-
+            imageIndex = aquireNextImage(stack.mallocInt(1));
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -295,8 +308,9 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer pImageIndex = stack.ints(imageIndex);
-            if(!signalled) imageIndex = aquireNextImage(pImageIndex);
+            imageSet imageSet = acquiredImages.last();
+            long x = imageSet.aLong();
+
             int vkResult;
 
 
@@ -304,7 +318,7 @@ public class Renderer {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
             submitInfo.waitSemaphoreCount(1);
-            submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
+            submitInfo.pWaitSemaphores(stackGet().longs(x));
             submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
@@ -328,7 +342,7 @@ public class Renderer {
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain().getId()));
 
-            presentInfo.pImageIndices(pImageIndex);
+            presentInfo.pImageIndices(stackGet().ints(acquiredImages.last().i()));
 
             vkResult = vkQueuePresentKHR(PresentQueue.queue(), presentInfo);
 
@@ -342,27 +356,29 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+          imageIndex =  acquiredImages.dequeueLast().i();
 
             signalled=false;
         }
     }
 
     private int aquireNextImage(IntBuffer pImageIndex) {
-        int vkResult;
-        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
-                imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+        long semaphore = imageAvailableSemaphores.get(imageIndex);
+        int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+                semaphore, VK_NULL_HANDLE, pImageIndex);
+        acquiredImages.enqueue(new imageSet(semaphore, pImageIndex.get(0)));
 //        imageIndex = pImageIndex.get(0);
-        if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+        if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
             swapCahinUpdate = true;
 //                shouldRecreate = false;
 //                recreateSwapChain();
             return vkResult;
-        } else if(vkResult != VK_SUCCESS) {
+        } else if (vkResult != VK_SUCCESS) {
             throw new RuntimeException("Failed to present swap chain image");
         }
-        signalled=true;
+        signalled = true;
 
-        return pImageIndex.get(0);
+        return acquiredImages.last().i();
     }
 
     void waitForSwapChain()
@@ -398,7 +414,6 @@ public class Renderer {
 
 
         Vulkan.recreateSwapChain();
-        imageIndex = aquireNextImage(stackGet().mallocInt(1));
 
         int newFramesNum = getSwapChain().getFrameNum();
 
