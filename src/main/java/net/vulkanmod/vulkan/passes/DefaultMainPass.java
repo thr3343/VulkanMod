@@ -19,10 +19,10 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
-//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentFrame());
+//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getImageIndex());
 
         swapChain.beginRenderPass(commandBuffer, stack);
-        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
+//        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
 //            Framebuffer framebuffer = this.hdrFinalFramebuffer;
 //        framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 //
@@ -66,7 +66,7 @@ public class DefaultMainPass implements MainPass {
         Framebuffer.endRenderPass(commandBuffer);
 
 //        try(MemoryStack stack = MemoryStack.stackPush()) {
-//            Vulkan.getSwapChain().presentLayout(stack, commandBuffer, Renderer.getCurrentFrame());
+//            Vulkan.getSwapChain().presentLayout(stack, commandBuffer, Renderer.getImageIndex());
 //        }
 
         int result = vkEndCommandBuffer(commandBuffer);
