@@ -203,9 +203,6 @@ public class AreaUploadManager {
     }
     private void waitUploads(int frame) {
         if(Submits.isEmpty()) return;
-        CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
-        if(commandBuffer == null)
-            return;
 
 //        if(Synchronization.checkFenceStatus(fenceArray[currentFrame]))
         Synchronization.waitFence(fenceArray[currentFrame]);
