@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -133,6 +131,7 @@ public class Vulkan {
     private static long allocator;
 
     private static int FramesNum;
+    private static int ImagesNum;
     private static StagingBuffer[] stagingBuffers;
 
     public static void initVulkan(long window) {
@@ -172,6 +171,7 @@ public class Vulkan {
         swapChain = new SwapChain();
 
         FramesNum = swapChain.getFramesNum();
+        ImagesNum = swapChain.getImagesNum();
     }
 
     public static void recreateSwapChain() {
