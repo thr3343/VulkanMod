@@ -45,6 +45,8 @@ public abstract class RenderSystemMixin {
 
     @Shadow private static @Nullable Thread renderThread;
 
+    @Shadow private static void pollEvents() {}
+
     /**
      * @author
      */
@@ -149,9 +151,10 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void flipFrame(long window) {
-        org.lwjgl.glfw.GLFW.glfwPollEvents();
+        pollEvents();
         RenderSystem.replayQueue();
         Tesselator.getInstance().getBuilder().clear();
+        pollEvents();
     }
 
     /**

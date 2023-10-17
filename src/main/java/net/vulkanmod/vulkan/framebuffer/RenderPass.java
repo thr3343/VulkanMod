@@ -119,14 +119,14 @@ public class RenderPass {
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
 
-        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
-        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
+//        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
+//                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
+////            throw new RuntimeException("current layout does not match expected initial layout");
+//            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
+//        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
+//                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
+////            throw new RuntimeException("current layout does not match expected initial layout");
+//            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
         renderPassInfo.sType$Default();
