@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
+import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 
@@ -75,14 +76,16 @@ public class VideoResolution {
     }
 
     private static int getSupportedPlat() {
+
+        LOGGER.info("Operating System: "+System.getProperty("os.name"));
+
         int displayServerEnv = determineDisplayServer();
 
         if (displayServerEnv == GLFW_PLATFORM_NULL)
         {
-            for(var plat : new int[]{GLFW_PLATFORM_WIN32, GLFW_PLATFORM_COCOA})
-            {
-                if (glfwPlatformSupported(plat)) return plat;
-            }
+            if(SystemUtils.IS_OS_WINDOWS) return GLFW_PLATFORM_WIN32;
+            if(SystemUtils.IS_OS_MAC_OSX) return GLFW_PLATFORM_COCOA;
+
             return GLFW_ANY_PLATFORM;
         };
         return displayServerEnv;
@@ -106,6 +109,7 @@ public class VideoResolution {
     public static boolean isX11() { return activePlat == GLFW_PLATFORM_X11; }
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
     public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
+    public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
