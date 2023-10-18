@@ -154,7 +154,7 @@ public abstract class RenderSystemMixin {
         pollEvents();
         RenderSystem.replayQueue();
         Tesselator.getInstance().getBuilder().clear();
-        //pollEvents(); //TODO: probably don't need this (i.e. to poll twice)
+        pollEvents();
     }
 
     /**
