@@ -36,7 +36,7 @@ public class Options {
             int maxImageCount = surfaceProperties.capabilities.maxImageCount();
 
             boolean hasInfiniteSwapChain = maxImageCount == 0; //Applicable if Mesa/RADV Driver are present
-            maxImages = hasInfiniteSwapChain ? 64 : maxImageCount;
+            maxImages = hasInfiniteSwapChain ? 64 : Math.min(maxImageCount, 8);
         }
     }
 

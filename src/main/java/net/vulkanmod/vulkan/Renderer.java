@@ -31,6 +31,8 @@ import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.EXTFullScreenExclusive.VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT;
+import static org.lwjgl.vulkan.KHRSurface.VK_ERROR_SURFACE_LOST_KHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -340,18 +342,34 @@ public class Renderer {
 
     private int aquireNextImage(IntBuffer pImageIndex) {
         int vkResult;
-        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
                 imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 //        imageIndex = pImageIndex.get(0);
         if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
             swapCahinUpdate = true;
 //                shouldRecreate = false;
 //                recreateSwapChain();
-            return vkResult;
+            return pImageIndex.get(0);
         } else if(vkResult != VK_SUCCESS) {
-            throw new RuntimeException("Failed to present swap chain image");
+            throw new RuntimeException("Failed to present swap chain image "+vkResult);
         }
         return pImageIndex.get(0);
+    }
+
+    private String decVkErr(int vkResult) {
+       return switch (vkResult)
+        {
+            case VK_TIMEOUT -> "VK_TIMEOUT";
+            case VK_SUBOPTIMAL_KHR -> "VK_SUBOPTIMAL_KHR";
+            case VK_NOT_READY -> "VK_NOT_READY";
+            case VK_ERROR_OUT_OF_HOST_MEMORY -> "VK_ERROR_OUT_OF_HOST_MEMORY";
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY -> "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+            case VK_ERROR_DEVICE_LOST -> "VK_ERROR_DEVICE_LOST";
+            case VK_ERROR_OUT_OF_DATE_KHR -> "VK_ERROR_OUT_OF_DATE_KHR";
+            case VK_ERROR_SURFACE_LOST_KHR -> "VK_ERROR_SURFACE_LOST_KHR";
+            case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT -> "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
+            default -> "VK_SUCCESS";
+        };
     }
 
     void waitForSwapChain()

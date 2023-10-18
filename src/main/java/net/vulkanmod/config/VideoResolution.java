@@ -68,7 +68,9 @@ public class VideoResolution {
     private static int determineDisplayServer() {
 
         //Return Null platform if not on Linux (i.e. no X11 or Wayland)
-        return switch (System.getenv("XDG_SESSION_TYPE")) {
+        String xdgSessionType = System.getenv("XDG_SESSION_TYPE");
+        if(xdgSessionType==null) return GLFW_PLATFORM_NULL; //Likely Android
+        return switch (xdgSessionType) {
             case "wayland" -> GLFW_PLATFORM_WAYLAND;
             case "x11" -> GLFW_PLATFORM_X11;
             default -> GLFW_PLATFORM_NULL;
@@ -78,6 +80,7 @@ public class VideoResolution {
     private static int getSupportedPlat() {
 
         LOGGER.info("Operating System: "+System.getProperty("os.name"));
+        LOGGER.info("Arch: "+System.getProperty("os.arch"));
 
         int displayServerEnv = determineDisplayServer();
 
@@ -98,7 +101,7 @@ public class VideoResolution {
             case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
             case GLFW_PLATFORM_X11 -> "X11";
             case GLFW_PLATFORM_COCOA -> "macOS";
-            case GLFW_ANY_PLATFORM -> "Unknown Platform!: Either ? or Android";
+            case GLFW_ANY_PLATFORM -> "Android";
             default -> throw new IllegalStateException("Unexpected value: " + plat);
         };
     }
