@@ -36,7 +36,7 @@ public class Options {
             int maxImageCount = surfaceProperties.capabilities.maxImageCount();
 
             boolean hasInfiniteSwapChain = maxImageCount == 0; //Applicable if Mesa/RADV Driver are present
-            maxImages = hasInfiniteSwapChain ? 64 : Math.min(maxImageCount, 8);
+            maxImages = hasInfiniteSwapChain ? 64 : Math.min(maxImageCount, 32);
         }
     }
 
@@ -194,7 +194,7 @@ public class Options {
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
                 new RangeOption("Queue Frames", 1,
-                        5, 1,
+                        8, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
@@ -203,16 +203,16 @@ public class Options {
                         Manages the tradeoff between FPS and input lag
                         Higher = improved FPS but more input lag
                         Lower = decreased FPS but less input lag""")),
-                new RangeOption("Image Count", minImages,
-                        maxImages, 1,
-                        value -> {
-                            config.minImageCount = value;
-                            Renderer.scheduleSwapChainUpdate();
-                        }, () -> config.minImageCount)
-                        .setTooltip(Component.nullToEmpty("""
-                        Sets the number of Swapchain images
-                        Higher values can boost GPU performance
-                        But at the cost of increased input lag""")),
+//                new RangeOption("Image Count", minImages,
+//                        maxImages, 1,
+//                        value -> {
+//                            config.minImageCount = value;
+//                            Renderer.scheduleSwapChainUpdate();
+//                        }, () -> config.minImageCount)
+//                        .setTooltip(Component.nullToEmpty("""
+//                        Sets the number of Swapchain images
+//                        Higher values can boost GPU performance
+//                        But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
