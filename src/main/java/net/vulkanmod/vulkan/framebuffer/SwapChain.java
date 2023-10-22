@@ -39,7 +39,7 @@ public class SwapChain extends Framebuffer {
     private RenderPass renderPass;
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    private static final int defUncappedMode = VideoResolution.isWayLand() ? checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR) : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    private static final int defUncappedMode = VideoResolution.isWayLand() || VideoResolution.isAndroid() ? checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR) : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
