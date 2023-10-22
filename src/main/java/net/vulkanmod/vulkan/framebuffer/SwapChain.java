@@ -86,7 +86,7 @@ public class SwapChain extends Framebuffer {
 
         createSwapChain();
 
-        return this.swapChainImages.size();
+        return this.getFramesNum();
     }
 
     public void createSwapChain() {
@@ -181,6 +181,9 @@ public class SwapChain extends Framebuffer {
 
                 swapChainImages.add(new VulkanImage(imageId, this.format, 1, this.width, this.height, 4, 0, imageView));
             }
+
+            Initializer.LOGGER.info("Requested Images: "+requestedFrames + "-> Actual Images: "+swapChainImages.size());
+
             currentLayout = new int[this.swapChainImages.size()];
 
             createDepthResources();
