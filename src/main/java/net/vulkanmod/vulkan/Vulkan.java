@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Matrix4f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
@@ -460,6 +461,13 @@ public class Vulkan {
     public static VkExtent2D getSwapchainExtent()
     {
         return swapChain.getExtent();
+    }
+
+    public static Matrix4f getPretransformMatrix() {
+        return swapChain.getPretransformMatrix();
+    }
+    public static int getPretransformFlags() {
+        return swapChain.getPretransformFlags();
     }
 
     public static List<VulkanImage> getSwapChainImages() { return swapChain.getImages(); }
