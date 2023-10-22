@@ -12,6 +12,7 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queue.*;
+import static net.vulkanmod.vulkan.queue.QueueFamilyIndices.findQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -50,40 +51,53 @@ public class Device {
 
             vkEnumeratePhysicalDevices(instance, deviceCount, ppPhysicalDevices);
 
-            ArrayList<VkPhysicalDevice> integratedGPUs = new ArrayList<>();
-            ArrayList<VkPhysicalDevice> otherDevices = new ArrayList<>();
+            ArrayList<GPUCandidate> dGPUs = new ArrayList<>();
+            ArrayList<GPUCandidate> iGPUs = new ArrayList<>();
+            ArrayList<GPUCandidate> misc = new ArrayList<>();
 
-            VkPhysicalDevice currentDevice = null;
-            boolean flag = false;
+            final GPUCandidate currentDevice;
+
+
+
+            Initializer.LOGGER.info(deviceCount.get(0) + " Devices Detected");
+
+
 
             for(int i = 0; i < ppPhysicalDevices.capacity();i++) {
 
-                currentDevice = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
+                 var a = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
 
-                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
-                vkGetPhysicalDeviceProperties(currentDevice, deviceProperties);
+                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.malloc(stack);
+                vkGetPhysicalDeviceProperties(a, deviceProperties);
 
-                if(isDeviceSuitable(currentDevice)) {
-                    if(deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
-                        flag = true;
-                        break;
+
+                int i1 = deviceProperties.deviceType();
+                Initializer.LOGGER.info("Checking GPU Device: "+deviceProperties.deviceNameString()+"...");
+                Initializer.LOGGER.info("Type: "+ getDeviceTypeString(i1));
+                if(isDeviceSuitable(a)) {
+                    final GPUCandidate e = new GPUCandidate(a, deviceProperties.deviceNameString(), i1);
+                    switch (i1)
+                    {
+                        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU -> dGPUs.add(e);
+                        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU-> iGPUs.add(e);
+                        case VK_PHYSICAL_DEVICE_TYPE_OTHER, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU, VK_PHYSICAL_DEVICE_TYPE_CPU -> misc.add(e);
+                        default -> Initializer.LOGGER.error("Device doesn't seem to be an actual GPU, Skipping...");
                     }
-                    else if(deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) integratedGPUs.add(currentDevice);
-                    else otherDevices.add(currentDevice);
 
                 }
             }
 
-            if(!flag) {
-                if(!integratedGPUs.isEmpty()) currentDevice = integratedGPUs.get(0);
-                else if(!otherDevices.isEmpty()) currentDevice = otherDevices.get(0);
-                else {
-                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION, instance));
-                    throw new RuntimeException("Failed to find a suitable GPU");
-                }
+
+            if(!dGPUs.isEmpty()) currentDevice = dGPUs.get(0);
+            else if(!iGPUs.isEmpty()) currentDevice = iGPUs.get(0);
+            else if(!misc.isEmpty()) currentDevice = misc.get(0);
+            else {
+                Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION, instance));
+                throw new RuntimeException("Failed to find a suitable GPU");
             }
 
-            physicalDevice = currentDevice;
+            Initializer.LOGGER.info("Using GPU Device: "+currentDevice.deviceName());
+            physicalDevice = currentDevice.physicalDevice();
 
             //Get device properties
             deviceProperties = VkPhysicalDeviceProperties.malloc();
@@ -96,6 +110,17 @@ public class Device {
 
             deviceInfo = new DeviceInfo(physicalDevice, deviceProperties);
         }
+    }
+
+    private static String getDeviceTypeString(int i) {
+        return switch (i) {
+            case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU -> "DISCRETE_GPU";
+            case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU -> "INTEGRATED_GPU";
+            case VK_PHYSICAL_DEVICE_TYPE_OTHER -> "OTHER";
+            case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU -> "VIRTUAL_GPU";
+            case VK_PHYSICAL_DEVICE_TYPE_CPU -> "CPU";
+            default -> "UNKNOWN";
+        };
     }
 
     static void createLogicalDevice() {
@@ -222,7 +247,15 @@ public class Device {
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
         }
 
-        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
+
+        boolean hasQueues = findQueueFamilies(device);
+        Initializer.LOGGER.info("   Has Queues: "+hasQueues);
+        Initializer.LOGGER.info("   Has Swapchain Functionality: "+extensionsSupported);
+        Initializer.LOGGER.info("   Has Presentable Surface Formats: "+swapChainAdequate);
+        Initializer.LOGGER.info((hasQueues && extensionsSupported && swapChainAdequate) ? "Device Suitable!" : "Device not Suitable!");
+
+        return hasQueues && extensionsSupported && swapChainAdequate;
+
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
