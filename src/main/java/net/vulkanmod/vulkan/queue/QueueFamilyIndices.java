@@ -51,7 +51,7 @@ public class QueueFamilyIndices {
                     transferFamily = i;
                 }
 
-                if (presentFamily == null) {
+                if (presentFamily == VK_QUEUE_FAMILY_IGNORED) {
 
                     if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         presentFamily = i;
@@ -61,14 +61,14 @@ public class QueueFamilyIndices {
                 if (isComplete()) break;
             }
 
-            if (transferFamily == null) {
+            if (transferFamily == VK_QUEUE_FAMILY_IGNORED) {
 
-                int fallback = -1;
+                int fallback = VK_QUEUE_FAMILY_IGNORED;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
                     if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if (fallback == -1)
+                        if (fallback == VK_QUEUE_FAMILY_IGNORED)
                             fallback = i;
 
                         if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
@@ -80,14 +80,14 @@ public class QueueFamilyIndices {
                         }
                     }
 
-                    if (fallback == -1)
+                    if (fallback == VK_QUEUE_FAMILY_IGNORED)
                         throw new RuntimeException("Failed to find queue family with transfer support");
 
                     transferFamily = fallback;
                 }
             }
 
-            if (computeFamily == null) {
+            if (computeFamily == VK_QUEUE_FAMILY_IGNORED) {
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -98,11 +98,11 @@ public class QueueFamilyIndices {
                 }
             }
 
-            if (graphicsFamily == null)
+            if (graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (presentFamily == null)
+            if (presentFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (computeFamily == null)
+            if (computeFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return isComplete();
@@ -116,18 +116,14 @@ public class QueueFamilyIndices {
     }
 
 
-        // We use Integer to use null as the empty value
-        public static Integer graphicsFamily;
-        public static Integer presentFamily;
-        public static Integer transferFamily;
-        public static Integer computeFamily;
+        public static int graphicsFamily, presentFamily, transferFamily, computeFamily = VK_QUEUE_FAMILY_IGNORED;
 
         public static boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED && computeFamily != VK_QUEUE_FAMILY_IGNORED;
         }
 
         public static boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED;
         }
 
         public static int[] unique() {
