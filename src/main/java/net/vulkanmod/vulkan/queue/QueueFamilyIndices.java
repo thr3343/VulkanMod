@@ -98,6 +98,9 @@ public class QueueFamilyIndices {
                 }
             }
 
+            hasDedicatedTransferQueue=graphicsFamily!=transferFamily;
+
+
             if (graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
             if (presentFamily == VK_QUEUE_FAMILY_IGNORED)
@@ -117,6 +120,8 @@ public class QueueFamilyIndices {
 
 
         public static int graphicsFamily, presentFamily, transferFamily, computeFamily = VK_QUEUE_FAMILY_IGNORED;
+
+        public static boolean hasDedicatedTransferQueue = false;
 
         public static boolean isComplete() {
             return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED && computeFamily != VK_QUEUE_FAMILY_IGNORED;
