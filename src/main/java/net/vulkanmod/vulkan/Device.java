@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.queue.Queue.*;
 import static net.vulkanmod.vulkan.queue.QueueFamilyIndices.findQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -33,10 +34,6 @@ public class Device {
 
     public static SurfaceProperties surfaceProperties;
 
-    static GraphicsQueue graphicsQueue;
-    static PresentQueue presentQueue;
-    static TransferQueue transferQueue;
-    static ComputeQueue computeQueue;
 
     static void pickPhysicalDevice(VkInstance instance) {
 
@@ -212,10 +209,6 @@ public class Device {
 //            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
 //            transferQueue = new VkQueue(pQueue.get(0), device);
 
-            graphicsQueue = new GraphicsQueue(stack, QueueFamilyIndices.graphicsFamily);
-            transferQueue = new TransferQueue(stack, QueueFamilyIndices.transferFamily);
-            presentQueue = new PresentQueue(stack, QueueFamilyIndices.presentFamily);
-            computeQueue = new ComputeQueue(stack, QueueFamilyIndices.computeFamily);
 
 //            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
 //            TransferQueue.createInstance(stack, indices.transferFamily);
@@ -330,27 +323,27 @@ public class Device {
     }
 
     public static void destroy() {
-        graphicsQueue.cleanUp();
-        transferQueue.cleanUp();
-        computeQueue.cleanUp();
+        GraphicsQueue.cleanUp();
+        TransferQueue.cleanUp();
+        ComputeQueue.cleanUp();
 
         vkDestroyDevice(device, null);
     }
 
-    public static GraphicsQueue getGraphicsQueue() {
-        return graphicsQueue;
+    public static Queue getGraphicsQueue() {
+        return GraphicsQueue;
     }
 
-    public static PresentQueue getPresentQueue() {
-        return presentQueue;
+    public static Queue getPresentQueue() {
+        return PresentQueue;
     }
 
-    public static TransferQueue getTransferQueue() {
-        return transferQueue;
+    public static Queue getTransferQueue() {
+        return TransferQueue;
     }
 
-    public static ComputeQueue getComputeQueue() {
-        return computeQueue;
+    public static Queue getComputeQueue() {
+        return ComputeQueue;
     }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {

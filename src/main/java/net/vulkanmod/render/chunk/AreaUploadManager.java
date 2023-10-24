@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
@@ -15,6 +14,7 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
     public static final int FRAME_NUM = 2;
@@ -54,7 +54,7 @@ public class AreaUploadManager {
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = queue.beginCommands();
 
-        VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
+        CommandPool.CommandBuffer commandBuffer = commandBuffers[currentFrame];
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
@@ -66,7 +66,7 @@ public class AreaUploadManager {
                 barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
                 barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
-                vkCmdPipelineBarrier(commandBuffer,
+                vkCmdPipelineBarrier(commandBuffer.getHandle(),
                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                         0,
                         barrier,
