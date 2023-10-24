@@ -18,6 +18,7 @@ project.ext.macosNatives = "natives-macos"
 project.ext.macosArmNatives = "natives-macos-arm64"
 
 dependencies {
+	include(implementation("com.github.oshi:oshi-core:6.4.7-SNAPSHOT"))
 	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
 
 	include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
@@ -43,8 +44,8 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
-	ivy {
-		url "https://nightly.link/PojavLauncherTeam/lwjgl3/workflows/build-android/$lwjglVersion"
+	maven {
+		url "https://oss.sonatype.org/service/local/repositories/snapshots/content/"
 	}
 }
 
