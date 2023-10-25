@@ -20,7 +20,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean vertexFetchFix = false;
-//    public boolean uniqueOpaqueLayer = true;
+    public boolean renderSky = true;
     public boolean entityCulling = true;
 
     private static Path path;
