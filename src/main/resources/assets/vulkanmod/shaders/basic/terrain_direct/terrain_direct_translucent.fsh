@@ -1,15 +1,10 @@
 #version 450
 
+
 layout (early_fragment_tests) in;
 
-vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    if (vertexDistance <= fogStart) {
-        return inColor;
-    }
+#include "light.glsl"
 
-    float fogValue = vertexDistance < fogEnd ? smoothstep(fogStart, fogEnd, vertexDistance) : 1.0;
-    return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
-}
 
 layout(binding = 2) uniform sampler2D Sampler0;
 

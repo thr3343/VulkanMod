@@ -12,6 +12,7 @@ import static net.vulkanmod.render.chunk.DrawBuffers.tVirtualBufferIdx;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
+    public static final int FRAME_NUM = 2;
     public static AreaUploadManager INSTANCE;
 
     public static void createInstance() {
@@ -25,13 +26,14 @@ public class AreaUploadManager {
 
     int currentFrame;
 
-    public void createLists(int frames) {
-        this.commandBuffers = new CommandPool.CommandBuffer[frames];
-        this.recordedUploads = new ObjectArrayList[frames];
-        this.updatedParameters = new ObjectArrayList[frames];
-        this.frameOps = new ObjectArrayList[frames];
+    public void createLists() {
 
-        for (int i = 0; i < frames; i++) {
+        this.commandBuffers = new CommandPool.CommandBuffer[FRAME_NUM];
+        this.recordedUploads = new ObjectArrayList[FRAME_NUM];
+        this.updatedParameters = new ObjectArrayList[FRAME_NUM];
+        this.frameOps = new ObjectArrayList[FRAME_NUM];
+
+        for (int i = 0; i < FRAME_NUM; i++) {
             this.recordedUploads[i] = new ObjectArrayList<>();
             this.updatedParameters[i] = new ObjectArrayList<>();
             this.frameOps[i] = new ObjectArrayList<>();
@@ -100,10 +102,10 @@ public class AreaUploadManager {
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], src.getId(), 0, dst.getId(), 0, src.getBufferSize());
     }
 
-    public void updateFrame(int frame) {
-        this.currentFrame = frame;
+    public void updateFrame() {
+        this.currentFrame = (this.currentFrame + 1) % FRAME_NUM;
         waitUploads(this.currentFrame);
-        executeFrameOps(frame);
+        executeFrameOps(this.currentFrame);
     }
 
     private void executeFrameOps(int frame) {
