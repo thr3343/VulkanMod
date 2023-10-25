@@ -73,7 +73,6 @@ public class WorldRenderer {
     private SectionGrid sectionGrid;
 
     private boolean needsUpdate;
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
@@ -505,9 +504,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized(this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
             this.chunkAreaQueue = new DrawBufferQueue(this.sectionGrid.chunkAreaManager.size);
@@ -578,13 +574,14 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
 
-        this.sortTranslucentSections(camX, camY, camZ);
+        final boolean isTranslucent = rType == TRANSLUCENT;
+
+        if(isTranslucent) this.sortTranslucentSections(camX, camY, camZ);
 
 //        this.minecraft.getProfiler().push("filterempty");
 //        this.minecraft.getProfiler().popPush(() -> {
 //            return "render_" + renderType;
 //        });
-        final boolean isTranslucent = rType == TRANSLUCENT;
 
         final boolean drawIndirect = Initializer.CONFIG.indirectDraw;
 
@@ -616,8 +613,8 @@ public class WorldRenderer {
 
             for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
                 final DrawBuffers drawBuffers = iterator.next();
-                if(drawIndirect) drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, layout, address, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexedIndirect);
-                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, vertexFetchFix, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexed);
+                if (!drawIndirect) drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, vertexFetchFix, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexed);
+                else drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, layout, address, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexedIndirect);
             }
         }
 
