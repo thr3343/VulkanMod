@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -36,8 +35,6 @@ import net.vulkanmod.render.chunk.util.DrawBufferQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.BuildTimeBench;
-import net.vulkanmod.render.profiling.Profiler;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -563,7 +560,11 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 
-        final TerrainRenderType rType = TerrainRenderType.get(renderType.name);
+        final TerrainRenderType rType = switch (renderType.name) {
+            case "cutout_mipped" -> CUTOUT_MIPPED;
+            case "translucent" -> TRANSLUCENT;
+            default -> null;
+        };
         if(!COMPACT_RENDER_TYPES.contains(rType))
         {
             return;
@@ -710,7 +711,7 @@ public class WorldRenderer {
     public void renderBlockEntities(PoseStack poseStack, double camX, double camY, double camZ,
                                     Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress, float gameTime) {
         Profiler2 profiler = Profiler2.getMainProfiler();
-        profiler.pop();
+//        profiler.pop();
         profiler.push("block-entities");
 
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();

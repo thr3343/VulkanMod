@@ -41,7 +41,6 @@ public class AreaUploadManager {
     }
 
     public synchronized void submitUploads() {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         if(this.commandBuffers[currentFrame]==null)
             return;
         var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
@@ -52,7 +51,6 @@ public class AreaUploadManager {
     }
 
     public void uploadAsync2(VirtualBuffer virtualBuffer, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
         Validate.isTrue(dstOffset<dstBufferSize);
 
         if(commandBuffers[currentFrame] == null)
@@ -69,7 +67,6 @@ public class AreaUploadManager {
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, long src) {
-        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();

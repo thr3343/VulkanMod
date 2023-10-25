@@ -1,14 +1,8 @@
 package net.vulkanmod.render.vertex;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.renderer.RenderType;
-import net.vulkanmod.vulkan.VRenderSystem;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public enum TerrainRenderType {
     CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
