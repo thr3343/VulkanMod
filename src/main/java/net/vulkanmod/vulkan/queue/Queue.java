@@ -135,4 +135,8 @@ public enum Queue {
         }
     }
 
+    public void uploadSuperSet(CommandPool.CommandBuffer commandBuffer, VkBufferCopy.Buffer copyRegions, long src, long bufferPointerSuperSet) {
+        vkCmdCopyBuffer(commandBuffer.getHandle(), src, bufferPointerSuperSet, copyRegions);
+    }
+
 }

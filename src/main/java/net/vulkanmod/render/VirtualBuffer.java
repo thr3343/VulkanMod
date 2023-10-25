@@ -36,12 +36,7 @@ public final class VirtualBuffer {
     //    public int subIncr;
     public int usedBytes;
     public int subAllocs;
-    public long unusedRangesS;
-    public long unusedRangesM;
-    public int unusedRangesCount;
-    public long allocMin;
-    public long allocMax;
-//    public boolean bound=false;
+    //    public boolean bound=false;
     private final long  bufferPtrBackingAlloc;
 //    private static long  PUSERDATA=nmemAlignedAlloc(8, 8);
 //    private static long  PFNALLOCATION=nmemAlignedAlloc(8, 32);
@@ -220,23 +215,6 @@ public final class VirtualBuffer {
 
     }
 
-
-    //Not Supported on LWJGL 3.3.1
-    private void updateStatistics(MemoryStack stack) {
-        VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
-        vmaCalculateVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics);
-//        vmaGetVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics.statistics());
-//        usedBytes= (int) vmaStatistics.statistics().allocationBytes();
-//        allocs=vmaStatistics.statistics().allocationCount();
-//        allocBytes= (int) vmaStatistics.statistics().allocationBytes();
-//        blocks=vmaStatistics.statistics().blockCount();
-//        blockBytes=vmaStatistics.statistics().blockBytes();
-        unusedRangesS=vmaStatistics.unusedRangeSizeMin();
-        unusedRangesM=vmaStatistics.unusedRangeSizeMax();
-        unusedRangesCount=vmaStatistics.unusedRangeCount();
-        allocMin=vmaStatistics.allocationSizeMin();
-        allocMax=vmaStatistics.allocationSizeMax();
-    }
 
     public void addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
