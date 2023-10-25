@@ -621,6 +621,8 @@ public class WorldRenderer {
             }
         }
 
+        if(drawIndirect) indirectBuffers[Renderer.getCurrentFrame()].submitUploads();
+
 //        if(rType.equals(CUTOUT_MIPPED) || rType.equals(TRANSLUCENT)) {
 //            indirectBuffers[currentFrame].submitUploads();
 ////            uniformBuffers.submitUploads();
