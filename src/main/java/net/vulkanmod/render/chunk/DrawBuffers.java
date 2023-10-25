@@ -6,7 +6,6 @@ import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -32,10 +31,6 @@ public class DrawBuffers {
 //    static final VirtualBuffer drawIndirectCmdBuffer = new VirtualBuffer(1048576, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, TerrainRenderType.TRANSLUCENT, MemoryTypes.GPU_MEM);
     public final int index;
     private final Vector3i origin;
-    private static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
-    private static final long functionAddress1 = Vulkan.getDevice().getCapabilities().vkCmdBindVertexBuffers;
-    private static final long functionAddress2 = Vulkan.getDevice().getCapabilities().vkCmdPushConstants;
-
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
 //    AreaBuffer indexBuffer;
@@ -52,7 +47,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152, VERTEX_SIZE);
+        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3145728, VERTEX_SIZE);
 //        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 524288, INDEX_SIZE);
 
         this.allocated = true;
@@ -114,7 +109,7 @@ public class DrawBuffers {
         return drawParameters.indexBufferSegment.i2() / INDEX_SIZE;
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, double camX, double camY, double camZ, boolean isTranslucent, long layout, long address) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, double camX, double camY, double camZ, boolean isTranslucent, long layout, long address, long functionAddress2, long functionAddress1, long functionAddress) {
         int stride = 20;
 
 
@@ -212,7 +207,7 @@ public class DrawBuffers {
     }
 
 
-    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address, boolean vertexFetchFix) {
+    public void buildDrawBatchesDirect(double camX, double camY, double camZ, boolean isTranslucent, long layout, long address, boolean vertexFetchFix, long functionAddress2, long functionAddress1, long functionAddress) {
 
         try (MemoryStack stack = MemoryStack.stackGet().push()) {
             FloatBuffer pValues = stack.floats((float) (this.origin.x/* + (drawParameters.baseInstance&0x7f)*/ - camX), (float) -camY, (float) (this.origin.z /*+ (drawParameters.baseInstance >> 7 & 0x7f)*/ - camZ));
@@ -224,18 +219,18 @@ public class DrawBuffers {
             callPPPV(address, 0, 1, npointer, npointer1, functionAddress1);
 
 
-            if (vertexFetchFix) drawIndexedBatched(isTranslucent, address, npointer1, npointer);
-            else drawIndexedBatchedBindless(isTranslucent, address);
+            if (vertexFetchFix) drawIndexedBatched(isTranslucent, address, npointer1, npointer, functionAddress1, functionAddress);
+            else drawIndexedBatchedBindless(isTranslucent, address, functionAddress);
 
         }
     }
 
-    private void drawIndexedBatchedBindless(boolean isTranslucent, long address) {
+    private void drawIndexedBatchedBindless(boolean isTranslucent, long address, long functionAddress) {
         for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
             callPV(address, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance, functionAddress);
         }
     }
-    private void drawIndexedBatched(boolean isTranslucent, long address, long npointer1, long npointer) {
+    private void drawIndexedBatched(boolean isTranslucent, long address, long npointer1, long npointer, long functionAddress1, long functionAddress) {
         for (DrawParameters drawParameters : (isTranslucent ? Tqueue : Squeue)) {
 
             VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset*20L);

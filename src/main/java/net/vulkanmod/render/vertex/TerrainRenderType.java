@@ -22,12 +22,10 @@ public enum TerrainRenderType {
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 //    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
 
-    final RenderType renderType;
     final float alphaCutout;
     public final int maxSize;
 
     TerrainRenderType(RenderType renderType, float alphaCutout) {
-        this.renderType = renderType;
         this.alphaCutout = alphaCutout;
         this.maxSize=renderType.bufferSize();
     }

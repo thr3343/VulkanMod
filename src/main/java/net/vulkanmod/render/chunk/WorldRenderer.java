@@ -598,7 +598,12 @@ public class WorldRenderer {
         final int currentFrame = Renderer.getCurrentFrame();
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         long address = commandBuffer.address();
-        long layout = pipeline.getLayout();
+
+        final long layout = pipeline.getLayout();
+        final long vkCmdPushConstants = commandBuffer.getCapabilities().vkCmdPushConstants;
+        final long vkCmdBindVertexBuffers = commandBuffer.getCapabilities().vkCmdBindVertexBuffers;
+        final long vkCmdDrawIndexed = commandBuffer.getCapabilities().vkCmdDrawIndexed;
+        final long vkCmdDrawIndexedIndirect = commandBuffer.getCapabilities().vkCmdDrawIndexedIndirect;
         vkCmdBindIndexBuffer(commandBuffer,
                 isTranslucent ? DrawBuffers.tVirtualBufferIdx.bufferPointerSuperSet : Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer().getId(),
                 0,
@@ -611,8 +616,8 @@ public class WorldRenderer {
 
             for( Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(isTranslucent) ; iterator.hasNext();  ) {
                 final DrawBuffers drawBuffers = iterator.next();
-                if(drawIndirect) drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, layout, address);
-                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, vertexFetchFix);
+                if(drawIndirect) drawBuffers.buildDrawBatchesIndirect(this.indirectBuffers[currentFrame], camX, camY, camZ, isTranslucent, layout, address, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexedIndirect);
+                else drawBuffers.buildDrawBatchesDirect(camX, camY, camZ, isTranslucent, layout, address, vertexFetchFix, vkCmdPushConstants, vkCmdBindVertexBuffers, vkCmdDrawIndexed);
             }
         }
 
