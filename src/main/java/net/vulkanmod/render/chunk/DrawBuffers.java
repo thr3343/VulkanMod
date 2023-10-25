@@ -261,7 +261,9 @@ public class DrawBuffers {
             return;
         tVirtualBufferIdx.freeRange(this.index);
         this.SVertexBuffer.freeBuffer();
+        this.TVertexBuffer.freeBuffer();
 
+        this.SVertexBuffer = null;
         this.TVertexBuffer = null;
         this.allocated = false;
     }
