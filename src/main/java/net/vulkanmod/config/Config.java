@@ -20,6 +20,7 @@ public class Config {
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = false;
     public boolean enableCutouts = true;
+    public boolean renderSky = true;
     public boolean entityCulling = true;
     public boolean animations = true;
 

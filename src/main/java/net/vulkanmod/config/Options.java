@@ -161,6 +161,12 @@ public class Options {
                 new SwitchOption("Animations",
                         value -> config.animations = value,
                         () -> config.animations),
+                new SwitchOption("Render Sky",
+                        value -> {
+                            config.renderSky = value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> config.renderSky),
                 new CyclingOption<>("Mipmap Levels",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> Component.nullToEmpty(value.toString()),
