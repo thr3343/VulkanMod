@@ -10,7 +10,6 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
-   mat4 ModelViewMat;
 };
 
 layout(push_constant) uniform pushConstant {
@@ -19,9 +18,8 @@ layout(push_constant) uniform pushConstant {
 
 layout(binding = 3) uniform sampler2D Sampler2;
 
-layout(location = 0) out float vertexDistance;
-layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec2 texCoord0;
+layout(location = 0) out vec4 vertexColor;
+layout(location = 1) out vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 #define COMPRESSED_VERTEX
@@ -41,7 +39,6 @@ void main() {
     const vec3 pos = fma(Position, vec3(POSITION_INV), ChunkOffset);
     gl_Position = MVP * vec4(pos + a, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(pos + a, 1.0)).xyz);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
