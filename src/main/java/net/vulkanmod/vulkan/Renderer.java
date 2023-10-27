@@ -416,7 +416,7 @@ public class Renderer {
         LAG_IN_FRAMES = imagesNum==2 ? 1 : 2;
 
         if(framesNum != newFramesNum) {
-            AreaUploadManager.INSTANCE.waitAllUploads();
+            AreaUploadManager.INSTANCE.waitUploads();
             destroySyncObjects();
 
             framesNum = newFramesNum;

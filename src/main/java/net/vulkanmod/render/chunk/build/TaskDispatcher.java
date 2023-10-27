@@ -133,6 +133,7 @@ public class TaskDispatcher {
             runnable.run();
         }
 
+        AreaUploadManager.INSTANCE.extracted();
         AreaUploadManager.INSTANCE.submitUploads();
 
         return flag;

@@ -1,11 +1,12 @@
 package net.vulkanmod.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.memory.*;
+import org.apache.commons.lang3.Validate;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -15,7 +16,7 @@ public class AreaBuffer {
     private final int usage;
 
     private final LinkedList<Segment> freeSegments = new LinkedList<>();
-    private final Reference2ReferenceOpenHashMap<Segment, Segment> usedSegments = new Reference2ReferenceOpenHashMap<>();
+    private final ObjectArrayList<virtualSegmentBuffer> usedSegments = new ObjectArrayList<>();
 
     private final int elementSize;
 
@@ -23,6 +24,8 @@ public class AreaBuffer {
 
     int size;
     int used;
+//    public final ObjectArrayList<ATst> uploadsed = new ObjectArrayList<>();
+
 
     public AreaBuffer(int usage, int size, int elementSize) {
 
@@ -37,90 +40,110 @@ public class AreaBuffer {
     }
 
     private Buffer allocateBuffer(int size) {
-        int bufferSize = size;
 
-        Buffer buffer;
-        if(this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
-            buffer = new VertexBuffer(bufferSize, memoryType);
-        } else {
-            buffer = new IndexBuffer(bufferSize, memoryType);
-        }
-        return buffer;
+        return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized void upload(long byteBuffer, Segment uploadSegment, int size) {
-        //free old segment
-        if(uploadSegment.offset != -1) {
-            this.setSegmentFree(uploadSegment);
-        }
+    public virtualSegmentBuffer  upload(int subIndex, long byteBuffer, int vertSize, TerrainRenderType r, virtualSegmentBuffer uploadSegment, int index) {
 
-        if(size % elementSize != 0)
+        if(vertSize % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
 
-        Segment segment = findSegment(size);
 
-        if(segment.size - size > 0) {
-            freeSegments.add(new Segment(segment.offset + size, segment.size - size));
+        final virtualSegmentBuffer v;
+        if(uploadSegment==null || !this.isAlreadyLoaded(subIndex, vertSize, r))
+        {
+            v = findSegment(subIndex, vertSize, index, r);
+            usedSegments.add(v);
+            this.used += v.size_t();
+        }
+        else
+        {
+            v = uploadSegment;
         }
 
-        usedSegments.put(uploadSegment, new Segment(segment.offset, size));
 
-        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
 
-        uploadSegment.offset = segment.offset;
-        uploadSegment.size = size;
-        uploadSegment.status = Segment.PENDING_BIT;
 
-        this.used += size;
 
+//        if(segment.size() - size > 0) {
+//            freeSegments.add(new virtualSegment(index, segment.offset() + size, segment.size() - size));
+//        }
+//
+//        final virtualSegment v = new virtualSegment(index, segment.offset(), size);
+
+        Validate.isTrue(v.i2() >=0);
+        Validate.isTrue(v.size_t() > 0);
+        Validate.isTrue(v.i2() < this.buffer.getBufferSize());
+        Validate.isTrue(v.size_t() < this.buffer.getBufferSize());
+
+        AreaUploadManager.INSTANCE.uploadAsync(this.buffer.getId(), v.i2(), vertSize, byteBuffer);
+
+//        uploadSegment.offset() = segment.offset();
+//        uploadSegment.size = size;
+//        uploadSegment.status = Segment.PENDING_BIT;
+
+
+        return v;
     }
 
-    public Segment findSegment(int size) {
-        Segment segment = null;
-        int i = 0;
-        int idx = 0;
-        int t = Integer.MAX_VALUE;
-        for(Segment segment1 : freeSegments) {
+//    private void removeSegment(int index) {
+//        var a = usedSegments.remove(index);
+//        this.used-= a!=null ? a.size() : 0;
+//    }
 
-            if(segment1.size >= size && segment1.size < t) {
-                segment = segment1;
-                t = segment1.size;
-                idx = i;
+    //Allows segment suballocations to be skipped if the size is equal to or smaller: Should help to reduce fragmentation
+    private boolean isAlreadyLoaded(int subIndex, int size1, TerrainRenderType r) {
+        for(var a : usedSegments)
+        {
+            if(a.subIndex() == subIndex && a.size_t() >= size1 && a.r()==r)
+            {
+                return true;
             }
-            ++i;
+
         }
-
-        if(segment == null) {
-            return this.reallocate(size);
-        }
-
-        freeSegments.remove(idx);
-
-        return segment;
+        setSegmentFree(subIndex);
+        return false;
     }
 
-    public Segment reallocate(int uploadSize) {
+    public virtualSegmentBuffer findSegment(int subIndex, int size, int index, TerrainRenderType r) {
+        //        if(freeSegments.isEmpty()) return new virtualSegment(index, 0, size);
+        for (int i = 0; i < freeSegments.size(); i++) {
+            Segment segment1 = freeSegments.get(i);
+            if (segment1.size >= size) {
+                virtualSegmentBuffer segment = new virtualSegmentBuffer(index, subIndex, segment1.offset, size, -1, r);
+                if(segment1.size-size>0) freeSegments.set(i, new Segment(segment.i2() + size, segment1.size - size));
+                else freeSegments.remove(i);
+                return segment;
+            }
+        }
+
+        return this.reallocate(size, subIndex, index, r);
+
+
+    }
+
+    public virtualSegmentBuffer reallocate(int uploadSize, int subIndex, int index, TerrainRenderType r) {
         int oldSize = this.size;
         int increment = this.size >> 1;
 
-        //Try to increase size increment 8 times
-        for(int i = 0; i < 8 && increment <= uploadSize; ++i) {
+        if(increment <= uploadSize) {
             increment *= 2;
         }
-
+        //TODO check size
         if(increment <= uploadSize)
-            throw new RuntimeException(String.format("Size increment %d <= %d (Upload size)", increment, uploadSize));
+            throw new RuntimeException();
 
         int newSize = oldSize + increment;
 
+
         Buffer buffer = this.allocateBuffer(newSize);
 
-        AreaUploadManager.INSTANCE.submitUploads();
-        AreaUploadManager.INSTANCE.waitUploads();
 
-        //Sync upload
-        Device.getTransferQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        AreaUploadManager.INSTANCE.editkey(this.buffer.getId(), buffer.getId());
+
+        AreaUploadManager.INSTANCE.copyImmediate(this.buffer, buffer);
+
         this.buffer.freeBuffer();
         this.buffer = buffer;
 
@@ -128,18 +151,47 @@ public class AreaBuffer {
 
         int offset = Util.align(oldSize, elementSize);
 
-        Segment segment = new Segment(offset, increment);
+        virtualSegmentBuffer segment = new virtualSegmentBuffer(index, subIndex, offset, uploadSize, -1, r);
+
+        freeSegments.add(new Segment(offset + segment.size_t(), increment - segment.size_t()));
         return segment;
     }
 
-    public synchronized void setSegmentFree(Segment uploadSegment) {
-        Segment segment = usedSegments.remove(uploadSegment);
+    public void setSegmentFree(int k) {
+        Segment e = null;
+        for (int i = 0; i < usedSegments.size(); i++) {
+            var a = usedSegments.get(i);
+            if (a.subIndex() == k/* && a.r() == r*/) {
+                var segment = usedSegments.remove(i);
+                e = new Segment(segment.i2(), segment.size_t());
+                extracted(e);
+                this.used -= segment.size_t();
+                break;
+            }
 
-        if(segment == null)
-            return;
+        }
+        if(e!=null)
+        {
+            extracted(e);
+        }
 
-        this.freeSegments.add(segment);
-        this.used -= segment.size;
+
+    }
+
+    private void extracted(Segment e) {
+        for (int i = 0; i < freeSegments.size(); i++) {
+            final Segment segment = freeSegments.get(i);
+            if(isAdjacent(e, segment))
+            {
+                freeSegments.set(i, new Segment(segment.offset, segment.size + e.size));
+                return;
+            }
+        }
+//        freeSegments.add(e);
+    }
+
+    private boolean isAdjacent(Segment e, Segment segment) {
+        return segment.offset + segment.size == e.offset;
     }
 
     public long getId() {
@@ -148,57 +200,12 @@ public class AreaBuffer {
 
     public void freeBuffer() {
         this.buffer.freeBuffer();
+        this.freeSegments.clear();
+        this.usedSegments.clear();
 //        this.globalBuffer.freeSubAllocation(subAllocation);
     }
 
-    public static class Segment {
-        public static final byte PENDING_BIT = 0x1;
-        public static final byte READY_BIT = 0x2;
-
-        int offset, size;
-        byte status;
-
-        public Segment() {
-            reset();
-        }
-
-        private Segment(int offset, int size) {
-            this.offset = offset;
-            this.size = size;
-            this.status = 0;
-        }
-
-        public void reset() {
-            this.offset = -1;
-            this.size = -1;
-            this.status = 0;
-        }
-
-        public int getOffset() {
-            return offset;
-        }
-
-        public int getSize() {
-            return size;
-        }
-
-        void setPending() {
-            this.status = PENDING_BIT;
-        }
-
-        public boolean isPending() {
-            return (this.status & PENDING_BIT) != 0;
-        }
-
-        public void setReady() {
-            this.status = READY_BIT;
-        }
-
-        public boolean isReady() {
-            return (this.status & READY_BIT) != 0;
-        }
-
-    }
+    public record Segment(int offset, int size) {}
 
 //    //Debug
 //    public List<Segment> findConflicts(int offset) {
@@ -206,8 +213,8 @@ public class AreaBuffer {
 //        Segment segment = this.usedSegments.get(offset);
 //
 //        for(Segment s : this.usedSegments.values()) {
-//            if((s.offset >= segment.offset && s.offset < (segment.offset + segment.size))
-//              || (segment.offset >= s.offset && segment.offset < (s.offset + s.size))) {
+//            if((s.offset() >= segment.offset() && s.offset() < (segment.offset() + segment.size))
+//              || (segment.offset() >= s.offset() && segment.offset() < (s.offset() + s.size))) {
 //                segments.add(s);
 //            }
 //        }
@@ -215,11 +222,11 @@ public class AreaBuffer {
 //        return segments;
 //    }
 
-    public static boolean checkRanges(Segment s1, Segment s2) {
-        return (s1.offset >= s2.offset && s1.offset < (s2.offset + s2.size)) || (s2.offset >= s1.offset && s2.offset < (s1.offset + s1.size));
-    }
-
-    public Segment getSegment(int offset) {
-        return this.usedSegments.get(offset);
-    }
+//    public static boolean checkRanges(Segment s1, Segment s2) {
+//        return (s1.offset() >= s2.offset() && s1.offset() < (s2.offset() + s2.size)) || (s2.offset() >= s1.offset() && s2.offset() < (s1.offset() + s1.size));
+//    }
+//
+//    public Segment getSegment(int offset) {
+//        return this.usedSegments.get(offset);
+//    }
 }

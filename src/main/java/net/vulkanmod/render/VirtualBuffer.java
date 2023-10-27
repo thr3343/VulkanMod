@@ -315,8 +315,9 @@ public final class VirtualBuffer {
 
             TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
         }
-        this.recordedUploads.clear();
     }
+
+    public boolean isEmpty() { return this.recordedUploads.isEmpty(); }
 
     public void addSubCpy(SubCopyCommand subCopyCommand) {
         this.recordedUploads.enqueue(subCopyCommand);

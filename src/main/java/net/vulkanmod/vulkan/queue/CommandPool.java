@@ -88,6 +88,30 @@ public class CommandPool {
         }
     }
 
+    public synchronized long submitCommands2(VkQueue queue, ObjectArrayList<CommandBuffer> commandBuffer, long fence1) {
+
+        try(MemoryStack stack = stackPush()) {
+            PointerBuffer pointerBuffer = stack.mallocPointer(commandBuffer.size());
+            for(var handle : commandBuffer){
+                vkEndCommandBuffer(handle.getHandle());
+                pointerBuffer.put(handle.getHandle());
+            }
+            pointerBuffer.rewind();
+
+            vkResetFences(Vulkan.getDevice(), fence1);
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pCommandBuffers(pointerBuffer);
+
+            vkQueueSubmit(queue, submitInfo, fence1);
+            //vkQueueWaitIdle(graphicsQueue);
+
+            //vkFreeCommandBuffers(device, commandPool, commandBuffer);
+            return fence1;
+        }
+    }
+
     public synchronized long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
 
         try(MemoryStack stack = stackPush()) {

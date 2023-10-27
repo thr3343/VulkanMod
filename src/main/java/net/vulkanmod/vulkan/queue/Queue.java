@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -137,6 +138,10 @@ public enum Queue {
 
     public void uploadSuperSet(CommandPool.CommandBuffer commandBuffer, VkBufferCopy.Buffer copyRegions, long src, long bufferPointerSuperSet) {
         vkCmdCopyBuffer(commandBuffer.getHandle(), src, bufferPointerSuperSet, copyRegions);
+    }
+
+    public synchronized long submitCommands2(ObjectArrayList<CommandPool.CommandBuffer> handle, long fence1) {
+        return this.commandPool.submitCommands2(queue, handle, fence1);
     }
 
 }

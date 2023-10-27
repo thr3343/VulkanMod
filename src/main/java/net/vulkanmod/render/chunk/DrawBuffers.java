@@ -67,10 +67,9 @@ public class DrawBuffers {
 
         if(!buffer.indexOnly()) {
 
-           if(renderType!=TerrainRenderType.TRANSLUCENT) this.SVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
-           else this.TVertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
+            drawParameters.vertexBufferSegment = renderType != TerrainRenderType.TRANSLUCENT ? this.SVertexBuffer.upload(drawParameters.index, buffer.getVertexBuffer(), buffer.vertSize(), renderType, drawParameters.vertexBufferSegment, this.index) : this.TVertexBuffer.upload(drawParameters.index, buffer.getVertexBuffer(), buffer.vertSize(), renderType, drawParameters.vertexBufferSegment, this.index);
            //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-           vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
+           vertexOffset = drawParameters.vertexBufferSegment.i2() / VERTEX_SIZE;
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -104,12 +103,11 @@ public class DrawBuffers {
             drawParameters.indexBufferSegment = tVirtualBufferIdx.allocSubSection(this.index, drawParameters.index, indexSize, TerrainRenderType.TRANSLUCENT);
         }
 
-        AreaUploadManager.INSTANCE.uploadAsync2(tVirtualBufferIdx,
-                tVirtualBufferIdx.bufferPointerSuperSet,
+        tVirtualBufferIdx.addSubCpy(AreaUploadManager.INSTANCE.uploadAsync2(
                 tVirtualBufferIdx.size_t,
                 drawParameters.indexBufferSegment.i2(),
                 drawParameters.indexBufferSegment.size_t(),
-                buffer);
+                buffer));
 
 
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
@@ -288,7 +286,7 @@ public class DrawBuffers {
         int firstIndex;
         int vertexOffset;
         public int baseInstance;
-        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
+        virtualSegmentBuffer vertexBufferSegment;
         virtualSegmentBuffer indexBufferSegment;
         boolean ready = false;
 
@@ -302,14 +300,14 @@ public class DrawBuffers {
             this.firstIndex = 0;
             this.vertexOffset = 0;
 
-            int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
+
+            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && this.vertexBufferSegment != null) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
 
-              if(indexBufferSegment==null)  chunkArea.drawBuffers.SVertexBuffer.setSegmentFree(this.vertexBufferSegment);
+              if(indexBufferSegment==null)  chunkArea.drawBuffers.SVertexBuffer.setSegmentFree(this.vertexBufferSegment.subIndex());
               else
               {
-                  chunkArea.drawBuffers.TVertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                  chunkArea.drawBuffers.TVertexBuffer.setSegmentFree(this.vertexBufferSegment.subIndex());
                   tVirtualBufferIdx.addFreeableRange(indexBufferSegment);
               }
 
