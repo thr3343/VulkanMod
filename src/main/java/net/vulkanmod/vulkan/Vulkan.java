@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -160,7 +158,7 @@ public class Vulkan {
             Arrays.stream(stagingBuffers).forEach(Buffer::freeBuffer);
         }
 
-        stagingBuffers = new StagingBuffer[getSwapChainImages().size()];
+        stagingBuffers = new StagingBuffer[getSwapChain().getFramesNum()];
 
         for(int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
@@ -170,7 +168,7 @@ public class Vulkan {
     private static void createSwapChain() {
         swapChain = new SwapChain();
 
-        FramesNum = swapChain.getFramesNum();
+        FramesNum = swapChain.getImagesNum();
     }
 
     public static void recreateSwapChain() {

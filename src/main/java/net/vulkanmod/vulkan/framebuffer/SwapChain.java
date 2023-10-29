@@ -160,6 +160,8 @@ public class SwapChain extends Framebuffer {
 
             swapChainImages = new ArrayList<>(imageCount.get(0));
 
+            Initializer.LOGGER.info("Requested Images: "+requestedFrames + " -> Actual Image Count: "+imageCount.get(0));
+
             this.width = extent2D.width();
             this.height = extent2D.height();
 
@@ -229,7 +231,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentImage()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
@@ -331,7 +333,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getCurrentImage());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -408,5 +410,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getFramesNum() { return 2; }
+    public int getImagesNum() { return this.swapChainImages.size(); }
 }
