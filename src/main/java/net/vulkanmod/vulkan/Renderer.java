@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -35,13 +36,15 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    private static final int LAG_IN_FRAMES = VideoResolution.isWayLand() || VideoResolution.isAndroid() ? 2 : 1;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
 
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
-    private static int imageIndex;
+    private static int imagesNum;
+    private static int presentIndex;
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -49,7 +52,7 @@ public class Renderer {
 
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
-    public static int getCurrentImage() { return imageIndex; }
+    public static int getCurrentImage() { return presentIndex; }
     public static int getCurrentFrame() { return currentFrame; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
@@ -79,7 +82,10 @@ public class Renderer {
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
 
-//        framesNum = 2;
+
+//      framesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
+
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -199,23 +205,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-            IntBuffer pImageIndex = stack.mallocInt(1);
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
-                return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
-            }
-
-            imageIndex = pImageIndex.get(0);
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -295,11 +285,25 @@ public class Renderer {
     }
 
     private void submitFrame() {
-        if(swapCahinUpdate)
+        if (swapCahinUpdate)
             return;
 
-        try(MemoryStack stack = stackPush()) {
-            int vkResult;
+        try (MemoryStack stack = stackPush()) {
+
+            IntBuffer pImageIndex = stack.mallocInt(1);
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
+                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+            if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+                swapCahinUpdate = true;
+                return;
+            } else {
+                if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
+                }
+            }
+            int imageIndex = pImageIndex.get(0);
+
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -316,7 +320,7 @@ public class Renderer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if ((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -333,16 +337,17 @@ public class Renderer {
 
             vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+            if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
                 swapCahinUpdate = true;
 //                shouldRecreate = false;
 //                recreateSwapChain();
                 return;
-            } else if(vkResult != VK_SUCCESS) {
+            } else if (vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
             }
 
             currentFrame ^= currentFrame;
+            presentIndex = (imageIndex + LAG_IN_FRAMES) % imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
         }
     }
 
@@ -381,7 +386,10 @@ public class Renderer {
 
         Vulkan.recreateSwapChain();
 
-//        int newFramesNum = getSwapChain().getFramesNum();
+
+        int newFramesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
+
 
 
 
