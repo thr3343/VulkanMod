@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.framebuffer;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.util.MathUtil;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
@@ -32,6 +33,8 @@ public class SwapChain extends Framebuffer {
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    private static final int defUncappedMode = VideoResolution.isWayLand() || VideoResolution.isAndroid() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
     private RenderPass renderPass;
     private long[] framebuffers;
@@ -353,7 +356,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
