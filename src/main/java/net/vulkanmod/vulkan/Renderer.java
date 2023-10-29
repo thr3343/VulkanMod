@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -38,7 +39,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
-    private static int LAG_IN_FRAMES;
+    private static final int LAG_IN_FRAMES = 1;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -89,7 +90,6 @@ public class Renderer {
 
         framesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
-        LAG_IN_FRAMES = imagesNum==2 ? 1 : 2;
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -209,7 +209,20 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-
+            IntBuffer pImageIndex = stack.mallocInt(1);
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
+                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+                swapCahinUpdate = true;
+                return;
+            } else {
+                if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
+                }
+            }
+            imageIndex = pImageIndex.get(0);
+            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -298,20 +311,6 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer pImageIndex = stack.mallocInt(1);
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-//        imageIndex = pImageIndex.get(0);
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-                return;
-            } else {
-                if (vkResult != VK_SUCCESS) {
-                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
-                }
-            }
-            imageIndex = pImageIndex.get(0);
-
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
@@ -327,6 +326,7 @@ public class Renderer {
 
             Synchronization.INSTANCE.waitFences();
 
+            int vkResult;
             if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
@@ -355,7 +355,6 @@ public class Renderer {
 
             currentFrame = (currentFrame + 1) % framesNum;
             renderIndex = (renderIndex + 1) % imagesNum;
-            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
 
         }
     }
@@ -413,7 +412,6 @@ public class Renderer {
 
         int newFramesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
-        LAG_IN_FRAMES = imagesNum==2 ? 1 : 2;
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitUploads();
