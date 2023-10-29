@@ -38,12 +38,17 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    private static int LAG_IN_FRAMES;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
 
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
+    private static int imagesNum;
+    private int Index2;
+    private static int renderIndex;
+    private static int presentIndex;
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -52,7 +57,7 @@ public class Renderer {
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
     public static int getCurrentFrame() { return currentFrame; }
-    public static int getImageIndex() { return imageIndex; }
+    public static int getImageIndex() { return presentIndex; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
@@ -83,6 +88,8 @@ public class Renderer {
         AreaUploadManager.createInstance();
 
         framesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
+        LAG_IN_FRAMES = imagesNum==2 ? 1 : 2;
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -202,7 +209,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-            imageIndex = aquireNextImage(stack.mallocInt(1));
+
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -291,8 +298,19 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
-            int vkResult;
-
+            IntBuffer pImageIndex = stack.mallocInt(1);
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
+                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+                swapCahinUpdate = true;
+                return;
+            } else {
+                if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
+                }
+            }
+            imageIndex = pImageIndex.get(0);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -336,25 +354,10 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
-
+            renderIndex = (renderIndex + 1) % imagesNum;
+            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
 
         }
-    }
-
-    private int aquireNextImage(IntBuffer pImageIndex) {
-        int vkResult;
-        vkResult= vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
-                imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-//        imageIndex = pImageIndex.get(0);
-        if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-            swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                recreateSwapChain();
-            return pImageIndex.get(0);
-        } else if(vkResult != VK_SUCCESS) {
-            throw new RuntimeException("Failed to present swap chain image "+vkResult);
-        }
-        return pImageIndex.get(0);
     }
 
     private String decVkErr(int vkResult) {
@@ -409,6 +412,8 @@ public class Renderer {
         Vulkan.recreateSwapChain();
 
         int newFramesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
+        LAG_IN_FRAMES = imagesNum==2 ? 1 : 2;
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitAllUploads();
@@ -426,7 +431,7 @@ public class Renderer {
 
         this.onResizeCallbacks.forEach(Runnable::run);
 
-        currentFrame = 0;
+        currentFrame = renderIndex = presentIndex = 0;
     }
 
     public void cleanUpResources() {

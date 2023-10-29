@@ -470,5 +470,5 @@ public class SwapChain extends Framebuffer {
     }
 
     public int getFramesNum() { return Initializer.CONFIG.frameQueueSize; }
-    public int getImagesNum() { return Initializer.CONFIG.minImageCount; }
+    public int getImagesNum() { return swapChainImages.size(); }
 }
