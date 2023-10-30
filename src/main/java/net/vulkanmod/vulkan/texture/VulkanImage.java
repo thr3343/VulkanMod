@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.NativeImage;
 import it.unimi.dsi.fastutil.bytes.Byte2LongArrayMap;
 import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
 import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
@@ -18,7 +20,9 @@ import java.nio.LongBuffer;
 import java.util.Objects;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
@@ -170,29 +174,78 @@ public class VulkanImage {
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
-    public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
+    public void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
 
-            LongBuffer pStagingBuffer = stack.mallocLong(1);
-            PointerBuffer pStagingAllocation = stack.pointers(0L);
-            MemoryManager.getInstance().createBuffer(imageSize,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-                    pStagingBuffer,
-                    pStagingAllocation);
+            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.beginCommands();
+            this.transferSrcLayout(commandBuffer);
 
-            copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
 
-            MemoryManager.getInstance().MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer)
+            int imageSize = width * height * formatSize;
+
+
+            Buffer buffer1 = new Buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryTypes.HOST_MEM);
+            buffer1.createBuffer(imageSize);
+
+            copyImageToBuffer(buffer1.getId(), image, 0, width, height, 0, 0, 0, 0, 0, commandBuffer);
+
+            MemoryManager.getInstance().MapAndCopy(buffer1.getAllocation(), imageSize,
+                    (data) -> VUtil.memcpy(data.getByteBuffer(0, imageSize), buffer)
             );
-
-            MemoryManager.freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
+            Vulkan.getSwapChain().presentLayout(stack, commandBuffer.getHandle(), Renderer.getImageIndex(), this.currentLayout);
+            GraphicsQueue.submitCommands(commandBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+            MemoryManager.getInstance().addToFreeable(buffer1);
         }
 
     }
 
+    public void transferSrcLayout(CommandPool.CommandBuffer commandBuffer) {
+        if (this.currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+            return;
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            barrier.oldLayout(this.currentLayout);
+            barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            barrier.srcQueueFamilyIndex(0);
+            barrier.dstQueueFamilyIndex(0);
+            barrier.image(this.id);
+
+
+            barrier.subresourceRange().baseMipLevel(0);
+            barrier.subresourceRange().levelCount(mipLevels);
+            barrier.subresourceRange().baseArrayLayer(0);
+            barrier.subresourceRange().layerCount(1);
+
+            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+
+
+
+            int sourceStage;
+            int destinationStage;
+
+            barrier.srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+            sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+            //VkCommandBuffer commandBuffer = beginImmediateCmd();
+
+            vkCmdPipelineBarrier(commandBuffer.getHandle(),
+                    sourceStage, destinationStage,
+                    0,
+                    null,
+                    null,
+                    barrier);
+
+        }
+
+        currentLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    }
     private void transferDstLayout(CommandPool.CommandBuffer commandBuffer) {
         if (this.currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
             return;
@@ -374,11 +427,9 @@ public class VulkanImage {
         }
     }
 
-    private static void copyImageToBuffer(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
+    private static void copyImageToBuffer(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight, CommandPool.CommandBuffer commandBuffer) {
 
         try(MemoryStack stack = stackPush()) {
-
-            CommandPool.CommandBuffer commandBuffer = Device.getTransferQueue().beginCommands();
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
             region.bufferOffset(bufferOffset);
@@ -392,10 +443,10 @@ public class VulkanImage {
             region.imageExtent().set(width, height, 1);
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
-
-            long fence = Device.getTransferQueue().submitCommands(commandBuffer);
-
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+//
+//            long fence = Device.getTransferQueue().submitCommands(commandBuffer);
+//
+//            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
     }
 

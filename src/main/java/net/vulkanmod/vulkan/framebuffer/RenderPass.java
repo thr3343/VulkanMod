@@ -111,7 +111,7 @@ public class RenderPass {
 
             id = pRenderPass.get(0);
 
-            finalColorLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            finalColorLayout = KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             finalDepthLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         }

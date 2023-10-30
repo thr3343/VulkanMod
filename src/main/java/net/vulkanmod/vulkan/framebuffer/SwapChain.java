@@ -141,7 +141,7 @@ public class SwapChain extends Framebuffer {
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            createInfo.imageUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT); //Adding flags can disable compression on some architectures (i.e. hopefully this won't cause performance regressions)
 
             if(QueueFamilyIndices.graphicsFamily != (QueueFamilyIndices.presentFamily)) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
@@ -286,12 +286,12 @@ public class SwapChain extends Framebuffer {
             this.currentLayout[imageIndex] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
 
-    public void presentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int imageIndex) {
+    public void presentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int imageIndex, int oldLayout) {
 
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
         barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-        barrier.oldLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        barrier.oldLayout(oldLayout);
         barrier.newLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         barrier.image(this.swapChainImages.get(imageIndex).getId());
 

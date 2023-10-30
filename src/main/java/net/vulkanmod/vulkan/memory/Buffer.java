@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.PointerBuffer;
 
-public abstract class Buffer {
+public class Buffer {
     protected long id;
     protected long allocation;
 
@@ -14,14 +14,14 @@ public abstract class Buffer {
     protected int usage;
     protected PointerBuffer data;
 
-    protected Buffer(int usage, MemoryType type) {
+    public Buffer(int usage, MemoryType type) {
         //TODO: check usage
         this.usage = usage;
         this.type = type;
 
     }
 
-    protected void createBuffer(int bufferSize) {
+    public void createBuffer(int bufferSize) {
         this.type.createBuffer(this, bufferSize);
 
         if(this.type.mappable()) {
