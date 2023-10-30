@@ -60,6 +60,11 @@
     "texture.MSpriteAtlasTexture",
     "texture.MSpriteContents",
     "texture.MTextureManager",
+
+    "texture.MTextureUtil",
+    "texture.MNativeImage",
+
+
     "util.ScreenshotRecorderM",
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
