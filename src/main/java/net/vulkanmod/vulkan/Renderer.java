@@ -46,10 +46,10 @@ public class Renderer {
 
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
-    private static int imagesNum;
+//    private static int imagesNum;
     private int Index2;
-    private static int renderIndex;
-    private static int presentIndex;
+//    private static int renderIndex;
+//    private static int presentIndex;
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -58,7 +58,7 @@ public class Renderer {
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
     public static int getCurrentFrame() { return currentFrame; }
-    public static int getImageIndex() { return renderIndex; }
+    public static int getImageIndex() { return currentFrame; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
@@ -74,7 +74,6 @@ public class Renderer {
     private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
-    private static int imageIndex = 0;
     private VkCommandBuffer currentCmdBuffer;
 
     MainPass mainPass = DefaultMainPass.PASS;
@@ -89,7 +88,7 @@ public class Renderer {
         AreaUploadManager.createInstance();
 
         framesNum = getSwapChain().getFramesNum();
-        imagesNum = getSwapChain().getImagesNum();
+//        imagesNum = getSwapChain().getImagesNum();
 
         drawer = new Drawer();
         drawer.createResources(framesNum);
@@ -313,8 +312,6 @@ public class Renderer {
                 }
             }
 
-//            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
-
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
@@ -329,7 +326,6 @@ public class Renderer {
             vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
 
             Synchronization.INSTANCE.waitFences();
-
 
             if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
@@ -358,8 +354,6 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
-            renderIndex = imageIndex;
-            imageIndex = pImageIndex.get(0);
 
         }
     }
@@ -416,7 +410,7 @@ public class Renderer {
         Vulkan.recreateSwapChain();
 
         int newFramesNum = getSwapChain().getFramesNum();
-        imagesNum = getSwapChain().getImagesNum();
+//        imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitUploads();
@@ -434,7 +428,7 @@ public class Renderer {
 
         this.onResizeCallbacks.forEach(Runnable::run);
 
-        currentFrame = renderIndex = presentIndex = 0;
+        currentFrame = 0;
     }
 
     public void cleanUpResources() {

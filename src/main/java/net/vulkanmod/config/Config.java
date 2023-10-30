@@ -12,8 +12,8 @@ import java.util.Collections;
 
 public class Config {
 
-    public int frameQueueSize = 2;
-    public int minImageCount = 3;
+    public int frameQueueSize = 3;
+//    public int minImageCount = 3;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;

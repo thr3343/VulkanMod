@@ -119,10 +119,10 @@ public class SwapChain extends Framebuffer {
                 return;
             }
 
-            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
-                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
+            if(Initializer.CONFIG.frameQueueSize < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.frameQueueSize = surfaceProperties.capabilities.minImageCount();
 
-            int requestedFrames = Initializer.CONFIG.minImageCount;
+            int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
             IntBuffer imageCount = stack.ints(requestedFrames);
 //            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
@@ -469,6 +469,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return Initializer.CONFIG.frameQueueSize; }
-    public int getImagesNum() { return swapChainImages.size(); }
+    public int getFramesNum() { return swapChainImages.size(); }
+//    public int getImagesNum() { return swapChainImages.size(); }
 }
