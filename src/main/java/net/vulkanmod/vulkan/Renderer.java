@@ -58,7 +58,7 @@ public class Renderer {
     public static Drawer getDrawer() { return INSTANCE.drawer; }
 
     public static int getCurrentFrame() { return currentFrame; }
-    public static int getImageIndex() { return presentIndex; }
+    public static int getImageIndex() { return renderIndex; }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
@@ -209,20 +209,7 @@ public class Renderer {
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
-            IntBuffer pImageIndex = stack.mallocInt(1);
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-//        imageIndex = pImageIndex.get(0);
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-                return;
-            } else {
-                if (vkResult != VK_SUCCESS) {
-                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
-                }
-            }
-            imageIndex = pImageIndex.get(0);
-            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
+
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -311,12 +298,29 @@ public class Renderer {
 
         try(MemoryStack stack = stackPush()) {
 
+            IntBuffer pImageIndex = stack.mallocInt(1);
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
+                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+//        imageIndex = pImageIndex.get(0);
+            if (vkResult == VK_ERROR_OUT_OF_DATE_KHR) {
+                swapCahinUpdate = true;
+            } else if (vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+                swapCahinUpdate = true;
+                return;
+            } else {
+                if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to present swap chain image " + vkResult);
+                }
+            }
+
+//            presentIndex= (imageIndex+LAG_IN_FRAMES )%imagesNum; //Use the frame that's not currently being presented or rendered to (i.e. true triple Buffering)
+
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
 
@@ -326,7 +330,7 @@ public class Renderer {
 
             Synchronization.INSTANCE.waitFences();
 
-            int vkResult;
+
             if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
@@ -340,7 +344,7 @@ public class Renderer {
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain().getId()));
 
-            presentInfo.pImageIndices(stack.ints(imageIndex));
+            presentInfo.pImageIndices(pImageIndex);
 
             vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
@@ -354,7 +358,8 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
-            renderIndex = (renderIndex + 1) % imagesNum;
+            renderIndex = imageIndex;
+            imageIndex = pImageIndex.get(0);
 
         }
     }
