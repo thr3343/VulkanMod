@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -31,6 +32,9 @@ import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.EXTFullScreenExclusive.VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT;
+import static org.lwjgl.vulkan.KHRSurface.VK_ERROR_NATIVE_WINDOW_IN_USE_KHR;
+import static org.lwjgl.vulkan.KHRSurface.VK_ERROR_SURFACE_LOST_KHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -195,28 +199,30 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+//        vkResetCommandBuffer(currentCmdBuffer, 0);
 
         p.pop();
 
         try(MemoryStack stack = stackPush()) {
             IntBuffer pImageIndex = stack.mallocInt(1);
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
+            imageIndex = pImageIndex.get(0);
+            if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapCahinUpdate) {
                 swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
+                Initializer.LOGGER.error("Updating Swapchain before render: Image: "+imageIndex + " --> "+decVkErr(vkResult));
+
                 return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
+            }
+            if (vkResult == VK_SUBOPTIMAL_KHR) {
+                swapCahinUpdate = true;
+                Initializer.LOGGER.error("VK_SUBOPTIMAL_KHR Image: " + imageIndex);
+            }
+            else if(vkResult != VK_SUCCESS) {
+                throw new RuntimeException("Cannot get image: "+imageIndex+ " --> " + decVkErr(vkResult));
             }
 
-            imageIndex = pImageIndex.get(0);
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -232,6 +238,23 @@ public class Renderer {
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
         }
+    }
+
+    private String decVkErr(int vkResult) {
+        return switch (vkResult)
+        {
+            case VK_TIMEOUT -> "VK_TIMEOUT";
+            case VK_SUBOPTIMAL_KHR -> "VK_SUBOPTIMAL_KHR";
+            case VK_NOT_READY -> "VK_NOT_READY";
+            case VK_ERROR_OUT_OF_HOST_MEMORY -> "VK_ERROR_OUT_OF_HOST_MEMORY";
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY -> "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+            case VK_ERROR_DEVICE_LOST -> "VK_ERROR_DEVICE_LOST";
+            case VK_ERROR_OUT_OF_DATE_KHR -> "VK_ERROR_OUT_OF_DATE_KHR";
+            case VK_ERROR_SURFACE_LOST_KHR -> "VK_ERROR_SURFACE_LOST_KHR";
+            case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR -> "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
+            case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT -> "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
+            default -> String.valueOf(vkResult);
+        };
     }
 
     public void endFrame() {
@@ -275,7 +298,7 @@ public class Renderer {
         this.boundFramebuffer = framebuffer;
     }
 
-    public void resetBuffers() {
+        public void resetBuffers() {
         drawer.resetBuffers(currentFrame);
 
         Vulkan.getStagingBuffer(currentFrame).reset();
@@ -336,6 +359,7 @@ public class Renderer {
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
                 swapCahinUpdate = true;
+                Initializer.LOGGER.error("Updating Swapchain after render: Image: "+imageIndex+" --> "+decVkErr(vkResult));
 //                shouldRecreate = false;
 //                recreateSwapChain();
                 return;
@@ -381,7 +405,7 @@ public class Renderer {
 
 
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+//        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
         Vulkan.recreateSwapChain();
 
@@ -403,7 +427,7 @@ public class Renderer {
 
         this.onResizeCallbacks.forEach(Runnable::run);
 
-        currentFrame = imageIndex = 0;
+        currentFrame = 0;
     }
 
     public void cleanUpResources() {
