@@ -42,6 +42,7 @@ public class Renderer {
     private static boolean swapCahinUpdate = false;
     public static boolean skipRendering = false;
     private static int imageIndex;
+    private int imagesNum;
 
     public static void initRenderer() { INSTANCE = new Renderer(); }
 
@@ -56,7 +57,7 @@ public class Renderer {
 
     private final Drawer drawer;
 
-    private static final int framesNum = 2;
+    private int framesNum;
     private List<VkCommandBuffer> commandBuffers;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
@@ -79,8 +80,8 @@ public class Renderer {
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
 
-//        framesNum = 2;
-
+        framesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
         drawer = new Drawer();
         drawer.createResources(framesNum);
 
@@ -342,7 +343,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to present swap chain image");
             }
 
-            currentFrame ^= currentFrame;
+            currentFrame = (currentFrame + 1) % framesNum;
         }
     }
 
@@ -377,17 +378,32 @@ public class Renderer {
 //            vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
 //        }
 
+
+
+
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
         Vulkan.recreateSwapChain();
 
-//        int newFramesNum = getSwapChain().getFramesNum();
+        int newFramesNum = getSwapChain().getFramesNum();
+        imagesNum = getSwapChain().getImagesNum();
+        if(framesNum != newFramesNum) {
+            AreaUploadManager.INSTANCE.waitAllUploads();
+            destroySyncObjects();
 
+            framesNum = newFramesNum;
+            createSyncObjects();
+            allocateCommandBuffers();
 
+            Pipeline.recreateDescriptorSets(framesNum);
+
+            drawer.createResources(framesNum);
+            AreaUploadManager.INSTANCE.createLists();
+        }
 
         this.onResizeCallbacks.forEach(Runnable::run);
 
-//        currentFrame = 0;
+        currentFrame = imageIndex = 0;
     }
 
     public void cleanUpResources() {

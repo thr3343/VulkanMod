@@ -168,7 +168,7 @@ public class Vulkan {
     private static void createSwapChain() {
         swapChain = new SwapChain();
 
-        FramesNum = swapChain.getImagesNum();
+        FramesNum = swapChain.getFramesNum();
     }
 
     public static void recreateSwapChain() {

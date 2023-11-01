@@ -6,14 +6,36 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
+import org.lwjgl.system.MemoryStack;
+
+import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    private static final int minImages;
+
+    private static final int maxImages;
+
+
+    static
+    {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            minImages = surfaceProperties.capabilities.minImageCount();
+            int maxImageCount = surfaceProperties.capabilities.maxImageCount();
+
+            boolean hasInfiniteSwapChain = maxImageCount == 0; //Applicable if Mesa/RADV Driver are present
+            maxImages = hasInfiniteSwapChain ? 64 : Math.min(maxImageCount, 32);
+        }
+    }
 
 
     public static Option<?>[] getVideoOpts() {
@@ -175,7 +197,19 @@ public class Options {
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Manages the tradeoff between FPS and input lag
+                        Higher = improved FPS but more input lag
+                        Lower = decreased FPS but less input lag""")),
+                new RangeOption("Image Count", minImages,
+                        maxImages, 1,
+                        value -> {
+                            config.minImageCount = value;
+                            Renderer.scheduleSwapChainUpdate();
+                        }, () -> config.minImageCount)
+                        .setTooltip(Component.nullToEmpty("""
+                        Sets the number of Swapchain images
+                        Higher values can boost GPU performance
+                        But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
