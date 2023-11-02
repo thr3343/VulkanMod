@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -152,7 +151,7 @@ public class VulkanImage {
         CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().getCommandBuffer();
         transferDstLayout(commandBuffer);
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.align(this.formatSize);
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);

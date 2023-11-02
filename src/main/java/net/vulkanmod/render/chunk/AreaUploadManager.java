@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.TransferQueue;
-import org.apache.commons.lang3.Validate;
 
 import java.nio.ByteBuffer;
 
@@ -54,7 +53,7 @@ public class AreaUploadManager {
             this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();
 //            this.commandBuffers[currentFrame] = Device.getGraphicsQueue().beginCommands();
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);

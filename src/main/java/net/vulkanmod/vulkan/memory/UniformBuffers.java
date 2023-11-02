@@ -127,7 +127,7 @@ public class UniformBuffers {
 
                 int size = buffer.remaining();
 
-                StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+                StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
                 stagingBuffer.copyBuffer(size, buffer);
 
                 TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.id, offset, size);

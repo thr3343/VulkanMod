@@ -301,7 +301,7 @@ public class Renderer {
         public void resetBuffers() {
         drawer.resetBuffers(currentFrame);
 
-        Vulkan.getStagingBuffer(currentFrame).reset();
+        Vulkan.getStagingBuffer().reset();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
