@@ -324,6 +324,20 @@ public class Device {
         return computeQueue;
     }
 
+
+    public static IntBuffer getAllDisplayModes(VkPhysicalDevice device, MemoryStack stack) {
+        long surface = Vulkan.getSurface();
+
+        IntBuffer count = stack.ints(0);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
+
+        IntBuffer presentModes = stack.mallocInt(count.get(0));
+        if(count.get(0) != 0) {
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, presentModes);
+        }
+        return presentModes;
+    }
+
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
 
         long surface = Vulkan.getSurface();

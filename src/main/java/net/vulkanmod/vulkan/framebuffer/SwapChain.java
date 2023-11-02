@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -33,8 +34,26 @@ public class SwapChain extends Framebuffer {
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
+    private static final int defVSyncMode = checkPresentMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR, VK_PRESENT_MODE_FIFO_KHR);
+
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    private static final int defUncappedMode = VideoResolution.isWayLand() || VideoResolution.isAndroid() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
+
+    private static int checkPresentMode(int... requestedModes) {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = Device.getAllDisplayModes(device.getPhysicalDevice(), stack);
+            for(int dMode : requestedModes) {
+                for (int i = 0; i < a.capacity(); i++) {
+                    if (a.get(i) == dMode) {
+                        return dMode;
+                    }
+                }
+            }
+            return VK_PRESENT_MODE_FIFO_KHR; //If None of the request modes exist/are supported by Driver
+        }
+    }
 
     private RenderPass renderPass;
     private long[] framebuffers;
@@ -97,7 +116,7 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
-
+            //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
             if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
                 Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
 
@@ -357,7 +376,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
+        int requestedMode = vsync ? defVSyncMode : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)

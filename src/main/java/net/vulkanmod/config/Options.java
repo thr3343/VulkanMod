@@ -198,6 +198,7 @@ public class Options {
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
                         Manages the tradeoff between FPS and input lag
+                        Most GPUs Don't benefit from more than 2
                         Higher = More FPS but more input lag
                         Lower = Less FPS but less input lag""")),
                 new RangeOption("Image Count", minImages,
