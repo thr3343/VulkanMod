@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -106,9 +105,7 @@ public class Device {
 
         try(MemoryStack stack = stackPush()) {
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(uniqueQueueFamilies.length, stack);
 
@@ -188,10 +185,10 @@ public class Device {
 //            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
 //            transferQueue = new VkQueue(pQueue.get(0), device);
 
-            graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
-            transferQueue = new TransferQueue(stack, indices.transferFamily);
-            presentQueue = new PresentQueue(stack, indices.presentFamily);
-            computeQueue = new ComputeQueue(stack, indices.computeFamily);
+            graphicsQueue = new GraphicsQueue(stack, QueueFamilyIndices.graphicsFamily);
+            transferQueue = new TransferQueue(stack, QueueFamilyIndices.transferFamily);
+            presentQueue = new PresentQueue(stack, QueueFamilyIndices.presentFamily);
+            computeQueue = new ComputeQueue(stack, QueueFamilyIndices.computeFamily);
 
 //            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
 //            TransferQueue.createInstance(stack, indices.transferFamily);
@@ -222,8 +219,6 @@ public class Device {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
-
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
 
@@ -241,7 +236,7 @@ public class Device {
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
