@@ -190,7 +190,7 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 2,
+                new RangeOption("Queue Frames", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
@@ -198,8 +198,8 @@ public class Options {
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
                         Manages the tradeoff between FPS and input lag
-                        Higher = improved FPS but more input lag
-                        Lower = decreased FPS but less input lag""")),
+                        Higher = More FPS but more input lag
+                        Lower = Less FPS but less input lag""")),
                 new RangeOption("Image Count", minImages,
                         maxImages, 1,
                         value -> {
@@ -208,7 +208,8 @@ public class Options {
                         }, () -> config.minImageCount)
                         .setTooltip(Component.nullToEmpty("""
                         Sets the number of Swapchain images
-                        Higher values can boost GPU performance
+                        This is Optimised automatically for best performance
+                        Higher values may help reduce stutter
                         But at the cost of increased input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
