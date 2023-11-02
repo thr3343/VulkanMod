@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;

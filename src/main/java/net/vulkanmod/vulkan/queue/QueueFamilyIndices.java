@@ -15,6 +15,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class QueueFamilyIndices {
 
+    public static boolean hasDedicatedTransferQueue;
+
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
         try (MemoryStack stack = stackPush()) {
@@ -49,7 +51,7 @@ public class QueueFamilyIndices {
                     transferFamily = i;
                 }
 
-                if (presentFamily == null) {
+                if (presentFamily == -1) {
                     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
                     if (presentSupport.get(0) == VK_TRUE) {
@@ -60,7 +62,7 @@ public class QueueFamilyIndices {
                 if (isComplete()) break;
             }
 
-            if (transferFamily == null) {
+            if (transferFamily == -1) {
 
                 int fallback = -1;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
@@ -86,7 +88,7 @@ public class QueueFamilyIndices {
                 }
             }
 
-            if (computeFamily == null) {
+            if (computeFamily == -1) {
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -96,12 +98,12 @@ public class QueueFamilyIndices {
                     }
                 }
             }
-
-            if (graphicsFamily == null)
+            hasDedicatedTransferQueue = graphicsFamily!=transferFamily;
+            if (graphicsFamily == -1)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (presentFamily == null)
+            if (presentFamily == -1)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (computeFamily == null)
+            if (computeFamily == -1)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return isComplete();
@@ -110,17 +112,14 @@ public class QueueFamilyIndices {
 
 
     // We use Integer to use null as the empty value
-        public static Integer graphicsFamily;
-        public static Integer presentFamily;
-        public static Integer transferFamily;
-        public static Integer computeFamily;
+        public static int graphicsFamily,presentFamily,transferFamily,computeFamily=-1;
 
         public static boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1 && transferFamily != -1 && computeFamily != -1;
         }
 
         public static boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1;
         }
 
         public static int[] unique() {

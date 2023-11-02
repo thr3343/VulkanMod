@@ -32,11 +32,6 @@ public class Device {
 
     public static SurfaceProperties surfaceProperties;
 
-    static GraphicsQueue graphicsQueue;
-    static PresentQueue presentQueue;
-    static TransferQueue transferQueue;
-    static ComputeQueue computeQueue;
-
     static void pickPhysicalDevice(VkInstance instance) {
 
         try(MemoryStack stack = stackPush()) {
@@ -185,11 +180,6 @@ public class Device {
 //            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
 //            transferQueue = new VkQueue(pQueue.get(0), device);
 
-            graphicsQueue = new GraphicsQueue(stack, QueueFamilyIndices.graphicsFamily);
-            transferQueue = new TransferQueue(stack, QueueFamilyIndices.transferFamily);
-            presentQueue = new PresentQueue(stack, QueueFamilyIndices.presentFamily);
-            computeQueue = new ComputeQueue(stack, QueueFamilyIndices.computeFamily);
-
 //            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
 //            TransferQueue.createInstance(stack, indices.transferFamily);
 //            PresentQueue.createInstance(stack, indices.presentFamily);
@@ -296,27 +286,27 @@ public class Device {
     }
 
     public static void destroy() {
-        graphicsQueue.cleanUp();
-        transferQueue.cleanUp();
-        computeQueue.cleanUp();
+        Queue.GraphicsQueue.cleanUp();
+        Queue.TransferQueue.cleanUp();
+        Queue.ComputeQueue.cleanUp();
 
         vkDestroyDevice(device, null);
     }
 
-    public static GraphicsQueue getGraphicsQueue() {
-        return graphicsQueue;
+    public static Queue getGraphicsQueue() {
+        return Queue.GraphicsQueue;
     }
 
-    public static PresentQueue getPresentQueue() {
-        return presentQueue;
+    public static Queue getPresentQueue() {
+        return Queue.PresentQueue;
     }
 
-    public static TransferQueue getTransferQueue() {
-        return transferQueue;
+    public static Queue getTransferQueue() {
+        return Queue.TransferQueue;
     }
 
-    public static ComputeQueue getComputeQueue() {
-        return computeQueue;
+    public static Queue getComputeQueue() {
+        return Queue.ComputeQueue;
     }
 
 
