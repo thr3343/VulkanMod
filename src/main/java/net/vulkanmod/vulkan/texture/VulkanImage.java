@@ -23,7 +23,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
     private static final int depthFormat = Device.findDepthFormat();
-    private static final int defDepthAspect = depthFormat == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    private static final int defDepthAspect = depthFormat == VK_FORMAT_D32_SFLOAT||depthFormat == VK_FORMAT_X8_D24_UNORM_PACK32 ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static VkDevice device = Vulkan.getDevice();
