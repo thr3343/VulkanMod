@@ -425,7 +425,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            CommandPool.CommandBuffer commandBuffer = Device.getTransferQueue().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().beginCommands();
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
@@ -436,11 +436,11 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
-            long fence = Device.getTransferQueue().submitCommands(commandBuffer);
+            long fence = Device.getGraphicsQueue().submitCommands(commandBuffer);
 
             vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
