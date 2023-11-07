@@ -68,6 +68,8 @@ public abstract class ChunkTask {
     }
 
     public static class BuildTask extends ChunkTask {
+        private final BlockPos startBlockPos;
+        private final Iterable<BlockPos> blockPos;
         @Nullable
         protected RenderChunkRegion region;
 
@@ -79,6 +81,9 @@ public abstract class ChunkTask {
             super(renderSection);
             this.region = renderChunkRegion;
             this.highPriority = highPriority;
+            startBlockPos = new BlockPos(this.renderSection.xOffset(), this.renderSection.yOffset(), this.renderSection.zOffset()).immutable();
+            BlockPos endBlockPos = startBlockPos.offset(15, 15, 15);
+            blockPos = BlockPos.betweenClosed(startBlockPos, endBlockPos);
         }
 
         public String name() {
@@ -142,9 +147,6 @@ public abstract class ChunkTask {
         private CompileResults compile(float camX, float camY, float camZ, ThreadBuilderPack chunkBufferBuilderPack) {
             CompileResults compileResults = new CompileResults();
 
-            BlockPos startBlockPos = new BlockPos(renderSection.xOffset(), renderSection.yOffset(), renderSection.zOffset()).immutable();
-
-            BlockPos endBlockPos = startBlockPos.offset(15, 15, 15);
             VisGraph visGraph = new VisGraph();
             RenderChunkRegion renderChunkRegion = this.region;
             this.region = null;
@@ -155,7 +157,7 @@ public abstract class ChunkTask {
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 
-                for(BlockPos blockPos : BlockPos.betweenClosed(startBlockPos, endBlockPos)) {
+                for(BlockPos blockPos : blockPos) {
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos);
                     if (blockState.isSolidRender(renderChunkRegion, blockPos)) {
                         visGraph.setOpaque(blockPos);
@@ -220,7 +222,7 @@ public abstract class ChunkTask {
                     TerrainBufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2), uploadBuffer);
+                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2.name), uploadBuffer);
                     }
 
                     if(renderedBuffer != null)
@@ -319,7 +321,7 @@ public abstract class ChunkTask {
                     } else {
 
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.get(RenderType.translucent()), uploadBuffer);
+                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.TRANSLUCENT, uploadBuffer);
                         renderedBuffer.release();
                         return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 

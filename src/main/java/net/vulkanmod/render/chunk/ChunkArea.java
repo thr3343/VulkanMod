@@ -1,13 +1,14 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
-import net.vulkanmod.render.chunk.util.ResettableQueue;
+import net.vulkanmod.render.chunk.util.StaticQueue;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
 import java.util.Arrays;
 
 public class ChunkArea {
+
     public final int index;
     private final byte[] inFrustum = new byte[64];
 
@@ -15,12 +16,12 @@ public class ChunkArea {
 
     DrawBuffers drawBuffers;
 
-    final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
+
 
     public ChunkArea(int i, Vector3i origin) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers();
+        this.drawBuffers = new DrawBuffers(i, origin);
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -119,16 +120,16 @@ public class ChunkArea {
     }
 
     private void allocateDrawBuffers() {
-        this.drawBuffers = new DrawBuffers();
+        this.drawBuffers = new DrawBuffers(this.index, this.position);
     }
 
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
-    }
-
-    public void resetQueue() {
-        this.sectionQueue.clear();
-    }
+//    public void addSection(RenderSection section) {
+//        this.sectionQueue.add(section);
+//    }
+//
+//    public void resetQueue() {
+//        this.sectionQueue.clear();
+//    }
 
     public void setPosition(int x, int y, int z) {
         this.position.set(x, y, z);

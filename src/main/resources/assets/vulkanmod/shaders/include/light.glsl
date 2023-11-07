@@ -16,7 +16,7 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
 }
 
 vec4 sample_lightmap(sampler2D lightMap, ivec2 uv) {
-    return texelFetch(lightMap, (uv & 255) >> 4, 0);
+    return texelFetch(lightMap, bitfieldExtract(uv, 4, 8), 0);
 }
 
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {

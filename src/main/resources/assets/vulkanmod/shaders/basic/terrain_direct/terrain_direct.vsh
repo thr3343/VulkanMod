@@ -29,10 +29,11 @@ const float UV_INV = 1.0 / 65536.0;
 const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
-    vec3 pos = (Position * POSITION_INV);
-    gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
+    const ivec3 a = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 18, 9), 0, 9);
+    const vec3 pos = fma(Position, vec3(POSITION_INV), ChunkOffset);
+    gl_Position = MVP * vec4(pos + a, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);
+    vertexDistance = length((ModelViewMat * vec4(pos + a, 1.0)).xyz);
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);

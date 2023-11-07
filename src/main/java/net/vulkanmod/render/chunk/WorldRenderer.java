@@ -43,12 +43,15 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
+
+import static net.vulkanmod.render.chunk.TerrainShaderManager.*;
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -314,10 +317,11 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
-
+            //Bypass if(drawParameters.indexCount == 0) checks in DrawBuffers by checking empty renderSections ahead of time
             if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                DrawBuffers drawBuffers = renderSection.getChunkArea().drawBuffers;
+                drawBuffers.sectionQueue.add(renderSection.getDrawParameters());
+                this.chunkAreaQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -355,10 +359,11 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
-
+            //Bypass if(drawParameters.indexCount == 0) checks in DrawBuffers by checking empty renderSections ahead of time
             if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                DrawBuffers drawBuffers = renderSection.getChunkArea().drawBuffers;
+                drawBuffers.sectionQueue.add(renderSection.getDrawParameters());
+                this.chunkAreaQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -544,12 +549,12 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        final String layerName = getLayerName(renderType);
+        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType.name);
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals("solid"))
+        if(terrainRenderType.equals(SOLID))
             p.push("Opaque_terrain_pass");
-        else if(layerName.equals("translucent"))
+        else if(terrainRenderType.equals(TRANSLUCENT))
         {
             p.pop();
             p.push("Translucent_terrain_pass");
@@ -565,64 +570,54 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean flag = renderType == RenderType.translucent();
+        boolean flag = terrainRenderType == TRANSLUCENT;
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = TerrainShaderManager.getTerrainShader(renderType);
-        renderer.bindGraphicsPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+        int currentFrame = Renderer.getCurrentFrame();
+        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+        renderer.bindGraphicsPipeline(terrainDirectShader);
+        Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
         p.push("draw batches");
 
-        ObjectArrayList<RenderType> renderTypes;
-        if(Initializer.CONFIG.uniqueOpaqueLayer) {
-            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
-        } else {
-            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
-        }
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
-        if(renderTypes.contains(renderType)) {
-            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-            while(iterator.hasNext()) {
-                ChunkArea chunkArea = iterator.next();
+            terrainRenderType.setCutoutUniform();
+            terrainDirectShader.bindDescriptorSets(commandBuffer, currentFrame);
+
+            for(Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(flag); iterator.hasNext(); ) {
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                    iterator.next().buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
+                    iterator.next().buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ);
                 }
             }
         }
 
-        if(layerName.equals("cutout") || layerName.equals("tripwire")) {
-            indirectBuffers[Renderer.getCurrentFrame()].submitUploads();
+        if(terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE)) {
+            indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
         p.pop();
-
-        //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
-        }
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
-        switch (layerName) {
-            case "cutout" -> {
+        switch (terrainRenderType) {
+            case CUTOUT -> {
                 p.pop();
 //                p.pop();
 //                p.push("Render_level_2");
                 p.push("entities");
             }
 //            case "translucent" -> p.pop();
-            case "tripwire" -> p.pop();
+            case TRIPWIRE -> p.pop();
         }
 
     }
@@ -672,7 +667,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TerrainRenderType.TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(TRANSLUCENT, this.taskDispatcher);
 
                 ++j;
             }

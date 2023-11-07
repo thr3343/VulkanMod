@@ -18,7 +18,6 @@ public abstract class TerrainShaderManager {
         TERRAIN_VERTEX_FORMAT = format;
     }
 
-    static GraphicsPipeline terrainIndirectShader;
     public static GraphicsPipeline terrainDirectShader;
 
     private static Function<RenderType, GraphicsPipeline> shaderGetter;
@@ -31,11 +30,10 @@ public abstract class TerrainShaderManager {
     }
 
     public static void setDefaultShader() {
-        setShaderGetter(renderType -> Initializer.CONFIG.indirectDraw ? terrainIndirectShader : terrainDirectShader);
+        setShaderGetter(renderType -> terrainDirectShader);
     }
 
     private static void createBasicPipelines() {
-        terrainIndirectShader = createPipeline("terrain_indirect");
         terrainDirectShader = createPipeline("terrain_direct");
     }
 
@@ -60,12 +58,7 @@ public abstract class TerrainShaderManager {
         return terrainDirectShader;
     }
 
-    public static GraphicsPipeline getTerrainIndirectShader(RenderType renderType) {
-        return terrainIndirectShader;
-    }
-
     public static void destroyPipelines() {
-        terrainIndirectShader.cleanUp();
         terrainDirectShader.cleanUp();
     }
 }

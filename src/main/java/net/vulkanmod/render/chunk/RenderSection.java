@@ -184,6 +184,10 @@ public class RenderSection {
         return drawParametersArray[renderType.ordinal()];
     }
 
+    public DrawBuffers.DrawParameters[] getDrawParameters() {
+        return drawParametersArray;
+    }
+
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
         this.neighbours[index] = chunk;
     }
