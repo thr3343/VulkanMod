@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -412,7 +413,7 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, immediateFence);
+            vkQueueSubmit(GraphicsQueue.queue(), submitInfo, immediateFence);
 
             vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
             vkResetFences(Device.device, immediateFence);

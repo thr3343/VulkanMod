@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
@@ -24,7 +23,7 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager();
     }
 
-    Queue queue = Device.getTransferQueue();
+    Queue queue = TransferQueue;
 
     ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
     CommandPool.CommandBuffer[] commandBuffers;
