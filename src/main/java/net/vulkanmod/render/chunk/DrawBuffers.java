@@ -25,7 +25,7 @@ public class DrawBuffers {
     private final Vector3i origin;
     final StaticQueue<DrawBuffers.DrawParameters[]> sectionQueue = new StaticQueue<>(512);
     private boolean allocated = false;
-    AreaBuffer vertexBuffer;
+    AreaBuffer SvertexBuffer, TvertexBuffer;
     AreaBuffer indexBuffer;
     public DrawBuffers(int areaIndex, Vector3i origin) {
 
@@ -34,8 +34,9 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
-        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
+        this.SvertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3145728, VERTEX_SIZE);
+        this.TvertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 524288, VERTEX_SIZE);
+        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 131072, INDEX_SIZE);
 
         this.allocated = true;
     }
@@ -46,7 +47,8 @@ public class DrawBuffers {
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
-            this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+            if(buffer.autoIndices) this.SvertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+            else this.TvertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -124,7 +126,8 @@ public class DrawBuffers {
 
             indirectBuffer.recordCopyCmd(byteBuffer);
 
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (stack.npointer(vertexBuffer.getId())), (stack.npointer(0)));
+            long id = stack.npointer((isTranslucent ? TvertexBuffer : SvertexBuffer).getId());
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, id, (stack.npointer(0)));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
 //        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
@@ -188,7 +191,7 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer((isTranslucent ? TvertexBuffer : SvertexBuffer).getId()), stack.npointer(0));
             updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16));
         }
 
@@ -211,10 +214,12 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        this.vertexBuffer.freeBuffer();
+        this.SvertexBuffer.freeBuffer();
+        this.TvertexBuffer.freeBuffer();
         this.indexBuffer.freeBuffer();
 
-        this.vertexBuffer = null;
+        this.SvertexBuffer = null;
+        this.TvertexBuffer = null;
         this.indexBuffer = null;
         this.allocated = false;
     }
@@ -228,14 +233,12 @@ public class DrawBuffers {
         int firstIndex;
         int vertexOffset;
         int baseInstance;
-        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
-        AreaBuffer.Segment indexBufferSegment;
+        final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
+        final AreaBuffer.Segment indexBufferSegment;
         boolean ready = false;
 
         DrawParameters(boolean translucent) {
-            if(translucent) {
-                indexBufferSegment = new AreaBuffer.Segment();
-            }
+            indexBufferSegment = (translucent) ? new AreaBuffer.Segment() : null;
         }
 
         public void reset(ChunkArea chunkArea) {
@@ -246,7 +249,8 @@ public class DrawBuffers {
             int segmentOffset = this.vertexBufferSegment.getOffset();
             if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                if(this.indexBufferSegment==null) chunkArea.drawBuffers.SvertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                else chunkArea.drawBuffers.TvertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }
     }
