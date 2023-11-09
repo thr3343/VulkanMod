@@ -478,6 +478,11 @@ public abstract class Pipeline {
             this.imageDescriptors = imageDescriptors;
         }
 
+        public void compileShaders2(SPIRV vertShaderSPIRV1, SPIRV fragShaderSPIRV1) {
+            this.vertShaderSPIRV = vertShaderSPIRV1;
+            this.fragShaderSPIRV = fragShaderSPIRV1;
+        }
+
         public void compileShaders() {
             String resourcePath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
 
@@ -486,8 +491,8 @@ public abstract class Pipeline {
         }
 
         public void compileShaders(String vsh, String fsh) {
-            this.vertShaderSPIRV = compileShader("vertex shader", vsh, ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShader("fragment shader", fsh, ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShaderAbsoluteFile(vsh, ShaderKind.VERTEX_SHADER);
+            this.fragShaderSPIRV = compileShaderAbsoluteFile(fsh, ShaderKind.FRAGMENT_SHADER);
         }
 
         public void parseBindingsJSON() {

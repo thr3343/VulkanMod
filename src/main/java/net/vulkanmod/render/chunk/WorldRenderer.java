@@ -43,6 +43,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -578,22 +579,24 @@ public class WorldRenderer {
         Renderer renderer = Renderer.getInstance();
         int currentFrame = Renderer.getCurrentFrame();
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        renderer.bindGraphicsPipeline(terrainDirectShader);
+        GraphicsPipeline terrainDirectShader1 = TerrainShaderManager.getTerrainShader(terrainRenderType);
+        long layout = terrainDirectShader.getLayout();
+        renderer.bindGraphicsPipeline(terrainDirectShader1);
         Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-
+        terrainDirectShader1.bindDescriptorSets(commandBuffer, currentFrame);
         p.push("draw batches");
 
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
-            terrainRenderType.setCutoutUniform();
-            terrainDirectShader.bindDescriptorSets(commandBuffer, currentFrame);
+
+
 
             for(Iterator<DrawBuffers> iterator = this.chunkAreaQueue.iterator(flag); iterator.hasNext(); ) {
 
                 if(indirectDraw) {
-                    iterator.next().buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ);
+                    iterator.next().buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ, layout);
                 } else {
-                    iterator.next().buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ);
+                    iterator.next().buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ, layout);
                 }
             }
         }

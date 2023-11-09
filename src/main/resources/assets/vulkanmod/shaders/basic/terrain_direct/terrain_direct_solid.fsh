@@ -9,7 +9,6 @@ layout(binding = 1) uniform UBO{
     vec4 FogColor;
     float FogStart;
     float FogEnd;
-    float AlphaCutout;
 };
 
 layout(location = 0) in float vertexDistance;
@@ -21,7 +20,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
-    if (color.a < AlphaCutout) {
+    if (color.a < 0.5f) {
         discard;
     }
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);

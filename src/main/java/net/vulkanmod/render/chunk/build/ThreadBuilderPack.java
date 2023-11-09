@@ -23,7 +23,7 @@ public class ThreadBuilderPack {
     public ThreadBuilderPack() {
         builders = RenderType.chunkBufferLayers().stream().collect(Collectors.toMap(
                 (renderType) -> renderType,
-                renderType -> terrainBuilderConstructor.apply(renderType)));
+                renderType -> new TerrainBufferBuilder(renderType.bufferSize())));
     }
 
     public TerrainBufferBuilder builder(RenderType renderType) {
