@@ -6,9 +6,11 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
@@ -191,20 +193,23 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer((isTranslucent ? TvertexBuffer : SvertexBuffer).getId()), stack.npointer(0));
+            long npointer = stack.npointer((isTranslucent ? TvertexBuffer : SvertexBuffer).getId());
+            long npointer1 = stack.nmalloc(Pointer.POINTER_SIZE);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, stack.npointer(0));
             updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16));
-        }
 
-        if(isTranslucent) {
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
+            if(isTranslucent) {
+                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+            }
 
 
-        for (Iterator<DrawBuffers.DrawParameters[]> iter = sectionQueue.iterator(isTranslucent); iter.hasNext(); ) {
-            DrawParameters drawParameters = iter.next()[terrainRenderType.ordinal()];
+            for (Iterator<DrawBuffers.DrawParameters[]> iter = sectionQueue.iterator(isTranslucent); iter.hasNext(); ) {
+                DrawParameters drawParameters = iter.next()[terrainRenderType.ordinal()];
+                VUtil.UNSAFE.putLong(npointer1, drawParameters.vertexOffset * 20L);
+                nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer, npointer1);
+                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, 0, drawParameters.baseInstance);
 
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
-
+            }
         }
 
 
