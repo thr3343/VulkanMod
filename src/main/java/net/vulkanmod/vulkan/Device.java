@@ -136,14 +136,7 @@ public class Device {
             createInfo.pQueueCreateInfos(queueCreateInfos);
             // queueCreateInfoCount is automatically set
 
-            createInfo.pEnabledFeatures(deviceFeatures.features());
-
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
-            createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            createInfo.pNext(deviceFeatures.pNext(deviceVulkan11Features));
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);

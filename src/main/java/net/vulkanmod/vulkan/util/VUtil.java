@@ -17,6 +17,7 @@ public class VUtil {
     public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
 
     public static final Unsafe UNSAFE;
+    public static final int qNaN = 0x7fc00000;
 
     static {
         Field f = null;

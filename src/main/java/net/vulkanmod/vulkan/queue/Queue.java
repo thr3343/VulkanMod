@@ -137,4 +137,8 @@ public enum Queue {
         }
     }
 
+    public void fillBuffer(long id, int bufferSize, int qNaN) {
+
+        vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
+    }
 }

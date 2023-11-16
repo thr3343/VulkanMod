@@ -1,6 +1,10 @@
 package net.vulkanmod.vulkan.memory;
 
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.vulkan.VK10;
+
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public abstract class Buffer {
     protected long id;
@@ -27,6 +31,10 @@ public abstract class Buffer {
         if(this.type.mappable()) {
             this.data = MemoryManager.getInstance().Map(this.allocation);
         }
+      if(this.usage==VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT && this.type.type== MemoryType.Type.DEVICE_LOCAL)
+      {
+          TransferQueue.fillBuffer(this.id, this.bufferSize, VUtil.qNaN);
+      }
     }
 
     public void freeBuffer() {
