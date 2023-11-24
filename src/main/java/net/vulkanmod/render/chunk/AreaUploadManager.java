@@ -87,7 +87,21 @@ public class AreaUploadManager {
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
 
     }
+    public void uploadAsync2(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, long src) {
 
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+        stagingBuffer.copyBuffer2(bufferSize, src);
+
+        dstBuffers.add(bufferId);
+        if(!subCopyCommands.containsKey(bufferId))
+        {
+            subCopyCommands.put(bufferId, new StaticQueue<>(512));
+        }
+        subCopyCommands.get(bufferId).add(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
+
+
+        this.recordedUploads[this.currentFrame].add(uploadSegment);
+    }
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, ByteBuffer src) {
 
 

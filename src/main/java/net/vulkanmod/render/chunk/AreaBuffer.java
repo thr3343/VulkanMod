@@ -5,7 +5,6 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.memory.*;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -48,13 +47,13 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
+    public synchronized void upload(long byteBuffer, Segment uploadSegment, int size) {
         //free old segment
         if(uploadSegment.offset != -1) {
             this.setSegmentFree(uploadSegment);
         }
 
-        int size = byteBuffer.remaining();
+
 
         if(size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
@@ -68,7 +67,7 @@ public class AreaBuffer {
         usedSegments.put(uploadSegment, new Segment(segment.offset, size));
 
         Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync2(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
 
         uploadSegment.offset = segment.offset;
         uploadSegment.size = size;

@@ -59,8 +59,8 @@ public class DrawBuffers {
         int firstIndex = 0;
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
-        if(!buffer.indexOnly) {
-            getAreaBufferCheckedAlloc(r).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+        if(!buffer.indexOnly()) {
+            getAreaBufferCheckedAlloc(r).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, buffer.vertSize());
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -70,8 +70,8 @@ public class DrawBuffers {
 //            }
         }
 
-        if(!buffer.autoIndices) {
-            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
+        if(!buffer.autoIndices()) {
+            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, buffer.indexSize());
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
         }
@@ -79,7 +79,7 @@ public class DrawBuffers {
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
 
-        drawParameters.indexCount = buffer.indexCount;
+        drawParameters.indexCount = buffer.indexCount();
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
