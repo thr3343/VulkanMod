@@ -92,7 +92,7 @@ public class DrawBuffers {
 
     private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
         if (this.indexBuffer==null && r == TRANSLUCENT)
-            this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, r.initialSize, INDEX_SIZE);
+            this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1048576, INDEX_SIZE);
         
         return this.areaBufferTypes.computeIfAbsent(r, t -> new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
     }

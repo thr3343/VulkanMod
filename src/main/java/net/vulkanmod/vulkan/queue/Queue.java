@@ -6,8 +6,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferCopy;
-import org.lwjgl.vulkan.VkQueue;
+import org.lwjgl.vulkan.*;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
@@ -110,6 +109,10 @@ public enum Queue {
         }
     }
 
+    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long dstBuffer, VkBufferCopy.Buffer vkBufferCopies) {
+        vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, vkBufferCopies);
+    }
+
     public void startRecording() {
         currentCmdBuffer = beginCommands();
     }
@@ -140,5 +143,77 @@ public enum Queue {
     public void fillBuffer(long id, int bufferSize, int qNaN) {
 
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
+    }
+
+    public void addWriteBarrier(CommandPool.CommandBuffer commandBuffer, MemoryStack stack) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack)
+                        .sType$Default()
+                        .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                        .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+        vkCmdPipelineBarrier(commandBuffer.getHandle(),
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                memBarrier,
+                null,
+                null);
+    }
+    public void GigaBarrier(CommandPool.CommandBuffer commandBuffer, MemoryStack stack, boolean resize) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
+
+        //Fix WaW on SYNC_COPY_TRANSFER_WRITE
+        memBarrier.get(0).sType$Default()
+                //Wait on Writes depending on other Writes from prior CmdBuffers
+                .srcAccessMask(resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT);
+        //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
+        memBarrier.get(1).sType$Default()
+                //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
+                .dstAccessMask(resize ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
+
+        //When resizing only wait on this cmdBuffer's Writes
+
+        //When Not resizing, Wait on prior Writes Depending on these Writes
+        // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
+        vkCmdPipelineBarrier(
+                commandBuffer.getHandle(),
+                VK_PIPELINE_STAGE_TRANSFER_BIT/*resize ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT*/,
+                VK_PIPELINE_STAGE_TRANSFER_BIT | (resize ? 0 : VK_PIPELINE_STAGE_VERTEX_INPUT_BIT),
+                0,
+                memBarrier,
+                null,
+                null);
+    }
+
+    public void GigaBarrier2(VkCommandBuffer handle, MemoryStack stack, boolean resize) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
+
+        //Fix WaW on SYNC_COPY_TRANSFER_READ
+        memBarrier.get(0).sType$Default()
+                //Wait on Reads depending on other Writes from prior CmdBuffers
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT|(resize ? 0 : VK_ACCESS_TRANSFER_WRITE_BIT));
+        //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
+        memBarrier.get(1).sType$Default()
+                //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
+                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+
+        //When resizing only wait on this cmdBuffer's Writes
+
+        //When Not resizing, Wait on prior Writes Depending on these Writes
+        // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
+        vkCmdPipelineBarrier(
+                handle,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                memBarrier,
+                null,
+                null);
     }
 }

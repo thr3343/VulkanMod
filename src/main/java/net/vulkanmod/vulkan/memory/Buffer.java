@@ -31,10 +31,6 @@ public abstract class Buffer {
         if(this.type.mappable()) {
             this.data = MemoryManager.getInstance().Map(this.allocation);
         }
-      if(this.usage==VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT && this.type.type== MemoryType.Type.DEVICE_LOCAL)
-      {
-          TransferQueue.fillBuffer(this.id, this.bufferSize, VUtil.qNaN);
-      }
     }
 
     public void freeBuffer() {

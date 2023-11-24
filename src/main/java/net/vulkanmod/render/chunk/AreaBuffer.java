@@ -117,12 +117,14 @@ public class AreaBuffer {
         int newSize = oldSize + increment;
 
         Buffer buffer = this.allocateBuffer(newSize);
-
-        AreaUploadManager.INSTANCE.submitUploads();
-        AreaUploadManager.INSTANCE.waitAllUploads();
-
-        //Sync upload
-        Device.getTransferQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+//
+//        AreaUploadManager.INSTANCE.submitUploads(true);
+//        AreaUploadManager.INSTANCE.waitAllUploads();
+        AreaUploadManager.INSTANCE.swapBuffers(this.buffer.getId(), buffer.getId());
+//        {
+//            AreaUploadManager.INSTANCE.copyBuffer(this.buffer.getId(), buffer.getId(), this.buffer.getBufferSize());
+//        }
+        Device.getGraphicsQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

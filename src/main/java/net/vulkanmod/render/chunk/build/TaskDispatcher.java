@@ -130,7 +130,7 @@ public class TaskDispatcher {
             runnable.run();
         }
 
-        AreaUploadManager.INSTANCE.submitUploads();
+        AreaUploadManager.INSTANCE.submitUploads(false);
 
         return flag;
     }
