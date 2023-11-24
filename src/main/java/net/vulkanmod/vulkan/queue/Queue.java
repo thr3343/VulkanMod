@@ -196,7 +196,7 @@ public enum Queue {
         memBarrier.get(0).sType$Default()
                 //Wait on Reads depending on other Writes from prior CmdBuffers
                 .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT|(resize ? 0 : VK_ACCESS_TRANSFER_WRITE_BIT));
+                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT|(VK_ACCESS_TRANSFER_WRITE_BIT));
         //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
         memBarrier.get(1).sType$Default()
                 //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers

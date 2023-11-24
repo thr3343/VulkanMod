@@ -78,7 +78,7 @@ public class AreaUploadManager {
                 GraphicsQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
 
-            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
+            GraphicsQueue.GigaBarrier2(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
             this.hasBufferSwap=false;
         }
         dstBuffers.clear();
