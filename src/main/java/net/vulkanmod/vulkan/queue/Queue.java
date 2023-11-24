@@ -193,15 +193,16 @@ public enum Queue {
         VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
 
         //Fix WaW on SYNC_COPY_TRANSFER_READ
+        boolean dedicatedTransferQueue = QueueFamilyIndices.hasDedicatedTransferQueue;
         memBarrier.get(0).sType$Default()
                 //Wait on Reads depending on other Writes from prior CmdBuffers
                 .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT|(VK_ACCESS_TRANSFER_WRITE_BIT));
+                .dstAccessMask(dedicatedTransferQueue ? (VK_ACCESS_TRANSFER_WRITE_BIT) : VK_ACCESS_TRANSFER_READ_BIT|VK_ACCESS_TRANSFER_WRITE_BIT);
         //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
         memBarrier.get(1).sType$Default()
                 //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
                 .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
-                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+                .dstAccessMask(dedicatedTransferQueue ? 0 : VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
         //When resizing only wait on this cmdBuffer's Writes
 
@@ -210,7 +211,7 @@ public enum Queue {
         vkCmdPipelineBarrier(
                 handle,
                 VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                dedicatedTransferQueue ? VK_PIPELINE_STAGE_TRANSFER_BIT: VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
                 0,
                 memBarrier,
                 null,

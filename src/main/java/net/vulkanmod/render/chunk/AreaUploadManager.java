@@ -8,13 +8,14 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
 
 import org.lwjgl.vulkan.VkBufferCopy;
 
-import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class AreaUploadManager {
     public static final int FRAME_NUM = 2;
@@ -59,7 +60,7 @@ public class AreaUploadManager {
             return;
         }
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -75,15 +76,15 @@ public class AreaUploadManager {
                     a.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
                 }
 
-                GraphicsQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
+                TransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
 
-            GraphicsQueue.GigaBarrier2(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
+            TransferQueue.GigaBarrier2(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
             this.hasBufferSwap=false;
         }
         dstBuffers.clear();
         subCopyCommands.clear();
-        GraphicsQueue.submitCommands(this.commandBuffers[currentFrame]);
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
 
     }
 
@@ -137,7 +138,7 @@ public class AreaUploadManager {
 
     public void copyBuffer(long srcBuffer, long dstBuffer, int bufferSize) {
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
-        GraphicsQueue.uploadBufferCmd(this.commandBuffers[currentFrame], srcBuffer, 0, dstBuffer, 0, bufferSize);
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], srcBuffer, 0, dstBuffer, 0, bufferSize);
     }
 }
