@@ -26,6 +26,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
@@ -50,6 +51,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+import static net.vulkanmod.vulkan.Device.deviceInfo;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -99,12 +101,14 @@ public class WorldRenderer {
         this.renderBuffers = renderBuffers;
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
-        allocateIndirectBuffers();
+        if(Options.drawIndirectSupported) {
+            allocateIndirectBuffers();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
-        });
+            Renderer.getInstance().addOnResizeCallback(() -> {
+                if (this.indirectBuffers.length != Renderer.getFramesNum())
+                    allocateIndirectBuffers();
+            });
+        }
     }
 
     private void allocateIndirectBuffers() {
@@ -241,7 +245,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+        if(Options.drawIndirectSupported) this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();

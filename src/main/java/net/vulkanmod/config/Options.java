@@ -14,6 +14,7 @@ public class Options {
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+    public static final boolean drawIndirectSupported = DeviceManager.deviceInfo.isDrawIndirectSupported();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -213,11 +214,13 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = value,
-                        () -> config.indirectDraw)
-                        .setTooltip(Component.nullToEmpty("""
-                        Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.""")),
+                        value -> config.indirectDraw = drawIndirectSupported ? value : false,
+                        () -> drawIndirectSupported && config.indirectDraw)
+                        .setTooltip(Component.nullToEmpty(
+                "Supported by GPU?: "+drawIndirectSupported+"\n"+
+                        "\n"+
+                        "Reduces CPU overhead but increases GPU overhead.\n"+
+                        "Enabling it might help in CPU limited systems.\n")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> {
