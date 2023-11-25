@@ -115,7 +115,7 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryTypes.HOST_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
@@ -599,7 +599,7 @@ public class WorldRenderer {
 
 
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+            if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
 
@@ -615,7 +615,7 @@ public class WorldRenderer {
             }
         }
 
-        if(terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE)) {
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
