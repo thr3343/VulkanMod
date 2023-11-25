@@ -31,6 +31,7 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -82,7 +83,7 @@ public class Renderer {
 
     public Renderer() {
         device = Vulkan.getDevice();
-        framesNum = Initializer.CONFIG.frameQueueSize;
+        framesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
     }
 
@@ -400,7 +401,7 @@ public class Renderer {
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
 
-        int newFramesNum = Initializer.CONFIG.frameQueueSize;
+        int newFramesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {

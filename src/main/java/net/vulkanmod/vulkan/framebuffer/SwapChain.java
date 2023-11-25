@@ -469,5 +469,6 @@ public class SwapChain extends Framebuffer {
     public RenderPass getRenderPass() {
         return renderPass;
     }
+    public int getFramesNum() { return vsync ? 1 : Initializer.CONFIG.frameQueueSize; }
     public int getImagesNum() { return this.swapChainImages.size(); }
 }

@@ -15,6 +15,7 @@ public class Options {
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+    private static int priorFrameQueue;
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -50,7 +51,6 @@ public class Options {
                         () -> minecraftOptions.framerateLimit().get()),
                 new SwitchOption("VSync",
                         value -> {
-                            config.frameQueueSize= value ? 1 : config.frameQueueSize;
                             minecraftOptions.enableVsync().set(value);
                             Minecraft.getInstance().getWindow().updateVsync(value);
                         },
