@@ -40,6 +40,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
@@ -110,6 +111,7 @@ public class WorldRenderer {
                     allocateIndirectBuffers();
             });
         }
+        addOnAllChangedCallback(Vulkan::waitIdle);
     }
 
     private void allocateIndirectBuffers() {

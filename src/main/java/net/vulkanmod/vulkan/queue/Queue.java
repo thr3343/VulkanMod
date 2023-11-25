@@ -11,7 +11,6 @@ import org.lwjgl.vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
-
 public enum Queue {
     GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
     TransferQueue(QueueFamilyIndices.transferFamily, true),
@@ -148,9 +147,9 @@ public enum Queue {
     public void addWriteBarrier(CommandPool.CommandBuffer commandBuffer, MemoryStack stack) {
 
         VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack)
-                        .sType$Default()
-                        .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                        .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                .sType$Default()
+                .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
         vkCmdPipelineBarrier(commandBuffer.getHandle(),
                 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -172,7 +171,7 @@ public enum Queue {
         memBarrier.get(1).sType$Default()
                 //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
                 .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
-                .dstAccessMask(resize ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT );
+                .dstAccessMask(resize ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
         //When resizing only wait on this cmdBuffer's Writes
 
@@ -216,5 +215,31 @@ public enum Queue {
                 memBarrier,
                 null,
                 null);
+
+    }
+    public void GigaBarrier(CommandPool.CommandBuffer commandBuffer) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
+
+            memBarrier.sType$Default()
+                    .srcAccessMask(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+
+
+            //When resizing only wait on this cmdBuffer's Writes
+
+            //When Not resizing, Wait on prior Writes Depending on these Writes
+            // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
+            vkCmdPipelineBarrier(
+                    commandBuffer.getHandle(),
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    0,
+                    memBarrier,
+                    null,
+                    null);
+        }
     }
 }
+
