@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.Renderer;
 import org.lwjgl.system.MemoryStack;
 
 import static net.vulkanmod.vulkan.Device.device;
+import static net.vulkanmod.vulkan.Device.deviceInfo;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -16,6 +17,7 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
     private static int priorFrameQueue;
+    public static final boolean drawIndirectSupported = deviceInfo.isDrawIndirectSupported();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -218,11 +220,13 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = value,
-                        () -> config.indirectDraw)
-                        .setTooltip(Component.nullToEmpty("""
-                        Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.""")),
+                        value -> config.indirectDraw = drawIndirectSupported ? value : false,
+                        () -> drawIndirectSupported && config.indirectDraw)
+                        .setTooltip(Component.nullToEmpty(
+                        "Supported by GPU?: "+drawIndirectSupported+"\n"+
+                        "\n"+
+                        "Reduces CPU overhead but increases GPU overhead.\n"+
+                        "Enabling it might help in CPU limited systems.\n")),
                 new SwitchOption("Per RenderType AreaBuffers",
                         value -> {
                             //fre before updating the Config Value
