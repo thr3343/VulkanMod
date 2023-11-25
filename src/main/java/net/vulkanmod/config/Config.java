@@ -20,7 +20,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = false;
-    public boolean perRenderTypeAreaBuffers = true;
+    public boolean perRenderTypeAreaBuffers = !VideoResolution.isAndroid();
     public boolean renderSky = true;
     public boolean entityCulling = true;
     public boolean animations = true;
