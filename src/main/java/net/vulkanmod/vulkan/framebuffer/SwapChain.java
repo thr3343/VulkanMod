@@ -111,7 +111,7 @@ public class SwapChain extends Framebuffer {
 
             //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
             //TODO using FIFO present mode with image num > 2 introduces (unnecessary) input lag
-            int requestedImages = Math.max(DEFAULT_IMAGE_COUNT, surfaceProperties.capabilities.minImageCount());
+            int requestedImages = vsync ? surfaceProperties.capabilities.minImageCount() : Math.max(DEFAULT_IMAGE_COUNT, surfaceProperties.capabilities.minImageCount());
 
             IntBuffer imageCount = stack.ints(requestedImages);
 

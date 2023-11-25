@@ -50,6 +50,7 @@ public class Options {
                         () -> minecraftOptions.framerateLimit().get()),
                 new SwitchOption("VSync",
                         value -> {
+                            config.frameQueueSize= value ? 1 : config.frameQueueSize;
                             minecraftOptions.enableVsync().set(value);
                             Minecraft.getInstance().getWindow().updateVsync(value);
                         },
@@ -177,7 +178,7 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Render queue size", 2,
+                new RangeOption("Render queue size", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
