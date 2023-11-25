@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -187,7 +188,7 @@ public enum Queue {
                 null);
     }
 
-    public void GigaBarrier2(VkCommandBuffer handle, MemoryStack stack, boolean resize) {
+    public void UploadCmdWriteBarrier(VkCommandBuffer handle, MemoryStack stack, boolean resize) {
 
         VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
 
@@ -217,8 +218,8 @@ public enum Queue {
                 null);
 
     }
-    public void GigaBarrier(CommandPool.CommandBuffer commandBuffer) {
-
+    public void GigaBarrier(VkCommandBuffer commandBuffer) {
+        if(!Initializer.CONFIG.useGigaBarriers) return;
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
 
@@ -232,7 +233,7 @@ public enum Queue {
             //When Not resizing, Wait on prior Writes Depending on these Writes
             // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
             vkCmdPipelineBarrier(
-                    commandBuffer.getHandle(),
+                    commandBuffer,
                     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                     0,

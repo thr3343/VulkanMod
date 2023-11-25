@@ -44,6 +44,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.queue.Queue;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -608,7 +609,6 @@ public class WorldRenderer {
             if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
-
             Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
             while(iterator.hasNext()) {
                 DrawBuffers chunkArea = iterator.next();
@@ -626,7 +626,6 @@ public class WorldRenderer {
 //            uniformBuffers.submitUploads();
         }
         p.pop();
-
 
 
         this.minecraft.getProfiler().pop();

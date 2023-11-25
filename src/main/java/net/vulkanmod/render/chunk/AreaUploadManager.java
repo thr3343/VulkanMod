@@ -3,12 +3,12 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
-import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
@@ -79,7 +79,8 @@ public class AreaUploadManager {
                 TransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
 
-            TransferQueue.GigaBarrier2(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
+            if(!Initializer.CONFIG.useGigaBarriers) TransferQueue.UploadCmdWriteBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
+            else TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
             this.hasBufferSwap=false;
         }
         dstBuffers.clear();

@@ -237,6 +237,14 @@ public class Options {
                         Improves GPU Performance
                         But increases VRAM Usage slightly
                         May vary on System and/or GPU configuration""")),
+                new SwitchOption("GigaBarriers",
+                        value -> {
+                            config.useGigaBarriers = value;
+                        },
+                        () -> config.useGigaBarriers).setTooltip(Component.nullToEmpty("""
+                        (Debugging feature)
+                        Only Use to fix/troubleshoot game-breaking bugs/crashes
+                        Greatly decreases performance if enabled""")),
         };
 
     }

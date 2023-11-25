@@ -4,6 +4,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.vulkan.queue.Queue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
@@ -20,7 +21,7 @@ public class DefaultMainPass implements MainPass {
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
 //        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
-
+        Queue.GraphicsQueue.GigaBarrier(commandBuffer);
         swapChain.beginRenderPass(commandBuffer, stack);
 //        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
 //            Framebuffer framebuffer = this.hdrFinalFramebuffer;
@@ -64,7 +65,7 @@ public class DefaultMainPass implements MainPass {
 //        DrawUtil.drawFramebuffer(this.blitGammaShader, this.hdrFinalFramebuffer.getColorAttachment());
 
         Framebuffer.endRenderPass(commandBuffer);
-
+        Queue.GraphicsQueue.GigaBarrier(commandBuffer);
 //        try(MemoryStack stack = MemoryStack.stackPush()) {
 //            Vulkan.getSwapChain().presentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 //        }

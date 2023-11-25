@@ -21,6 +21,7 @@ public class Config {
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean perRenderTypeAreaBuffers = !VideoResolution.isAndroid();
+    public boolean useGigaBarriers = false;
     public boolean renderSky = true;
     public boolean entityCulling = true;
     public boolean animations = true;
