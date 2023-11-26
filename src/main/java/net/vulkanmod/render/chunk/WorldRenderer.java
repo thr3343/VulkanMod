@@ -608,7 +608,8 @@ public class WorldRenderer {
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainRenderType.setCutoutUniform();
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
+//            this.updates[currentFrame]=false;
             Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
             while(iterator.hasNext()) {
                 DrawBuffers chunkArea = iterator.next();
