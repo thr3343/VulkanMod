@@ -195,7 +195,7 @@ public class DrawBuffers {
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
         Pipeline pipeline = TerrainShaderManager.terrainShader;
 //        Drawer.getInstance().bindPipeline(pipeline);
-        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
+        pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame(), true);
 //        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
 
         ByteBuffer buffer = indirectBuffer.getByteBuffer();

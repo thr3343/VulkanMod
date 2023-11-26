@@ -592,17 +592,17 @@ public class WorldRenderer {
         final int currentFrame = Renderer.getCurrentFrame();
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
 
+            GraphicsPipeline terrainShader = TerrainShaderManager.getTerrainShader(rType);
 
-            GraphicsPipeline terrainShader1 = TerrainShaderManager.getTerrainShader(rType);
-            Renderer.getInstance().bindGraphicsPipeline(terrainShader1);
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
+            if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
-            rType.setCutoutUniform();
-            terrainShader1.bindDescriptorSets(commandBuffer, currentFrame);
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
 
-            final long layout = terrainShader1.getLayout();
-
-            for(Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);iterator.hasNext();) {
+            final long layout = terrainShader.getLayout();
+//            this.updates[currentFrame]=false;
+            Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
+            while(iterator.hasNext()) {
                 DrawBuffers drawBuffers = iterator.next();
 
                 if(indirectDraw) {
