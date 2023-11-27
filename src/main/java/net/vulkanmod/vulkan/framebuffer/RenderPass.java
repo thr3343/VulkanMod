@@ -99,10 +99,34 @@ public class RenderPass {
                 subpass.pDepthStencilAttachment(depthAttachmentRef);
             }
 
-            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack);
+
+            VkSubpassDependency.Buffer vkSubpassDependency = VkSubpassDependency.malloc(2, stack);
+
+
+            vkSubpassDependency.get(0) //Execution Dependency to handle colour Attachment Writes +
+                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+                    .dstSubpass(0)
+                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT) //--> Form Dependency chain with imageAvailableSemaphores Signal -> pWaitDstStageMask
+                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .srcAccessMask(0)                               //ayout is Undefined i.e. Dont't_Care, so No Mem Dependency on PRIOR COlor Attachment Writes Needed
+                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) //Wait before Load Op Clear
+                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+
+            vkSubpassDependency.get(1) //Mem Barrier for Depth Attachment
+                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+                    .dstSubpass(0)
+                    .srcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+                    .dstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+                    .srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)    //Wait for Prev CmdBuffer to finish Writing to Depth Attachment
+                    .dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+
+            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.malloc(stack);
             renderPassInfo.sType$Default();
+            renderPassInfo.pNext(0);
             renderPassInfo.pAttachments(attachments);
             renderPassInfo.pSubpasses(subpass);
+            renderPassInfo.pDependencies(vkSubpassDependency);
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
@@ -119,15 +143,6 @@ public class RenderPass {
     }
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
-
-        if(colorAttachmentInfo != null && colorAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && colorAttachmentInfo.initialLayout != framebuffer.getColorAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
-        if(depthAttachmentInfo != null && depthAttachmentInfo.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED
-                && depthAttachmentInfo.initialLayout != framebuffer.getDepthAttachment().getCurrentLayout())
-//            throw new RuntimeException("current layout does not match expected initial layout");
-            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, depthAttachmentInfo.initialLayout);
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
         renderPassInfo.sType$Default();
