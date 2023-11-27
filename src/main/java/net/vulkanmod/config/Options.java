@@ -260,7 +260,12 @@ public class Options {
                         "The number of Threads utilized for uploading chunks \n" +
                         "More threads will greatly improve Chunk load speed" +
                         "But may cause stuttering if set to high\n" +
-                        "Max Recommended value is "+max/2+" threads on This CPU"))
+                        "Max Recommended value is "+max/2+" threads on This CPU")),
+                new RangeOption("buildLimit", 1, 128, 1,
+                        value -> {
+                            config.buildLimit = value;
+                        },
+                        () -> config.buildLimit)
 
         };
 

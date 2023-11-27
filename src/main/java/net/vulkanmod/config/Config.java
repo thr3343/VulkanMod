@@ -28,6 +28,7 @@ public class Config {
 
     private static final int max = Runtime.getRuntime().availableProcessors();
     public int chunkLoadFactor = max /2;
+    public int buildLimit = 128;
 
     private static Path path;
 

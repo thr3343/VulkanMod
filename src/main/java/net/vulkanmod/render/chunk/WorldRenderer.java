@@ -315,7 +315,7 @@ public class WorldRenderer {
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
+        int buildLimit = taskDispatcher.getIdleThreadsCount();// * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
 
         if(buildLimit == 0)
             this.needsUpdate = true;

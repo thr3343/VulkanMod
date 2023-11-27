@@ -31,6 +31,7 @@ public class TaskDispatcher {
     //TODO: newArrayDeque is way faster, but is massively unstable due to lacking Inherent/implicit Synchronisation
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
+    private int idleThreads;
 
 
     public TaskDispatcher() {
@@ -59,6 +60,10 @@ public class TaskDispatcher {
         this.stopThreads = false;
         for(var thread: threads) {;
             LOGGER.info("INVOKE"+ thread.getState());
+            if(thread.getState()!= Thread.State.NEW)
+            {
+                thread=new Thread(() -> runTaskThread(new ThreadBuilderPack()));
+            }
             thread.start();
         }
     }
@@ -162,7 +167,7 @@ public class TaskDispatcher {
     }
 
     public int getIdleThreadsCount() {
-        return Integer.MAX_VALUE; //UGLY TEMP HACK: Stop the Build task scheduler from throttling
+        return this.threads.length*Initializer.CONFIG.buildLimit; /*Integer.MAX_VALUE;*/ //UGLY TEMP HACK: Stop the Build task scheduler from throttling
     }
 
     public boolean isIdle() { return this.idleThreads == this.threads.length && this.toUpload.isEmpty(); }
