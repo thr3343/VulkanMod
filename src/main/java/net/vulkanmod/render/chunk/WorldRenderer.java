@@ -148,7 +148,7 @@ public class WorldRenderer {
     }
 
     private void benchCallback() {
-        BuildTimeBench.runBench(this.needsUpdate, this.taskDispatcher);
+        BuildTimeBench.runBench(this.needsUpdate, taskDispatcher);
     }
 
     public void setupRenderer(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
@@ -456,7 +456,7 @@ public class WorldRenderer {
         if(limit <= 0)
             return false;
 
-        section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
+        section.rebuildChunkAsync(taskDispatcher, this.renderRegionCache);
         section.setNotDirty();
         return true;
     }
@@ -471,7 +471,7 @@ public class WorldRenderer {
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
-        if(this.taskDispatcher.uploadAllPendingUploads())
+        if(taskDispatcher.uploadAllPendingUploads())
             this.needsUpdate = true;
         profiler.pop();
         this.minecraft.getProfiler().popPush("schedule_async_compile");
@@ -506,7 +506,7 @@ public class WorldRenderer {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
 
-            this.taskDispatcher.createThreads();
+            taskDispatcher.createThreads();
 
             this.needsUpdate = true;
 //            this.generateClouds = true;
@@ -516,7 +516,7 @@ public class WorldRenderer {
                 this.sectionGrid.releaseAllBuffers();
             }
 
-            this.taskDispatcher.clearBatchQueue();
+            taskDispatcher.clearBatchQueue();
             synchronized(this.globalBlockEntities) {
                 this.globalBlockEntities.clear();
             }
@@ -551,7 +551,7 @@ public class WorldRenderer {
                 this.sectionGrid = null;
             }
 
-            this.taskDispatcher.stopThreads();
+            taskDispatcher.stopThreads();
 
             this.needsUpdate = true;
         }
@@ -670,7 +670,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(TRANSLUCENT, taskDispatcher);
 
                 ++j;
             }
@@ -749,7 +749,7 @@ public class WorldRenderer {
         int i = this.sectionGrid.chunks.length;
 //        int j = this.sectionsInFrustum.size();
         int j = this.chunkQueue.size();
-        String tasksInfo = this.taskDispatcher == null ? "null" : this.taskDispatcher.getStats();
+        String tasksInfo = taskDispatcher == null ? "null" : taskDispatcher.getStats();
         return String.format("Chunks: %d(%d)/%d D: %d, %s", this.nonEmptyChunks, j, i, this.lastViewDistance, tasksInfo);
     }
 

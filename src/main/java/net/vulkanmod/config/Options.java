@@ -261,11 +261,16 @@ public class Options {
                         "More threads will greatly improve Chunk load speed" +
                         "But may cause stuttering if set to high\n" +
                         "Max Recommended value is "+max/2+" threads on This CPU")),
-                new RangeOption("buildLimit", 1, 128, 1,
+                new RangeOption("buildLimit", 8, 512, 8,
                         value -> {
                             config.buildLimit = value;
                         },
-                        () -> config.buildLimit)
+                        () -> config.buildLimit).setTooltip(Component.nullToEmpty("""
+                                Max ChunkTask Limit per frame
+                                Throttles Chunk Load speed if reduced
+                                Multiplied by Active Chunk load Threads to reduce throttling
+                                Originally wasn't intended to handle MultiThreaded Workloads
+                                VERY BUGGED ATM"""))
 
         };
 

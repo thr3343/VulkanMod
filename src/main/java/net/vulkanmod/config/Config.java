@@ -20,7 +20,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
-    public boolean perRenderTypeAreaBuffers = !VideoResolution.isAndroid();
+    public boolean perRenderTypeAreaBuffers = true;
     public boolean useGigaBarriers = false;
     public boolean renderSky = true;
     public boolean entityCulling = true;
@@ -28,7 +28,7 @@ public class Config {
 
     private static final int max = Runtime.getRuntime().availableProcessors();
     public int chunkLoadFactor = max /2;
-    public int buildLimit = 128;
+    public int buildLimit = 512;
 
     private static Path path;
 

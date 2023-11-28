@@ -1,7 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
@@ -30,9 +30,9 @@ public class AreaUploadManager {
     ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
     CommandPool.CommandBuffer[] commandBuffers;
 
-    LongOpenHashSet dstBuffers = new LongOpenHashSet();
+//    LongOpenHashSet dstBuffers = new LongOpenHashSet();
 
-    Long2ObjectArrayMap<StaticQueue<SubCopyCommand>> subCopyCommands = new Long2ObjectArrayMap<>();
+    Long2ObjectArrayMap<ObjectArrayFIFOQueue<SubCopyCommand>> subCopyCommands = new Long2ObjectArrayMap<>();
 
     int currentFrame;
 
@@ -45,15 +45,12 @@ public class AreaUploadManager {
         }
     }
 
-    public boolean swapBuffers(long srcBuffer, long dstBuffer)
+    public void swapBuffers(long srcBuffer, long dstBuffer)
     {        hasBufferSwap=true;
-        if(!this.subCopyCommands.containsKey(srcBuffer)) return false;
-        StaticQueue<SubCopyCommand> remove = this.subCopyCommands.remove(srcBuffer);
-        this.subCopyCommands.put(dstBuffer, remove);
-        this.dstBuffers.remove(srcBuffer);
-        this.dstBuffers.add(dstBuffer);
+        if(!this.subCopyCommands.containsKey(srcBuffer)) return;
+        this.subCopyCommands.put(dstBuffer, this.subCopyCommands.remove(srcBuffer));
 
-        return true;
+
     }
     public synchronized void submitUploads(boolean b) {
         if (subCopyCommands.isEmpty()) {
@@ -65,25 +62,23 @@ public class AreaUploadManager {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
             long stagingBufferId = Vulkan.getStagingBuffer().getId();
-            for (long bufferHandle : dstBuffers) {
-                StaticQueue<SubCopyCommand> subCopyCommands1 = subCopyCommands.get(bufferHandle);
+            for (long bufferHandle : subCopyCommands.keySet()) {
+                final ObjectArrayFIFOQueue<SubCopyCommand> subCopyCommands1 = subCopyCommands.get(bufferHandle);
 
                 int size = subCopyCommands1.size();
                 VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(size, stack);
 
                 for (var a : vkBufferCopies) {
-                    SubCopyCommand subCopyCommand = subCopyCommands1.poll();
+                    SubCopyCommand subCopyCommand = subCopyCommands1.dequeue();
                     a.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
                 }
 
                 TransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
 
-            if(!Initializer.CONFIG.useGigaBarriers) TransferQueue.UploadCmdWriteBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
-            else TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+            if(Initializer.CONFIG.useGigaBarriers) TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
             this.hasBufferSwap=false;
         }
-        dstBuffers.clear();
         subCopyCommands.clear();
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
 
@@ -93,12 +88,12 @@ public class AreaUploadManager {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer2(bufferSize, src);
 
-        dstBuffers.add(bufferId);
+
         if(!subCopyCommands.containsKey(bufferId))
         {
-            subCopyCommands.put(bufferId, new StaticQueue<>(512));
+            subCopyCommands.put(bufferId, new ObjectArrayFIFOQueue<>(16));
         }
-        subCopyCommands.get(bufferId).add(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
+        subCopyCommands.get(bufferId).enqueue(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
 
 
         this.recordedUploads[this.currentFrame].add(uploadSegment);
@@ -109,12 +104,12 @@ public class AreaUploadManager {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer(bufferSize, src);
 
-        dstBuffers.add(bufferId);
+
         if(!subCopyCommands.containsKey(bufferId))
         {
-            subCopyCommands.put(bufferId, new StaticQueue<>(512));
+            subCopyCommands.put(bufferId, new ObjectArrayFIFOQueue<>(12));
         }
-        subCopyCommands.get(bufferId).add(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
+        subCopyCommands.get(bufferId).enqueue(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
 
 
         this.recordedUploads[this.currentFrame].add(uploadSegment);
@@ -124,7 +119,6 @@ public class AreaUploadManager {
         this.currentFrame = (this.currentFrame + 1) % FRAME_NUM;
         waitUploads(this.currentFrame);
 
-        this.dstBuffers.clear();
     }
 
     public void waitUploads() {

@@ -83,6 +83,7 @@ public enum Queue {
         try(MemoryStack stack = stackPush()) {
             CommandPool.CommandBuffer commandBuffer = this.beginCommands();
 
+            if(Initializer.CONFIG.useGigaBarriers) this.GigaBarrier(commandBuffer.getHandle());
             VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(1, stack);
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);

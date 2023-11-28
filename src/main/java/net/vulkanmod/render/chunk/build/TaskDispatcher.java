@@ -95,11 +95,13 @@ public class TaskDispatcher {
         if(chunkTask == null)
             return;
         (chunkTask.highPriority ? this.highPriorityTasks : this.lowPriorityTasks).offer(chunkTask);
-
+//        if (getActiveTaskCount() < getIdleThreadsCount())
         //TODO Scale number of launched threads based on available workGroupSlots (to avoid stuttering with Small/incremental chunk loads)
         //Wakeup thread
-        synchronized (this) {
-            this.notify();
+        {
+            synchronized (this) {
+                this.notify();
+            }
         }
     }
 
@@ -191,6 +193,10 @@ public class TaskDispatcher {
     public String getStats() {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("iT: %d", -1);
+        return String.format("chunkTasks: %d / Limit: %d", getActiveTaskCount(), getIdleThreadsCount());
+    }
+
+    private int getActiveTaskCount() {
+        return this.highPriorityTasks.size() + this.lowPriorityTasks.size();
     }
 }
