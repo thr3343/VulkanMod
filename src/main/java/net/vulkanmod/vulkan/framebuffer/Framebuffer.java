@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.framebuffer;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
-import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -10,9 +9,6 @@ import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.nio.LongBuffer;
-
-import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Framebuffer {
@@ -91,49 +87,6 @@ public class Framebuffer {
         this.cleanUp();
 
         this.createImages();
-    }
-
-    private long createFramebuffer(RenderPass renderPass) {
-
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-
-            LongBuffer attachments;
-            if(colorAttachment != null && depthAttachment != null) {
-                attachments = stack.longs(colorAttachment.getImageView(), depthAttachment.getImageView());
-            } else if(colorAttachment != null) {
-                attachments = stack.longs(colorAttachment.getImageView());
-            } else {
-                attachments = stack.longs(depthAttachment.getImageView());
-            }
-
-            LongBuffer pFramebuffer = stack.mallocLong(1);
-
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
-            framebufferInfo.sType$Default();
-            framebufferInfo.renderPass(renderPass.getId());
-            framebufferInfo.width(this.width);
-            framebufferInfo.height(this.height);
-            framebufferInfo.layers(1);
-            framebufferInfo.pAttachments(attachments);
-
-            if(VK10.vkCreateFramebuffer(Vulkan.getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create framebuffer");
-            }
-
-            return pFramebuffer.get(0);
-        }
-    }
-
-    public void beginRenderPass(VkCommandBuffer commandBuffer, RenderPass renderPass, MemoryStack stack) {
-        if(!DYNAMIC_RENDERING) {
-            long framebufferId = framebufferIds.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
-            renderPass.beginRenderPass(commandBuffer, framebufferId, stack);
-        }
-        else
-            renderPass.beginDynamicRendering(commandBuffer, stack);
-
-        Renderer.getInstance().setBoundRenderPass(renderPass);
-        Renderer.getInstance().setBoundFramebuffer(this);
     }
 
     public void bindAsTexture(VkCommandBuffer commandBuffer, MemoryStack stack) {

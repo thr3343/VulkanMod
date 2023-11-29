@@ -131,6 +131,10 @@ public class Device {
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
 
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default()
+                    .imagelessFramebuffer(true);
+
             if(deviceInfo.isDrawIndirectSupported()) {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);
@@ -148,7 +152,7 @@ public class Device {
             dynamicRenderingFeaturesKHR.sType$Default();
             dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
             deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
 
             //Vulkan 1.3 dynamic rendering

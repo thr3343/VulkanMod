@@ -8,6 +8,7 @@ import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
@@ -31,6 +32,8 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.DEPTH;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -69,7 +72,7 @@ public class Renderer {
     private ArrayList<Long> inFlightFences;
 
     private Framebuffer boundFramebuffer;
-    private RenderPass boundRenderPass;
+//    private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
     private static int imageIndex;
@@ -78,11 +81,15 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
-
+    public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+        tstFRAMEBUFFER_2 = new Framebuffer2(
+                COLOR,
+                DEPTH);
+        tstFRAMEBUFFER_2.recreate(getSwapChain().getWidth(), getSwapChain().getHeight());
     }
 
     private void init() {
@@ -267,11 +274,11 @@ public class Renderer {
 
     public void endRenderPass(VkCommandBuffer commandBuffer) {
         if(!DYNAMIC_RENDERING)
-            this.boundRenderPass.endRenderPass(currentCmdBuffer);
+                vkCmdEndRenderPass(commandBuffer);
         else
             KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
 
-        this.boundRenderPass = null;
+//        this.boundRenderPass = null;
     }
 
     //TODO
@@ -294,10 +301,10 @@ public class Renderer {
         if(skipRendering) 
             return;
         
-        this.boundRenderPass.endRenderPass(currentCmdBuffer);
+//        this.boundRenderPass.endRenderPass(currentCmdBuffer);
 
         this.boundFramebuffer = null;
-        this.boundRenderPass = null;
+//        this.boundRenderPass = null;
     }
 
     public void setBoundFramebuffer(Framebuffer framebuffer) {
@@ -447,11 +454,7 @@ public class Renderer {
     }
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {
-        this.boundRenderPass = boundRenderPass;
-    }
-
-    public RenderPass getBoundRenderPass() {
-        return boundRenderPass;
+//        this.boundRenderPass = boundRenderPass;
     }
 
     public void setMainPass(MainPass mainPass) { this.mainPass = mainPass; }
@@ -463,7 +466,7 @@ public class Renderer {
     public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-        PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
+        PipelineState currentState = PipelineState.getCurrentPipelineState(this.tstFRAMEBUFFER_2);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         addUsedPipeline(pipeline);
