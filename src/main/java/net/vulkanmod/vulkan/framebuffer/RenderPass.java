@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.framebuffer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -19,9 +18,6 @@ public class RenderPass {
     final int attachmentCount;
     AttachmentInfo colorAttachmentInfo;
     AttachmentInfo depthAttachmentInfo;
-
-    int finalColorLayout;
-    int finalDepthLayout;
 
     public RenderPass(Framebuffer framebuffer, AttachmentInfo colorAttachmentInfo, AttachmentInfo depthAttachmentInfo) {
         this.framebuffer = framebuffer;
@@ -47,7 +43,6 @@ public class RenderPass {
     private void createRenderPass() {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
-
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.calloc(attachmentCount, stack);
             VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.calloc(attachmentCount, stack);
 
@@ -59,19 +54,18 @@ public class RenderPass {
             // Color attachment
             if(colorAttachmentInfo != null) {
                 VkAttachmentDescription colorAttachment = attachments.get(i);
-                colorAttachment.format(colorAttachmentInfo.format);
-                colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                colorAttachment.loadOp(colorAttachmentInfo.loadOp);
-                colorAttachment.storeOp(colorAttachmentInfo.storeOp);
-                colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-                colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+                colorAttachment.format(colorAttachmentInfo.format)
+                        .samples(VK_SAMPLE_COUNT_1_BIT)
+                        .loadOp(colorAttachmentInfo.loadOp)
+                        .storeOp(colorAttachmentInfo.storeOp)
+                        .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                        .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                        .initialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                        .finalLayout(colorAttachmentInfo.finalLayout);
 
-                colorAttachment.initialLayout(colorAttachmentInfo.initialLayout);
-                colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-                VkAttachmentReference colorAttachmentRef = attachmentRefs.get(0);
-                colorAttachmentRef.attachment(0);
-                colorAttachmentRef.layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                VkAttachmentReference colorAttachmentRef = attachmentRefs.get(0)
+                        .attachment(0)
+                        .layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
                 subpass.colorAttachmentCount(1);
                 subpass.pColorAttachments(VkAttachmentReference.calloc(1, stack).put(0, colorAttachmentRef));
@@ -79,54 +73,74 @@ public class RenderPass {
                 ++i;
             }
 
-
             // Depth-Stencil attachment
             if(depthAttachmentInfo != null) {
                 VkAttachmentDescription depthAttachment = attachments.get(i);
-                depthAttachment.format(depthAttachmentInfo.format);
-                depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                depthAttachment.loadOp(depthAttachmentInfo.loadOp);
-                depthAttachment.storeOp(depthAttachmentInfo.storeOp);
-                depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-                depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-                depthAttachment.initialLayout(depthAttachmentInfo.initialLayout);
-                depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                depthAttachment.format(depthAttachmentInfo.format)
+                        .samples(VK_SAMPLE_COUNT_1_BIT)
+                        .loadOp(depthAttachmentInfo.loadOp)
+                        .storeOp(depthAttachmentInfo.storeOp)
+                        .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                        .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                        .initialLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+                        .finalLayout(colorAttachmentInfo.finalLayout);
 
-                VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1);
-                depthAttachmentRef.attachment(1);
-                depthAttachmentRef.layout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1)
+                        .attachment(1)
+                        .layout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
                 subpass.pDepthStencilAttachment(depthAttachmentRef);
             }
 
+//<<<<<<< HEAD
 
-            VkSubpassDependency.Buffer vkSubpassDependency = VkSubpassDependency.malloc(2, stack);
+//            VkSubpassDependency.Buffer vkSubpassDependency = VkSubpassDependency.malloc(2, stack);
+//
+//
+//            vkSubpassDependency.get(0) //Execution Dependency to handle colour Attachment Writes +
+//                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+//                    .dstSubpass(0)
+//                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT) //--> Form Dependency chain with imageAvailableSemaphores Signal -> pWaitDstStageMask
+//                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+//                    .srcAccessMask(0)                               //ayout is Undefined i.e. Dont't_Care, so No Mem Dependency on PRIOR COlor Attachment Writes Needed
+//                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) //Wait before Load Op Clear
+//                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+//
+//            vkSubpassDependency.get(1) //Mem Barrier for Depth Attachment
+//                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+//                    .dstSubpass(0)
+//                    .srcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+//                    .dstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+//                    .srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)    //Wait for Prev CmdBuffer to finish Writing to Depth Attachment
+//                    .dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+//                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+//
+//            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.malloc(stack);
+//            renderPassInfo.sType$Default();
+//            renderPassInfo.pNext(0);
+//            renderPassInfo.pAttachments(attachments);
+//            renderPassInfo.pSubpasses(subpass);
+//            renderPassInfo.pDependencies(vkSubpassDependency);
 
+            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack);
+            renderPassInfo.sType$Default()
+                    .pAttachments(attachments)
+                    .pSubpasses(subpass);
 
-            vkSubpassDependency.get(0) //Execution Dependency to handle colour Attachment Writes +
-                    .srcSubpass(VK_SUBPASS_EXTERNAL)
-                    .dstSubpass(0)
-                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT) //--> Form Dependency chain with imageAvailableSemaphores Signal -> pWaitDstStageMask
-                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .srcAccessMask(0)                               //ayout is Undefined i.e. Dont't_Care, so No Mem Dependency on PRIOR COlor Attachment Writes Needed
-                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) //Wait before Load Op Clear
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+            //Layout transition subpass depency
+            if(colorAttachmentInfo.finalLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+                VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(1, stack);
+                subpassDependencies.get(0)
+                        .srcSubpass(VK_SUBPASS_EXTERNAL)
+                        .dstSubpass(0)
+                        .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                        .dstStageMask(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT)
+                        .srcAccessMask(0)
+                        .dstAccessMask(0);
 
-            vkSubpassDependency.get(1) //Mem Barrier for Depth Attachment
-                    .srcSubpass(VK_SUBPASS_EXTERNAL)
-                    .dstSubpass(0)
-                    .srcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
-                    .dstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-                    .srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)    //Wait for Prev CmdBuffer to finish Writing to Depth Attachment
-                    .dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+                renderPassInfo.pDependencies(subpassDependencies);
+            }
 
-            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.malloc(stack);
-            renderPassInfo.sType$Default();
-            renderPassInfo.pNext(0);
-            renderPassInfo.pAttachments(attachments);
-            renderPassInfo.pSubpasses(subpass);
-            renderPassInfo.pDependencies(vkSubpassDependency);
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
@@ -135,14 +149,18 @@ public class RenderPass {
             }
 
             id = pRenderPass.get(0);
-
-            finalColorLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            finalDepthLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
         }
     }
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
+
+        if(colorAttachmentInfo != null
+                && framebuffer.getColorAttachment().getCurrentLayout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        if(depthAttachmentInfo != null
+                && framebuffer.getDepthAttachment().getCurrentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+            framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
 
         VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
         renderPassInfo.sType$Default();
@@ -169,10 +187,10 @@ public class RenderPass {
         vkCmdEndRenderPass(commandBuffer);
 
         if(colorAttachmentInfo != null)
-            framebuffer.getColorAttachment().setCurrentLayout(finalColorLayout);
+            framebuffer.getColorAttachment().setCurrentLayout(colorAttachmentInfo.finalLayout);
 
         if(depthAttachmentInfo != null)
-            framebuffer.getDepthAttachment().setCurrentLayout(finalDepthLayout);
+            framebuffer.getDepthAttachment().setCurrentLayout(depthAttachmentInfo.finalLayout);
 
         Renderer.getInstance().setBoundRenderPass(null);
     }
@@ -242,14 +260,14 @@ public class RenderPass {
     public static class AttachmentInfo {
         final Type type;
         final int format;
-        int initialLayout;
+        int finalLayout;
         int loadOp;
         int storeOp;
 
         public AttachmentInfo(Type type, int format) {
             this.type = type;
             this.format = format;
-            this.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            this.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
             this.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             this.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -268,8 +286,8 @@ public class RenderPass {
             return this;
         }
 
-        public AttachmentInfo setInitialLayout(int initialLayout) {
-            this.initialLayout = initialLayout;
+        public AttachmentInfo setFinalLayout(int finalLayout) {
+            this.finalLayout = finalLayout;
 
             return this;
         }
@@ -278,6 +296,10 @@ public class RenderPass {
             COLOR,
             DEPTH
         }
+    }
+
+    public static Builder builder(Framebuffer framebuffer) {
+        return  new Builder(framebuffer);
     }
 
     public static class Builder {
@@ -301,11 +323,9 @@ public class RenderPass {
         public Builder setLoadOp(int loadOp) {
             if(colorAttachmentInfo != null) {
                 colorAttachmentInfo.setLoadOp(loadOp);
-                colorAttachmentInfo.setInitialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             }
             if(depthAttachmentInfo != null) {
                 depthAttachmentInfo.setLoadOp(loadOp);
-                depthAttachmentInfo.setInitialLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
             }
 
 
