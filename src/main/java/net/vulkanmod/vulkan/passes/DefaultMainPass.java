@@ -5,11 +5,10 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkRect2D;
-import org.lwjgl.vulkan.VkViewport;
 
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
-import static org.lwjgl.vulkan.VK10.*;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
+import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
+import static org.lwjgl.vulkan.VK10.vkEndCommandBuffer;
 
 public class DefaultMainPass implements MainPass {
 
@@ -27,16 +26,16 @@ public class DefaultMainPass implements MainPass {
  * (if if this is too crazy even for Vulkan tbh...)
  * */
 
-        Renderer.getInstance().tstRenderPass2.bindImageReference(COLOR,  swapChain.getColorAttachment());
+//        Renderer.getInstance().tstRenderPass2.bindImageReference(PRESENT,  swapChain.getColorAttachment());
 
         Renderer.getInstance().tstFRAMEBUFFER_2.beginRendering(commandBuffer, stack);
-        Renderer.getInstance().setBoundFramebuffer(swapChain);
+//        Renderer.getInstance().setBoundFramebuffer(swapChain);
 
-        VkViewport.Buffer pViewport = swapChain.viewport(stack);
-        vkCmdSetViewport(commandBuffer, 0, pViewport);
-
-        VkRect2D.Buffer pScissor = swapChain.scissor(stack);
-        vkCmdSetScissor(commandBuffer, 0, pScissor);
+//        VkViewport.Buffer pViewport = swapChain.viewport(stack);
+//        vkCmdSetViewport(commandBuffer, 0, pViewport);
+//
+//        VkRect2D.Buffer pScissor = swapChain.scissor(stack);
+//        vkCmdSetScissor(commandBuffer, 0, pScissor);
     }
 
     @Override

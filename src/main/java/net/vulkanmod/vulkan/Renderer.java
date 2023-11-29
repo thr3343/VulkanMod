@@ -7,10 +7,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
-import net.vulkanmod.vulkan.framebuffer.Framebuffer;
-import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
-import net.vulkanmod.vulkan.framebuffer.RenderPass2;
+import net.vulkanmod.vulkan.framebuffer.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
@@ -36,7 +33,8 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.AttachFeatures.add;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.DEPTH;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -86,14 +84,14 @@ public class Renderer {
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
     public final RenderPass2 tstRenderPass2 = new RenderPass2(
-            COLOR,
+            PRESENT,
             DEPTH);
     public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
-        tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
+        tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight(), true);
         tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
     }
 
@@ -588,7 +586,7 @@ public class Renderer {
 
     public static void setScissor(int x, int y, int width, int height) {
         try(MemoryStack stack = stackPush()) {
-            int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
+            int framebufferHeight = INSTANCE.tstFRAMEBUFFER_2.height;
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(x, framebufferHeight - (y + height));

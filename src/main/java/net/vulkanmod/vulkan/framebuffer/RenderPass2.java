@@ -11,8 +11,8 @@ import java.util.EnumMap;
 import static net.vulkanmod.vulkan.Device.findDepthFormat;
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
@@ -32,7 +32,7 @@ public class RenderPass2 {
 
         this.attachmentTypes = attachmentTypes;
         for (int i = 0; i < attachmentTypes.length; i++) {
-            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i]));
+            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], VK_SAMPLE_COUNT_1_BIT));
         }
 
         this.renderPass=createRenderPass();
@@ -40,7 +40,7 @@ public class RenderPass2 {
     }
     //Hide/Conceal ugly Struct Buffer BoilerPlate
     private static VkAttachmentReference.Buffer getAtachBfr(Attachment attach, MemoryStack stack) {
-        return VkAttachmentReference.malloc(1, stack).attachment(attach.BindingID).layout(attach.attachmentType.layout);
+        return VkAttachmentReference.malloc(1, stack).attachment(attach.BindingID).layout(attach.type.layout);
     }
 
     private long createRenderPass() {
@@ -63,20 +63,20 @@ public class RenderPass2 {
                         .samples(attach.samples)
                         .loadOp(attach.loadOp)
                         .storeOp(attach.storeOp)
-                        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                        .finalLayout(attach.attachmentType == COLOR ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : attach.attachmentType.layout);
+                        .initialLayout(attach.type == PRESENT ? COLOR.layout : VK_IMAGE_LAYOUT_UNDEFINED)
+                        .finalLayout(attach.type.layout);
 
-                attachmentRefs.get(attach.BindingID).set(attach.BindingID, attach.attachmentType.layout);
+                attachmentRefs.get(attach.BindingID).set(attach.BindingID, attach.type == PRESENT ? COLOR.layout : attach.type.layout);
 
-                switch (attach.attachmentType) {
-                    case COLOR -> subpass.pColorAttachments(getAtachBfr(attach, stack));
+                switch (attach.type) {
+                    case COLOR, PRESENT -> subpass.pColorAttachments(getAtachBfr(attach, stack));
                     case DEPTH -> subpass.pDepthStencilAttachment(attachmentRefs.get(attach.BindingID));
-                    case RESOLVE -> subpass.pResolveAttachments(getAtachBfr(attach, stack));
+                    case RESOLVEC, RESOLVED -> subpass.pResolveAttachments(getAtachBfr(attach, stack));
                 }
 
                 i++;
             }
-            final VkSubpassDependency.Buffer subpassDependencies = this.attachment.containsKey(COLOR) ? VkSubpassDependency.calloc(1, stack)
+            final VkSubpassDependency.Buffer subpassDependencies = this.attachment.containsKey(PRESENT) ? VkSubpassDependency.calloc(1, stack)
                     .srcSubpass(VK_SUBPASS_EXTERNAL)
                     .dstSubpass(0)
                     .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
@@ -102,41 +102,16 @@ public class RenderPass2 {
             return pRenderPass.get(0);
         }
     }
-    //attachments don't care about Res, but does care about the number if Images (i.e. Attachments) Format+LoadStoreOps+layouts afaik
-
-    record imageAttachmentReference(long parentRenderPass, int loadOp, int storeOp, AttachmentTypes attachmentTypes){};
-
 
     public void bindImageReference(AttachmentTypes attachmentTypes, VulkanImage colorAttachment) {
-        this.attachment.get(attachmentTypes).bindImageReference(colorAttachment.width, colorAttachment.height, colorAttachment.getImageView());
-    }
-
-
-
-    private int getMultiSampleCount() {
-        return 0;
+        this.attachment.get(attachmentTypes).bindImageReference(colorAttachment.getImageView());
     }
     public int getFormat(AttachmentTypes attachmentTypes) {
         return this.attachment.get(attachmentTypes).format;
     }
 
     public void cleanUp() { vkDestroyRenderPass(getDevice(), this.renderPass, null); }
-    public void addAttachment(AttachmentTypes attachmentTypes)
-    {
 
-    }
-    public void removeAttachment(AttachmentTypes attachmentTypes)
-    {
-
-    }
-    public void enableAttachment(AttachmentTypes attachmentTypes)
-    {
-
-    }
-    public void disableAttachment(AttachmentTypes attachmentTypes)
-    {
-
-    }
 
 
 }

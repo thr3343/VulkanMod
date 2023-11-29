@@ -2,30 +2,38 @@ package net.vulkanmod.vulkan.framebuffer;
 
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.EnumMap;
 
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Framebuffer2 {
 
     private static final ObjectArrayList<FramebufferInfo> frameBuffers = new ObjectArrayList<>(8);
+    private final EnumMap<AttachmentTypes, VulkanImage> images = new EnumMap<>(AttachmentTypes.class);
     private long frameBuffer=VK_NULL_HANDLE;
 
     public int width, height;
     public RenderPass2 renderPass2;
     private int boundImages = 0;
+    private final boolean swapChainMode;
 
-    public Framebuffer2(int width, int height) {
+
+
+    public Framebuffer2(int width, int height, boolean swapChainMode) {
         this.width=width;
         this.height=height;
 
+        this.swapChainMode = swapChainMode;
     }
 
 
@@ -35,6 +43,20 @@ public class Framebuffer2 {
         this.renderPass2=renderPass2;
         this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(renderPass2.attachmentTypes) : checkForFrameBuffers();
         this.boundImages=renderPass2.attachmentTypes.length;
+
+        initImages(renderPass2);
+
+
+    }
+
+    private void initImages(RenderPass2 renderPass2) {
+        for(var a : renderPass2.attachment.values())
+        {
+            if(/*this.swapChainMode && */a.type ==PRESENT) continue;
+            VulkanImage textureImage = VulkanImage.createTextureImage(a, width, height);
+            this.images.put(a.type, textureImage);
+            renderPass2.bindImageReference(a.type, textureImage);
+        }
     }
 
     //Framebuffers can use any renderPass, as long as the Attachment Ref Configs Match
@@ -93,9 +115,12 @@ public class Framebuffer2 {
         var clearValues = VkClearValue.malloc(this.boundImages, stack);
         final LongBuffer longs = stack.mallocLong(this.boundImages);
 
+        if(this.renderPass2.attachment.containsKey(PRESENT))
+            this.renderPass2.bindImageReference(PRESENT,  getSwapChain().getColorAttachment());
+
         for(var a : renderPass2.attachment.values()) {
-            switch (a.attachmentType) {
-                case COLOR -> clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
+            switch (a.type) {
+                case PRESENT, COLOR -> clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
                 case DEPTH -> clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
             }
             longs.put(a.BindingID, a.imageView);
@@ -120,16 +145,11 @@ public class Framebuffer2 {
     // Allows for the ability to avoid null FrameBuffers
     // (Might be useful for handling buggy Mods)
     private boolean initialised() {
-        boolean b = this.width != 0 && this.height != 0 && this.renderPass2 != null;
-        if(!b) Initializer.LOGGER.warn("Framebuffer not ready yet!");
-        return b;
+        return this.width != 0 && this.height != 0 && this.renderPass2 != null;
     }
 
     public void cleanUp() {
-        for (final FramebufferInfo a : frameBuffers) {
-            vkDestroyFramebuffer(getDevice(), a.frameBuffer, null);
-        }
-
+        frameBuffers.forEach(a -> vkDestroyFramebuffer(getDevice(), a.frameBuffer, null));
         this.renderPass2.cleanUp();
     }
 
@@ -138,9 +158,14 @@ public class Framebuffer2 {
     private record FramebufferInfo(int width, int height, long frameBuffer, AttachmentTypes[] attachments){};
 
     public void setSize(int width, int height) {
+        if(this.width==width && this.height==height) return;
         this.width = width;
         this.height = height;
         this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(this.renderPass2.attachmentTypes) : checkForFrameBuffers();
+
+        this.images.values().forEach(VulkanImage::free);
+
+        initImages(this.renderPass2);
     }
 
     private long checkForFrameBuffers() {

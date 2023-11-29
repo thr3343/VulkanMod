@@ -27,9 +27,12 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class SwapChain extends Framebuffer {
+public class SwapChain {
     private static int DEFAULT_DEPTH_FORMAT = 0;
     private static final int DEFAULT_IMAGE_COUNT = 3;
+    private int width, height;
+    private int format;
+//    private VulkanImage depthAttachment;
 
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
@@ -54,9 +57,6 @@ public class SwapChain extends Framebuffer {
     public SwapChain() {
         DEFAULT_DEPTH_FORMAT = Device.findDepthFormat();
 
-        this.attachmentCount = 2;
-
-        this.depthFormat = DEFAULT_DEPTH_FORMAT;
         createSwapChain();
 
     }
@@ -64,20 +64,9 @@ public class SwapChain extends Framebuffer {
     public void recreateSwapChain() {
         Synchronization.INSTANCE.waitFences();
 
-        if(this.depthAttachment != null) {
-            this.depthAttachment.free();
-            this.depthAttachment = null;
-        }
-
-//        if(!DYNAMIC_RENDERING && framebuffers != null) {
-////            this.renderPass.cleanUp();
-//            Arrays.stream(framebuffers).forEach(id -> vkDestroyFramebuffer(getDevice(), id, null));
-//            framebuffers = null;
-//        }
 
         createSwapChain();
         Renderer.getInstance().tstFRAMEBUFFER_2.setSize(this.width, this.height);
-        Renderer.getInstance().tstRenderPass2.bindImageReference(DEPTH,  this.getDepthAttachment());
     }
 
     public void createSwapChain() {
@@ -172,7 +161,7 @@ public class SwapChain extends Framebuffer {
             }
             currentLayout = new int[this.swapChainImages.size()];
 
-            createDepthResources();
+//            createDepthResources();
 
             //RenderPass
 //            if(this.renderPass == null)
@@ -257,13 +246,7 @@ public class SwapChain extends Framebuffer {
         vkDestroySwapchainKHR(device, this.swapChain, null);
         swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
 
-        this.depthAttachment.free();
-    }
 
-    private void createDepthResources() {
-        this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                false, false);
     }
 
     public long getId() {
@@ -372,4 +355,12 @@ public class SwapChain extends Framebuffer {
     }
 
     public int getImagesNum() { return this.swapChainImages.size(); }
+
+    public int getWidth() {
+        return this.width;
+    }
+
+    public int getHeight() {
+        return this.height;
+    }
 }
