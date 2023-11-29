@@ -8,7 +8,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
 import org.lwjgl.vulkan.VkViewport;
 
-import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DefaultMainPass implements MainPass {
@@ -18,7 +18,7 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
-//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
+        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 /*TODO; try to separate the SwapChain from the FrameBuffer: The Framebuffer + Attachment Dosen't care what the image is; as long as the resolution + Formats Match
  * i.e. Closer to the Vulkan spec Definition: the Framebuffer is the render Target, not the Actual Image
  * and if renderPass + framebuffer shoudl be Separted; as renderPass+ farmebuffer are not dpendnst on one aniother/Are IIRC Mutually Exclusive AFAIk; so it shoudl be posibelt change.Switcj betwen renderPasses on teh Fly at will
@@ -27,7 +27,7 @@ public class DefaultMainPass implements MainPass {
  * (if if this is too crazy even for Vulkan tbh...)
  * */
 
-        Renderer.getInstance().tstRenderPass2.bindImageReference(COLOR,  Vulkan.getSwapChain().getColorAttachment());
+        Renderer.getInstance().tstRenderPass2.bindImageReference(COLOR,  swapChain.getColorAttachment());
 
         Renderer.getInstance().tstFRAMEBUFFER_2.beginRendering(commandBuffer, stack);
         Renderer.getInstance().setBoundFramebuffer(swapChain);

@@ -35,9 +35,9 @@ import java.util.Set;
 
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
-import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.COLOR;
-import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.DEPTH;
+import static net.vulkanmod.vulkan.Vulkan.*;;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.DEPTH;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -85,15 +85,14 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
-    public final RenderPass2 tstRenderPass2;
+    public final RenderPass2 tstRenderPass2 = new RenderPass2(
+            COLOR,
+            DEPTH);
     public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
-        tstRenderPass2 = new RenderPass2(
-                COLOR,
-                DEPTH);
         tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
         tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
     }

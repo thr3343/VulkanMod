@@ -18,7 +18,7 @@ import java.util.List;
 
 import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Vulkan.window;
-import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.DEPTH;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.DEPTH;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
