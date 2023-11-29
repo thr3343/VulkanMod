@@ -2,8 +2,8 @@ package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 
 import java.util.Objects;
 
@@ -22,7 +22,7 @@ public class PipelineState {
     public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
     public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
 
-    public static PipelineState getCurrentPipelineState(Framebuffer2 renderPass) {
+    public static PipelineState getCurrentPipelineState(RenderPass2 renderPass) {
         currentBlendState = blendInfo.createBlendState();
         currentDepthState = VRenderSystem.getDepthState();
         currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
@@ -35,14 +35,14 @@ public class PipelineState {
     final ColorMask colorMask;
     final LogicOpState logicOpState;
     final boolean cullState;
-    final Framebuffer2 framebuffer2;
+    final RenderPass2 renderPass2;
 
-    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, Framebuffer2 framebuffer2) {
+    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass2 renderPass2) {
         this.blendState = blendState;
         this.depthState = depthState;
         this.logicOpState = logicOpState;
         this.colorMask = colorMask;
-        this.framebuffer2 = framebuffer2;
+        this.renderPass2 = renderPass2;
         this.cullState = VRenderSystem.cull;
     }
 
@@ -52,13 +52,13 @@ public class PipelineState {
         if (o == null || getClass() != o.getClass()) return false;
         PipelineState that = (PipelineState) o;
         return blendState.equals(that.blendState) && depthState.equals(that.depthState)
-                && this.framebuffer2 == that.framebuffer2
+                && this.renderPass2 == that.renderPass2
                 && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState, depthState, logicOpState, cullState, framebuffer2);
+        return Objects.hash(blendState, depthState, logicOpState, cullState, renderPass2);
     }
 
     public static BlendInfo defaultBlendInfo() {

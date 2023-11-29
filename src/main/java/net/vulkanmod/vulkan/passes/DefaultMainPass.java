@@ -8,7 +8,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
 import org.lwjgl.vulkan.VkViewport;
 
-import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.COLOR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DefaultMainPass implements MainPass {
@@ -27,7 +27,7 @@ public class DefaultMainPass implements MainPass {
  * (if if this is too crazy even for Vulkan tbh...)
  * */
 
-        Renderer.getInstance().tstFRAMEBUFFER_2.bindImageReference(COLOR,  Vulkan.getSwapChain().getColorAttachment());
+        Renderer.getInstance().tstRenderPass2.bindImageReference(COLOR,  Vulkan.getSwapChain().getColorAttachment());
 
         Renderer.getInstance().tstFRAMEBUFFER_2.beginRendering(commandBuffer, stack);
         Renderer.getInstance().setBoundFramebuffer(swapChain);

@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.framebuffer;
 
-import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.*;
+import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.RESOLVE;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Attachment
@@ -10,11 +11,11 @@ public class Attachment
     final int format;
     final int load, store;
     final int BindingID;
-    final Framebuffer2.AttachmentTypes attachmentType;
+    final RenderPass2.AttachmentTypes attachmentType;
     final int samples;
-    final Framebuffer2.AttachmentTypes dependencies=null;
+    final RenderPass2.AttachmentTypes dependencies=null;
 
-    public Attachment(int format, int bindingID, Framebuffer2.AttachmentTypes attachmentType) {
+    public Attachment(int format, int bindingID, RenderPass2.AttachmentTypes attachmentType) {
 //        this.width = width;
 //        this.height = height;
 //        this.imageView = imageView;

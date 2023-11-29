@@ -10,10 +10,14 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
-import net.vulkanmod.vulkan.shader.*;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -32,8 +36,8 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.COLOR;
-import static net.vulkanmod.vulkan.framebuffer.Framebuffer2.AttachmentTypes.DEPTH;
+import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.COLOR;
+import static net.vulkanmod.vulkan.framebuffer.RenderPass2.AttachmentTypes.DEPTH;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -81,15 +85,17 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
+    public final RenderPass2 tstRenderPass2;
     public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
-        tstFRAMEBUFFER_2 = new Framebuffer2(
+        tstRenderPass2 = new RenderPass2(
                 COLOR,
                 DEPTH);
-        tstFRAMEBUFFER_2.setSize(getSwapChain().getWidth(), getSwapChain().getHeight());
+        tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
+        tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
     }
 
     private void init() {
@@ -466,7 +472,7 @@ public class Renderer {
     public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-        PipelineState currentState = PipelineState.getCurrentPipelineState(this.tstFRAMEBUFFER_2);
+        PipelineState currentState = PipelineState.getCurrentPipelineState(this.tstRenderPass2);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         addUsedPipeline(pipeline);

@@ -41,7 +41,7 @@ public class Framebuffer {
 
         this.depthFormat = SwapChain.getDefaultDepthFormat();
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 false, false);
     }
 
@@ -73,7 +73,7 @@ public class Framebuffer {
 
         if(this.hasDepthAttachment) {
             this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                     linearFiltering, true);
 
             this.attachmentCount++;

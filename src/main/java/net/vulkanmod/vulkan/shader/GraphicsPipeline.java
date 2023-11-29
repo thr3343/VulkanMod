@@ -7,7 +7,7 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -183,15 +183,15 @@ public class GraphicsPipeline extends Pipeline {
             pipelineInfo.basePipelineIndex(-1);
 
             if(!Vulkan.DYNAMIC_RENDERING) {
-                pipelineInfo.renderPass(state.framebuffer2.renderPass);
+                pipelineInfo.renderPass(state.renderPass2.renderPass);
                 pipelineInfo.subpass(0);
             }
             else {
                 //dyn-rendering
                 VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
                 renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-                renderingInfo.pColorAttachmentFormats(stack.ints(state.framebuffer2.getFormat()));
-                renderingInfo.depthAttachmentFormat(state.framebuffer2.getDepthFormat());
+                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass2.getFormat(RenderPass2.AttachmentTypes.COLOR)));
+                renderingInfo.depthAttachmentFormat(state.renderPass2.getFormat(RenderPass2.AttachmentTypes.DEPTH));
                 pipelineInfo.pNext(renderingInfo);
             }
 
