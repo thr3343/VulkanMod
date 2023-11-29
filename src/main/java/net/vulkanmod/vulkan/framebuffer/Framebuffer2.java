@@ -25,7 +25,7 @@ public class Framebuffer2 {
     private final int colorID = 0;
     private final int depthID = 0;
     public static final int DEFAULT_FORMAT = Vulkan.getSwapChain().isBGRAformat ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
-    private long frameBuffer;
+    private long frameBuffer=VK_NULL_HANDLE;
 
 
     private static final int depthFormat = findDepthFormat();
@@ -97,8 +97,7 @@ public class Framebuffer2 {
         attachments = new imageAttachmentReference[attachmentTypes.length];
         this.renderPass=createRenderPass(this.attachmentTypes);
 
-        createDepthResources(false);
-        this.frameBuffer=createFramebuffers(this.attachmentTypes);
+
 //        attachment = new Attachment[0];
 //        colorID = 0;
     }
@@ -277,6 +276,7 @@ public class Framebuffer2 {
         VkRect2D renderArea = VkRect2D.malloc(stack);
         renderArea.offset().set(0, 0);
         renderArea.extent().set(this.width, this.height);
+
         VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachment.size(), stack);
         final LongBuffer longs = stack.mallocLong(attachment.size());
 
@@ -390,13 +390,13 @@ public class Framebuffer2 {
 
     //framebuffers can use any renderPass, as long as the renderpass matches the AttachmentImageInfos configuration used to create the framebuffer handle: (i.e.attachment count + format (as long as the res Matches))
     private record FramebufferInfo(int width, int height, long frameBuffer, imageAttachmentReference... attachments){};
-    public void recreate(int width, int height) {
+    public void setSize(int width, int height) {
         this.width = width;
         this.height = height;
-        this.frameBuffer = checkForFrameBuffers();
+        this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(this.attachmentTypes) : checkForFrameBuffers();
 //        this.depthFormat = findDepthFormat();
 //        depthAttachment.free();
-        if(colorAttachment!=null) this.colorAttachment.free();
+
 //        createDepthResources(false);
     }
 

@@ -14,7 +14,6 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Device.device;
@@ -77,7 +76,7 @@ public class SwapChain extends Framebuffer {
 //        }
 
         createSwapChain();
-        Renderer.getInstance().tstFRAMEBUFFER_2.recreate(this.width, this.height);
+        Renderer.getInstance().tstFRAMEBUFFER_2.setSize(this.width, this.height);
         Renderer.getInstance().tstFRAMEBUFFER_2.bindImageReference(DEPTH,  this.getDepthAttachment());
     }
 

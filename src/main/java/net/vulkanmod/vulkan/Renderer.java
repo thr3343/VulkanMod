@@ -89,7 +89,7 @@ public class Renderer {
         tstFRAMEBUFFER_2 = new Framebuffer2(
                 COLOR,
                 DEPTH);
-        tstFRAMEBUFFER_2.recreate(getSwapChain().getWidth(), getSwapChain().getHeight());
+        tstFRAMEBUFFER_2.setSize(getSwapChain().getWidth(), getSwapChain().getHeight());
     }
 
     private void init() {
