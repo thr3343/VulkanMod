@@ -12,7 +12,6 @@ import java.util.EnumMap;
 
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -41,9 +40,9 @@ public class Framebuffer2 {
     public void bindRenderPass(RenderPass2 renderPass2)
     {
 //        if(this.renderPass2!=null)this.renderPass2.cleanUp();
-        this.cleanUp(true);
-        this.images.values().forEach(VulkanImage::free);
-        this.images.clear();
+        this.clearFrameBuffers();
+        this.clearRenderPass();
+        this.clearImages();
 
         this.renderPass2=renderPass2;
         this.frameBuffer = createFramebuffers(renderPass2.attachmentTypes);
@@ -155,11 +154,25 @@ public class Framebuffer2 {
         return this.width != 0 && this.height != 0 && this.renderPass2 != null;
     }
 
-    public void cleanUp(boolean doRP) {
+    public void cleanUp() {
+        clearFrameBuffers();
+        clearRenderPass();
+        clearImages();
+    }
+
+    private void clearFrameBuffers() {
         frameBuffers.forEach(a -> vkDestroyFramebuffer(getDevice(), a.frameBuffer, null));
         frameBuffers.clear();
-        if(doRP && this.renderPass2!=null) this.renderPass2.cleanUp();
         this.frameBuffer=VK_NULL_HANDLE;
+    }
+
+    private void clearRenderPass() {
+        if(this.renderPass2 != null) this.renderPass2.cleanUp();
+    }
+
+    private void clearImages() {
+        this.images.values().forEach(VulkanImage::free);
+        this.images.clear();
     }
 
 
@@ -170,10 +183,9 @@ public class Framebuffer2 {
         if(this.width==width && this.height==height) return;
         this.width = width;
         this.height = height;
-        this.cleanUp(false);
+        this.clearImages();
+        this.clearFrameBuffers();
         this.frameBuffer = createFramebuffers(this.renderPass2.attachmentTypes);
-
-        this.images.values().forEach(VulkanImage::free);
 
         initImages(this.renderPass2);
     }

@@ -18,7 +18,6 @@ import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.checkerframework.checker.units.qual.C;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -30,13 +29,10 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.DEPTH;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -85,10 +81,7 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
-    public RenderPass2 tstRenderPass2 = new RenderPass2(
-            PRESENT_RESOLVE,
-            COLOR,
-            DEPTH);
+    public RenderPass2 tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
     public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
@@ -453,7 +446,7 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-
+        this.tstFRAMEBUFFER_2.cleanUp();
         TerrainShaderManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
     }
@@ -651,8 +644,9 @@ public class Renderer {
 
     public void updateFrameBuffer() {
         vkDeviceWaitIdle(device);
-        tstRenderPass2= new RenderPass2(PRESENT_RESOLVE, COLOR, DEPTH);
+        tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
         this.tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
         primeRPUpdate=false;
     }
+
 }

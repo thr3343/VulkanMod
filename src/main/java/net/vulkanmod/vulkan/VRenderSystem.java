@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -19,6 +20,8 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 
 public class VRenderSystem {
     private static long window;
@@ -350,4 +353,10 @@ public class VRenderSystem {
         };*/
     }
 
+    static RenderPass2 getDefaultRenderPassState() {
+        return isSampleShadingEnable() ? new RenderPass2(
+                PRESENT_RESOLVE,
+                COLOR,
+                DEPTH) : new RenderPass2(PRESENT);
+    }
 }
