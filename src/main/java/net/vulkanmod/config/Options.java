@@ -210,41 +210,41 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new RangeOption("MSAA", 0, 3, 1,
+                new RangeOption("SSAA", 0, 3, 1,
                         value -> switch (value) {
-                            case 1 -> "2x MSAA";
-                            case 2 -> "4x MSAA";
-                            case 3 -> "8x MSAA";
+                            case 1 -> "2x SSAA";
+                            case 2 -> "4x SSAA";
+                            case 3 -> "8x SSAA";
                             default -> "Off";
                         },
 
                         value -> {
 
-                            config.msaaPreset = value;
+                            config.ssaaPreset = value;
 
 //                            VRenderSystem.setMultiSampleState(value);
-                            VRenderSystem.setSampleState(config.msaaPreset);
+                            VRenderSystem.setSampleState(config.ssaaPreset);
                         },
-                        () -> config.msaaPreset)
+                        () -> config.ssaaPreset)
                         .setTooltip(Component.nullToEmpty("""
-                        MSAA""")),
-                new SwitchOption("MaximiseMSAAQuality",
+                        SuperSampling Anti-Aliasing""")),
+                new SwitchOption("MaximiseSSAAQuality",
                         value -> {
-                            config.msaaQuality = value;
-                            final int i = switch (config.msaaPreset) {
+                            config.ssaaQuality = value;
+                            final int i = switch (config.ssaaPreset) {
                                 case 3 -> 0x3e000001;
                                 case 2 -> 0x3e800001;
                                 case 1 -> 0x3f000001;
                                 case 0 -> 0;
-                                default -> throw new IllegalStateException("Unexpected value: " + config.msaaPreset);
+                                default -> throw new IllegalStateException("Unexpected value: " + config.ssaaPreset);
                             };
 
                             VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
                         },
-                        () -> config.msaaQuality)
+                        () -> config.ssaaQuality)
                         .setTooltip(Component.nullToEmpty("""
-                        MSAA Specific Option:
-                        Further Improves MSAA Quality when enabled
+                        SSAA Specific Option:
+                        Further Improves SSAA Quality when enabled
                         But also increases GPU utilisation"""))
         };
 

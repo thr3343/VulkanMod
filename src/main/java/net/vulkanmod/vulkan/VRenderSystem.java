@@ -54,20 +54,20 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean sampleShadingEnable= Initializer.CONFIG.msaaPreset >0;
-    private static int sampleCount= getS(Initializer.CONFIG.msaaPreset);
+    private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
+    private static int sampleCount= getS(Initializer.CONFIG.ssaaPreset);
     private static float minSampleShading;
     static boolean reInit=false;
 
     static {
-        final int i = switch (Initializer.CONFIG.msaaPreset) {
+        final int i = switch (Initializer.CONFIG.ssaaPreset) {
             case 3 -> 0x3e000001;
             case 2 -> 0x3e800001;
             case 1 -> 0x3f000001;
             case 0 -> 0;
-            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.msaaPreset);
+            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.ssaaPreset);
         };
-        minSampleShading = Initializer.CONFIG.msaaQuality ? 1 : Float.intBitsToFloat(i);
+        minSampleShading = Initializer.CONFIG.ssaaQuality ? 1 : Float.intBitsToFloat(i);
     }
 
     public static void initRenderer()
