@@ -4,11 +4,8 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
-import org.lwjgl.system.MemoryStack;
-
-import static net.vulkanmod.vulkan.Device.device;
+import net.vulkanmod.vulkan.VRenderSystem;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -167,7 +164,7 @@ public class Options {
     }
 
     public static Option<?>[] getOtherOpts() {
-        return new Option[] {
+        return new Option[]{
                 new RangeOption("Render queue size", 2,
                         5, 1,
                         value -> {
@@ -212,7 +209,43 @@ public class Options {
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems."""))
+                        Enabling it might help in CPU limited systems.""")),
+                new RangeOption("MSAA", 0, 3, 1,
+                        value -> switch (value) {
+                            case 1 -> "2x MSAA";
+                            case 2 -> "4x MSAA";
+                            case 3 -> "8x MSAA";
+                            default -> "Off";
+                        },
+
+                        value -> {
+
+                            config.msaaPreset = value;
+
+//                            VRenderSystem.setMultiSampleState(value);
+                            VRenderSystem.setSampleState(config.msaaPreset);
+                        },
+                        () -> config.msaaPreset)
+                        .setTooltip(Component.nullToEmpty("""
+                        MSAA""")),
+                new SwitchOption("MaximiseMSAAQuality",
+                        value -> {
+                            config.msaaQuality = value;
+                            final int i = switch (config.msaaPreset) {
+                                case 3 -> 0x3e000001;
+                                case 2 -> 0x3e800001;
+                                case 1 -> 0x3f000001;
+                                case 0 -> 0;
+                                default -> throw new IllegalStateException("Unexpected value: " + config.msaaPreset);
+                            };
+
+                            VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
+                        },
+                        () -> config.msaaQuality)
+                        .setTooltip(Component.nullToEmpty("""
+                        MSAA Specific Option:
+                        Further Improves MSAA Quality when enabled
+                        But also increases GPU utilisation"""))
         };
 
     }

@@ -30,6 +30,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
@@ -43,6 +44,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    public static boolean primeRPUpdate;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -83,8 +85,10 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
-    public final RenderPass2 tstRenderPass2 = new RenderPass2(
-            PRESENT_RESOLVE, COLOR, DEPTH);
+    public RenderPass2 tstRenderPass2 = new RenderPass2(
+            PRESENT_RESOLVE,
+            COLOR,
+            DEPTH);
     public final Framebuffer2 tstFRAMEBUFFER_2;
     public Renderer() {
         device = Vulkan.getDevice();
@@ -175,6 +179,13 @@ public class Renderer {
     }
 
     public void beginFrame() {
+
+        if(VRenderSystem.reInit)
+        {
+            VRenderSystem.reInit=false;
+            VRenderSystem.setMultiSampleState();
+            this.updateFrameBuffer();
+        }
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
@@ -637,4 +648,11 @@ public class Renderer {
     public static VkCommandBuffer getCommandBuffer() { return INSTANCE.currentCmdBuffer; }
 
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
+
+    public void updateFrameBuffer() {
+        vkDeviceWaitIdle(device);
+        tstRenderPass2= new RenderPass2(PRESENT_RESOLVE, COLOR, DEPTH);
+        this.tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
+        primeRPUpdate=false;
+    }
 }

@@ -45,7 +45,7 @@ public class GraphicsPipeline extends Pipeline {
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
+            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_MULTI_SAMPLE_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
                     this::createGraphicsPipeline);
 
         createDescriptorSets(Renderer.getFramesNum());
@@ -120,11 +120,21 @@ public class GraphicsPipeline extends Pipeline {
 
             // ===> MULTISAMPLING <===
 
-            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
+            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(Initializer.CONFIG.sampleCount>1);
-            multisampling.rasterizationSamples(Initializer.CONFIG.sampleCount);
-            multisampling.minSampleShading(1.0f/Initializer.CONFIG.sampleCount+0.01f);
+
+            multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
+            multisampling.rasterizationSamples(state.multiSampleState.sampleCount());
+            multisampling.minSampleShading(state.multiSampleState.minSampleShading());
+
+//            final int i = switch (Drawer.tstFrameBuffer2.samples) {
+//                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
+//                case VK_SAMPLE_COUNT_4_BIT -> 0x800000*Integer.numberOfTrailingZeros(4);
+//                case VK_SAMPLE_COUNT_2_BIT -> 0x800000;
+//                case VK_SAMPLE_COUNT_1_BIT -> 0;
+//                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
+//            };
+//            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
 
             // ===> DEPTH TEST <===
 

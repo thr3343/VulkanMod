@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.framebuffer;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -12,10 +13,7 @@ import java.util.EnumMap;
 
 import static net.vulkanmod.vulkan.Device.findDepthFormat;
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.COLOR;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
@@ -34,7 +32,7 @@ public class RenderPass2 {
     {
         this.attachmentTypes = attachmentTypes;
         for (int i = 0; i < attachmentTypes.length; i++) {
-            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], Initializer.CONFIG.sampleCount));
+            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], VRenderSystem.getSampleCount()));
         }
         this.presentKey= Arrays.stream(attachmentTypes).filter(attachmentTypes1 -> attachmentTypes1.present).findFirst().orElse(null);
         this.renderPass=createRenderPass();

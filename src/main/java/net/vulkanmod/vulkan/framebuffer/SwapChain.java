@@ -242,7 +242,7 @@ public class SwapChain {
 //        if(!DYNAMIC_RENDERING) {
 //            Arrays.stream(framebuffers).forEach(id -> vkDestroyFramebuffer(device, id, null));
 //        }
-        Renderer.getInstance().tstFRAMEBUFFER_2.cleanUp();
+        Renderer.getInstance().tstFRAMEBUFFER_2.cleanUp(true);
         vkDestroySwapchainKHR(device, this.swapChain, null);
         swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
 

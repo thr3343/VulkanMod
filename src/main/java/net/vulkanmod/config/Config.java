@@ -20,7 +20,8 @@ public class Config {
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
-    public int sampleCount = 4;
+    public int msaaPreset = 1;
+    public boolean msaaQuality;
 
     private static Path path;
 

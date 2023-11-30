@@ -12,6 +12,7 @@ import java.util.EnumMap;
 
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -39,8 +40,13 @@ public class Framebuffer2 {
     //Framebuffers are dependent on RenderPasses/Attachment Configurations though; so unlike RenderPasses they can't be fully independent / Fully Modular e.g.
     public void bindRenderPass(RenderPass2 renderPass2)
     {
+//        if(this.renderPass2!=null)this.renderPass2.cleanUp();
+        this.cleanUp(true);
+        this.images.values().forEach(VulkanImage::free);
+        this.images.clear();
+
         this.renderPass2=renderPass2;
-        this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(renderPass2.attachmentTypes) : checkForFrameBuffers();
+        this.frameBuffer = createFramebuffers(renderPass2.attachmentTypes);
         this.boundImages=renderPass2.attachmentTypes.length;
 
         presentState = renderPass2.presentKey;
@@ -118,7 +124,7 @@ public class Framebuffer2 {
         final LongBuffer longs = stack.mallocLong(this.boundImages);
 
         if(this.swapChainMode) this.renderPass2.bindImageReference(presentState,  getSwapChain().getColorAttachment());
-
+//Clear Color value is ignored if Load Op is Not set to Clear
         for(var a : renderPass2.attachment.values()) {
 //            if(a.loadOp!=VK_ATTACHMENT_LOAD_OP_CLEAR) continue;
             if(a.type.color) clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
@@ -129,7 +135,7 @@ public class Framebuffer2 {
         VkRenderPassAttachmentBeginInfo attachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
                 .pAttachments(longs);
-        //Clear Color value is ignored if Load Op is Not set to Clear
+
 
 
 
@@ -149,9 +155,11 @@ public class Framebuffer2 {
         return this.width != 0 && this.height != 0 && this.renderPass2 != null;
     }
 
-    public void cleanUp() {
+    public void cleanUp(boolean doRP) {
         frameBuffers.forEach(a -> vkDestroyFramebuffer(getDevice(), a.frameBuffer, null));
-        this.renderPass2.cleanUp();
+        frameBuffers.clear();
+        if(doRP && this.renderPass2!=null) this.renderPass2.cleanUp();
+        this.frameBuffer=VK_NULL_HANDLE;
     }
 
 
@@ -162,7 +170,8 @@ public class Framebuffer2 {
         if(this.width==width && this.height==height) return;
         this.width = width;
         this.height = height;
-        this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(this.renderPass2.attachmentTypes) : checkForFrameBuffers();
+        this.cleanUp(false);
+        this.frameBuffer = createFramebuffers(this.renderPass2.attachmentTypes);
 
         this.images.values().forEach(VulkanImage::free);
 

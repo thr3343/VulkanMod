@@ -22,8 +22,8 @@ public class Attachment
         this.format = format;
         BindingID = bindingID;
         this.type = type;
-        this.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        this.storeOp = (type.color) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        this.loadOp = (!type.resolve) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        this.storeOp = (type.present) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         this.samples = type.resolve ? VK_SAMPLE_COUNT_1_BIT : defSampleCnt;
     }
 
