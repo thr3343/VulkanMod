@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
@@ -121,8 +122,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(false);
-            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
+            multisampling.sampleShadingEnable(Initializer.CONFIG.sampleCount>1);
+            multisampling.rasterizationSamples(Initializer.CONFIG.sampleCount);
+            multisampling.minSampleShading(1.0f/Initializer.CONFIG.sampleCount+0.01f);
 
             // ===> DEPTH TEST <===
 

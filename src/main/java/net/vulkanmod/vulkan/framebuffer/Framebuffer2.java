@@ -12,7 +12,6 @@ import java.util.EnumMap;
 
 import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -25,15 +24,15 @@ public class Framebuffer2 {
     public int width, height;
     public RenderPass2 renderPass2;
     private int boundImages = 0;
-    private final boolean swapChainMode;
+    private boolean swapChainMode;
+    private AttachmentTypes presentState=null;
 
 
-
-    public Framebuffer2(int width, int height, boolean swapChainMode) {
+    public Framebuffer2(int width, int height) {
         this.width=width;
         this.height=height;
 
-        this.swapChainMode = swapChainMode;
+//        this.swapChainMode = swapChainMode;
     }
 
 
@@ -44,6 +43,9 @@ public class Framebuffer2 {
         this.frameBuffer = this.frameBuffer==VK_NULL_HANDLE ? createFramebuffers(renderPass2.attachmentTypes) : checkForFrameBuffers();
         this.boundImages=renderPass2.attachmentTypes.length;
 
+        presentState = renderPass2.presentKey;
+
+        swapChainMode=renderPass2.presentKey!=null;
         initImages(renderPass2);
 
 
@@ -52,7 +54,7 @@ public class Framebuffer2 {
     private void initImages(RenderPass2 renderPass2) {
         for(var a : renderPass2.attachment.values())
         {
-            if(/*this.swapChainMode && */a.type ==PRESENT) continue;
+            if(/*this.swapChainMode && */a.type.present/* ==presentState*/) continue;
             VulkanImage textureImage = VulkanImage.createTextureImage(a, width, height);
             this.images.put(a.type, textureImage);
             renderPass2.bindImageReference(a.type, textureImage);
@@ -115,14 +117,13 @@ public class Framebuffer2 {
         var clearValues = VkClearValue.malloc(this.boundImages, stack);
         final LongBuffer longs = stack.mallocLong(this.boundImages);
 
-        if(this.renderPass2.attachment.containsKey(PRESENT))
-            this.renderPass2.bindImageReference(PRESENT,  getSwapChain().getColorAttachment());
+        if(this.swapChainMode) this.renderPass2.bindImageReference(presentState,  getSwapChain().getColorAttachment());
 
         for(var a : renderPass2.attachment.values()) {
-            switch (a.type) {
-                case PRESENT, COLOR -> clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
-                case DEPTH -> clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
-            }
+//            if(a.loadOp!=VK_ATTACHMENT_LOAD_OP_CLEAR) continue;
+            if(a.type.color) clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
+            else clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
+
             longs.put(a.BindingID, a.imageView);
         }
         VkRenderPassAttachmentBeginInfo attachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)

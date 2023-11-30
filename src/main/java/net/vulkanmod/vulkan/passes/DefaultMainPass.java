@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.PRESENT;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK10.vkEndCommandBuffer;
 

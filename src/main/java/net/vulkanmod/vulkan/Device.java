@@ -123,10 +123,11 @@ public class Device {
             deviceFeatures.sType$Default();
 
             //TODO indirect draw option disabled in case it is not supported
-            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
+
+            deviceFeatures.features()
+                    .samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy())
+                    .logicOp(deviceInfo.availableFeatures.features().logicOp())
+                    .sampleRateShading(deviceInfo.availableFeatures.features().sampleRateShading());
 
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
