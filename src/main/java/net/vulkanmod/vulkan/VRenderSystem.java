@@ -54,7 +54,7 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean sampleShadingEnable= Initializer.CONFIG.msaaPreset >1;
+    private static boolean sampleShadingEnable= Initializer.CONFIG.msaaPreset >0;
     private static int sampleCount= getS(Initializer.CONFIG.msaaPreset);
     private static float minSampleShading;
     static boolean reInit=false;
@@ -357,6 +357,6 @@ public class VRenderSystem {
         return isSampleShadingEnable() ? new RenderPass2(
                 PRESENT_RESOLVE,
                 COLOR,
-                DEPTH) : new RenderPass2(PRESENT);
+                DEPTH) : new RenderPass2(PRESENT, DEPTH);
     }
 }

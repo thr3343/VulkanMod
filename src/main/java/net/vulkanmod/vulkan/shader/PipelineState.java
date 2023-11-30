@@ -15,7 +15,7 @@ public class PipelineState {
     public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
     public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
-    public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampleState(VRenderSystem.isSampleShadingEnable(), VRenderSystem.getSampleCount(), VRenderSystem.getMinSampleShading());
+    public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampleState(false, 1, 0);
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;

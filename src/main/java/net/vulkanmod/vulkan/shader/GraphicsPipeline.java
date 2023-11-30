@@ -120,7 +120,7 @@ public class GraphicsPipeline extends Pipeline {
 
             // ===> MULTISAMPLING <===
 
-            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
+            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
 
             multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
