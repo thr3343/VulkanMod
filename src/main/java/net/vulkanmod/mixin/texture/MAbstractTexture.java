@@ -77,7 +77,8 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         if(vulkanImage != null)
             return vulkanImage;
         else {
-            return GlTexture.getTexture(this.id).getVulkanImage();
+            GlTexture vulkanImage1 = GlTexture.getTexture(this.id);
+            return vulkanImage1!=null ? vulkanImage1.getVulkanImage() : vulkanImage;
         }
     }
 
