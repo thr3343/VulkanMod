@@ -12,6 +12,7 @@ import org.lwjgl.system.MemoryStack;
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Device.deviceInfo;
+import net.vulkanmod.vulkan.VRenderSystem;
 
 public class Options {
     private static final int max = Runtime.getRuntime().availableProcessors();
@@ -204,15 +205,15 @@ public class Options {
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Higher values might help stabilize frametime
-                        but will increase input lag""")),
+                Higher values might help stabilize frametime
+                but will increase input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
                         .setTooltip(Component.nullToEmpty("""
-                        Enable Gui optimizations (Stats bar, Chat, Debug Hud)
-                        Might break mod compatibility
-                        Restart is needed to take effect""")),
+                                Enable Gui optimizations (Stats bar, Chat, Debug Hud)
+                                Might break mod compatibility
+                                Restart is needed to take effect""")),
                 new CyclingOption<>("Advanced Chunk Culling",
                         new Integer[]{1, 2, 3, 10},
                         value -> {
@@ -228,22 +229,22 @@ public class Options {
                         value -> config.advCulling = value,
                         () -> config.advCulling)
                         .setTooltip(Component.nullToEmpty("""
-                        Use a culling algorithm that might improve performance by
-                        reducing the number of non visible chunk sections rendered.
-                        """)),
+                                Use a culling algorithm that might improve performance by
+                                reducing the number of non visible chunk sections rendered.
+                                """)),
                 new SwitchOption("Entity Culling",
                         value -> config.entityCulling = value,
                         () -> config.entityCulling)
                         .setTooltip(Component.nullToEmpty("""
-                        Enables culling for entities on not visible sections.""")),
+                                Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
                         value -> config.indirectDraw = drawIndirectSupported ? value : false,
                         () -> drawIndirectSupported && config.indirectDraw)
                         .setTooltip(Component.nullToEmpty(
-                        "Supported by GPU?: "+drawIndirectSupported+"\n"+
-                        "\n"+
-                        "Reduces CPU overhead but increases GPU overhead.\n"+
-                        "Enabling it might help in CPU limited systems.\n")),
+                                "Supported by GPU?: " + drawIndirectSupported + "\n" +
+                                        "\n" +
+                                        "Reduces CPU overhead but increases GPU overhead.\n" +
+                                        "Enabling it might help in CPU limited systems.\n")),
                 new SwitchOption("Per RenderType AreaBuffers",
                         value -> {
                             //fre before updating the Config Value
@@ -271,22 +272,59 @@ public class Options {
                         },
                         () -> config.chunkLoadFactor)
                         .setTooltip(Component.nullToEmpty(
-                        "The number of Threads utilized for uploading chunks \n" +
-                        "More threads will greatly improve Chunk load speed" +
-                        "But may cause stuttering if set to high\n" +
-                        "Max Recommended value is "+max/2+" threads on This CPU")),
+                                "The number of Threads utilized for uploading chunks \n" +
+                                        "More threads will greatly improve Chunk load speed" +
+                                        "But may cause stuttering if set to high\n" +
+                                        "Max Recommended value is " + max / 2 + " threads on This CPU")),
                 new RangeOption("buildLimit", 8, 512, 8,
                         value -> {
                             config.buildLimit = value;
                         },
                         () -> config.buildLimit).setTooltip(Component.nullToEmpty("""
-                                Max ChunkTask Limit per frame
-                                Throttles Chunk Load speed if reduced
-                                Multiplied by Active Chunk load Threads to reduce throttling
-                                Originally wasn't intended to handle MultiThreaded Workloads
-                                VERY BUGGED ATM"""))
+                        Max ChunkTask Limit per frame
+                        Throttles Chunk Load speed if reduced
+                        Multiplied by Active Chunk load Threads to reduce throttling
+                        Originally wasn't intended to handle MultiThreaded Workloads
+                        VERY BUGGED ATM""")),
+                new RangeOption("SSAA", 0, 3, 1,
+                        value -> switch (value) {
+                            case 1 -> "2x SSAA";
+                            case 2 -> "4x SSAA";
+                            case 3 -> "8x SSAA";
+                            default -> "Off";
+                        },
 
-        };
+                        value -> {
+
+                            config.ssaaPreset = value;
+
+//                            VRenderSystem.setMultiSampleState(value);
+                            VRenderSystem.setSampleState(config.ssaaPreset);
+                        },
+                        () -> config.ssaaPreset)
+                        .setTooltip(Component.nullToEmpty("""
+                                SuperSampling Anti-Aliasing""")),
+                new SwitchOption("MaximiseSSAAQuality",
+                        value -> {
+                            config.ssaaQuality = value;
+                            final int i = switch (config.ssaaPreset) {
+                                case 3 -> 0x3e000001;
+                                case 2 -> 0x3e800001;
+                                case 1 -> 0x3f000001;
+                                case 0 -> 0;
+                                default -> throw new IllegalStateException("Unexpected value: " + config.ssaaPreset);
+                            };
+
+                            VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
+                        },
+                        () -> config.ssaaQuality)
+                        .setTooltip(Component.nullToEmpty("""
+                                SSAA Specific Option:
+                                Further Improves SSAA Quality when enabled
+                                But also increases GPU utilisation"""))
+
+                };
+
 
     }
 

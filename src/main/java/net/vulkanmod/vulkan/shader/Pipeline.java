@@ -6,7 +6,9 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.memory.MemoryManager;
@@ -467,7 +469,7 @@ public abstract class Pipeline {
         SPIRV vertShaderSPIRV;
         SPIRV fragShaderSPIRV;
 
-        RenderPass renderPass;
+        RenderPass2 renderPass;
 
         public Builder(VertexFormat vertexFormat, String path) {
             this.vertexFormat = vertexFormat;

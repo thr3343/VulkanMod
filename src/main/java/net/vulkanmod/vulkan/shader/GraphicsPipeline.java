@@ -3,10 +3,12 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.framebuffer.AttachmentTypes;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -43,7 +45,7 @@ public class GraphicsPipeline extends Pipeline {
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
+            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_MULTI_SAMPLE_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
                     this::createGraphicsPipeline);
 
         createDescriptorSets(Renderer.getFramesNum());
@@ -120,8 +122,19 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(false);
-            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
+
+            multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
+            multisampling.rasterizationSamples(state.multiSampleState.sampleCount());
+            multisampling.minSampleShading(state.multiSampleState.minSampleShading());
+
+//            final int i = switch (Drawer.tstFrameBuffer2.samples) {
+//                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
+//                case VK_SAMPLE_COUNT_4_BIT -> 0x800000*Integer.numberOfTrailingZeros(4);
+//                case VK_SAMPLE_COUNT_2_BIT -> 0x800000;
+//                case VK_SAMPLE_COUNT_1_BIT -> 0;
+//                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
+//            };
+//            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
 
             // ===> DEPTH TEST <===
 
@@ -182,15 +195,15 @@ public class GraphicsPipeline extends Pipeline {
             pipelineInfo.basePipelineIndex(-1);
 
             if(!Vulkan.DYNAMIC_RENDERING) {
-                pipelineInfo.renderPass(state.renderPass.getId());
+                pipelineInfo.renderPass(state.renderPass2.renderPass);
                 pipelineInfo.subpass(0);
             }
             else {
                 //dyn-rendering
                 VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
                 renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass.getFramebuffer().getFormat()));
-                renderingInfo.depthAttachmentFormat(state.renderPass.getFramebuffer().getDepthFormat());
+                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass2.getFormat(AttachmentTypes.COLOR)));
+                renderingInfo.depthAttachmentFormat(state.renderPass2.getFormat(AttachmentTypes.DEPTH));
                 pipelineInfo.pNext(renderingInfo);
             }
 

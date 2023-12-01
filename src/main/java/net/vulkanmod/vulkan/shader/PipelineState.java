@@ -1,8 +1,9 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 
 import java.util.Objects;
 
@@ -14,34 +15,40 @@ public class PipelineState {
     public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
     public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
+    public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampleState(false, 1, 0);
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;
+    public static PipelineState.MultiSampleState currentMultiSampleState = PipelineState.DEFAULT_MULTI_SAMPLE_STATE;
     public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
     public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
     public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
 
-    public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
+
+    public static PipelineState getCurrentPipelineState(RenderPass2 renderPass) {
         currentBlendState = blendInfo.createBlendState();
+        currentMultiSampleState = VRenderSystem.getMultiSampleState();
         currentDepthState = VRenderSystem.getDepthState();
         currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
 
-        return new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask, renderPass);
+        return new PipelineState(currentBlendState, currentMultiSampleState, currentDepthState, currentLogicOpState, currentColorMask, renderPass);
     }
 
     final BlendState blendState;
+    final MultiSampleState multiSampleState;
     final DepthState depthState;
     final ColorMask colorMask;
     final LogicOpState logicOpState;
     final boolean cullState;
-    final RenderPass renderPass;
+    final RenderPass2 renderPass2;
 
-    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass renderPass) {
+    public PipelineState(BlendState blendState, MultiSampleState multiSampleState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass2 renderPass2) {
         this.blendState = blendState;
+        this.multiSampleState = multiSampleState;
         this.depthState = depthState;
         this.logicOpState = logicOpState;
         this.colorMask = colorMask;
-        this.renderPass = renderPass;
+        this.renderPass2 = renderPass2;
         this.cullState = VRenderSystem.cull;
     }
 
@@ -50,14 +57,14 @@ public class PipelineState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PipelineState that = (PipelineState) o;
-        return blendState.equals(that.blendState) && depthState.equals(that.depthState)
-                && this.renderPass == that.renderPass
+        return blendState.equals(that.blendState) && multiSampleState.equals(that.multiSampleState) && depthState.equals(that.depthState)
+                && this.renderPass2 == that.renderPass2
                 && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState, depthState, logicOpState, cullState, renderPass);
+        return Objects.hash(blendState, multiSampleState, depthState, logicOpState, cullState, renderPass2);
     }
 
     public static BlendInfo defaultBlendInfo() {
@@ -273,7 +280,8 @@ public class PipelineState {
             return this.colorMask == colorMask.colorMask;
         }
     }
-
+    public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
+    }
     public static class DepthState {
         public final boolean depthTest;
         public final boolean depthMask;

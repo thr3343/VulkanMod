@@ -114,7 +114,7 @@ public class GlFramebuffer {
     }
 
     void beginRendering() {
-        Renderer.getInstance().beginRendering(this.framebuffer);
+        Renderer.getInstance().beginRendering();
     }
 
     void setAttachmentTexture(int attachment, int texture) {

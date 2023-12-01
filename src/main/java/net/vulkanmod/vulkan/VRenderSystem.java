@@ -9,6 +9,8 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -18,6 +20,8 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 
 public class VRenderSystem {
     private static long window;
@@ -50,6 +54,21 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
+    private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
+    private static int sampleCount= getS(Initializer.CONFIG.ssaaPreset);
+    private static float minSampleShading;
+    static boolean reInit=false;
+
+    static {
+        final int i = switch (Initializer.CONFIG.ssaaPreset) {
+            case 3 -> 0x3e000001;
+            case 2 -> 0x3e800001;
+            case 1 -> 0x3f000001;
+            case 0 -> 0;
+            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.ssaaPreset);
+        };
+        minSampleShading = Initializer.CONFIG.ssaaQuality ? 1 : Float.intBitsToFloat(i);
+    }
 
     public static void initRenderer()
     {
@@ -164,6 +183,18 @@ public class VRenderSystem {
 
     public static MappedBuffer getMVP() {
         return MVP;
+    }
+
+    public static boolean isSampleShadingEnable() {
+        return sampleShadingEnable;
+    }
+
+    public static float getMinSampleShading() {
+        return minSampleShading;
+    }
+
+    public static int getSampleCount() {
+        return sampleCount;
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
@@ -296,5 +327,45 @@ public class VRenderSystem {
 
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
         PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+    }
+    public static PipelineState.MultiSampleState getMultiSampleState() {
+        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
+    }
+
+    public static void setMultiSampleState() {
+        sampleShadingEnable=sampleCount>1;
+//        sampleCount=sampleCnt;
+        System.out.println("RESAMPLE! -> "+sampleCount);
+    }
+
+    public static void setSampleState(int s) {
+        sampleCount= getS(s);
+        reInit=true;
+    }
+
+    private static int getS(int s) {
+        return switch (s) {
+            case 1 -> 2;
+            case 2 -> 4;
+            case 3 -> 8;
+            default -> 1;
+        };
+    }
+
+    public static void setMinSampleShading(float value) {
+        minSampleShading=value;
+        reInit=true;
+        /*switch (value)
+        {
+            case 0 -> Float.intBitsToFloat((0x3e000001));
+            default -> Float.intBitsToFloat((0x3e000001)) + (0.0875f*value);
+        };*/
+    }
+
+    static RenderPass2 getDefaultRenderPassState() {
+        return isSampleShadingEnable() ? new RenderPass2(
+                PRESENT_RESOLVE,
+                COLOR,
+                DEPTH) : new RenderPass2(PRESENT, DEPTH);
     }
 }

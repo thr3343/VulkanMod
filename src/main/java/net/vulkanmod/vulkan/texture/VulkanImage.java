@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import it.unimi.dsi.fastutil.bytes.Byte2LongArrayMap;
 import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
 import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.framebuffer.Attachment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -71,9 +72,21 @@ public class VulkanImage {
     public static VulkanImage createTextureImage(int format, int mipLevels, int width, int height, int usage, int formatSize, boolean blur, boolean clamp) {
         VulkanImage image = new VulkanImage(format, mipLevels, width, height, usage, formatSize);
 
-        image.createImage(mipLevels, width, height, format, usage);
+        image.createImage(mipLevels, width, height, format, usage, VK_SAMPLE_COUNT_1_BIT);
         image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
         image.createTextureSampler(blur, clamp, mipLevels > 1);
+
+        return image;
+    }
+    public static VulkanImage createTextureImage(Attachment attachment, int width1, int height1) {
+
+        int format = attachment.type.format;
+        int usage = attachment.type.usage;
+        VulkanImage image = new VulkanImage(format, 1, width1, height1, usage, 0);
+
+        image.createImage(1, width1, height1, format, usage, attachment.samples);
+        image.imageView = createImageView(image.id, format, attachment.type.aspect, 1);
+        image.createTextureSampler(false, true, false);
 
         return image;
     }
@@ -81,7 +94,7 @@ public class VulkanImage {
     public static VulkanImage createDepthImage(int format, int width, int height, int usage, boolean blur, boolean clamp) {
         VulkanImage image = new VulkanImage(format, 1, width, height, usage, 0);
 
-        image.createImage(1, width, height, format, usage);
+        image.createImage(1, width, height, format, usage, VK_SAMPLE_COUNT_1_BIT);
         image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
         image.createTextureSampler(blur, clamp, false);
 
@@ -101,7 +114,7 @@ public class VulkanImage {
         }
     }
 
-    private void createImage(int mipLevels, int width, int height, int format, int usage) {
+    private void createImage(int mipLevels, int width, int height, int format, int usage, int samples) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -113,7 +126,7 @@ public class VulkanImage {
                     usage,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation);
+                    pAllocation, samples);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);

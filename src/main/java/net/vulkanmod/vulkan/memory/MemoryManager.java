@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import jdk.jfr.StackTrace;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
@@ -142,7 +141,7 @@ public class MemoryManager {
     }
 
     public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                                                LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int samples) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -158,7 +157,7 @@ public class MemoryManager {
             imageInfo.tiling(tiling);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
-            imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+            imageInfo.samples(samples);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
             //TODO
             imageInfo.pQueueFamilyIndices(stack.ints(0,1));
