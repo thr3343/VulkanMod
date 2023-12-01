@@ -71,7 +71,7 @@ public class Renderer {
     private ArrayList<Long> renderFinishedSemaphores;
     private ArrayList<Long> inFlightFences;
 
-    private Framebuffer boundFramebuffer;
+//    private Framebuffer boundFramebuffer;
 //    private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
@@ -288,33 +288,8 @@ public class Renderer {
     }
 
     //TODO
-    public void beginRendering(Framebuffer framebuffer) {
-        if(skipRendering) 
-            return;
+    public void beginRendering() {
 
-        if(this.boundFramebuffer != framebuffer) {
-            this.endRendering();
-
-            try (MemoryStack stack = stackPush()) {
-//                framebuffer.beginRenderPass(currentCmdBuffer, stack);
-            }
-
-            this.boundFramebuffer = framebuffer;
-        }
-    }
-
-    public void endRendering() {
-        if(skipRendering) 
-            return;
-        
-//        this.boundRenderPass.endRenderPass(currentCmdBuffer);
-
-        this.boundFramebuffer = null;
-//        this.boundRenderPass = null;
-    }
-
-    public void setBoundFramebuffer(Framebuffer framebuffer) {
-        this.boundFramebuffer = framebuffer;
     }
 
     public void resetBuffers() {
@@ -459,10 +434,6 @@ public class Renderer {
         }
     }
 
-    public void setBoundRenderPass(RenderPass boundRenderPass) {
-//        this.boundRenderPass = boundRenderPass;
-    }
-
     public void setMainPass(MainPass mainPass) { this.mainPass = mainPass; }
 
     public void addOnResizeCallback(Runnable runnable) {
@@ -596,11 +567,9 @@ public class Renderer {
     }
 
     public static void resetScissor() {
-        if(Renderer.getInstance().boundFramebuffer == null)
-            return;
 
         try(MemoryStack stack = stackPush()) {
-            VkRect2D.Buffer scissor = INSTANCE.boundFramebuffer.scissor(stack);
+            VkRect2D.Buffer scissor = INSTANCE.tstFRAMEBUFFER_2.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
     }

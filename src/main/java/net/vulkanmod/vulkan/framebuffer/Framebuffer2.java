@@ -196,5 +196,14 @@ public class Framebuffer2 {
         }
         return createFramebuffers(this.renderPass2.attachmentTypes); //Not sure best way to handle this rn...
     }
+
+    //From FrameBuffer.class
+    public VkRect2D.Buffer scissor(MemoryStack stack) {
+        VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
+        scissor.offset().set(0, 0);
+        scissor.extent().set(this.width, this.height);
+
+        return scissor;
+    }
 }
 

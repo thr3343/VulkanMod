@@ -48,7 +48,7 @@ public class RenderTargetMixin {
      */
     @Overwrite
     public void bindWrite(boolean updateViewport) {
-        Renderer.getInstance().beginRendering(framebuffer);
+        Renderer.getInstance().beginRendering();
     }
 
     /**
