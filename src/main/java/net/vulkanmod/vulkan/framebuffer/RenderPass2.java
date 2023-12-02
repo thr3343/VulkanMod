@@ -53,7 +53,9 @@ public class RenderPass2 {
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1);
 
-
+            final boolean hasResolve = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.resolve);
+            final boolean hasDepth = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.depth);
+            final boolean hasColor = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.color);
             for(var attach : this.attachment.values())
             {
                 attachments.get(attach.BindingID)
@@ -73,18 +75,33 @@ public class RenderPass2 {
                 }
 
             }
-            boolean hasPresent = this.attachment.containsKey(presentKey);
-            final VkSubpassDependency.Buffer subpassDependencies = hasPresent ? VkSubpassDependency.calloc(1, stack)
-                    .srcSubpass(VK_SUBPASS_EXTERNAL)
-                    .dstSubpass(0)
-                    .srcStageMask(attachment.get(presentKey).getStage())
-                    .dstStageMask(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT)
-                    .srcAccessMask(0)
-                    .dstAccessMask(0)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT): null;
+            final VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(2, stack);
+
+            if(hasColor) {
+                subpassDependencies.get(0)
+                        .srcSubpass(VK_SUBPASS_EXTERNAL)
+                        .dstSubpass(0)
+                        .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                        .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                        .srcAccessMask(hasResolve ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0)
+                        .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                        .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+            }
+
+           if(hasDepth) {
+               subpassDependencies.get(1)
+                       .srcSubpass(VK_SUBPASS_EXTERNAL)
+                       .dstSubpass(0)
+                       .srcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+                       .dstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
+                       .srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                       .dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                       .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+           }
 
 
-            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack).sType$Default()
+            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack)
+                    .sType$Default()
                     .pAttachments(attachments)
                     .pSubpasses(subpass)
                     .pDependencies(subpassDependencies);
