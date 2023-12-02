@@ -122,19 +122,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-
             multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
             multisampling.rasterizationSamples(state.multiSampleState.sampleCount());
             multisampling.minSampleShading(state.multiSampleState.minSampleShading());
-
-//            final int i = switch (Drawer.tstFrameBuffer2.samples) {
-//                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
-//                case VK_SAMPLE_COUNT_4_BIT -> 0x800000*Integer.numberOfTrailingZeros(4);
-//                case VK_SAMPLE_COUNT_2_BIT -> 0x800000;
-//                case VK_SAMPLE_COUNT_1_BIT -> 0;
-//                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
-//            };
-//            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
 
             // ===> DEPTH TEST <===
 

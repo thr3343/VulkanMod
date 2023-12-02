@@ -303,27 +303,8 @@ public class Options {
                         },
                         () -> config.ssaaPreset)
                         .setTooltip(Component.nullToEmpty("""
-                                SuperSampling Anti-Aliasing""")),
-                new SwitchOption("MaximiseSSAAQuality",
-                        value -> {
-                            config.ssaaQuality = value;
-                            final int i = switch (config.ssaaPreset) {
-                                case 3 -> 0x3e000001;
-                                case 2 -> 0x3e800001;
-                                case 1 -> 0x3f000001;
-                                case 0 -> 0;
-                                default -> throw new IllegalStateException("Unexpected value: " + config.ssaaPreset);
-                            };
-
-                            VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
-                        },
-                        () -> config.ssaaQuality)
-                        .setTooltip(Component.nullToEmpty("""
-                                SSAA Specific Option:
-                                Further Improves SSAA Quality when enabled
-                                But also increases GPU utilisation"""))
-
-                };
+                        SuperSampling Anti-Aliasing"""))
+        };
 
 
     }

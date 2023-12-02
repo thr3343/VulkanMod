@@ -280,6 +280,8 @@ public class PipelineState {
             return this.colorMask == colorMask.colorMask;
         }
     }
+
+    //minSampleShading (i.e. SSAA Quality disabled (it's very difficult to set an Integer Quality with a float TBH))
     public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
     }
     public static class DepthState {

@@ -56,19 +56,7 @@ public class VRenderSystem {
     private static final float[] depthBias = new float[2];
     private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
     private static int sampleCount= getS(Initializer.CONFIG.ssaaPreset);
-    private static float minSampleShading;
     static boolean reInit=false;
-
-    static {
-        final int i = switch (Initializer.CONFIG.ssaaPreset) {
-            case 3 -> 0x3e000001;
-            case 2 -> 0x3e800001;
-            case 1 -> 0x3f000001;
-            case 0 -> 0;
-            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.ssaaPreset);
-        };
-        minSampleShading = Initializer.CONFIG.ssaaQuality ? 1 : Float.intBitsToFloat(i);
-    }
 
     public static void initRenderer()
     {
@@ -187,10 +175,6 @@ public class VRenderSystem {
 
     public static boolean isSampleShadingEnable() {
         return sampleShadingEnable;
-    }
-
-    public static float getMinSampleShading() {
-        return minSampleShading;
     }
 
     public static int getSampleCount() {
@@ -329,7 +313,7 @@ public class VRenderSystem {
         PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
     public static PipelineState.MultiSampleState getMultiSampleState() {
-        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
+        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, 1.0f);
     }
 
     public static void setMultiSampleState() {
@@ -350,16 +334,6 @@ public class VRenderSystem {
             case 3 -> 8;
             default -> 1;
         };
-    }
-
-    public static void setMinSampleShading(float value) {
-        minSampleShading=value;
-        reInit=true;
-        /*switch (value)
-        {
-            case 0 -> Float.intBitsToFloat((0x3e000001));
-            default -> Float.intBitsToFloat((0x3e000001)) + (0.0875f*value);
-        };*/
     }
 
     static RenderPass2 getDefaultRenderPassState() {

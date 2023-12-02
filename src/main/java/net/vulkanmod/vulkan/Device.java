@@ -146,7 +146,6 @@ public class Device {
             deviceFeatures.features()
                     .samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy())
                     .logicOp(deviceInfo.availableFeatures.features().logicOp())
-                    .sampleRateShading(deviceInfo.availableFeatures.features().sampleRateShading())
                     .multiDrawIndirect(deviceInfo.availableFeatures.features().multiDrawIndirect());
 
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack)
