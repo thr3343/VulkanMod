@@ -20,7 +20,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Device {
 
@@ -146,39 +146,20 @@ public class Device {
             deviceFeatures.features()
                     .samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy())
                     .logicOp(deviceInfo.availableFeatures.features().logicOp())
-                    .sampleRateShading(deviceInfo.availableFeatures.features().sampleRateShading());
+                    .sampleRateShading(deviceInfo.availableFeatures.features().sampleRateShading())
+                    .multiDrawIndirect(deviceInfo.availableFeatures.features().multiDrawIndirect());
 
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
-            deviceVulkan11Features.sType$Default();
-
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
-            deviceVulkan12Features.sType$Default()
+            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack)
+                    .sType$Default()
+                    .shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack)
+                    .sType$Default()
                     .imagelessFramebuffer(true);
-
-            if(deviceInfo.isDrawIndirectSupported()) {
-                deviceFeatures.features().multiDrawIndirect(true);
-                deviceVulkan11Features.shaderDrawParameters(true);
-            }
-
-            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-            createInfo.pQueueCreateInfos(queueCreateInfos);
-            // queueCreateInfoCount is automatically set
-
-            createInfo.pNext(deviceFeatures.pNext(deviceVulkan11Features));
-
-            //Vulkan 1.3 dynamic rendering
-//            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-//            deviceVulkan13Features.sType$Default();
-//            if(!deviceInfo.availableFeatures13.dynamicRendering())
-//                throw new RuntimeException("Device does not support dynamic rendering feature.");
-//
-//            deviceVulkan13Features.dynamicRendering(true);
-//            createInfo.pNext(deviceVulkan13Features);
-//            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
-
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
+            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
+                    .pNext(deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features))
+                    .pQueueCreateInfos(queueCreateInfos)
+                    .ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
@@ -192,23 +173,9 @@ public class Device {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_1);
-
-//            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
-//
-//            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
-//            graphicsQueue = new VkQueue(pQueue.get(0), device);
-//
-//            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-//            presentQueue = new VkQueue(pQueue.get(0), device);
-//
-//            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
-//            transferQueue = new VkQueue(pQueue.get(0), device);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
 
 
-//            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
-//            TransferQueue.createInstance(stack, indices.transferFamily);
-//            PresentQueue.createInstance(stack, indices.presentFamily);
 
         }
     }
