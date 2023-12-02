@@ -12,6 +12,7 @@ import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -20,6 +21,8 @@ import java.util.Objects;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.util.vma.Vma.VMA_MEMORY_USAGE_GPU_ONLY;
+import static org.lwjgl.util.vma.Vma.vmaCreateImage;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
@@ -46,7 +49,7 @@ public class VulkanImage {
 
     private int usage;
 
-    private int currentLayout;
+    private int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
         this.id = id;
@@ -78,13 +81,13 @@ public class VulkanImage {
 
         return image;
     }
-    public static VulkanImage createTextureImage(Attachment attachment, int width1, int height1) {
+    public static VulkanImage createAttachmentImage(Attachment attachment, int width1, int height1) {
 
         int format = attachment.type.format;
         int usage = attachment.type.usage;
         VulkanImage image = new VulkanImage(format, 1, width1, height1, usage, 0);
 
-        image.createImage(1, width1, height1, format, usage, attachment.samples);
+        image.createAttachmentImage(width1, height1, attachment);
         image.imageView = createImageView(image.id, format, attachment.type.aspect, 1);
         image.createTextureSampler(false, true, false);
 
@@ -114,6 +117,28 @@ public class VulkanImage {
         }
     }
 
+    private void createAttachmentImage(int width, int height, Attachment attachment) {
+
+        try(MemoryStack stack = stackPush()) {
+
+            LongBuffer pTextureImage = stack.mallocLong(1);
+            PointerBuffer pAllocation = stack.mallocPointer(1);
+
+            MemoryManager.createImage(width, height, 1,
+                    attachment.type.format, VK_IMAGE_TILING_OPTIMAL,
+                    attachment.type.usage,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    pTextureImage,
+                    pAllocation, attachment.samples);
+
+
+            id = pTextureImage.get(0);
+            allocation = pAllocation.get(0);
+
+            MemoryManager.addImage(this);
+
+        }
+    }
     private void createImage(int mipLevels, int width, int height, int format, int usage, int samples) {
 
         try(MemoryStack stack = stackPush()) {

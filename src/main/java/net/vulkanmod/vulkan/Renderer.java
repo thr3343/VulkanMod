@@ -174,6 +174,7 @@ public class Renderer {
 
     public void beginFrame() {
 
+        if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
 
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
@@ -247,8 +248,6 @@ public class Renderer {
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
-
-            if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
 
             mainPass.begin(commandBuffer, stack);
 
@@ -680,7 +679,7 @@ public class Renderer {
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
 
     public void updateFrameBuffer() {
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
         tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
         tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
         primeRPUpdate=false;

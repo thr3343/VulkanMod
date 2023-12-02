@@ -5,11 +5,15 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 import static net.vulkanmod.vulkan.Device.deviceInfo;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
+
+import java.util.stream.IntStream;
 
 public class Options {
     private static final int max = Runtime.getRuntime().availableProcessors();
@@ -19,6 +23,9 @@ public class Options {
     public static boolean fullscreenDirty = false;
     private static int priorFrameQueue;
     public static final boolean drawIndirectSupported = deviceInfo.isDrawIndirectSupported();
+
+
+    private static final String[] GPUNames = Vulkan.getAvailableGPUs();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -302,7 +309,15 @@ public class Options {
                         },
                         () -> config.ssaaPreset)
                         .setTooltip(Component.nullToEmpty("""
-                        SuperSampling Anti-Aliasing"""))
+                        SuperSampling Anti-Aliasing""")),
+                new RangeOption("GPU SELECTOR", 0, GPUNames.length-1, 1,
+
+                        value -> GPUNames[value],
+
+                        value -> config.selectedGPU = value,
+                        () -> config.selectedGPU)
+                        .setTooltip(Component.nullToEmpty("""
+                        SuperSampling Anti-Aliasing""")),
         };
 
 

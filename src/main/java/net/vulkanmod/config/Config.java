@@ -30,6 +30,7 @@ public class Config {
     public int chunkLoadFactor = max /2;
     public int buildLimit = 512;
     public int ssaaPreset = 0;
+    public int selectedGPU=-1;
 
     private static Path path;
 

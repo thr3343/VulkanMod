@@ -6,10 +6,8 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
@@ -44,8 +42,8 @@ import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
 //    public static final boolean DYNAMIC_RENDERING = true;
     public static final boolean DYNAMIC_RENDERING = false;
@@ -466,5 +464,11 @@ public class Vulkan {
     public static StagingBuffer getStagingBuffer() { return stagingBuffers[Renderer.getCurrentFrame()]; }
 
     public static DeviceInfo getDeviceInfo() { return Device.deviceInfo; }
+
+    public static String[] getAvailableGPUs() {
+        try(MemoryStack stack = stackPush()) {
+            return Device.getAvailableGPUNames(instance, stack);
+        }
+    }
 }
 
