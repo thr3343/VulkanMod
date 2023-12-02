@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.framebuffer;
 
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -23,7 +24,6 @@ public class Framebuffer2 {
 
     public int width, height;
     public RenderPass2 renderPass2;
-    private int boundImages = 0;
     private boolean swapChainMode;
     private AttachmentTypes presentState=null;
 
@@ -46,7 +46,6 @@ public class Framebuffer2 {
 
         this.renderPass2=renderPass2;
         this.frameBuffer = createFramebuffers(renderPass2.attachmentTypes);
-        this.boundImages=renderPass2.attachmentTypes.length;
 
         presentState = renderPass2.presentKey;
 
@@ -57,12 +56,14 @@ public class Framebuffer2 {
     }
 
     private void initImages(RenderPass2 renderPass2) {
-        for(var a : renderPass2.attachment.values())
-        {
-            if(/*this.swapChainMode && */a.type.present/* ==presentState*/) continue;
-            VulkanImage textureImage = VulkanImage.createTextureImage(a, width, height);
-            this.images.put(a.type, textureImage);
-            renderPass2.bindImageReference(a.type, textureImage);
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            for (var a : renderPass2.attachment.values()) {
+                if (/*this.swapChainMode && */a.type.present/* ==presentState*/) continue;
+                VulkanImage textureImage = VulkanImage.createTextureImage(a, width, height);
+                textureImage.transitionImageLayout(stack, Renderer.getCommandBuffer(), a.type.initialLayout);
+                this.images.put(a.type, textureImage);
+                renderPass2.bindImageReference(a.type, textureImage);
+            }
         }
     }
 
@@ -119,8 +120,10 @@ public class Framebuffer2 {
         renderArea.offset().set(0, 0);
         renderArea.extent().set(this.width, this.height);
 
-        var clearValues = VkClearValue.malloc(this.boundImages, stack);
-        final LongBuffer longs = stack.mallocLong(this.boundImages);
+        final int length = renderPass2.attachmentTypes.length;
+
+        var clearValues = VkClearValue.malloc(length, stack);
+        final LongBuffer longs = stack.mallocLong(length);
 
         if(this.swapChainMode) this.renderPass2.bindImageReference(presentState,  getSwapChain().getColorAttachment());
 //Clear Color value is ignored if Load Op is Not set to Clear
@@ -143,7 +146,7 @@ public class Framebuffer2 {
                 .renderPass(this.renderPass2.renderPass)
                 .renderArea(renderArea)
                 .framebuffer(this.frameBuffer)
-                .pClearValues(clearValues).clearValueCount(this.boundImages);
+                .pClearValues(clearValues).clearValueCount(length);
 
         vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }

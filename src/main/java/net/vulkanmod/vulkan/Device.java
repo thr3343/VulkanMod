@@ -142,23 +142,47 @@ public class Device {
             deviceFeatures.sType$Default();
 
             //TODO indirect draw option disabled in case it is not supported
+            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
+                deviceFeatures.features().samplerAnisotropy(true);
+            if(deviceInfo.availableFeatures.features().logicOp())
+                deviceFeatures.features().logicOp(true);
+            if(deviceInfo.availableFeatures.features().sampleRateShading())
+                deviceFeatures.features().sampleRateShading(true);
 
-            deviceFeatures.features()
-                    .samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                    .logicOp(deviceInfo.availableFeatures.features().logicOp())
-                    .multiDrawIndirect(deviceInfo.availableFeatures.features().multiDrawIndirect());
+            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
+            deviceVulkan11Features.sType$Default();
 
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack)
-                    .sType$Default()
-                    .shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack)
-                    .sType$Default()
-                    .imagelessFramebuffer(true);
-            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
-                    .pNext(deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features))
-                    .pQueueCreateInfos(queueCreateInfos)
-                    .ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            deviceVulkan12Features.imagelessFramebuffer(true);
+
+            if(deviceInfo.isDrawIndirectSupported()) {
+                deviceFeatures.features().multiDrawIndirect(true);
+                deviceVulkan11Features.shaderDrawParameters(true);
+            }
+
+            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
+
+            createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+            createInfo.pQueueCreateInfos(queueCreateInfos);
+            // queueCreateInfoCount is automatically set
+
+            createInfo.pEnabledFeatures(deviceFeatures.features());
+
+
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
+
+            //Vulkan 1.3 dynamic rendering
+//            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
+//            deviceVulkan13Features.sType$Default();
+//            if(!deviceInfo.availableFeatures13.dynamicRendering())
+//                throw new RuntimeException("Device does not support dynamic rendering feature.");
+//
+//            deviceVulkan13Features.dynamicRendering(true);
+//            createInfo.pNext(deviceVulkan13Features);
+//            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 

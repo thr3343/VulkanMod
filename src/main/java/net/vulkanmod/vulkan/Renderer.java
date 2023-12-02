@@ -83,13 +83,13 @@ public class Renderer {
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
     public RenderPass2 tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
-    public final Framebuffer2 tstFRAMEBUFFER_2;
+    public static final Framebuffer2 tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
-        tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
-        tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
+
+
     }
 
     private void init() {
@@ -174,10 +174,7 @@ public class Renderer {
 
     public void beginFrame() {
 
-        if(VRenderSystem.renderPassUpdate)
-        {
-            this.updateFrameBuffer();
-        }
+
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
@@ -250,6 +247,8 @@ public class Renderer {
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
+
+            if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
 
             mainPass.begin(commandBuffer, stack);
 
@@ -420,7 +419,7 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-        this.tstFRAMEBUFFER_2.cleanUp();
+        tstFRAMEBUFFER_2.cleanUp();
         TerrainShaderManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
     }
@@ -475,7 +474,7 @@ public class Renderer {
     }
 
     public static void clearAttachments(int v) {
-        clearAttachments(v, INSTANCE.tstFRAMEBUFFER_2.width, INSTANCE.tstFRAMEBUFFER_2.height);
+        clearAttachments(v, tstFRAMEBUFFER_2.width, tstFRAMEBUFFER_2.height);
     }
 
     public static void clearAttachments(int v, int width, int height) {
@@ -578,8 +577,8 @@ public class Renderer {
             return offset2D;
         }
 
-        int framebufferWidth = INSTANCE.tstFRAMEBUFFER_2.width;
-        int framebufferHeight = INSTANCE.tstFRAMEBUFFER_2.height;
+        int framebufferWidth = tstFRAMEBUFFER_2.width;
+        int framebufferHeight = tstFRAMEBUFFER_2.height;
         switch (pretransformFlags) {
             case VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR -> {
                 offset2D.x(framebufferWidth - h - y);
@@ -624,7 +623,7 @@ public class Renderer {
         	VkExtent2D extent = VkExtent2D.malloc(stack);
 
             // Since our x and y are still in Minecraft's coordinate space, pre-transform the framebuffer's width and height to get expected results.
-            transformToExtent(extent, INSTANCE.tstFRAMEBUFFER_2.width, INSTANCE.tstFRAMEBUFFER_2.height);
+            transformToExtent(extent, tstFRAMEBUFFER_2.width, tstFRAMEBUFFER_2.height);
             int framebufferHeight = extent.height();
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
@@ -642,7 +641,7 @@ public class Renderer {
     public static void resetScissor() {
 
         try(MemoryStack stack = stackPush()) {
-            VkRect2D.Buffer scissor = INSTANCE.tstFRAMEBUFFER_2.scissor(stack);
+            VkRect2D.Buffer scissor = tstFRAMEBUFFER_2.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
     }
@@ -683,7 +682,7 @@ public class Renderer {
     public void updateFrameBuffer() {
         vkDeviceWaitIdle(device);
         tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
-        this.tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
+        tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
         primeRPUpdate=false;
         VRenderSystem.renderPassUpdate =false;
     }

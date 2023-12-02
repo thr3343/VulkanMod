@@ -183,7 +183,7 @@ public class SwapChain {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-            barrier.oldLayout(this.currentLayout[imageIdx]);
+//            barrier.oldLayout(this.currentLayout[imageIdx]);
             barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             barrier.image(this.swapChainImages.get(imageIdx).getId());

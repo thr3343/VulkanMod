@@ -56,7 +56,7 @@ public class VRenderSystem {
     private static final float[] depthBias = new float[2];
     private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
     private static int sampleCount= 1 << Initializer.CONFIG.ssaaPreset;
-    static boolean renderPassUpdate =false;
+    static boolean renderPassUpdate =true;
 
     public static void initRenderer()
     {

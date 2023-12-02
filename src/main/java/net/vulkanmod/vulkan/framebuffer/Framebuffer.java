@@ -16,7 +16,7 @@ public class Framebuffer {
     protected int depthFormat;
     protected int width, height;
     private VulkanImage colorAttachment;
-    protected VulkanImage depthAttachment;
+    protected final VulkanImage depthAttachment=null;
 
     //GL compatibility
     public Framebuffer(VulkanImage colorAttachment) {
@@ -26,9 +26,7 @@ public class Framebuffer {
         this.colorAttachment = colorAttachment;
 
         this.depthFormat = SwapChain.getDefaultDepthFormat();
-        this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                false, false);
+
     }
 
     public void bindAsTexture(VkCommandBuffer commandBuffer, MemoryStack stack) {

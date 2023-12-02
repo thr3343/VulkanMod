@@ -27,7 +27,7 @@ public class DefaultMainPass implements MainPass {
 
 //        Renderer.getInstance().tstRenderPass2.bindImageReference(PRESENT,  swapChain.getColorAttachment());
 
-        Renderer.getInstance().tstFRAMEBUFFER_2.beginRendering(commandBuffer, stack);
+        Renderer.tstFRAMEBUFFER_2.beginRendering(commandBuffer, stack);
 //        Renderer.getInstance().setBoundFramebuffer(swapChain);
 
 //        VkViewport.Buffer pViewport = swapChain.viewport(stack);

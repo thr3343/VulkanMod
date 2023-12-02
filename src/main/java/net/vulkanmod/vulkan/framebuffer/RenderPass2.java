@@ -75,29 +75,16 @@ public class RenderPass2 {
                 }
 
             }
-            final VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(2, stack);
+            final VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(1, stack);
 
-            if(hasColor) {
-                subpassDependencies.get(0)
-                        .srcSubpass(VK_SUBPASS_EXTERNAL)
-                        .dstSubpass(0)
-                        .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                        .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                        .srcAccessMask(hasResolve ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0)
-                        .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                        .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-            }
-
-           if(hasDepth) {
-               subpassDependencies.get(1)
-                       .srcSubpass(VK_SUBPASS_EXTERNAL)
-                       .dstSubpass(0)
-                       .srcStageMask(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
-                       .dstStageMask(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
-                       .srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                       .dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                       .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-           }
+            subpassDependencies.get(0)
+                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+                    .dstSubpass(0)
+                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .dstStageMask(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT)
+                    .srcAccessMask(0)
+                    .dstAccessMask(0)
+                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack)

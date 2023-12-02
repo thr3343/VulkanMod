@@ -27,7 +27,7 @@ public enum AttachmentTypes {
             this.depth = this.aspect==2;
             this.present = this.name().contains("PRESENT");
             this.resolve = this.name().contains("RESOLVE");
-            this.initialLayout = this.present ? Constants.COLOR_LAYOUT : VK_IMAGE_LAYOUT_UNDEFINED;
+            this.initialLayout = this.layout;
             this.finalLayout = this.present ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : this.layout;
         }
 
