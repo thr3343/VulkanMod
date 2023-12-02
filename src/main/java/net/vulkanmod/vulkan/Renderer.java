@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -175,10 +174,8 @@ public class Renderer {
 
     public void beginFrame() {
 
-        if(VRenderSystem.reInit)
+        if(VRenderSystem.renderPassUpdate)
         {
-            VRenderSystem.reInit=false;
-            VRenderSystem.setMultiSampleState();
             this.updateFrameBuffer();
         }
         Profiler2 p = Profiler2.getMainProfiler();
@@ -688,6 +685,7 @@ public class Renderer {
         tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
         this.tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
         primeRPUpdate=false;
+        VRenderSystem.renderPassUpdate =false;
     }
 
 }

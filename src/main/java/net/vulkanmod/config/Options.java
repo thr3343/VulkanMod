@@ -5,12 +5,9 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
-import org.lwjgl.system.MemoryStack;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
-import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Device.deviceInfo;
 import net.vulkanmod.vulkan.VRenderSystem;
 
@@ -299,7 +296,9 @@ public class Options {
                             config.ssaaPreset = value;
 
 //                            VRenderSystem.setMultiSampleState(value);
-                            VRenderSystem.setSampleState(config.ssaaPreset);
+                            VRenderSystem.setSampleShadingEnable(value>0);
+                            VRenderSystem.setSampleCountFromPreset(config.ssaaPreset);
+                            VRenderSystem.reInit();
                         },
                         () -> config.ssaaPreset)
                         .setTooltip(Component.nullToEmpty("""

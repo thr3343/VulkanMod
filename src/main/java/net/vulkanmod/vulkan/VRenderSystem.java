@@ -55,8 +55,8 @@ public class VRenderSystem {
 
     private static final float[] depthBias = new float[2];
     private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
-    private static int sampleCount= getS(Initializer.CONFIG.ssaaPreset);
-    static boolean reInit=false;
+    private static int sampleCount= 1 << Initializer.CONFIG.ssaaPreset;
+    static boolean renderPassUpdate =false;
 
     public static void initRenderer()
     {
@@ -316,24 +316,14 @@ public class VRenderSystem {
         return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, 1.0f);
     }
 
-    public static void setMultiSampleState() {
-        sampleShadingEnable=sampleCount>1;
+    public static void setSampleShadingEnable(boolean sampleShadingEnable1) {
+        sampleShadingEnable= sampleShadingEnable1;
 //        sampleCount=sampleCnt;
-        System.out.println("RESAMPLE! -> "+sampleCount);
+        Initializer.LOGGER.info("RESAMPLE! -> "+sampleCount);
     }
 
-    public static void setSampleState(int s) {
-        sampleCount= getS(s);
-        reInit=true;
-    }
-
-    private static int getS(int s) {
-        return switch (s) {
-            case 1 -> 2;
-            case 2 -> 4;
-            case 3 -> 8;
-            default -> 1;
-        };
+    public static void setSampleCountFromPreset(int s) {
+        sampleCount= 1<<s;
     }
 
     static RenderPass2 getDefaultRenderPassState() {
@@ -341,5 +331,9 @@ public class VRenderSystem {
                 PRESENT_RESOLVE,
                 COLOR,
                 DEPTH) : new RenderPass2(PRESENT, DEPTH);
+    }
+
+    public static void reInit() {
+        renderPassUpdate =true;
     }
 }
