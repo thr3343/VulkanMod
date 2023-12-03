@@ -41,7 +41,6 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
-    public static boolean primeRPUpdate;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -680,7 +679,6 @@ public class Renderer {
     public void updateFrameBuffer() {
         vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
         tstFRAMEBUFFER_2.bindRenderPass(VRenderSystem.getDefaultRenderPassState());
-        primeRPUpdate=false;
         VRenderSystem.renderPassUpdate =false;
     }
 

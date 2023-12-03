@@ -89,7 +89,6 @@ public class VulkanImage {
 
         image.createAttachmentImage(width1, height1, attachment);
         image.imageView = createImageView(image.id, format, attachment.type.aspect, 1);
-        image.createTextureSampler(false, true, false);
 
         return image;
     }

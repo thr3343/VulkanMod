@@ -15,7 +15,7 @@ public class Attachment
     public final int samples;
     final AttachmentTypes dependencies=null;
 
-    public Attachment(int format, int bindingID, AttachmentTypes type, int defSampleCnt) {
+    public Attachment(int format, int bindingID, AttachmentTypes type, int samples) {
 //        this.width = width;
 //        this.height = height;
 //        this.imageView = imageView;
@@ -23,8 +23,8 @@ public class Attachment
         BindingID = bindingID;
         this.type = type;
         this.loadOp = (!type.resolve) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        this.storeOp = (type.present) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        this.samples = type.resolve ? VK_SAMPLE_COUNT_1_BIT : defSampleCnt;
+        this.storeOp = (samples==1 && type.color) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        this.samples = type.resolve ? VK_SAMPLE_COUNT_1_BIT : samples;
     }
 
     public void bindImageReference(long imageView)
