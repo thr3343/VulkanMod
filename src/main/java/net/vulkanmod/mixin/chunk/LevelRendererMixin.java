@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -54,10 +55,9 @@ public abstract class LevelRendererMixin {
 
     @Shadow public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
 
-    private WorldRenderer worldRenderer;
+    @Unique private WorldRenderer worldRenderer;
 
-    @Unique
-    private Object2ReferenceOpenHashMap<Class<? extends Entity>, ObjectArrayList<Pair<Entity, MultiBufferSource>>> entitiesMap = new Object2ReferenceOpenHashMap<>();
+    @Unique private final Object2ReferenceOpenHashMap<Class<? extends Entity>, ObjectArrayList<Pair<Entity, MultiBufferSource>>> entitiesMap = new Object2ReferenceOpenHashMap<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft minecraft, EntityRenderDispatcher entityRenderDispatcher, BlockEntityRenderDispatcher blockEntityRenderDispatcher, RenderBuffers renderBuffers, CallbackInfo ci) {
@@ -206,9 +206,9 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
         if(!Initializer.CONFIG.entityCulling) {
-            double h = Mth.lerp((double)g, entity.xOld, entity.getX());
-            double i = Mth.lerp((double)g, entity.yOld, entity.getY());
-            double j = Mth.lerp((double)g, entity.zOld, entity.getZ());
+            double h = Mth.lerp(g, entity.xOld, entity.getX());
+            double i = Mth.lerp(g, entity.yOld, entity.getY());
+            double j = Mth.lerp(g, entity.zOld, entity.getZ());
             float k = Mth.lerp(g, entity.yRotO, entity.getYRot());
             this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, g, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, g));
             return;
@@ -248,6 +248,17 @@ public abstract class LevelRendererMixin {
                 this.entityRenderDispatcher.render(entity, h - cameraPos.x, i - cameraPos.y, j - cameraPos.z, k, partialTicks, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, partialTicks));
             }
         }
+    }
+
+    @Inject(method = "renderSky", at=@At(value = "HEAD", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V"))
+    private void preSky(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci)
+    {
+        VRenderSystem.setSampleShadingEnable(false);
+    }
+    @Inject(method = "renderSky", at=@At(value = "RETURN", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V"))
+    private void postSky(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci)
+    {
+        VRenderSystem.setSampleShadingEnable(true);
     }
 
 //    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"))

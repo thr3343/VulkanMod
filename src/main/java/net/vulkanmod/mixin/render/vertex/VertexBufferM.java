@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.VBO;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -59,7 +60,11 @@ public class VertexBufferM {
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
       if(Initializer.CONFIG.renderSky)
+      {
+          VRenderSystem.setSampleShadingEnable(false);
           vbo.drawWithShader(viewMatrix, projectionMatrix, shader);
+          VRenderSystem.setSampleShadingEnable(true);
+      }
     }
 
     /**

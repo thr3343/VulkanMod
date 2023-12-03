@@ -82,7 +82,6 @@ public class Renderer {
     MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
-    public RenderPass2 tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
     public static final Framebuffer2 tstFRAMEBUFFER_2 = new Framebuffer2(getSwapChain().getWidth(), getSwapChain().getHeight());
     public Renderer() {
         device = Vulkan.getDevice();
@@ -440,7 +439,7 @@ public class Renderer {
     public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-        PipelineState currentState = PipelineState.getCurrentPipelineState(this.tstRenderPass2);
+        PipelineState currentState = PipelineState.getCurrentPipelineState(tstFRAMEBUFFER_2.renderPass2);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         addUsedPipeline(pipeline);
@@ -680,8 +679,7 @@ public class Renderer {
 
     public void updateFrameBuffer() {
         vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
-        tstRenderPass2 = VRenderSystem.getDefaultRenderPassState();
-        tstFRAMEBUFFER_2.bindRenderPass(tstRenderPass2);
+        tstFRAMEBUFFER_2.bindRenderPass(VRenderSystem.getDefaultRenderPassState());
         primeRPUpdate=false;
         VRenderSystem.renderPassUpdate =false;
     }

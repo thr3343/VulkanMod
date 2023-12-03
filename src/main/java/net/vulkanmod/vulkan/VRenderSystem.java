@@ -318,8 +318,6 @@ public class VRenderSystem {
 
     public static void setSampleShadingEnable(boolean sampleShadingEnable1) {
         sampleShadingEnable= sampleShadingEnable1;
-//        sampleCount=sampleCnt;
-        Initializer.LOGGER.info("RESAMPLE! -> "+sampleCount);
     }
 
     public static void setSampleCountFromPreset(int s) {
