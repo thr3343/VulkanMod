@@ -1,10 +1,6 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.vulkan.VK10;
-
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public abstract class Buffer {
     protected long id;

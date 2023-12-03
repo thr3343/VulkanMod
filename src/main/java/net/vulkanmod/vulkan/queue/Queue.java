@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.queue;
 
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -14,8 +13,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public enum Queue {
     GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
+    FakeTransferQueue(QueueFamilyIndices.graphicsFamily, true),
     TransferQueue(QueueFamilyIndices.transferFamily, true),
-    ComputeQueue(QueueFamilyIndices.computeFamily, false),
     PresentQueue(QueueFamilyIndices.presentFamily, false);
     private CommandPool.CommandBuffer currentCmdBuffer;
     private final CommandPool commandPool;
@@ -83,7 +82,7 @@ public enum Queue {
         try(MemoryStack stack = stackPush()) {
             CommandPool.CommandBuffer commandBuffer = this.beginCommands();
 
-            if(Initializer.CONFIG.useGigaBarriers) this.GigaBarrier(commandBuffer.getHandle());
+//            if(Initializer.CONFIG.useGigaBarriers) this.GigaBarrier(commandBuffer.getHandle());
             VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(1, stack);
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
@@ -167,13 +166,13 @@ public enum Queue {
         //Fix WaW on SYNC_COPY_TRANSFER_WRITE
         memBarrier.get(0).sType$Default()
                 //Wait on Writes depending on other Writes from prior CmdBuffers
-                .srcAccessMask(resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT)
-                .dstAccessMask(resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT);
+                .srcAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+                .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
         //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
         memBarrier.get(1).sType$Default()
                 //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
-                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
-                .dstAccessMask(resize ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
         //When resizing only wait on this cmdBuffer's Writes
 
@@ -182,7 +181,7 @@ public enum Queue {
         vkCmdPipelineBarrier(
                 commandBuffer.getHandle(),
                 VK_PIPELINE_STAGE_TRANSFER_BIT/*resize ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT*/,
-                VK_PIPELINE_STAGE_TRANSFER_BIT | (resize ? 0 : VK_PIPELINE_STAGE_VERTEX_INPUT_BIT),
+                VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
                 0,
                 memBarrier,
                 null,
@@ -193,26 +192,22 @@ public enum Queue {
 
         VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
 
-        //Fix WaW on SYNC_COPY_TRANSFER_READ
-        boolean dedicatedTransferQueue = QueueFamilyIndices.hasDedicatedTransferQueue;
+
         memBarrier.get(0).sType$Default()
-                //Wait on Reads depending on other Writes from prior CmdBuffers
-                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                .dstAccessMask(dedicatedTransferQueue ? (VK_ACCESS_TRANSFER_WRITE_BIT) : VK_ACCESS_TRANSFER_READ_BIT|VK_ACCESS_TRANSFER_WRITE_BIT);
-        //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
+
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT) //Dependency on prior Read/Write MemBarrier
+                .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT);
+
         memBarrier.get(1).sType$Default()
-                //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
-                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT/*resize ? VK13.VK_ACCESS_NONE : VK_ACCESS_TRANSFER_WRITE_BIT*/)
-                .dstAccessMask(dedicatedTransferQueue ? 0 : VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
-        //When resizing only wait on this cmdBuffer's Writes
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
-        //When Not resizing, Wait on prior Writes Depending on these Writes
-        // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
+
         vkCmdPipelineBarrier(
                 handle,
                 VK_PIPELINE_STAGE_TRANSFER_BIT,
-                dedicatedTransferQueue ? VK_PIPELINE_STAGE_TRANSFER_BIT: VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | (VK_PIPELINE_STAGE_TRANSFER_BIT),
                 0,
                 memBarrier,
                 null,
@@ -220,23 +215,20 @@ public enum Queue {
 
     }
     public void GigaBarrier(VkCommandBuffer commandBuffer) {
-        if(!Initializer.CONFIG.useGigaBarriers) return;
+
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
 
             memBarrier.sType$Default()
-                    .srcAccessMask(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+                    .srcAccessMask(VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)
+                    .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
 
-            //When resizing only wait on this cmdBuffer's Writes
 
-            //When Not resizing, Wait on prior Writes Depending on these Writes
-            // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
             vkCmdPipelineBarrier(
                     commandBuffer,
-                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
                     memBarrier,
                     null,

@@ -1,8 +1,6 @@
 package net.vulkanmod.vulkan;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.Config;
 import net.vulkanmod.vulkan.queue.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -374,8 +372,8 @@ public class Device {
 
     public static void destroy() {
         GraphicsQueue.cleanUp();
+        FakeTransferQueue.cleanUp();
         TransferQueue.cleanUp();
-        ComputeQueue.cleanUp();
 
         vkDestroyDevice(device, null);
     }
@@ -389,11 +387,11 @@ public class Device {
     }
 
     public static Queue getTransferQueue() {
-        return TransferQueue;
+        return FakeTransferQueue;
     }
 
     public static Queue getComputeQueue() {
-        return ComputeQueue;
+        return TransferQueue;
     }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {

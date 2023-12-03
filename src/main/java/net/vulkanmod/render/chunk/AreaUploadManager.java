@@ -3,8 +3,6 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.Initializer;
-import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -15,7 +13,7 @@ import java.nio.ByteBuffer;
 
 import org.lwjgl.vulkan.VkBufferCopy;
 
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.FakeTransferQueue;
 
 public class AreaUploadManager {
     public static final int FRAME_NUM = 2;
@@ -57,9 +55,9 @@ public class AreaUploadManager {
             return;
         }
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
-
+            this.commandBuffers[currentFrame] = FakeTransferQueue.beginCommands();
         try (MemoryStack stack = MemoryStack.stackPush()) {
+            FakeTransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
 
             long stagingBufferId = Vulkan.getStagingBuffer().getId();
             for (long bufferHandle : subCopyCommands.keySet()) {
@@ -73,14 +71,14 @@ public class AreaUploadManager {
                     a.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
                 }
 
-                TransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
+                FakeTransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
 
-            if(Initializer.CONFIG.useGigaBarriers) TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+            FakeTransferQueue.UploadCmdWriteBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
             this.hasBufferSwap=false;
         }
         subCopyCommands.clear();
-        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
+        FakeTransferQueue.submitCommands(this.commandBuffers[currentFrame]);
 
     }
     public void uploadAsync2(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, long src) {
@@ -147,7 +145,7 @@ public class AreaUploadManager {
 
     public void copyBuffer(long srcBuffer, long dstBuffer, int bufferSize) {
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
-        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], srcBuffer, 0, dstBuffer, 0, bufferSize);
+            this.commandBuffers[currentFrame] = FakeTransferQueue.beginCommands();
+        FakeTransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], srcBuffer, 0, dstBuffer, 0, bufferSize);
     }
 }

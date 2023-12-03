@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -83,7 +82,7 @@ public class UniformBuffers {
         if(commandBuffer == null)
             return;
 
-        Device.getTransferQueue().submitCommands(commandBuffer);
+        Device.getComputeQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
@@ -123,7 +122,7 @@ public class UniformBuffers {
             }
             else {
                 if(commandBuffer == null)
-                    commandBuffer = Device.getTransferQueue().beginCommands();
+                    commandBuffer = Device.getComputeQueue().beginCommands();
 
                 int size = buffer.remaining();
 
