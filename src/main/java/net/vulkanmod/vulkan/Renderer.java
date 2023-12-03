@@ -33,6 +33,8 @@ import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.PresentQueue;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -334,7 +336,7 @@ public class Renderer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if((vkResult = vkQueueSubmit(GraphicsQueue.queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -349,7 +351,7 @@ public class Renderer {
 
             presentInfo.pImageIndices(stack.ints(imageIndex));
 
-            vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
+            vkResult = vkQueuePresentKHR(PresentQueue.queue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
                 swapChainUpdate = true;
@@ -374,7 +376,7 @@ public class Renderer {
                     .pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)))
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
 
-            vkQueueSubmit(Device.getGraphicsQueue().queue(), info, inFlightFences.get(currentFrame));
+            vkQueueSubmit(GraphicsQueue.queue(), info, inFlightFences.get(currentFrame));
             vkWaitForFences(device, inFlightFences.get(currentFrame),  true, -1);
         }
     }

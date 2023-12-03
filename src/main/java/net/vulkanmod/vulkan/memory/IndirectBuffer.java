@@ -5,6 +5,7 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.FakeTransferQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
@@ -28,7 +29,7 @@ public class IndirectBuffer extends Buffer {
         }
         else {
             if(commandBuffer == null)
-                commandBuffer = Device.getTransferQueue().beginCommands();
+                commandBuffer = FakeTransferQueue.beginCommands();
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer(size, byteBuffer);
@@ -51,7 +52,7 @@ public class IndirectBuffer extends Buffer {
         if(commandBuffer == null)
             return;
 
-        Device.getTransferQueue().submitCommands(commandBuffer);
+        FakeTransferQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }

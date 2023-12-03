@@ -2,11 +2,11 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.memory.*;
 
 import java.util.LinkedList;
 
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -123,7 +123,7 @@ public class AreaBuffer {
 //        {
 //            AreaUploadManager.INSTANCE.copyBuffer(this.buffer.getId(), buffer.getId(), this.buffer.getBufferSize());
 //        }
-        Device.getGraphicsQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        GraphicsQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

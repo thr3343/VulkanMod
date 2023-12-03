@@ -12,10 +12,10 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum Queue {
-    GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
-    FakeTransferQueue(QueueFamilyIndices.graphicsFamily, true),
-    TransferQueue(QueueFamilyIndices.transferFamily, true),
-    PresentQueue(QueueFamilyIndices.presentFamily, false);
+    GraphicsQueue(QueueFamilyIndices.graphicsFamily, true, 0),
+    FakeTransferQueue(QueueFamilyIndices.graphicsFamily, true, 0),
+    TransferQueue(QueueFamilyIndices.transferFamily, true, 0),
+    PresentQueue(QueueFamilyIndices.presentFamily, false, 0);
     private CommandPool.CommandBuffer currentCmdBuffer;
     private final CommandPool commandPool;
 
@@ -27,14 +27,14 @@ public enum Queue {
     }
 
     Queue(int familyIndex) {
-        this(familyIndex, true);
+        this(familyIndex, true, 0);
     }
 
-    Queue(int familyIndex, boolean initCommandPool) {
+    Queue(int familyIndex, boolean initCommandPool, int queueIndex) {
         try (MemoryStack stack = MemoryStack.stackPush())
         {
             PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(Device.device, familyIndex, 0, pQueue);
+            vkGetDeviceQueue(Device.device, familyIndex, queueIndex, pQueue);
             this.queue = new VkQueue(pQueue.get(0), Device.device);
 
             this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;

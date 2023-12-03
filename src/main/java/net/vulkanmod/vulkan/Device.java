@@ -378,22 +378,6 @@ public class Device {
         vkDestroyDevice(device, null);
     }
 
-    public static Queue getGraphicsQueue() {
-        return GraphicsQueue;
-    }
-
-    public static Queue getPresentQueue() {
-        return PresentQueue;
-    }
-
-    public static Queue getTransferQueue() {
-        return FakeTransferQueue;
-    }
-
-    public static Queue getComputeQueue() {
-        return TransferQueue;
-    }
-
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
 
         long surface = Vulkan.getSurface();
