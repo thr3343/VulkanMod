@@ -32,7 +32,7 @@ public abstract class Field {
     void update(long ptr) {
         MappedBuffer src = values.get();
 
-        MemoryUtil.memCopy(src.ptr, ptr + this.offset, this.size);
+        MemoryUtil.memCopy(src.ptr(), ptr + this.offset, this.size);
     }
 
     public static Field createField(FieldInfo info) {
