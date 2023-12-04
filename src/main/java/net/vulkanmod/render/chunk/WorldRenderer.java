@@ -606,7 +606,7 @@ public class WorldRenderer {
 
 
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-            if(!isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
 //            this.updates[currentFrame]=false;
