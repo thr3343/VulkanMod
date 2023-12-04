@@ -317,7 +317,7 @@ public class WorldRenderer {
 
         int buildLimit = taskDispatcher.getIdleThreadsCount();// * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
 
-        if(buildLimit == 0)
+        if(buildLimit <= 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {
@@ -367,7 +367,7 @@ public class WorldRenderer {
 
         int rebuildLimit = taskDispatcher.getIdleThreadsCount();
 
-        if(rebuildLimit == 0)
+        if(rebuildLimit <= 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {

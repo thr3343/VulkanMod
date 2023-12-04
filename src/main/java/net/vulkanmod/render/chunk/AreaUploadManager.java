@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -57,7 +58,9 @@ public class AreaUploadManager {
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = FakeTransferQueue.beginCommands();
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            FakeTransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+            boolean useGigaBarriers = Initializer.CONFIG.useGigaBarriers;
+            if(useGigaBarriers) FakeTransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+            else FakeTransferQueue.PriorWriteBarrier(this.commandBuffers[currentFrame].getHandle());
 
             long stagingBufferId = Vulkan.getStagingBuffer().getId();
             for (long bufferHandle : subCopyCommands.keySet()) {
@@ -73,8 +76,8 @@ public class AreaUploadManager {
 
                 FakeTransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], stagingBufferId, bufferHandle, vkBufferCopies);
             }
-
-            FakeTransferQueue.UploadCmdWriteBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
+            if(useGigaBarriers) FakeTransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+            else FakeTransferQueue.UploadCmdWriteBarrier(this.commandBuffers[currentFrame].getHandle(), stack, this.hasBufferSwap);
             this.hasBufferSwap=false;
         }
         subCopyCommands.clear();

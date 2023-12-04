@@ -23,6 +23,7 @@ public class Options {
     public static boolean fullscreenDirty = false;
     private static int priorFrameQueue;
     public static final boolean drawIndirectSupported = deviceInfo.isDrawIndirectSupported();
+    public static final boolean minSampleShading = deviceInfo.availableFeatures.features().sampleRateShading();
 
 
     private static final String[] GPUNames = Vulkan.getAvailableGPUs();
@@ -265,7 +266,7 @@ public class Options {
                         },
                         () -> config.useGigaBarriers).setTooltip(Component.nullToEmpty("""
                         (Debugging feature)
-                        Only Use to fix/troubleshoot game-breaking bugs/crashes
+                        Used to fix/troubleshoot game-breaking bugs/crashes
                         Greatly decreases performance if enabled""")),
                 new RangeOption("Chunk Load Threads", 1, max, 1,
                         value -> {
@@ -277,15 +278,15 @@ public class Options {
                         () -> config.chunkLoadFactor)
                         .setTooltip(Component.nullToEmpty(
                                 "The number of Threads utilized for uploading chunks \n" +
-                                        "More threads will greatly improve Chunk load speed" +
-                                        "But may cause stuttering if set to high\n" +
+                                        "More threads will greatly improve Chunk load speed\n" +
+                                        "But may cause Stuttering + World Lag if set to high\n" +
                                         "Max Recommended value is " + max / 2 + " threads on This CPU")),
                 new RangeOption("buildLimit", 8, 512, 8,
                         value -> {
                             config.buildLimit = value;
                         },
                         () -> config.buildLimit).setTooltip(Component.nullToEmpty("""
-                        Max ChunkTask Limit per frame
+                        Max ChunkTasks Limit per frame
                         Throttles Chunk Load speed if reduced
                         Multiplied by Active Chunk load Threads to reduce throttling
                         Originally wasn't intended to handle MultiThreaded Workloads
@@ -308,16 +309,17 @@ public class Options {
                             VRenderSystem.reInit();
                         },
                         () -> config.ssaaPreset)
-                        .setTooltip(Component.nullToEmpty("""
-                        SuperSampling Anti-Aliasing""")),
-                new RangeOption("GPU SELECTOR", 0, GPUNames.length-1, 1,
+                        .setTooltip(Component.nullToEmpty(
+                                "Supported by GPU?: " + minSampleShading + "\n" +
+                                        "SuperSampling Anti-Aliasing")),
+                new RangeOption("GPU Selector", 0, GPUNames.length-1, 1,
 
                         value -> GPUNames[value],
 
                         value -> config.selectedGPU = value,
                         () -> config.selectedGPU)
                         .setTooltip(Component.nullToEmpty("""
-                        SuperSampling Anti-Aliasing""")),
+                        Select the Default GPU VulkanMod will use at RunTime""")),
         };
 
 

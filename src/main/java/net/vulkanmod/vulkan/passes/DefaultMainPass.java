@@ -1,11 +1,14 @@
 package net.vulkanmod.vulkan.passes;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.FakeTransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK10.vkEndCommandBuffer;
 
@@ -16,6 +19,7 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
+        if(Initializer.CONFIG.useGigaBarriers) GraphicsQueue.GigaBarrier(commandBuffer);
         swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 /*TODO; try to separate the SwapChain from the FrameBuffer: The Framebuffer + Attachment Dosen't care what the image is; as long as the resolution + Formats Match
  * i.e. Closer to the Vulkan spec Definition: the Framebuffer is the render Target, not the Actual Image
@@ -40,7 +44,7 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void end(VkCommandBuffer commandBuffer) {
         Renderer.getInstance().endRenderPass(commandBuffer);
-
+        GraphicsQueue.GigaBarrier(commandBuffer);
         int result = vkEndCommandBuffer(commandBuffer);
         if(result != VK_SUCCESS) {
             throw new RuntimeException("Failed to record command buffer:" + result);

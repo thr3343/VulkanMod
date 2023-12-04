@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -214,8 +215,7 @@ public enum Queue {
                 null);
 
     }
-    public void GigaBarrier(VkCommandBuffer commandBuffer) {
-
+    public void PriorWriteBarrier(VkCommandBuffer commandBuffer) {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
 
@@ -229,6 +229,27 @@ public enum Queue {
                     commandBuffer,
                     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0,
+                    memBarrier,
+                    null,
+                    null);
+        }
+    }
+    public void GigaBarrier(VkCommandBuffer commandBuffer) {
+        if(!Initializer.CONFIG.useGigaBarriers) return;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
+
+            memBarrier.sType$Default()
+                    .srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+
+
+
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                     0,
                     memBarrier,
                     null,

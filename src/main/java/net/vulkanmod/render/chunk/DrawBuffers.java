@@ -236,7 +236,7 @@ public class DrawBuffers {
         }
         else if(this.vertexBuffer!=null) this.vertexBuffer.freeBuffer();
 
-        if(this.areaBufferTypes.containsKey(TRANSLUCENT)) this.indexBuffer.freeBuffer();
+        if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
         this.areaBufferTypes.clear();
 
 

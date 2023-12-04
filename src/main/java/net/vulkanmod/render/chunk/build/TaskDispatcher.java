@@ -169,7 +169,7 @@ public class TaskDispatcher {
     }
 
     public int getIdleThreadsCount() {
-        return this.threads.length*Initializer.CONFIG.buildLimit; /*Integer.MAX_VALUE;*/ //UGLY TEMP HACK: Stop the Build task scheduler from throttling
+        return this.threads.length*Initializer.CONFIG.buildLimit - getActiveTaskCount(); /*Integer.MAX_VALUE;*/ //UGLY TEMP HACK: Stop the Build task scheduler from throttling
     }
 
     public boolean isIdle() { return this.idleThreads == this.threads.length && this.toUpload.isEmpty(); }
@@ -193,7 +193,7 @@ public class TaskDispatcher {
     public String getStats() {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("chunkTasks: %d / Limit: %d", getActiveTaskCount(), getIdleThreadsCount());
+        return String.format("chunkTasks: %d / Limit: %d", getActiveTaskCount(), this.threads.length*Initializer.CONFIG.buildLimit);
     }
 
     private int getActiveTaskCount() {
