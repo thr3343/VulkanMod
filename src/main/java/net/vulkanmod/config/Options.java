@@ -126,15 +126,6 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
-                new SwitchOption("Unique opaque layer",
-                        value -> {
-                            config.uniqueOpaqueLayer = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.uniqueOpaqueLayer)
-                        .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                     int v = value * 2 + 1;
@@ -172,15 +163,6 @@ public class Options {
                         particlesMode -> Component.translatable(particlesMode.getKey()),
                         value -> minecraftOptions.particles().set(value),
                         () -> minecraftOptions.particles().get()),
-                new SwitchOption("Unique opaque layer",
-                        value -> {
-                            config.uniqueOpaqueLayer = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.uniqueOpaqueLayer)
-                        .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new SwitchOption("Animations",
                         value -> config.animations = value,
                         () -> config.animations),

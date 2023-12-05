@@ -19,7 +19,6 @@ public class Config {
     public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean indirectDraw = false;
-    public boolean uniqueOpaqueLayer = true;
     public boolean perRenderTypeAreaBuffers = true;
     public boolean useGigaBarriers = false;
     public boolean renderSky = true;

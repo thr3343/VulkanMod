@@ -12,6 +12,8 @@ import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.GrassBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -150,6 +152,7 @@ public abstract class ChunkTask {
                 final EnumSet<TerrainRenderType> set = EnumSet.noneOf(TerrainRenderType.class);
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
+                final boolean a = Minecraft.useFancyGraphics();
 
                 for(BlockPos blockPos : blockPos) {
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos);
@@ -188,6 +191,8 @@ public abstract class ChunkTask {
                         renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState).name);
 
                         //Force compact RenderType
+                        if(blockState.getBlock() instanceof LeavesBlock) renderType = a ? CUTOUT : CUTOUT_MIPPED;
+                        else if(blockState.getBlock() instanceof GrassBlock) renderType = CUTOUT;
                         renderType = compactRenderTypes(renderType);
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
@@ -231,20 +236,12 @@ public abstract class ChunkTask {
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
 
-            if(Initializer.CONFIG.uniqueOpaqueLayer) {
-                if (renderType != TRANSLUCENT) {
-                    return renderType != TRIPWIRE ? CUTOUT_MIPPED : TRANSLUCENT;
-                }
-            }
-            else {
-               return switch (renderType) {
-                    case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
-                    case CUTOUT -> CUTOUT;
-                    default -> TRANSLUCENT;
-                };
-            }
+            return switch (renderType) {
+                case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
+                case CUTOUT -> CUTOUT;
+                default -> TRANSLUCENT;
+            };
 
-            return renderType;
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {

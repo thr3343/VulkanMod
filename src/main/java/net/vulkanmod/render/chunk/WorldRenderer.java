@@ -29,7 +29,6 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
-import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.util.DrawBufferSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
@@ -44,7 +43,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -52,9 +51,9 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.chunk.TerrainShaderManager.getTerrainShader;
 import static net.vulkanmod.render.chunk.TerrainShaderManager.terrainShader;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static net.vulkanmod.vulkan.Device.deviceInfo;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -570,12 +569,12 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType.name);
+        final TerrainRenderType rType = TerrainRenderType.get(renderType.name);
 
 //        p.pushMilestone("layer " + layerName);
-        if(terrainRenderType.equals(SOLID))
+        if(rType.equals(SOLID))
             p.push("Opaque_terrain_pass");
-        else if(terrainRenderType.equals(TRANSLUCENT))
+        else if(rType.equals(TRANSLUCENT))
         {
             p.pop();
             p.push("Translucent_terrain_pass");
@@ -591,7 +590,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        final boolean isTranslucent = rType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
@@ -602,12 +601,14 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if ((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if ((SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
 
 
+            GraphicsPipeline terrainShader = getTerrainShader(rType);
+            long layout = terrainShader.getLayout();
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            terrainRenderType.setCutoutUniform();
+            rType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
 //            this.updates[currentFrame]=false;
             Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
@@ -615,14 +616,14 @@ public class WorldRenderer {
                 DrawBuffers chunkArea = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ);
+                    chunkArea.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ, layout);
                 } else {
-                    chunkArea.buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ);
+                    chunkArea.buildDrawBatchesDirect(rType, camX, camY, camZ, layout);
                 }
             }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+        if(indirectDraw && (rType.equals(CUTOUT) || rType.equals(TRIPWIRE))) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
@@ -634,7 +635,7 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
-        switch (terrainRenderType) {
+        switch (rType) {
             case CUTOUT -> {
                 p.pop();
 //                p.pop();
