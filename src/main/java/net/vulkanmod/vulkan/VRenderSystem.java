@@ -56,6 +56,7 @@ public class VRenderSystem {
     private static final float[] depthBias = new float[2];
     private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
     private static int sampleCount= 1 << Initializer.CONFIG.ssaaPreset;
+    private static float minSampleShading= 0.01f*Initializer.CONFIG.minSampleShading;
     static boolean renderPassUpdate =true;
 
     public static void initRenderer()
@@ -313,11 +314,15 @@ public class VRenderSystem {
         PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
     public static PipelineState.MultiSampleState getMultiSampleState() {
-        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, 1.0f);
+        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
     }
 
     public static void setSampleShadingEnable(boolean sampleShadingEnable1) {
         sampleShadingEnable= sampleShadingEnable1;
+    }
+
+    public static void setMinSampleShading(float minSampleShading1) {
+        minSampleShading= minSampleShading1;
     }
 
     public static void setSampleCountFromPreset(int s) {

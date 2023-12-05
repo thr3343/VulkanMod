@@ -310,8 +310,21 @@ public class Options {
                         },
                         () -> config.ssaaPreset)
                         .setTooltip(Component.nullToEmpty(
-                                "Supported by GPU?: " + minSampleShading + "\n" +
+                                "Supported by GPU?: " + minSampleShading + "\n\n" +
                                         "SuperSampling Anti-Aliasing")),
+                new RangeOption("minSampleShading", 0, 100, 1,
+                        value -> String.valueOf(0.01f * value),
+                        value -> {
+
+                            config.minSampleShading = value;
+                            VRenderSystem.setMinSampleShading(0.01f * value);
+                        },
+                        () -> config.minSampleShading)
+                        .setTooltip(Component.nullToEmpty(
+                                "Supported by GPU?: " + minSampleShading + "\n" +
+                                        "(Debugging Option)\n\n" +
+                                        "Controls SSAA Quality\n" +
+                                        "Adjust this if SSAA has graphical bugs\n")),
                 new RangeOption("GPU Selector", 0, GPUNames.length-1, 1,
 
                         value -> GPUNames[value],
