@@ -14,6 +14,7 @@ public class Uniforms {
     public static Object2ReferenceOpenHashMap<String, Supplier<Float>> vec1f_uniformMap = new Object2ReferenceOpenHashMap<>();
     public static Object2ReferenceOpenHashMap<String, Supplier<MappedBuffer>> vec2f_uniformMap = new Object2ReferenceOpenHashMap<>();
     public static Object2ReferenceOpenHashMap<String, Supplier<MappedBuffer>> vec3f_uniformMap = new Object2ReferenceOpenHashMap<>();
+    public static Object2ReferenceOpenHashMap<String, Supplier<MappedBuffer>> vec3i_uniformMap = new Object2ReferenceOpenHashMap<>();
     public static Object2ReferenceOpenHashMap<String, Supplier<MappedBuffer>> vec4f_uniformMap = new Object2ReferenceOpenHashMap<>();
 
     public static Object2ReferenceOpenHashMap<String, Supplier<MappedBuffer>> mat4f_uniformMap = new Object2ReferenceOpenHashMap<>();
@@ -43,6 +44,7 @@ public class Uniforms {
         vec3f_uniformMap.put("Light0_Direction", () -> VRenderSystem.lightDirection0);
         vec3f_uniformMap.put("Light1_Direction", () -> VRenderSystem.lightDirection1);
         vec3f_uniformMap.put("ChunkOffset", () -> VRenderSystem.ChunkOffset);
+        vec3i_uniformMap.put("ChunkOffset2", () -> VRenderSystem.ChunkOffset);
 
         //Vec4
         vec4f_uniformMap.put("ColorModulator", VRenderSystem::getShaderColor);

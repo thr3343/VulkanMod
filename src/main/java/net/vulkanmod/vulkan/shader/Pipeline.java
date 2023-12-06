@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
-import net.vulkanmod.vulkan.framebuffer.Framebuffer;
-import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
 import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
@@ -76,7 +74,7 @@ public abstract class Pipeline {
     protected long descriptorSetLayout;
     protected long pipelineLayout;
 
-    protected DescriptorSets[] descriptorSets;
+    public DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
     protected List<ImageDescriptor> imageDescriptors;
@@ -186,13 +184,13 @@ public abstract class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, boolean update) {
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, boolean update, boolean upload) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, update, frame/*||updates[frame]*/);
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, update, frame, upload/*||updates[frame]*/);
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame, boolean update) {
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, update, frame);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame, boolean update, boolean upload) {
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, update, frame, upload);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -214,7 +212,7 @@ public abstract class Pipeline {
         }
     }
 
-    protected class DescriptorSets {
+    public class DescriptorSets {
         private int poolSize = 10;
         private long descriptorPool;
         private LongBuffer sets;
@@ -238,11 +236,11 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean update, int frame1) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean update, int frame1, boolean upload) {
             try(MemoryStack stack = stackPush()) {
 
-                this.updateUniforms(uniformBuffers);
-//                boolean b = !this.bound || this.boundTextures.length > 0;
+                this.updateUniforms(uniformBuffers, upload);
+                //                boolean b = !this.bound || this.boundTextures.length > 0;
                 if(updates[frame1]||update) {
 //                    this.updateDescriptorSet(stack, uniformBuffers, update||this.boundTextures.length>2);
                     this.updateDescriptorSet(stack, uniformBuffers, true/*||!this.bound*/);
@@ -255,7 +253,7 @@ public abstract class Pipeline {
             }
         }
 
-        private void updateUniforms(UniformBuffers uniformBuffers) {
+        public void updateUniforms(UniformBuffers uniformBuffers, boolean upload) {
             int currentOffset = uniformBuffers.getUsedBytes();
 
             int i = 0;
@@ -264,16 +262,18 @@ public abstract class Pipeline {
 //                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
 
                 this.dynamicOffsets.put(i, currentOffset);
+                if(upload) {
+                    //TODO non mappable memory
 
-                //TODO non mappable memory
+                    int alignedSize = UniformBuffers.getAlignedSize(ubo.getSize());
+                    uniformBuffers.checkCapacity(alignedSize);
+                    ubo.update(uniformBuffers.getPointer(frame));
 
-                int alignedSize = UniformBuffers.getAlignedSize(ubo.getSize());
-                uniformBuffers.checkCapacity(alignedSize);
-                ubo.update(uniformBuffers.getPointer(frame));
+                    uniformBuffers.updateOffset(alignedSize);
 
-                uniformBuffers.updateOffset(alignedSize);
+                    currentOffset = uniformBuffers.getUsedBytes();
 
-                currentOffset = uniformBuffers.getUsedBytes();
+                }
                 ++i;
             }
         }

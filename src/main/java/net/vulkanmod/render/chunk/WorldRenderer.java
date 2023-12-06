@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.chunk.TerrainShaderManager.getTerrainShader;
-import static net.vulkanmod.render.chunk.TerrainShaderManager.terrainShader;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public class WorldRenderer {
@@ -97,6 +96,7 @@ public class WorldRenderer {
     int nonEmptyChunks;
 
     private final List<Runnable> onAllChangedCallbacks = new ObjectArrayList<>();
+    private static Matrix4f pose = new Matrix4f().identity();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -593,7 +593,6 @@ public class WorldRenderer {
         final boolean isTranslucent = rType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
@@ -609,7 +608,20 @@ public class WorldRenderer {
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             rType.setCutoutUniform();
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false, false);
+
+
+                poseStack.pushPose();
+                pose = poseStack.last().pose();
+
+                float camX1 = (float)(camX-(int)(camX));
+                float camY1 = (float)(camY-(int)(camY));
+                float camZ1 = (float)(camZ-(int)(camZ));
+                VRenderSystem.applyMVP(pose.translate(-camX1, -camY1, -camZ1), projection);
+                poseStack.popPose();
+
+            terrainShader.descriptorSets[currentFrame].updateUniforms(Renderer.getDrawer().getUniformBuffers(), true);
+
 //            this.updates[currentFrame]=false;
             Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
             while(iterator.hasNext()) {

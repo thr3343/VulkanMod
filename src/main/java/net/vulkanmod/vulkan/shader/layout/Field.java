@@ -39,6 +39,7 @@ public abstract class Field {
         return switch (info.type) {
             case "mat4" -> new Mat4f(info);
             case "vec4" -> new Vec4f(info);
+            case "vec3i" -> new Vec3i(info);
             case "vec3" -> new Vec3f(info);
             case "vec2" -> new Vec2f(info);
             case "float" -> new Vec1f(info);
@@ -65,7 +66,7 @@ public abstract class Field {
 
                 default -> throw new IllegalStateException("Unexpected value: " + count);
             };
-            case "int" -> new FieldInfo("int", name, 1, 1);
+            case "int" -> count == 3 ? new FieldInfo("vec3i", name, 4, 3) : new FieldInfo("int", name, 1, 1);
             default -> throw new RuntimeException("not admitted type..");
         };
     }

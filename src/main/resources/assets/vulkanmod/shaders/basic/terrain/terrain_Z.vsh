@@ -7,7 +7,7 @@ layout(binding = 0) uniform UniformBufferObject {
 };
 
 layout(push_constant) uniform pushConstant {
-    vec3 ChunkOffset;
+    ivec3 ChunkOffset;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;

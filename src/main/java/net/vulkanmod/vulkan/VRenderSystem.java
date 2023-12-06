@@ -66,8 +66,6 @@ public class VRenderSystem {
         Vulkan.initVulkan(window);
     }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
-
     public static int maxSupportedTextureSize() {
         return Device.deviceProperties.limits().maxImageDimension2D();
     }
@@ -180,13 +178,6 @@ public class VRenderSystem {
 
     public static int getSampleCount() {
         return sampleCount;
-    }
-
-    public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = ChunkOffset.ptr();
-        VUtil.UNSAFE.putFloat(ptr, f1);
-        VUtil.UNSAFE.putFloat(ptr + 4, f2);
-        VUtil.UNSAFE.putFloat(ptr + 8, f3);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {

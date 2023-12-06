@@ -7,6 +7,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -112,9 +113,9 @@ public class DrawBuffers {
     }
 
     private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
-        VUtil.UNSAFE.putFloat(ptr + 0, (float) (this.origin.x - camX));
-        VUtil.UNSAFE.putFloat(ptr + 4, (float) (this.origin.y - camY));
-        VUtil.UNSAFE.putFloat(ptr + 8, (float) (this.origin.z - camZ));
+        VUtil.UNSAFE.putInt(ptr + 0, (this.origin.x - (int)camX));
+        VUtil.UNSAFE.putInt(ptr + 4, (this.origin.y - (int)camY));
+        VUtil.UNSAFE.putInt(ptr + 8, (this.origin.z - (int)camZ));
 
         nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
     }
