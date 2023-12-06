@@ -596,10 +596,12 @@ public abstract class Pipeline {
         private void parseSamplerNode(JsonElement jsonelement) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
             String name = GsonHelper.getAsString(jsonobject, "name");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
+            int stage = getStageFromString(GsonHelper.getAsString(jsonobject, "type"));
 
             this.currentBinding++;
 
-            this.imageDescriptors.add(new ImageDescriptor(this.currentBinding, "sampler2D", name));
+            this.imageDescriptors.add(new ImageDescriptor(binding,  stage, "sampler2D", name));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {

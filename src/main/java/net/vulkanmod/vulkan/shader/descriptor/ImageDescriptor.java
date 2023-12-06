@@ -6,16 +6,18 @@ public class ImageDescriptor implements Descriptor {
 
     private final int descriptorType;
     private final int binding;
+    private final int stage;
     public final String qualifier;
     public final String name;
     public final boolean useSampler;
 
-    public ImageDescriptor(int binding, String type, String name) {
-        this(binding, type, name, true);
+    public ImageDescriptor(int binding, int stage, String type, String name) {
+        this(binding, stage, type, name, true);
     }
 
-    public ImageDescriptor(int binding, String type, String name, boolean useSampler) {
+    public ImageDescriptor(int binding, int stage, String type, String name, boolean useSampler) {
         this.binding = binding;
+        this.stage = stage;
         this.qualifier = type;
         this.name = name;
         this.useSampler = useSampler;
@@ -35,6 +37,6 @@ public class ImageDescriptor implements Descriptor {
 
     @Override
     public int getStages() {
-        return VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+        return stage;
     }
 }

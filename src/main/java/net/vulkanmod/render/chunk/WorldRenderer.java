@@ -593,10 +593,10 @@ public class WorldRenderer {
         final boolean isTranslucent = rType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP(pose, RenderSystem.getProjectionMatrix());
+        VRenderSystem.applyMVP(poseStack.last().pose(), RenderSystem.getProjectionMatrix());
 
 
-        pose = poseStack.last().pose();
+
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
 
@@ -620,21 +620,11 @@ public class WorldRenderer {
             while(iterator.hasNext()) {
                 DrawBuffers chunkArea = iterator.next();
 
-
-
-                float camX1 = (float)(camX-(chunkArea.origin.x));
-                float camY1 = (float)(camY-(chunkArea.origin.y));
-                float camZ1 = (float)(camZ-(chunkArea.origin.z));
-                VRenderSystem.calculateMVP2(-camX1, -camY1, -camZ1);
-
-
-
                 if(indirectDraw) {
                     chunkArea.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ, layout);
                 } else {
                     chunkArea.buildDrawBatchesDirect(rType, camX, camY, camZ, layout);
                 }
-                VRenderSystem.calculateMVP2(camX1, camY1, camZ1);
             }
         }
 

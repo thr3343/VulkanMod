@@ -42,8 +42,9 @@ public class UniformParser {
 
             this.name = token;
 
+            //TODO!!!
             //TODO check if already present
-            Uniform uniform = new Uniform(this.type, this.name);
+            Uniform uniform = new Uniform(~0, ~0, this.type, this.name);
             if ("sampler2D".equals(this.type)) {
                 if (!this.currentUniforms.samplers.contains(uniform))
                     this.currentUniforms.samplers.add(uniform);
@@ -103,9 +104,9 @@ public class UniformParser {
         for(Uniform uniform : this.globalUniforms) {
             builder.addFieldInfo(uniform.type, uniform.name);
         }
-
+        //TODO!!!
         //hardcoded 0 binding as it should always be 0 in this case
-        return builder.buildUBO(0, Pipeline.Builder.getStageFromString("all"));
+        return builder.buildUBO(~0, Pipeline.Builder.getStageFromString("all"));
     }
 
     private List<ImageDescriptor> createSamplerList() {
@@ -115,7 +116,7 @@ public class UniformParser {
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                imageDescriptors.add(new ImageDescriptor(currentLocation, uniform.type, uniform.name));
+                imageDescriptors.add(new ImageDescriptor(uniform.binding, uniform.stage, uniform.type, uniform.name));
                 currentLocation++;
             }
         }
@@ -138,7 +139,7 @@ public class UniformParser {
         return this.imageDescriptors;
     }
 
-    public record Uniform(String type, String name) {}
+    public record Uniform(int binding, int stage, String type, String name) {}
 
     private static class StageUniforms {
         List<Uniform> samplers = new ArrayList<>();
