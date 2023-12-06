@@ -14,11 +14,9 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
@@ -126,6 +124,11 @@ public class VRenderSystem {
         applyProjectionMatrix(P);
         calculateMVP();
     }
+    public static void applyMVP2(Matrix4f MV, Matrix4f P) {
+        applyModelViewMatrix(MV);
+        applyProjectionMatrix(P);
+        calculateMVP();
+    }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.get(modelViewMatrix.buffer().asFloatBuffer());
@@ -150,6 +153,11 @@ public class VRenderSystem {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
         P.mul(MV).get(MVP.buffer());
+    }
+    public static void calculateMVP2(float x, float y, float z) {
+        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f(MVP.buffer().asFloatBuffer());
+
+        MVP_.translate(x, y, z).get(MVP.buffer());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {

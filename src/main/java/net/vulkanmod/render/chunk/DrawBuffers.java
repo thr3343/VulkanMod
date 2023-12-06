@@ -5,6 +5,7 @@ import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
@@ -27,7 +28,7 @@ public class DrawBuffers {
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
     public final int index;
-    private final Vector3i origin;
+    final Vector3i origin;
     private final int minHeight;
 
     private boolean allocated = false;
@@ -113,11 +114,8 @@ public class DrawBuffers {
     }
 
     private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
-        VUtil.UNSAFE.putInt(ptr + 0, (this.origin.x - (int)camX));
-        VUtil.UNSAFE.putInt(ptr + 4, (this.origin.y - (int)camY));
-        VUtil.UNSAFE.putInt(ptr + 8, (this.origin.z - (int)camZ));
 
-        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
+        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 64, VRenderSystem.getMVP().ptr());
     }
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
 

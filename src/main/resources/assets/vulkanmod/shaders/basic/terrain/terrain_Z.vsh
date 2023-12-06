@@ -3,11 +3,11 @@
 #include "light.glsl"
 
 layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP;
+    float AlphaCutout;
 };
 
 layout(push_constant) uniform pushConstant {
-    ivec3 ChunkOffset;
+    mat4 MVP2;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;
@@ -29,9 +29,9 @@ const vec3 POSITION_INV = vec3(1.0 / 1900.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 16, 8), 0, 8);
-    const vec3 pos = baseOffset+fma(Position, vec3(POSITION_INV), ChunkOffset);
+    const vec3 pos = fma(Position, vec3(POSITION_INV), baseOffset);
     const vec4 a = vec4(pos, 1);
-    gl_Position = MVP * a;
+    gl_Position = MVP2 * a;
 
 
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
