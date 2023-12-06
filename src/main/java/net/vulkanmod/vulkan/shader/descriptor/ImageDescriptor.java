@@ -9,6 +9,7 @@ public class ImageDescriptor implements Descriptor {
 
     private final int descriptorType;
     private final int binding;
+    private final int stage;
     public final String qualifier;
     public final String name;
 
@@ -17,13 +18,21 @@ public class ImageDescriptor implements Descriptor {
     public boolean isReadOnlyLayout;
     private int layout;
     private int mipLevel = -1;
-
-    public ImageDescriptor(int binding, String type, String name) {
-        this(binding, type, name, false);
+//TODO: Match Binding slots to .json config to avoid linear iteratuin/enumertaion issues with misalignments and/or slots
+// <<<<<<< HEAD
+//     public ImageDescriptor(int binding, String type, String name) {
+//         this(binding, type, name, false);
+//     }
+//
+//     public ImageDescriptor(int binding, String type, String name, boolean isStorageImage) {
+// =======
+    public ImageDescriptor(int binding, int stage, String type, String name) {
+        this(binding, stage, type, name, true);
     }
 
-    public ImageDescriptor(int binding, String type, String name, boolean isStorageImage) {
+    public ImageDescriptor(int binding, int stage, String type, String name, boolean isStorageImage) {
         this.binding = binding;
+        this.stage = stage;
         this.qualifier = type;
         this.name = name;
         this.isStorageImage = isStorageImage;
@@ -45,7 +54,7 @@ public class ImageDescriptor implements Descriptor {
 
     @Override
     public int getStages() {
-        return VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
+        return stage
     }
 
     public void setLayout(int layout) {
