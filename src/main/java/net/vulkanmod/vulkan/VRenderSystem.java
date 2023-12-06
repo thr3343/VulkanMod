@@ -18,7 +18,6 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
@@ -62,8 +61,6 @@ public abstract class VRenderSystem {
 
         Vulkan.initVulkan(window);
     }
-
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
 
     public static int maxSupportedTextureSize() {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();
@@ -125,6 +122,11 @@ public abstract class VRenderSystem {
         applyProjectionMatrix(P);
         calculateMVP();
     }
+    public static void applyMVP2(Matrix4f MV, Matrix4f P) {
+        applyModelViewMatrix(MV);
+        applyProjectionMatrix(P);
+        calculateMVP();
+    }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.getToAddress(modelViewMatrix.ptr());
@@ -158,8 +160,12 @@ public abstract class VRenderSystem {
     public static void translateMVP(float x, float y, float z) {
         org.joml.Matrix4f MVP_ = new org.joml.Matrix4f().setFromAddress(MVP.ptr());
 
-        MVP_.translate(x, y, z);
-        MVP_.getToAddress(MVP.ptr());
+        MVP_.translate(x, y, z).getToAddress(MVP.ptr());
+    }
+    public static void calculateMVP2(float x, float y, float z) {
+        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f(MVP.buffer().asFloatBuffer());
+
+        MVP_.translate(x, y, z).get(MVP.buffer());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {

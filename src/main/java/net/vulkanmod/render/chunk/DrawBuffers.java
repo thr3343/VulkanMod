@@ -113,12 +113,15 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
-        VUtil.UNSAFE.putFloat(ptr + 0, (float) (this.origin.x - camX));
-        VUtil.UNSAFE.putFloat(ptr + 4, (float) (this.origin.y - camY));
-        VUtil.UNSAFE.putFloat(ptr + 8, (float) (this.origin.z - camZ));
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout) {
 
-        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
+
+        float camX1 = (float)(camX-(this.origin.x));
+        float camY1 = (float)(camY-(this.origin.y));
+        float camZ1 = (float)(camZ-(this.origin.z));
+        VRenderSystem.translateMVP(-camX1, -camY1, -camZ1);
+        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 64, VRenderSystem.getMVP().ptr());
+        VRenderSystem.translateMVP(camX1, camY1, camZ1);
     }
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
 
@@ -194,7 +197,7 @@ public class DrawBuffers {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
             vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
         }
 
@@ -211,9 +214,8 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
         }
 
 

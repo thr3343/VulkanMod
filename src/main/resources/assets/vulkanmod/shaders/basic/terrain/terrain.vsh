@@ -3,20 +3,15 @@
 #include "light.glsl"
 
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP;
-   mat4 ModelViewMat;
-};
-
 layout(push_constant) uniform pushConstant {
-    vec3 ChunkOffset;
+    mat4 MVP2;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;
 
-layout(location = 0) out float vertexDistance;
-layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec2 texCoord0;
+
+layout(location = 0) out vec4 vertexColor;
+layout(location = 1) out vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
@@ -31,9 +26,11 @@ const vec3 POSITION_INV = vec3(1.0 / 1900.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 16, 8), 0, 8);
-    const vec3 pos = baseOffset + fma(Position, vec3(POSITION_INV), ChunkOffset);
-    const vec4 xyz = vec4(pos, 1);
-    gl_Position = MVP * xyz;
+    const vec3 pos = fma(Position, vec3(POSITION_INV), baseOffset);
+    const vec4 a = vec4(pos, 1);
+    gl_Position = MVP2 * a;
+
+
 
 
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
