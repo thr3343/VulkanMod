@@ -11,6 +11,7 @@ import net.vulkanmod.vulkan.shader.SPIRVUtils;
 import java.util.function.Function;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT;
+import static net.vulkanmod.render.vertex.TerrainRenderType.SOLID;
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
 
 public abstract class TerrainShaderManager {
@@ -65,7 +66,11 @@ public abstract class TerrainShaderManager {
     }
 
     public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
-        return renderType==CUTOUT?terrainShader: terrainShaderEarlyZ;
+        return switch (renderType)
+        {
+            case SOLID, TRANSLUCENT, TRIPWIRE -> terrainShaderEarlyZ;
+            case CUTOUT_MIPPED, CUTOUT -> terrainShader;
+        };
     }
 
     public static void setShaderGetter(Function<TerrainRenderType, GraphicsPipeline> consumer) {

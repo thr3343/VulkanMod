@@ -175,7 +175,6 @@ public abstract class ChunkTask {
                         renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState).name);
 
                         //Force compact RenderType
-                        renderType = compactRenderTypes(renderType);
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
@@ -191,9 +190,8 @@ public abstract class ChunkTask {
                         renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState).name);
 
                         //Force compact RenderType
-                        if(blockState.getBlock() instanceof LeavesBlock) renderType = a ? CUTOUT : CUTOUT_MIPPED;
-                        else if(blockState.getBlock() instanceof GrassBlock) renderType = CUTOUT;
-                        renderType = compactRenderTypes(renderType);
+//                        if(blockState.getBlock() instanceof LeavesBlock) renderType = a ? CUTOUT : CUTOUT_MIPPED;
+//                        else if(blockState.getBlock() instanceof GrassBlock) renderType = CUTOUT;
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
@@ -237,7 +235,8 @@ public abstract class ChunkTask {
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
 
             return switch (renderType) {
-                case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
+                case SOLID -> SOLID;
+                case CUTOUT_MIPPED -> CUTOUT_MIPPED;
                 case CUTOUT -> CUTOUT;
                 default -> TRANSLUCENT;
             };
