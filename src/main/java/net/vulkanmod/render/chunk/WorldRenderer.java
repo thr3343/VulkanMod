@@ -96,7 +96,6 @@ public class WorldRenderer {
     int nonEmptyChunks;
 
     private final List<Runnable> onAllChangedCallbacks = new ObjectArrayList<>();
-    private static Matrix4f pose = new Matrix4f().identity();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -613,7 +612,7 @@ public class WorldRenderer {
             rType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false, false);
 
-            terrainShader.descriptorSets[currentFrame].updateUniforms(Renderer.getDrawer().getUniformBuffers(), true);
+//            terrainShader.descriptorSets[currentFrame].updateUniforms(Renderer.getDrawer().getUniformBuffers(), true);
 
 //            this.updates[currentFrame]=false;
             Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
