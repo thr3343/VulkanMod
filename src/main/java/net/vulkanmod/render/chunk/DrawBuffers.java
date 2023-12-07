@@ -111,7 +111,7 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout) {
 
 
         float camX1 = (float)(camX-(this.origin.x));
@@ -195,7 +195,7 @@ public class DrawBuffers {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
             vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
         }
 
@@ -213,7 +213,7 @@ public class DrawBuffers {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
         }
 
         if(isTranslucent) {
