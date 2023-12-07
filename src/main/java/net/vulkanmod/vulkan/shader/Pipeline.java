@@ -99,8 +99,9 @@ public abstract class Pipeline {
                 uboLayoutBinding.stageFlags(ubo.getStages());
             }
 
-            for(ImageDescriptor imageDescriptor : this.imageDescriptors) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
+            for (int i = 0; i < this.imageDescriptors.size(); i++) {
+                ImageDescriptor imageDescriptor = this.imageDescriptors.get(i);
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(this.buffers.size() + i);
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());

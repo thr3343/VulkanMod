@@ -2,9 +2,6 @@
 
 #include "light.glsl"
 
-layout(binding = 0) uniform UniformBufferObject {
-    float AlphaCutout;
-};
 
 layout(push_constant) uniform pushConstant {
     mat4 MVP2;
