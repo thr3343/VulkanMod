@@ -113,7 +113,11 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> minecraftOptions.graphicsMode().set(value),
+                        value ->
+                        {
+                            minecraftOptions.graphicsMode().set(value);
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
                         () -> minecraftOptions.graphicsMode().get()
                 ),
                 new CyclingOption<>("Particles",
