@@ -119,7 +119,10 @@ public class Options {
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
                         () -> minecraftOptions.graphicsMode().get()
-                ),
+                ).setTooltip(Component.nullToEmpty("""
+                        Also enables additional Shader Optimisations If set to Fast
+                         * Early-Z Fragment Tests
+                         * Potentially Slightly Reduced VRAM usage""")),
                 new CyclingOption<>("Particles",
                         new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                         particlesMode -> Component.translatable(particlesMode.getKey()),
