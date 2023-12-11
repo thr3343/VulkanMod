@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkQueue;
 
@@ -136,5 +137,12 @@ public enum Queue {
             return submitCommands(commandBuffer);
         }
     }
+
+    public void trimCmdPool()
+    {
+        if(commandPool==null) return;
+        VK11.vkTrimCommandPool(Vulkan.getDevice(), this.commandPool.id, 0);
+    }
+
 
 }

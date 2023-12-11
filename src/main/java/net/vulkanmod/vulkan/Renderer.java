@@ -12,6 +12,7 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -84,6 +85,11 @@ public class Renderer {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+
+        addOnResizeCallback(() -> {
+            VK11.vkTrimCommandPool(device, Vulkan.getCommandPool(), 0);
+            Queue.GraphicsQueue.trimCmdPool();
+        });
     }
 
     private void init() {

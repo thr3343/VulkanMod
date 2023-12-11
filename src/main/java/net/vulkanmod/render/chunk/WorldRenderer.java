@@ -42,9 +42,11 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
@@ -88,7 +90,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+    IndirectBuffer[] indirectBuffers = null;
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -109,6 +111,7 @@ public class WorldRenderer {
                     allocateIndirectBuffers();
             });
         }
+        addOnAllChangedCallback(Queue.GraphicsQueue::trimCmdPool);
     }
 
     private void allocateIndirectBuffers() {
