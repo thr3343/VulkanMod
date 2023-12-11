@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static net.vulkanmod.vulkan.Device.deviceInfo;
+import static net.vulkanmod.vulkan.DeviceManager.deviceInfo;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
