@@ -24,7 +24,7 @@ public class ThreadBuilderPack {
     private final EnumMap<TerrainRenderType, TerrainBufferBuilder> builders=new EnumMap<>(TerrainRenderType.class);;
 
     public ThreadBuilderPack() {
-        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+        for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
             builders.put(renderType, terrainBuilderConstructor.apply(renderType));
         }
     }
