@@ -14,7 +14,7 @@ public class ThreadBuilderPack {
     private static Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
 
     public static void defaultTerrainBuilderConstructor() {
-        terrainBuilderConstructor = renderType -> new TerrainBufferBuilder(renderType.initialSize);
+        terrainBuilderConstructor = renderType -> new TerrainBufferBuilder(renderType.maxSize);
     }
 
     public static void setTerrainBuilderConstructor(Function<TerrainRenderType, TerrainBufferBuilder> constructor) {

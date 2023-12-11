@@ -221,6 +221,17 @@ public class Options {
                         "\n"+
                         "Reduces CPU overhead but increases GPU overhead.\n"+
                         "Enabling it might help in CPU limited systems.\n")),
+                new SwitchOption("Per RenderType AreaBuffers",
+                        value -> {
+                            //fre before updating the Config Value
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                            config.perRenderTypeAreaBuffers = value;
+                        },
+                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
+                        EXPERIMENTAL FEATURE
+                        May Greatly improve  performance
+                        But Is Architecture specific;
+                        may have no effect on some Devices""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> {

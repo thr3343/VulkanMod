@@ -19,6 +19,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
+    public boolean perRenderTypeAreaBuffers = true;
     public boolean entityCulling = true;
     public int device = -1;
     public boolean animations = true;

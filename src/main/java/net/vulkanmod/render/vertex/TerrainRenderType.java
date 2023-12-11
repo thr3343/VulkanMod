@@ -12,24 +12,27 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public enum TerrainRenderType {
-    SOLID(RenderType.solid(), 0.0f),
-    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
-    CUTOUT(RenderType.cutout(), 0.1f),
-    TRANSLUCENT(RenderType.translucent(), 0.0f),
-    TRIPWIRE(RenderType.tripwire(), 0.1f);
+    SOLID(RenderType.solid(), 0.0f, RenderType.BIG_BUFFER_SIZE),
+    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f, RenderType.SMALL_BUFFER_SIZE),
+    CUTOUT(RenderType.cutout(), 0.1f, RenderType.SMALL_BUFFER_SIZE),
+    TRANSLUCENT(RenderType.translucent(), 0.0f, RenderType.MEDIUM_BUFFER_SIZE),
+    TRIPWIRE(RenderType.tripwire(), 0.1f, RenderType.MEDIUM_BUFFER_SIZE);
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
     public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
-    public final int initialSize;
     final float alphaCutout;
+    public final int maxSize;  //Not sure if this should be changed to UINT16_INDEX_MAX * vertexSize
+    public final int initialSize; //Ignored W/ Per RenderTy[e AreaBuffers
 
-    TerrainRenderType(RenderType renderType, float alphaCutout) {
-        this.initialSize = renderType.bufferSize();
+    TerrainRenderType(RenderType renderType, float alphaCutout, int initialSize) {
         this.alphaCutout = alphaCutout;
+        this.maxSize = renderType.bufferSize();
+        this.initialSize = initialSize;
     }
+
     public static EnumSet<TerrainRenderType> getActiveLayers() {
         return Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
     }
