@@ -7,8 +7,6 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -113,15 +111,15 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout) {
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout, long mPtr) {
 
 
         float camX1 = (float)(camX-(this.origin.x));
         float camY1 = (float)(camY-(this.origin.y));
         float camZ1 = (float)(camZ-(this.origin.z));
-        VRenderSystem.translateMVP(-camX1, -camY1, -camZ1);
-        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 64, VRenderSystem.getMVP().ptr());
-        VRenderSystem.translateMVP(camX1, camY1, camZ1);
+        VRenderSystem.translateMVP(-camX1, -camY1, -camZ1, mPtr);
+        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 64, mPtr);
+//        VRenderSystem.translateMVP(camX1, camY1, camZ1);
     }
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
 
@@ -197,7 +195,7 @@ public class DrawBuffers {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.nmalloc(64));
             vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
         }
 
@@ -215,7 +213,7 @@ public class DrawBuffers {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.nmalloc(64));
         }
 
 
