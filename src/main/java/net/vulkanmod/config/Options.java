@@ -226,20 +226,26 @@ public class Options {
                             config.perRenderTypeAreaBuffers = value;
                         },
                         () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
-                        (EXPERIMENTAL)
-                        Potentially greatly improves performance of Chunk Rendering
+                        (WARNING: EXPERIMENTAL)
+                        
+                        Potentially improves performance of Chunk Rendering
+                        
                         Very Architecture specific: May have no effect on some Devices""")),
                 new SwitchOption("Fast Leaves Fix",
                         value -> {
                             config.fastLeavesFix = !Minecraft.useFancyGraphics() && value;
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
-                        () -> !Minecraft.useFancyGraphics() && config.fastLeavesFix).setTooltip(Component.nullToEmpty("""
-                        (EXPERIMENTAL)
-                        Only takes effect when enabled with Fast Graphics
-                        Uses a Alternate technique to fix Fast Leaves on Fast Graphics
-                        Recommended to use with Indirect Draw + "Per RenderType AreaBuffers"
-                        Is very experimental and may cause performance problems""")),
+                        () -> config.fastLeavesFix).setTooltip(Component.nullToEmpty("""
+                        (WARNING: EXPERIMENTAL)
+                        
+                        Effects FPS on both Fancy/Fast Graphics
+                        
+                        Uses an Alternate technique to fix Fast Leaves on Fast Graphics
+                        
+                        Recommended to use with "Per RenderType AreaBuffers"
+                        
+                        Extremely experimental: May Decrease performance, even on Fancy Graphics""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
