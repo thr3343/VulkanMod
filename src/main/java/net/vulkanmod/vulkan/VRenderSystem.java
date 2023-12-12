@@ -153,11 +153,6 @@ public abstract class VRenderSystem {
         org.joml.Matrix4f MV = new org.joml.Matrix4f().setFromAddress(modelViewMatrix.ptr());
         org.joml.Matrix4f P = new org.joml.Matrix4f().setFromAddress(projectionMatrix.ptr());
         P.mul(MV).getToAddress(MVP.ptr());
-
-    public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
-        P.mul(MV).get(MVP.buffer());
     }
 
     public static void translateMVP(float x, float y, float z) {

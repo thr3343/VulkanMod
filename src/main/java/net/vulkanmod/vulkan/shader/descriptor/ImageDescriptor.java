@@ -27,7 +27,7 @@ public class ImageDescriptor implements Descriptor {
 //     public ImageDescriptor(int binding, String type, String name, boolean isStorageImage) {
 // =======
     public ImageDescriptor(int binding, int stage, String type, String name) {
-        this(binding, stage, type, name, true);
+        this(binding, stage, type, name, false);
     }
 
     public ImageDescriptor(int binding, int stage, String type, String name, boolean isStorageImage) {
@@ -54,7 +54,7 @@ public class ImageDescriptor implements Descriptor {
 
     @Override
     public int getStages() {
-        return stage
+        return stage;
     }
 
     public void setLayout(int layout) {

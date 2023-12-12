@@ -337,10 +337,6 @@ public abstract class DeviceManager {
         return TransferQueue;
     }
 
-    public static Queue getComputeQueue() {
-        return ComputeQueue;
-    }
-
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
 
         long surface = Vulkan.getSurface();
