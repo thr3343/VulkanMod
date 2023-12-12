@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
@@ -10,11 +9,8 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
-import java.util.Objects;
 import java.util.function.Function;
 
-import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT;
-import static net.vulkanmod.render.vertex.TerrainRenderType.SOLID;
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
 
 public abstract class TerrainShaderManager {
@@ -62,7 +58,12 @@ public abstract class TerrainShaderManager {
     }
 
     public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
-        return renderType == TerrainRenderType.TRANSLUCENT ? terrainShaderEarlyZ : terrainShader;
+        return switch (renderType)
+        {
+            case SOLID, TRANSLUCENT, TRIPWIRE -> terrainShaderEarlyZ;
+            case CUTOUT_MIPPED -> Initializer.CONFIG.fastLeavesFix ? terrainShaderEarlyZ : terrainShader;
+            case CUTOUT -> terrainShader;
+        };
     }
 
     public static void setShaderGetter(Function<TerrainRenderType, GraphicsPipeline> consumer) {

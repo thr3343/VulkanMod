@@ -46,14 +46,12 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
-import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static net.vulkanmod.vulkan.DeviceManager.deviceInfo;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -112,6 +110,7 @@ public class WorldRenderer {
                     allocateIndirectBuffers();
             });
         }
+        addOnAllChangedCallback(Vulkan::waitIdle);
         addOnAllChangedCallback(Queue.GraphicsQueue::trimCmdPool);
     }
 
@@ -122,7 +121,7 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryTypes.HOST_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
@@ -598,7 +597,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
+        if((!Initializer.CONFIG.fastLeavesFix ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
 
             GraphicsPipeline terrainShader = TerrainShaderManager.getTerrainShader(rType);
 

@@ -101,9 +101,16 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> minecraftOptions.graphicsMode().set(value),
+                        value ->
+                        {
+                            minecraftOptions.graphicsMode().set(value);
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
                         () -> minecraftOptions.graphicsMode().get()
-                ),
+                ).setTooltip(Component.nullToEmpty("""
+                        Also enables additional Shader Optimisations If set to Fast
+                         * Early-Z Fragment Tests
+                         * Potentially Slightly Reduced VRAM usage""")),
                 new CyclingOption<>("Particles",
                         new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                         particlesMode -> Component.translatable(particlesMode.getKey()),
@@ -114,15 +121,6 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
-                new SwitchOption("Unique opaque layer",
-                        value -> {
-                            config.uniqueOpaqueLayer = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.uniqueOpaqueLayer)
-                        .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                     int v = value * 2 + 1;
@@ -228,22 +226,23 @@ public class Options {
                             config.perRenderTypeAreaBuffers = value;
                         },
                         () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
-                        EXPERIMENTAL FEATURE
-                        May Greatly improve  performance
-                        But Is Architecture specific;
-                        may have no effect on some Devices""")),
+                        (EXPERIMENTAL)
+                        Potentially greatly improves performance of Chunk Rendering
+                        Very Architecture specific: May have no effect on some Devices""")),
+                new SwitchOption("Fast Leaves Fix",
+                        value -> {
+                            config.fastLeavesFix = !Minecraft.useFancyGraphics() && value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> !Minecraft.useFancyGraphics() && config.fastLeavesFix).setTooltip(Component.nullToEmpty("""
+                        (EXPERIMENTAL)
+                        Only takes effect when enabled with Fast Graphics
+                        Uses a Alternate technique to fix Fast Leaves on Fast Graphics
+                        Recommended to use with Indirect Draw + "Per RenderType AreaBuffers"
+                        Is very experimental and may cause performance problems""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
-                        value -> {
-                            String t;
-
-                            if(value == -1)
-                                t = "Auto";
-                            else
-                                t = DeviceManager.suitableDevices.get(value).deviceName;
-
-                            return Component.nullToEmpty(t);
-                        },
+                        value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(
