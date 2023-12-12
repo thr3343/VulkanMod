@@ -13,9 +13,7 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.joml.Math;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -115,6 +113,10 @@ public abstract class VRenderSystem {
 //        GlStateManager._enableCull();
         RenderSystem.depthMask(true);
 //        GlStateManager._enableTexture();
+    }
+
+    public static void copyMVP(Matrix4f MV) {
+        MV.getToAddress(MVP.ptr());
     }
 
     public static void applyMVP(Matrix4f MV, Matrix4f P) {

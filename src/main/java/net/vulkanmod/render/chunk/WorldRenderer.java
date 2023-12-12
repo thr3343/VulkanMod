@@ -632,7 +632,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+        VRenderSystem.copyMVP(RenderSystem.getModelViewMatrix());
 
         switch (rType) {
             case CUTOUT -> {
