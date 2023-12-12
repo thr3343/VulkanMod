@@ -163,22 +163,14 @@ public abstract class DeviceManager {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);
             }
-
+            deviceFeatures.pNext(deviceVulkan11Features);
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             // queueCreateInfoCount is automatically set
 
-            createInfo.pEnabledFeatures(deviceFeatures.features());
-
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
-            createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
-
+            createInfo.pNext(deviceFeatures);
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
 //            deviceVulkan13Features.sType$Default();
