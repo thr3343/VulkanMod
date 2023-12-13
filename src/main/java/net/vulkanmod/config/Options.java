@@ -172,7 +172,7 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Render queue size", 2,
+                new RangeOption("Render queue size", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;

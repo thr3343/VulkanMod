@@ -83,7 +83,7 @@ public class Renderer {
 
     public Renderer() {
         device = Vulkan.getDevice();
-        framesNum = Initializer.CONFIG.frameQueueSize;
+        framesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
 
         addOnResizeCallback(() -> {
@@ -413,7 +413,7 @@ public class Renderer {
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
 
-        int newFramesNum = Initializer.CONFIG.frameQueueSize;
+        int newFramesNum = getSwapChain().getFramesNum();
         imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
