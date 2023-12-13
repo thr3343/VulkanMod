@@ -241,7 +241,7 @@ public class Options {
                         
                         Effects FPS on both Fancy/Fast Graphics
                         
-                        Uses an Alternate technique to fix Fast Leaves on Fast Graphics
+                        Uses an Alternate Rendering Mode to restore Fast Leaves on Fast Graphics
                         
                         Recommended to use with "Per RenderType AreaBuffers"
                         
