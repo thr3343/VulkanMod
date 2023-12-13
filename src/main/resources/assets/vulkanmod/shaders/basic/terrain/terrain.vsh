@@ -46,9 +46,9 @@ void main() {
 //layout(location = 4) in vec3 Normal;
 
 //void main() {
-//    gl_Position = MVP * vec4(Position + ChunkOffset, 1.0);
+//    gl_Position = MVP * vec4(Position, 1.0);
 //
-//    vertexDistance = length((ModelViewMat * vec4(Position + ChunkOffset, 1.0)).xyz);
+//    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
 //    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
 //    texCoord0 = UV0;
 //    //    normal = MVP * vec4(Normal, 0.0);
