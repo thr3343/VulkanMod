@@ -13,14 +13,11 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.joml.Math;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-
-import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 
 public abstract class VRenderSystem {
     private static long window;
@@ -36,24 +33,23 @@ public abstract class VRenderSystem {
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4);
 
-    public static final MappedBuffer modelViewMatrix = MappedBuffer.getMappedBuffer(16 * 4);
-    public static final MappedBuffer projectionMatrix = MappedBuffer.getMappedBuffer(16 * 4);
-    public static final MappedBuffer TextureMatrix = MappedBuffer.getMappedBuffer(16 * 4);
-    public static final MappedBuffer MVP = MappedBuffer.getMappedBuffer(16 * 4);
+    public static MappedBuffer modelViewMatrix = MappedBuffer.getMappedBuffer(16 * 4);
+    public static MappedBuffer projectionMatrix = MappedBuffer.getMappedBuffer(16 * 4);
+    public static MappedBuffer TextureMatrix = MappedBuffer.getMappedBuffer(16 * 4);
+    public static MappedBuffer MVP = MappedBuffer.getMappedBuffer(16 * 4);
 
-    public static final MappedBuffer ChunkOffset = MappedBuffer.getMappedBuffer(3 * 4);
-    public static final MappedBuffer lightDirection0 = MappedBuffer.getMappedBuffer(3 * 4);
-    public static final MappedBuffer lightDirection1 = MappedBuffer.getMappedBuffer(3 * 4);
+    public static MappedBuffer ChunkOffset = MappedBuffer.getMappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection0 = MappedBuffer.getMappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection1 = MappedBuffer.getMappedBuffer(3 * 4);
 
-    public static final MappedBuffer shaderColor = MappedBuffer.getMappedBuffer(4 * 4);
-    public static final MappedBuffer shaderFogColor = MappedBuffer.getMappedBuffer(4 * 4);
+    public static MappedBuffer shaderColor = MappedBuffer.getMappedBuffer(4 * 4);
+    public static MappedBuffer shaderFogColor = MappedBuffer.getMappedBuffer(4 * 4);
 
-    public static final MappedBuffer screenSize = MappedBuffer.getMappedBuffer(2 * 4);
+    public static MappedBuffer screenSize = MappedBuffer.getMappedBuffer(2 * 4);
 
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean clearColorUpdate = false;
 
     public static void initRenderer()
     {
@@ -61,6 +57,8 @@ public abstract class VRenderSystem {
 
         Vulkan.initVulkan(window);
     }
+
+    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
 
     public static int maxSupportedTextureSize() {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();
@@ -122,54 +120,44 @@ public abstract class VRenderSystem {
         applyProjectionMatrix(P);
         calculateMVP();
     }
-    public static void applyMVP2(Matrix4f MV, Matrix4f P) {
-        applyModelViewMatrix(MV);
-        applyProjectionMatrix(P);
-        calculateMVP();
-    }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.getToAddress(modelViewMatrix.ptr());
+        mat.get(modelViewMatrix.buffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.getToAddress(projectionMatrix.ptr());
+        mat.get(projectionMatrix.buffer());
 
 
     	Matrix4f pretransformMatrix = Vulkan.getPretransformMatrix();
-        long projMatrixBuffer = projectionMatrix.ptr();
+        ByteBuffer projMatrixBuffer = projectionMatrix.buffer();
         // This allows us to skip allocating an object
         // if the matrix is known to be an identity matrix.
         // Tbh idk if the jvm will just optimize out the allocation but i can't be sure
         // as java is sometimes pretty pedantic about object allocations.
         if((pretransformMatrix.properties() & Matrix4f.PROPERTY_IDENTITY) != 0) {
-        	mat.getToAddress(projMatrixBuffer);
+        	mat.get(projMatrixBuffer);
         } else {
-        	mat.mulLocal(pretransformMatrix, new Matrix4f()).getToAddress(projMatrixBuffer);
+        	mat.mulLocal(pretransformMatrix, new Matrix4f()).get(projMatrixBuffer);
         }
     }
 
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f().setFromAddress(modelViewMatrix.ptr());
-        org.joml.Matrix4f P = new org.joml.Matrix4f().setFromAddress(projectionMatrix.ptr());
-        P.mul(MV).getToAddress(MVP.ptr());
+        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
+        P.mul(MV).get(MVP.buffer());
     }
 
-    public static void translateMVP(float x, float y, float z, long ptr) {
-        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f().setFromAddress(MVP.ptr());
+    public static void translateMVP(float x, float y, float z, FloatBuffer ptr) {
+        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f((MVP.buffer().asFloatBuffer()));
 
-        MVP_.translate(x, y, z).getToAddress(ptr);
-    }
-    public static void calculateMVP2(float x, float y, float z) {
-        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f(MVP.buffer().asFloatBuffer());
-
-        MVP_.translate(x, y, z).get(MVP.buffer());
+        MVP_.translate(x, y, z).get(ptr);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.getToAddress(TextureMatrix.ptr());
+        mat.get(TextureMatrix.buffer().asFloatBuffer());
     }
 
     public static MappedBuffer getTextureMatrix() {
@@ -227,25 +215,11 @@ public abstract class VRenderSystem {
         ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
     }
     public static void clearColor(float f1, float f2, float f3, float f4) {
-//        if(f1==1&&f2==1&&f3==1&&f4==1) return; //Test JM Clear Fix
-        clearColorUpdate=checkClearisActuallyDifferent(f1, f2, f3, f4); //set to true if different colour
-        if(!clearColorUpdate) return;
         ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
     }
 
-    private static boolean checkClearisActuallyDifferent(float f0, float f1, float f2, float f3) {
-        float f0_ = clearColor.get(0);
-        float f1_ = clearColor.get(1);
-        float f2_ = clearColor.get(2);
-        float f3_ = clearColor.get(3);
-        return f0_!=f0&&f1_!=f1&&f2_!=f2&&f3_!=f3;
-    }
-
     public static void clear(int v) {
-        //Skip Mods reapplying the same colour over and over per clear
-        //if(/*currentClearColor==clearColor||*/!clearColorUpdate) return;
-        Renderer.clearAttachments(clearColorUpdate ? v : GL_DEPTH_BUFFER_BIT); //Depth Only Clears needed to fix Chat + Command Elements
-        clearColorUpdate=false;
+        Renderer.clearAttachments(v);
     }
 
     public static void disableDepthTest() {
@@ -271,11 +245,11 @@ public abstract class VRenderSystem {
     public static void enableDepthTest() {
         depthTest = true;
     }
-    
+
     public static void enableCull() {
         cull = true;
     }
-    
+
     public static void disableCull() {
         cull = false;
     }
@@ -304,7 +278,7 @@ public abstract class VRenderSystem {
         screenSize.putFloat(0, (float)window.getWidth());
         screenSize.putFloat(4, (float)window.getHeight());
     }
-    
+
     public static void setWindow(long window) {
         VRenderSystem.window = window;
     }
