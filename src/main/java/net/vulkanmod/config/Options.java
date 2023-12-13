@@ -233,7 +233,7 @@ public class Options {
                         Very Architecture specific: May have no effect on some Devices""")),
                 new SwitchOption("Fast Leaves Fix",
                         value -> {
-                            config.fastLeavesFix = !Minecraft.useFancyGraphics() && value;
+                            config.fastLeavesFix = value;
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
                         () -> config.fastLeavesFix).setTooltip(Component.nullToEmpty("""
