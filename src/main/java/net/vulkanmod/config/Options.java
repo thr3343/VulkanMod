@@ -6,8 +6,13 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 
 import java.util.stream.IntStream;
+
+import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -15,6 +20,17 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
     public static final boolean drawIndirectSupported = DeviceManager.deviceInfo.isDrawIndirectSupported();
+    public static final int minImageCount;
+    public static final int maxImageCount;
+
+    static {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            final VkSurfaceCapabilitiesKHR capabilities = VkSurfaceCapabilitiesKHR.malloc(stack);
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(DeviceManager.physicalDevice, Vulkan.getSurface(), capabilities);
+            minImageCount = capabilities.minImageCount();
+            maxImageCount = Math.min(capabilities.maxImageCount(), 32);
+        }
+    }
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -181,6 +197,14 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Higher values might help stabilize frametime
                         but will increase input lag""")),
+                new RangeOption("SwapChain Images", minImageCount,
+                        maxImageCount, 1,
+                        value -> {
+                            config.imageCount = value;
+                            Renderer.scheduleSwapChainUpdate();
+                        }, () -> config.imageCount)
+                        .setTooltip(Component.nullToEmpty("""
+                        SwapChain Image Count""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
