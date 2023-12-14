@@ -24,18 +24,12 @@ public enum TerrainRenderType {
     public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
     final int initialSize;
-    final float alphaCutout;
 
     TerrainRenderType(RenderType renderType, float alphaCutout) {
         this.initialSize = renderType.bufferSize();
-        this.alphaCutout = alphaCutout;
     }
     public static EnumSet<TerrainRenderType> getActiveLayers() {
         return Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
-    }
-
-    public void setCutoutUniform() {
-        VRenderSystem.alphaCutout = this.alphaCutout;
     }
 
     public static TerrainRenderType get(String renderType) {

@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -600,8 +601,7 @@ public class WorldRenderer {
             GraphicsPipeline terrainShader1 = TerrainShaderManager.getTerrainShader(rType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader1);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-
-            rType.setCutoutUniform();
+            
             terrainShader1.bindDescriptorSets(commandBuffer, currentFrame);
 
             final long layout = terrainShader1.getLayout();
