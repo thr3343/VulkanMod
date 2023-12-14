@@ -174,7 +174,7 @@ public class Renderer {
 
     public void beginFrame() {
 
-        if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
+
 
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
@@ -199,7 +199,7 @@ public class Renderer {
             return;
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
-
+        if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
         p.pop();
         p.start();
         p.push("Begin_rendering");
@@ -679,7 +679,7 @@ public class Renderer {
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
 
     public void updateFrameBuffer() {
-        vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
+//        vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
         tstFRAMEBUFFER_2.bindRenderPass(VRenderSystem.getDefaultRenderPassState());
         VRenderSystem.renderPassUpdate =false;
     }
