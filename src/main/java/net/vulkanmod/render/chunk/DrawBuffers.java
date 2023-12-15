@@ -233,10 +233,10 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        if(Initializer.CONFIG.perRenderTypeAreaBuffers) {
+        if(this.vertexBuffer==null) {
             this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
         }
-        else if(this.vertexBuffer!=null) this.vertexBuffer.freeBuffer();
+        else this.vertexBuffer.freeBuffer();
 
         if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
         this.areaBufferTypes.clear();
