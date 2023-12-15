@@ -61,8 +61,7 @@ public abstract class TerrainShaderManager {
         return switch (renderType)
         {
             case SOLID, TRANSLUCENT, TRIPWIRE -> terrainShaderEarlyZ;
-            case CUTOUT_MIPPED -> Initializer.CONFIG.fastLeavesFix ? terrainShaderEarlyZ : terrainShader;
-            case CUTOUT -> terrainShader;
+            case CUTOUT_MIPPED, CUTOUT -> terrainShader;
         };
     }
 

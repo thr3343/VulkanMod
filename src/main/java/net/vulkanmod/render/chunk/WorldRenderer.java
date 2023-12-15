@@ -598,7 +598,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((!Initializer.CONFIG.fastLeavesFix ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
+        if((!Initializer.CONFIG.fastLeavesFix ? COMPACT_RENDER_TYPES : ALL_RENDER_TYPES).contains(rType)) {
 
             GraphicsPipeline terrainShader = TerrainShaderManager.getTerrainShader(rType);
 

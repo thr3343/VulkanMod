@@ -1,15 +1,10 @@
 package net.vulkanmod.render.vertex;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public enum TerrainRenderType {
     SOLID(RenderType.solid(), 0.0f, RenderType.BIG_BUFFER_SIZE),
@@ -21,7 +16,7 @@ public enum TerrainRenderType {
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
-    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
+    public static final EnumSet<TerrainRenderType> ALL_RENDER_TYPES = EnumSet.allOf(TerrainRenderType.class);
 
     final float alphaCutout;
     public final int maxSize;  //Not sure if this should be changed to UINT16_INDEX_MAX * vertexSize
@@ -34,7 +29,7 @@ public enum TerrainRenderType {
     }
 
     public static EnumSet<TerrainRenderType> getActiveLayers() {
-        return !Initializer.CONFIG.fastLeavesFix ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
+        return !Initializer.CONFIG.fastLeavesFix ? COMPACT_RENDER_TYPES : ALL_RENDER_TYPES;
     }
 
     public void setCutoutUniform() {

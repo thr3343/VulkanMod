@@ -195,12 +195,12 @@ public abstract class ChunkTask {
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
                         renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState).name);
 
-                        //Force compact RenderType
-                        if(Initializer.CONFIG.fastLeavesFix)
-                        {
-                            if(blockState.getBlock() instanceof LeavesBlock) renderType = a ? CUTOUT : CUTOUT_MIPPED;
-                            else if(blockState.getBlock() instanceof GrassBlock) renderType = CUTOUT;
-                        }
+//                        //Force compact RenderType
+//                        if(Initializer.CONFIG.fastLeavesFix)
+//                        {
+//                            if(blockState.getBlock() instanceof LeavesBlock) renderType = a ? CUTOUT : CUTOUT_MIPPED;
+//                            else if(blockState.getBlock() instanceof GrassBlock) renderType = CUTOUT;
+//                        }
                         renderType = compactRenderTypes(renderType);
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
@@ -253,15 +253,16 @@ public abstract class ChunkTask {
 
                 };
             }
-            else {
-                return  switch (renderType)
-                {
-                    case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
-                    case CUTOUT -> CUTOUT;
-                    default -> TRANSLUCENT;
-
-                };
-            }
+            return renderType;
+//            else {
+//                return  switch (renderType)
+//                {
+//                    case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
+//                    case CUTOUT -> CUTOUT;
+//                    default -> TRANSLUCENT;
+//
+//                };
+//            }
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {
