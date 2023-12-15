@@ -145,19 +145,19 @@ public abstract class VRenderSystem {
 
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
+        org.joml.Matrix4f MV = new org.joml.Matrix4f().set(modelViewMatrix.buffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f().set(projectionMatrix.buffer());
         P.mul(MV).get(MVP.buffer());
     }
 
     public static void translateMVP(float x, float y, float z, FloatBuffer ptr) {
-        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f((MVP.buffer().asFloatBuffer()));
+        org.joml.Matrix4f MVP_ = new org.joml.Matrix4f().set(MVP.buffer());
 
         MVP_.translate(x, y, z).get(ptr);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.get(TextureMatrix.buffer().asFloatBuffer());
+        mat.get(TextureMatrix.buffer());
     }
 
     public static MappedBuffer getTextureMatrix() {
