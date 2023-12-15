@@ -120,7 +120,7 @@ public class Options {
                         value ->
                         {
                             minecraftOptions.graphicsMode().set(value);
-                            Minecraft.getInstance().levelRenderer.allChanged();
+                            Renderer.reload=true;
                         },
                         () -> minecraftOptions.graphicsMode().get()
                 ).setTooltip(Component.nullToEmpty("""
@@ -144,7 +144,7 @@ public class Options {
                         },
                         (value) -> {
                             minecraftOptions.biomeBlendRadius().set(value);
-                            Minecraft.getInstance().levelRenderer.allChanged();
+                            Renderer.reload=true;
                         },
                         () -> minecraftOptions.biomeBlendRadius().get()),
                 new CyclingOption<>("Chunk Builder Mode",
@@ -245,9 +245,8 @@ public class Options {
                         "Enabling it might help in CPU limited systems.\n")),
                 new SwitchOption("Per RenderType AreaBuffers",
                         value -> {
-                            //fre before updating the Config Value
-                            Minecraft.getInstance().levelRenderer.allChanged();
                             config.perRenderTypeAreaBuffers = value;
+                            Renderer.reload=true;
                         },
                         () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
                         (WARNING: EXPERIMENTAL)
@@ -258,7 +257,7 @@ public class Options {
                 new SwitchOption("Fast Leaves Fix",
                         value -> {
                             config.fastLeavesFix = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
+                            Renderer.reload=true;
                         },
                         () -> config.fastLeavesFix).setTooltip(Component.nullToEmpty("""
                         (WARNING: EXPERIMENTAL)
