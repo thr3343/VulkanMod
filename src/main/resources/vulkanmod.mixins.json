@@ -6,7 +6,6 @@
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
   "mixins": [],
   "client": [
-    "WindowMixin",
     "chunk.CubicSamplerM",
     "window.WindowMixin",
     "window.WindowAccessor",

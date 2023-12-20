@@ -67,7 +67,7 @@ public abstract class RenderSystemMixin {
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void _setShaderTexture(int i, int id) {
         if (i >= 0 && i < VTextureSelector.SIZE) {
             GlTexture glTexture = GlTexture.getTexture(id);
