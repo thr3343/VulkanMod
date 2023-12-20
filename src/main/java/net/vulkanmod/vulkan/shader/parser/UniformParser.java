@@ -102,7 +102,7 @@ public class UniformParser {
         AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
         for(Uniform uniform : this.globalUniforms) {
-            builder.addFieldInfo(uniform.type, uniform.name);
+            builder.addUniformInfo(uniform.type, uniform.name);
         }
         //TODO!!!
         //hardcoded 0 binding as it should always be 0 in this case

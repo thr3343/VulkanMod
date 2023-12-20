@@ -516,9 +516,9 @@ public abstract class Pipeline {
             this.fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath, this.shaderPath), ShaderKind.FRAGMENT_SHADER);
         }
 
-        public void compileShaders(String vsh, String fsh) {
-            this.vertShaderSPIRV = compileShader("vertex shader", vsh, ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShader("fragment shader", fsh, ShaderKind.FRAGMENT_SHADER);
+        public void compileShaders(String name, String vsh, String fsh) {
+            this.vertShaderSPIRV = compileShader(String.format("%s.vsh", name), vsh, ShaderKind.VERTEX_SHADER);
+            this.fragShaderSPIRV = compileShader(String.format("%s.fsh", name), fsh, ShaderKind.FRAGMENT_SHADER);
         }
 
         public void parseBindingsJSON() {
@@ -578,7 +578,7 @@ public abstract class Pipeline {
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
                 int j = GsonHelper.getAsInt(jsonobject2, "count");
 
-                builder.addFieldInfo(type2, name, j);
+                builder.addUniformInfo(type2, name, j);
 
             }
             UBO ubo = builder.buildUBO(binding, type);
@@ -622,7 +622,7 @@ public abstract class Pipeline {
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
                 int j = GsonHelper.getAsInt(jsonobject2, "count");
 
-                builder.addFieldInfo(type2, name, j);
+                builder.addUniformInfo(type2, name, j);
             }
 
             this.pushConstants = builder.buildPushConstant();
