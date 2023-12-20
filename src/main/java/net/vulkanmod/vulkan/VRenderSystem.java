@@ -14,6 +14,8 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
+import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
+
 public abstract class VRenderSystem {
     private static long window;
 
@@ -28,6 +30,7 @@ public abstract class VRenderSystem {
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4); //Avoid the driver caching dirty memory as a clear Color
 
+    public static final float[] clearColor2 = new float[]{0,0,0,0};
     public static final MappedBuffer modelViewMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
     public static final MappedBuffer projectionMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
     public static final MappedBuffer TextureMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
@@ -45,6 +48,7 @@ public abstract class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
+    public static boolean clearColorUpdate = false;
 
     public static void initRenderer()
     {
@@ -135,12 +139,35 @@ public abstract class VRenderSystem {
         PipelineState.currentLogicOpState.setLogicOp(p_69836_);
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
+    public static void setFogClearColor(float f1, float f2, float f3, float f4)
+    {
         ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
+    }
+    public static void clearColor(float f0, float f1, float f2, float f3) {
+//        if(f1==1&&f2==1&&f3==1&&f4==1) return; //Test JM Clear Fix
+        //set to true if different colour
+        clearColorUpdate=checkClearisActuallyDifferent(f0, f1, f2, f3);
+        if(!clearColorUpdate) return;
+        ColorUtil.setRGBA_Buffer(clearColor, f0, f1, f2, f3);
+        clearColor2[0]=f0;
+        clearColor2[1]=f1;
+        clearColor2[2]=f2;
+        clearColor2[3]=f3;
+    }
+
+    private static boolean checkClearisActuallyDifferent(float f0, float f1, float f2, float f3) {
+        float f0_ = clearColor2[0];
+        float f1_ = clearColor2[1];
+        float f2_ = clearColor2[2];
+        float f3_ = clearColor2[3];
+        return f0_!=f0&&f1_!=f1&&f2_!=f2&&f3_!=f3;
     }
 
     public static void clear(int v) {
-        Renderer.clearAttachments(v);
+        //Skip Mods reapplying the same colour over and over per clear
+        //if(/*currentClearColor==clearColor||*/!clearColorUpdate) return;
+        Renderer.clearAttachments(clearColorUpdate ? v : GL_DEPTH_BUFFER_BIT); //Depth Only Clears needed to fix Chat + Command Elements
+        clearColorUpdate=false;
     }
 
     public static void disableDepthTest() {

@@ -50,7 +50,7 @@ public abstract class VTextureSelector {
 
     public static int getTextureIdx(String name) {
         return switch (name) {
-            case "Sampler0", "DiffuseSampler" -> 0;
+            default -> 0;
             case "Sampler1" -> 1;
             case "Sampler2" -> 2;
             case "Sampler3" -> 3;
@@ -58,7 +58,6 @@ public abstract class VTextureSelector {
             case "Sampler5" -> 5;
             case "Sampler6" -> 6;
             case "Sampler7" -> 7;
-            default -> throw new IllegalStateException("Unknown sampler name: " + name);
         };
     }
 

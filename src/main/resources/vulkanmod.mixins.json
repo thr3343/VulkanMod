@@ -16,9 +16,12 @@
     "chunk.VisibilitySetMixin",
 
     "compatibility.EffectInstanceM",
+    "compatibility.PostChainM",
+    "compatibility.PostPassM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL13M",
     "compatibility.gl.GL30M",
 
     "debug.ChunkBorderRendererM",
@@ -84,11 +87,8 @@
 
     "wayland.InputConstantsM",
     "wayland.MinecraftMixin",
-
-    "texture.mip.MipmapGeneratorM",
-
-    "compatibility.PostChainM",
-    "compatibility.PostPassM"
+    "window.WindowAccessor",
+    "window.WindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1
