@@ -16,11 +16,13 @@
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
     "compatibility.EffectInstanceM",
+    "compatibility.PostChainM",
+    "compatibility.PostPassM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL13M",
     "compatibility.gl.GL30M",
-
 
     "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
@@ -72,6 +74,11 @@
     "texture.MSpriteContents",
     "texture.MTextureManager",
     "texture.MTextureUtil",
+
+    "texture.image.MNativeImage",
+    "texture.image.NativeImageAccessor",
+    "texture.mip.MipmapGeneratorM",
+
     "util.ScreenshotRecorderM",
 
     "vertex.EntityOutlineGeneratorM",
@@ -81,11 +88,8 @@
     "vertex.VertexMultiConsumersM$SheetDecalM",
     "wayland.InputConstantsM",
     "wayland.MinecraftMixin",
-
-    "texture.mip.MipmapGeneratorM",
-
-    "compatibility.PostChainM",
-    "compatibility.PostPassM"
+    "window.WindowAccessor",
+    "window.WindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1
