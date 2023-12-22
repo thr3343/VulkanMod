@@ -6,7 +6,7 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
 public class IndexBuffer extends Buffer {
 
-    public IndexType indexType = IndexType.SHORT;
+//    public IndexType indexType = IndexType.SHORT;
 
     public IndexBuffer(int size) {
         this(size, MemoryTypes.HOST_MEM);
@@ -24,14 +24,15 @@ public class IndexBuffer extends Buffer {
 //        this.idxs = new short[buffer.remaining() / 2];
 //        buffer.asShortBuffer().get(idxs);
 
-        // Cached aligned size
-        int alignedSize = Util.align(size * indexType.size, type.getAlignment());
-        if (alignedSize > this.bufferSize - this.usedBytes) {
-            resizeBuffer(alignedSize + usedBytes);
-        } else {
-            this.type.copyToBuffer(this, alignedSize, buffer);
+        if(size > this.bufferSize - this.usedBytes) {
+            //TODO
+            throw new RuntimeException("trying to write buffer beyond max size.");
+            //createIndexBuffer(vertexSize, vertexCount, byteBuffer);
+        }
+        else {
+            this.type.copyToBuffer(this, size, buffer);
             offset = usedBytes;
-            usedBytes += alignedSize;
+            usedBytes += size;
         }
     }
 
@@ -39,7 +40,7 @@ public class IndexBuffer extends Buffer {
         MemoryManager.getInstance().addToFreeable(this);
         this.createBuffer(newSize);
 
-//        System.out.println("resized vertexBuffer to: " + newSize);
+        System.out.println("resized vertexBuffer to: " + newSize);
     }
 
     public enum IndexType {
@@ -52,5 +53,6 @@ public class IndexBuffer extends Buffer {
             this.size = size;
         }
     }
+
 
 }
