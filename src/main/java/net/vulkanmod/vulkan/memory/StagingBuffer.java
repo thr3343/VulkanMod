@@ -37,8 +37,10 @@ public class StagingBuffer extends Buffer {
     public void align(int alignment) {
         int alignedValue = Util.align(usedBytes, alignment);
 
-        if(alignedValue > this.bufferSize) {
-            resizeBuffer((this.bufferSize) * 2);
+        // Cache aligned buffer size for efficiency
+        if (alignedValue > this.bufferSize) {
+            int newSize = alignedValue; // Consider alternative resizing strategies
+            resizeBuffer(newSize);
         }
 
         usedBytes = alignedValue;
@@ -48,6 +50,6 @@ public class StagingBuffer extends Buffer {
         MemoryManager.getInstance().addToFreeable(this);
         this.createBuffer(newSize);
 
-        System.out.println("resized staging buffer to: " + newSize);
+//        System.out.println("resized staging buffer to: " + newSize);
     }
 }
