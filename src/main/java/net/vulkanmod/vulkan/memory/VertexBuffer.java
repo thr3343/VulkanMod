@@ -14,20 +14,28 @@ public class VertexBuffer extends Buffer {
         super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
         this.createBuffer(size);
 
+        // Cache the offset and used bytes for efficiency
+        this.offset = 0;
+        this.usedBytes = 0;
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {
         int bufferSize = (int) (vertexSize * vertexCount);
-//        long bufferSize = byteBuffer.limit();
 
-        if(bufferSize > this.bufferSize - this.usedBytes) {
-            resizeBuffer((this.bufferSize + bufferSize) * 2);
+        // Check if the buffer needs resizing
+        if (bufferSize > this.bufferSize - this.usedBytes) {
+
+            // Resize the buffer using the new size
+            int newSize = Math.max(bufferSize, this.bufferSize * 2);
+            resizeBuffer(newSize);
         }
 
+        // Copy the data to the buffer
         this.type.copyToBuffer(this, bufferSize, byteBuffer);
-        offset = usedBytes;
-        usedBytes += bufferSize;
 
+        // Update the offset and used bytes
+        this.offset += bufferSize;
+        this.usedBytes += bufferSize;
     }
 
     private void resizeBuffer(int newSize) {
@@ -36,5 +44,4 @@ public class VertexBuffer extends Buffer {
 
 //        System.out.println("resized vertexBuffer to: " + newSize);
     }
-
 }
