@@ -19,27 +19,25 @@ public class IndirectBuffer extends Buffer {
     public void recordCopyCmd(ByteBuffer byteBuffer) {
         int size = byteBuffer.remaining();
 
-        // Cache aligned buffer size for efficiency
-        int alignedSize = Util.align(size, this.type.getAlignment());
-        if (alignedSize > this.bufferSize - this.usedBytes) {
-            int newSize = Math.max(alignedSize, this.bufferSize * 2); // Consider alternative resizing strategies
-            resizeBuffer(newSize);
+        if(size > this.bufferSize - this.usedBytes) {
+            resizeBuffer();
         }
 
-        if (this.type.mappable()) {
-            this.type.copyToBuffer(this, alignedSize, byteBuffer);
-        } else {
-            if (commandBuffer == null)
+        if(this.type.mappable()) {
+            this.type.copyToBuffer(this, size, byteBuffer);
+        }
+        else {
+            if(commandBuffer == null)
                 commandBuffer = DeviceManager.getTransferQueue().beginCommands();
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-            stagingBuffer.recordCopyCmd(size, byteBuffer);
+            stagingBuffer.copyBuffer(size, byteBuffer);
 
             TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.getId(), this.getUsedBytes(), size);
         }
 
         offset = usedBytes;
-        usedBytes += alignedSize;
+        usedBytes += size;
     }
 
     private void resizeBuffer() {
@@ -50,7 +48,7 @@ public class IndirectBuffer extends Buffer {
     }
 
     public void submitUploads() {
-        if (commandBuffer == null)
+        if(commandBuffer == null)
             return;
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
