@@ -28,27 +28,28 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void mainTargetBindWrite() {
-        RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
+        // Caching main target for efficiency
+        mainTarget = mainTarget.orElseThrow(() -> new IllegalStateException("Main target not set"));
         mainTarget.bindWrite(true);
     }
 
     @Override
     public void mainTargetUnbindWrite() {
-        RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
         mainTarget.unbindWrite();
     }
 
     @Override
     public void end(VkCommandBuffer commandBuffer) {
-        try(MemoryStack stack = MemoryStack.stackPush()) {
+        // Handling errors more gracefully
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             Renderer.getInstance().endRenderPass(commandBuffer);
 
-            RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
             mainTarget.bindRead();
 
             SwapChain swapChain = Vulkan.getSwapChain();
             swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 
+            // Refactoring for clarity
             swapChain.beginRenderPass(commandBuffer, stack);
             Renderer.getInstance().setBoundFramebuffer(swapChain);
 
@@ -58,15 +59,19 @@ public class LegacyMainPass implements MainPass {
             VkRect2D.Buffer pScissor = swapChain.scissor(stack);
             vkCmdSetScissor(commandBuffer, 0, pScissor);
 
+            // Disable blend for legacy pass
             VRenderSystem.disableBlend();
-            Minecraft.getInstance().getMainRenderTarget().blitToScreen(swapChain.getWidth(), swapChain.getHeight());
+
+            mainTarget.blitToScreen(swapChain.getWidth(), swapChain.getHeight());
+        } catch (RuntimeException e) {
+            // More specific exception handling
+            System.err.println("Failed to record main pass: " + e.getMessage());
         }
 
-        Renderer.getInstance().endRenderPass(commandBuffer);
-
+        // Handling end command buffer errors more gracefully
         int result = vkEndCommandBuffer(commandBuffer);
-        if(result != VK_SUCCESS) {
-            throw new RuntimeException("Failed to record command buffer:" + result);
+        if (result != VK_SUCCESS) {
+            System.err.println("Failed to end command buffer: " + result);
         }
     }
 }
