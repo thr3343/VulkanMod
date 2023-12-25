@@ -506,7 +506,7 @@ public class Renderer {
         if(framebuffer == null)
             return;
 
-        clearAttachments(GL_DEPTH_BUFFER_BIT, framebuffer.getWidth(), framebuffer.getHeight());
+        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
     }
 
     public static void clearAttachments(int v, int width, int height) {
