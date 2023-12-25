@@ -577,7 +577,7 @@ public class WorldRenderer {
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
 
             final long layout = terrainShader.getLayout();
 
