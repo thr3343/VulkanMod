@@ -11,6 +11,6 @@ public class FogRendererM {
     @Redirect(method = "setupColor", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clearColor(FFFF)V"))
     private static void getSFogClearColor(float f, float g, float h, float i)
     {
-        VRenderSystem.setFogClearColor(f, g, h, i);
+        VRenderSystem.clearColor(f, g, h, i);
     }
 }
