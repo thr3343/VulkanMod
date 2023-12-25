@@ -324,8 +324,7 @@ public class WorldRenderer {
                 this.nonEmptyChunks++;
             }
 
-            if(this.scheduleUpdate(renderSection, buildLimit))
-                buildLimit--;
+            this.scheduleUpdate(renderSection);
 
             if(renderSection.directionChanges > maxDirectionsChanges)
                 continue;
@@ -365,8 +364,7 @@ public class WorldRenderer {
                 this.nonEmptyChunks++;
             }
 
-            if(this.scheduleUpdate(renderSection, rebuildLimit))
-                rebuildLimit--;
+            this.scheduleUpdate(renderSection);
 
             for(Direction direction : Util.DIRECTIONS) {
                 RenderSection relativeChunk = renderSection.getNeighbour(direction);
@@ -418,16 +416,12 @@ public class WorldRenderer {
         relativeChunk.directionChanges = d;
     }
 
-    public boolean scheduleUpdate(RenderSection section, int limit) {
+    public void scheduleUpdate(RenderSection section) {
         if(!section.isDirty())
-            return false;
-
-        if(limit <= 0)
-            return false;
+            return;
 
         section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
         section.setNotDirty();
-        return true;
     }
 
     public void compileSections(Camera camera) {
