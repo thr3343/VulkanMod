@@ -7,8 +7,6 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
@@ -17,9 +15,6 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.nio.LongBuffer;
-import java.util.EnumMap;
-import java.util.Set;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -35,9 +30,7 @@ public class DrawBuffers {
     AreaBuffer vertexBuffer;
     AreaBuffer indexBuffer;
 
-    //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-//    final StaticQueue<DrawParameters> sectionQueue = new StaticQueue<>(512);
-    private final EnumMap<TerrainRenderType, StaticQueue<DrawParameters>> sectionQueues = new EnumMap<>(TerrainRenderType.class);
+
 
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
 
@@ -48,8 +41,6 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
-
-        TerrainRenderType.getActiveLayers().forEach(renderType -> sectionQueues.put(renderType, new StaticQueue<>(512)));
         this.allocated = true;
     }
 
@@ -92,10 +83,6 @@ public class DrawBuffers {
     }
 
 
-    private boolean renderTypeEmpty(TerrainRenderType r) {
-        return this.sectionQueues.get(r).size()==0;
-    }
-
     private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
         final int xOffset1 = (xOffset & 127);
         final int zOffset1 = (zOffset & 127);
@@ -118,16 +105,16 @@ public class DrawBuffers {
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
 
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout, StaticQueue<DrawParameters> typedSectionQueue) {
         int stride = 20;
 
         int drawCount = 0;
 
-        if(renderTypeEmpty(terrainRenderType)) return 0;
+        if(typedSectionQueue==null || typedSectionQueue.size() == 0) return;
 
-        StaticQueue<DrawParameters> queue = this.sectionQueues.get(terrainRenderType);
+
         MemoryStack stack = MemoryStack.stackPush();
-        ByteBuffer byteBuffer = stack.calloc(20 * queue.size());
+        ByteBuffer byteBuffer = stack.calloc(20 * typedSectionQueue.size());
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
 
 
@@ -139,7 +126,7 @@ public class DrawBuffers {
         }
 
 
-        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
+        for (var iterator = typedSectionQueue.iterator(isTranslucent); iterator.hasNext(); ) {
             DrawParameters drawParameters = iterator.next();
 
 
@@ -181,7 +168,7 @@ public class DrawBuffers {
 
         if(drawCount == 0) {
             MemoryStack.stackPop();
-            return 0;
+            return;
         }
 
 
@@ -202,12 +189,11 @@ public class DrawBuffers {
 //        MemoryUtil.memFree(byteBuffer);
         MemoryStack.stackPop();
 
-        return drawCount;
     }
 
 
-    public void buildDrawBatchesDirect(TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
-        if(this.renderTypeEmpty(terrainRenderType)) return;
+    public void buildDrawBatchesDirect(TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout, StaticQueue<DrawParameters> typedSectionQueue) {
+        if(typedSectionQueue==null || typedSectionQueue.size() == 0) return;
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -221,7 +207,7 @@ public class DrawBuffers {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
-        for (var iterator = this.sectionQueues.get(terrainRenderType).iterator(isTranslucent); iterator.hasNext(); ) {
+        for (var iterator = typedSectionQueue.iterator(isTranslucent); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
@@ -244,17 +230,17 @@ public class DrawBuffers {
         return allocated;
     }
 
-    public void addDrawCommands(TerrainRenderType r, DrawParameters drawParameters) {
-        this.sectionQueues.get(r).add(drawParameters);
-    }
+//    public void addDrawCommands(TerrainRenderType r, DrawParameters drawParameters) {
+//        this.sectionQueues.get(r).add(drawParameters);
+//    }
 
-    public void clear() {
-        this.sectionQueues.values().forEach(StaticQueue::clear);
-    }
+//    public void clear() {
+//        this.sectionQueues.values().forEach(StaticQueue::clear);
+//    }
 
-    public void addRenderTypes(Set<TerrainRenderType> renderTypes) {
-        renderTypes.forEach(renderType ->  this.sectionQueues.computeIfAbsent(renderType, r->new StaticQueue<>(512)));
-    }
+//    public void addRenderTypes(Set<TerrainRenderType> renderTypes) {
+//        renderTypes.forEach(renderType ->  this.sectionQueues.computeIfAbsent(renderType, r->new StaticQueue<>(512)));
+//    }
 
 //    public void clear(TerrainRenderType r) {
 //        this.sectionQueues.get(r).clear();

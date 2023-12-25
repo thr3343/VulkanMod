@@ -31,7 +31,7 @@ import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
-import net.vulkanmod.render.chunk.util.DrawBufferSetQueue;
+import net.vulkanmod.render.chunk.util.ChunkAreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.BuildTimeBench;
@@ -79,7 +79,7 @@ public class WorldRenderer {
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
-    private DrawBufferSetQueue drawBufferSetQueue;
+    private ChunkAreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
     private double xTransparentOld;
@@ -303,7 +303,7 @@ public class WorldRenderer {
     }
 
     private void resetUpdateQueues() {
-        this.drawBufferSetQueue.clear();
+        this.chunkAreaQueue.clear();
         this.sectionGrid.chunkAreaManager.resetQueues();
     }
 
@@ -319,12 +319,8 @@ public class WorldRenderer {
             RenderSection renderSection = this.chunkQueue.poll();
 
             if(!renderSection.isCompletelyEmpty()) {
-                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
-                //Empty drawCmds never seem to occur anymore, which should be completely impossible but it somehow works
-                for(var t : renderSection.getCompiledSection().renderTypes) {
-                    drawBuffers.addDrawCommands(t, renderSection.getDrawParameters(t));
-                }
-                this.drawBufferSetQueue.add(drawBuffers);
+                renderSection.getChunkArea().addSections(renderSection);
+                this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
 
@@ -364,12 +360,8 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
-                //Empty drawCmds never seem to occur anymore, which should be completely impossible but it somehow works
-                for(var t : renderSection.getCompiledSection().renderTypes) {
-                    drawBuffers.addDrawCommands(t, renderSection.getDrawParameters(t));
-                }
-                this.drawBufferSetQueue.add(drawBuffers);
+                renderSection.getChunkArea().addSections(renderSection);
+                this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
 
@@ -499,7 +491,7 @@ public class WorldRenderer {
             }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
-            this.drawBufferSetQueue = new DrawBufferSetQueue(this.sectionGrid.chunkAreaManager.size);
+            this.chunkAreaQueue = new ChunkAreaSetQueue(this.sectionGrid.chunkAreaManager.size);
 
             this.onAllChangedCallbacks.forEach(Runnable::run);
 
@@ -589,13 +581,14 @@ public class WorldRenderer {
 
             final long layout = terrainShader.getLayout();
 
-            for(Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);iterator.hasNext();) {
-                DrawBuffers drawBuffers = iterator.next();
+            for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
+                ChunkArea chunkArea = iterator.next();
+                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
                 if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ, layout);
+                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ, layout, typedSectionQueue);
                 } else {
-                    drawBuffers.buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ, layout);
+                    chunkArea.drawBuffers().buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ, layout, typedSectionQueue);
                 }
             }
         }

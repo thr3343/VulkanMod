@@ -2,8 +2,14 @@ package net.vulkanmod.render.chunk;
 
 import net.minecraft.util.Mth;
 import net.vulkanmod.render.chunk.util.CircularIntList;
+import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.render.vertex.TerrainRenderType;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3i;
+
+import java.util.Arrays;
+import java.util.EnumMap;
 
 public class ChunkAreaManager {
     static final int WIDTH = 8;
@@ -180,7 +186,7 @@ public class ChunkAreaManager {
 
     public void resetQueues() {
         for(ChunkArea chunkArea : this.chunkAreasArr) {
-            chunkArea.drawBuffers().clear();
+            chunkArea.resetQueue();
         }
     }
 
