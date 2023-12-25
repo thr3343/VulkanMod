@@ -22,7 +22,7 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    public final int index;
+    public final short index;
     private final Vector3i origin;
     private final int minHeight;
 
@@ -34,7 +34,7 @@ public class DrawBuffers {
 
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
 
-        this.index = index;
+        this.index = (short) index;
         this.origin = origin;
         this.minHeight = minHeight;
     }
