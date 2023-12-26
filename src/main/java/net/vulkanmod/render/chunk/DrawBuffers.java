@@ -97,10 +97,10 @@ public class DrawBuffers {
             float z = (float)(camZ-(this.origin.z));
 
             Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer().asFloatBuffer());
-            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer().asFloatBuffer());
+//            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer().asFloatBuffer());
 
             MVP.translate(-x, -y, -z).get(mPtr);
-            MV.translate(-x, -y, -z).get(16,mPtr);
+//            MV.translate(-x, -y, -z).get(16,mPtr);
 
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
@@ -180,7 +180,7 @@ public class DrawBuffers {
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(16));
         vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
 
 
@@ -199,7 +199,7 @@ public class DrawBuffers {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(16));
         }
 
 

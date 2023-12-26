@@ -8,14 +8,13 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(push_constant) uniform pushConstant {
     mat4 MVP;
-    mat4 ProjMat;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;
 
-layout(location = 0) out float vertexDistance;
-layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec2 texCoord0;
+
+layout(location = 0) out vec4 vertexColor;
+layout(location = 1) out vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
@@ -34,7 +33,7 @@ void main() {
     const vec4 xyz = vec4(pos, 1);
     gl_Position = MVP * xyz;
 
-    vertexDistance = length((ProjMat * xyz).xyz);
+
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);

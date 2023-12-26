@@ -56,6 +56,21 @@ public class ResettableQueue<T> implements Iterable<T> {
     public int size() {
         return limit;
     }
+    public int capacity() {
+        return capacity;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void trim(int size)
+    {
+        if(size>=this.capacity) return;
+        this.capacity=size;
+
+        T[] oldQueue = this.queue;
+        this.queue = (T[])(new Object[capacity]);
+
+        System.arraycopy(oldQueue, 0, this.queue, 0, size);
+    }
 
     public void clear() {
         this.position = 0;

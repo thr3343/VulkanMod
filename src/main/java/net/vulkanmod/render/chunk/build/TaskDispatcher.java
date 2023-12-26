@@ -197,7 +197,9 @@ public class TaskDispatcher {
     public String getStats() {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("iT: %d", this.idleThreads);
+        int size = this.highPriorityTasks.size();
+        int size1 = this.lowPriorityTasks.size();
+        return String.format("iT: %d cT: h:%d l:%d t:%d", this.idleThreads, size, size1, size+size1);
     }
 
 }
