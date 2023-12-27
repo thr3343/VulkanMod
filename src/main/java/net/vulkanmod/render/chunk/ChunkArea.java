@@ -8,12 +8,14 @@ import org.joml.Vector3i;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.Map;
 
 public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers, EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueues) {
 
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
         this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
+        TerrainRenderType.getActiveLayers().forEach(renderType -> sectionQueues.put(renderType, new StaticQueue<>(512)));
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -116,12 +118,12 @@ public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuff
 
     public void addSections(RenderSection section) {
         for(var t : section.getCompiledSection().renderTypes) {
-            this.sectionQueues.computeIfAbsent(t, r -> new StaticQueue<>(512)).add(section.getDrawParameters(t));
+            this.sectionQueues.get(t).add(section.getDrawParameters(t));
         }
     }
 
     public void resetQueue() {
-        this.sectionQueues.clear();
+        this.sectionQueues.forEach((renderType, drawParameters) -> drawParameters.clear());
     }
 
     public void setPosition(int x, int y, int z) {
