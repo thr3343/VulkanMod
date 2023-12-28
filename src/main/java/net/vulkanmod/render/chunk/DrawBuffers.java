@@ -44,7 +44,6 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
-        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
         this.allocated = true;
     }
@@ -66,6 +65,8 @@ public class DrawBuffers {
         }
 
         if(!buffer.autoIndices) {
+            if (this.indexBuffer==null)
+                this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
             this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
@@ -258,7 +259,7 @@ public class DrawBuffers {
             return;
 
         this.vertexBuffer.freeBuffer();
-        this.indexBuffer.freeBuffer();
+        if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
 
         this.vertexBuffer = null;
         this.indexBuffer = null;
