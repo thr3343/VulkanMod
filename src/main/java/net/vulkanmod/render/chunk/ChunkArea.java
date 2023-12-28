@@ -15,7 +15,9 @@ public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuff
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
         this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
-        TerrainRenderType.getActiveLayers().forEach(renderType -> sectionQueues.put(renderType, new StaticQueue<>(512)));
+        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+            sectionQueues.put(renderType, new StaticQueue<>(512));
+        }
     }
 
     public void updateFrustum(VFrustum frustum) {

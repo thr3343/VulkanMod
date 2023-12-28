@@ -8,6 +8,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static net.vulkanmod.Initializer.LOGGER;
@@ -16,6 +17,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
     private static final int activePlat = getSupportedPlat();
+    private static final String activeDE=determineDE();
 
     int width;
     int height;
@@ -58,6 +60,11 @@ public class VideoResolution {
     public static void init() {
         RenderSystem.assertOnRenderThread();
         GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
+
+        if(isX11())
+        {
+            glfwInitHint(GLFW_X11_XCB_VULKAN_SURFACE, GLFW_TRUE);
+        }
         LOGGER.info("Selecting Platform: "+getStringFromPlat(activePlat));
         LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
         GLFW.glfwInit();
@@ -76,6 +83,13 @@ public class VideoResolution {
             default -> GLFW_ANY_PLATFORM; //Either unknown Platform or Display Server
         };
     }
+
+
+    private static String determineDE() {
+        String xdgSessionDesktop = System.getenv("XDG_SESSION_DESKTOP");
+        return xdgSessionDesktop !=null ? xdgSessionDesktop : "NONE";
+    }
+
 
     private static int getSupportedPlat() {
         //Switch statement would be ideal, but couldn't find a good way of implementing it, so fell back to basic if statements/branches
@@ -106,6 +120,23 @@ public class VideoResolution {
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
     public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
+    public static boolean GNOME(){return activeDE.equals("GNOME");};
+    public static boolean GNOME_Flashback(){return activeDE.equals("GNOME_Flashback");};
+    public static boolean KDE(){return activeDE.equals("KDE");};
+    public static boolean LXDE(){return activeDE.equals("LXDE");};
+    public static boolean LXQt(){return activeDE.equals("LXQt");};
+    public static boolean MATE(){return activeDE.equals("MATE");};
+    public static boolean TDE(){return activeDE.equals("TDE");};
+    public static boolean Unity(){return activeDE.equals("Unity");}
+    public static boolean XFCE(){return activeDE.equals("XFCE");}
+    public static boolean EDE(){return activeDE.equals("EDE");}
+    public static boolean Cinnamon(){return activeDE.equals("Cinnamon")||activeDE.equals("X-CINNAMON");}
+    public static boolean Pantheon() {return activeDE.equals("Pantheon");}
+    public static boolean DDE(){return activeDE.equals("DDE");}
+//    public static boolean isKwin() { return activeDE.equals("KWIN"); }
+//    public static boolean isGnome() { return activeDE.equals("GNOME"); }
+
+
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
