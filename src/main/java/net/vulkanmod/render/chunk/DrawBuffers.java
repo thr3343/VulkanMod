@@ -237,61 +237,18 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            long pVertexBuffer = stack.npointer(vertexBuffer.getId());
-            long pOffset = stack.npointer(0);
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (pVertexBuffer), (pOffset));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
             updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+        }
 
 
-            if(isTranslucent) {
-                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-            }
+        if(isTranslucent) {
+            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+        }
 
-
-
-            int drawCount = 0;
-            ByteBuffer byteBuffer = stack.malloc(16 * queue.size());
-            long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-
-            var iterator = queue.iterator(isTranslucent);
-            while (iterator.hasNext()) {
-
-                DrawParameters drawParameters = iterator.next();
-
-
-
-                long ptr = bufferPtr + (drawCount * 16L);
-                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, drawParameters.firstIndex);
-                MemoryUtil.memPutInt(ptr + 8, drawParameters.vertexOffset);
-                MemoryUtil.memPutInt(ptr + 12, drawParameters.baseInstance);
-                drawCount++;
-
-            }
-
-            if(drawCount > 0) {
-                long offset;
-                int indexCount;
-                int firstIndex;
-                int vertexOffset;
-                int baseInstance;
-                for(int i = 0; i < drawCount; ++i) {
-
-                    offset = i * 16 + bufferPtr;
-
-                    indexCount    = MemoryUtil.memGetInt(offset + 0);
-                    firstIndex    = MemoryUtil.memGetInt(offset + 4);
-                    vertexOffset  = MemoryUtil.memGetInt(offset + 8);
-                    baseInstance  = MemoryUtil.memGetInt(offset + 12);
-
-//                if(indexCount == 0) {
-//                    continue;
-//                }
-
-
-                    vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, vertexOffset, baseInstance);
-                }
-            }
+        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
+            final DrawParameters drawParameters = iterator.next();
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
         }
     }
