@@ -106,11 +106,12 @@ public class DrawBuffers {
 
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
+    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
         int stride = 20;
 
         int drawCount = 0;
 
+        if(queue==null || queue.size() == 0) return 0;
 
 
         MemoryStack stack = MemoryStack.stackPush();
@@ -127,8 +128,8 @@ public class DrawBuffers {
 
         var iterator = queue.iterator(isTranslucent);
         while (iterator.hasNext()) {
-            RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+
+            DrawParameters drawParameters = iterator.next();
 
             //Debug
 //            BlockPos o = section.origin;
@@ -230,8 +231,8 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
-
+    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
+        if(queue==null || queue.size() == 0) return;
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -254,12 +255,10 @@ public class DrawBuffers {
 
             var iterator = queue.iterator(isTranslucent);
             while (iterator.hasNext()) {
-                RenderSection section = iterator.next();
-                DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-                if(drawParameters.indexCount == 0) {
-                    continue;
-                }
+                DrawParameters drawParameters = iterator.next();
+
+
 
                 long ptr = bufferPtr + (drawCount * 16L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -334,9 +333,9 @@ public class DrawBuffers {
             this.vertexOffset = 0;
 
             int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
+            if(chunkArea != null && chunkArea.drawBuffers().isAllocated() && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                chunkArea.drawBuffers().vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }
     }
