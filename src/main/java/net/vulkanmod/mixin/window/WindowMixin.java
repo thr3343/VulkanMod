@@ -70,6 +70,8 @@ public abstract class WindowMixin {
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
     private void vulkanHint(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        //Fix Gnome Client-Side Decorators
+        GLFW.glfwWindowHint(GLFW_DECORATED, VideoResolution.GNOME() && VideoResolution.isWayLand() ? GLFW_FALSE : GLFW_TRUE);
 //        GLFW.glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 //        GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
     }

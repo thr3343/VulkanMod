@@ -638,7 +638,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TerrainRenderType.TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(this.taskDispatcher);
 
                 ++j;
             }

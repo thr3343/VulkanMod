@@ -52,7 +52,7 @@ public abstract class ImageUtil {
                     pStagingAllocation);
 
             copyImageToBuffer(commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width, image.height, 0, 0, 0, 0, 0);
-            image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
+            image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
             vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
