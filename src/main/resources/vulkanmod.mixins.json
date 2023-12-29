@@ -37,6 +37,7 @@
     "profiling.KeyboardHandlerM",
 
     "render.BufferUploaderM",
+    "render.FogRendererM",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",

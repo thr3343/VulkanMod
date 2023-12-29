@@ -13,6 +13,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class RenderPass {
+    public final boolean hasLoadOp;
     Framebuffer framebuffer;
     long id;
 
@@ -24,6 +25,7 @@ public class RenderPass {
         this.framebuffer = framebuffer;
         this.colorAttachmentInfo = colorAttachmentInfo;
         this.depthAttachmentInfo = depthAttachmentInfo;
+        this.hasLoadOp=colorAttachmentInfo.loadOp==VK_ATTACHMENT_LOAD_OP_LOAD;
 
         int count = 0;
         if(colorAttachmentInfo != null)

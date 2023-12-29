@@ -14,11 +14,16 @@ import net.minecraft.server.ChainedJsonException;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -44,6 +49,18 @@ public abstract class PostChainM {
     @Shadow public abstract void addTempTarget(String string, int i, int j);
     @Shadow protected abstract void parseTargetNode(JsonElement jsonElement) throws ChainedJsonException;
     @Shadow protected abstract void parseUniformNode(JsonElement jsonElement) throws ChainedJsonException;
+//TODO: Check all PostPRcoess nulls... SHouldnt cause additional overhead
+    @Inject(method = "load", at=@At("HEAD"))
+    private void load(TextureManager textureManager, ResourceLocation resourceLocation, CallbackInfo ci)
+    {
+        VRenderSystem.setPostFXState(true);
+    }
+
+    @Inject(method = "getRenderTarget", at=@At("HEAD"))
+    private void getRenderTarget(String string, CallbackInfoReturnable<RenderTarget> cir)
+    {
+//        VRenderSystem.setPostFXStateStr(string, cir.getReturnValue());
+    }
 
 //    /**
 //     * @author

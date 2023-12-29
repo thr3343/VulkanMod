@@ -3,12 +3,7 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -19,7 +14,10 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
+import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
+
 public abstract class VRenderSystem {
+    public static boolean postProcess=false;
     private static long window;
 
     public static boolean depthTest = true;
@@ -32,7 +30,9 @@ public abstract class VRenderSystem {
 
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4); //Avoid the driver caching dirty memory as a clear Color
+    public static FloatBuffer clearColorX = MemoryUtil.memCallocFloat(4); //Avoid the driver caching dirty memory as a clear Color
 
+    private static final float[] clearColor2 = new float[]{0,0,0,0};
     public static final MappedBuffer modelViewMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
     public static final MappedBuffer projectionMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
     public static final MappedBuffer TextureMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
@@ -50,6 +50,10 @@ public abstract class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
+    public static boolean clearColorUpdate = false;
+    private static boolean appliedClear;
+    static boolean canApplyClear = false;
+    public static boolean renderPassUpdate = false;
 
     public static void initRenderer()
     {
@@ -82,7 +86,6 @@ public abstract class VRenderSystem {
     public static void calculateMVP() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
-
         P.mul(MV).get(MVP.buffer());
     }
 
@@ -141,12 +144,45 @@ public abstract class VRenderSystem {
         PipelineState.currentLogicOpState.setLogicOp(p_69836_);
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
+//    public static void setFogClearColor(float f1, float f2, float f3, float f4)
+//    {
+////        if(canApplyClear)
+//        {
+//            ColorUtil.setRGBA_Buffer(clearColorX, f1, f2, f3, f4);
+//        }
+////        ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
+//    }
+    public static void clearColor(float f0, float f1, float f2, float f3) {
+//        if(f0==0&&f1==0&&f2==0&&f3==0) return; //Test JM Clear Fix
+        //set to true if different colour
+//        if(!appliedClear) return;
+        if(/*!renderPassUpdate || */!(checkClearisActuallyDifferent(f0, f1, f2, f3))) return;
+        ColorUtil.setRGBA_Buffer(clearColor, f0, f1, f2, f3);
+        clearColor2[0]=f0;
+        clearColor2[1]=f1;
+        clearColor2[2]=f2;
+        clearColor2[3]=f3;
+        canApplyClear=true;
+//        appliedClear=false;
+    }
+
+    private static boolean checkClearisActuallyDifferent(float f0, float f1, float f2, float f3) {
+        float f0_ = clearColor2[0];
+        float f1_ = clearColor2[1];
+        float f2_ = clearColor2[2];
+        float f3_ = clearColor2[3];
+        return f0_!=f0|f1_!=f1|f2_!=f2|f3_!=f3;
     }
 
     public static void clear(int v) {
-        Renderer.clearAttachments(v);
+        //Skip Mods reapplying the same colour over and over per clear
+        //if(/*currentClearColor==clearColor||*/!clearColorUpdate) return;
+//        if(appliedClear) return;
+
+        Renderer.clearAttachments(renderPassUpdate | canApplyClear ? v : GL_DEPTH_BUFFER_BIT); //Depth Only Clears needed to fix Chat + Command Elements
+            canApplyClear=false;
+            renderPassUpdate=false;
+        //        clearColorUpdate=false;
     }
 
     public static void disableDepthTest() {
@@ -236,5 +272,9 @@ public abstract class VRenderSystem {
 
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
         PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+    }
+
+    public static void setPostFXState(boolean postProcess1) {
+        postProcess= Minecraft.getInstance().levelRenderer.shouldShowEntityOutlines() && postProcess1;
     }
 }

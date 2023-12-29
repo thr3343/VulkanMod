@@ -11,6 +11,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.LegacyMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
 import net.vulkanmod.vulkan.shader.*;
@@ -77,7 +78,7 @@ public class Renderer {
     private boolean recordingCmds = false;
 
 //    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = LegacyMainPass.PASS;
+    MainPass mainPass = DefaultMainPass.PASS;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
 
@@ -186,7 +187,7 @@ public class Renderer {
             }
         }
 
-
+        this.mainPass=VRenderSystem.postProcess?LegacyMainPass.PASS:DefaultMainPass.PASS;
         if(skipRendering)
             return;
 
@@ -345,7 +346,8 @@ public class Renderer {
             }
 
             this.boundFramebuffer = framebuffer;
-        }
+        }//Move clear to beginning of RenderPass to avoid Pipeline Stall(s)
+        VRenderSystem.clear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         return true;
     }
 
@@ -447,6 +449,7 @@ public class Renderer {
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {
         this.boundRenderPass = boundRenderPass;
+        VRenderSystem.renderPassUpdate=VRenderSystem.clearColorUpdate= boundRenderPass != null && boundRenderPass.hasLoadOp;
     }
 
     public RenderPass getBoundRenderPass() {
