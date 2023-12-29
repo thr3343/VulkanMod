@@ -216,6 +216,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, MemoryStack stack) {
+        if(Renderer.renderPassUpdate) return;
         if(DYNAMIC_RENDERING) {
 //            this.colorAttachmentLayout(stack, commandBuffer, Drawer.getCurrentFrame());
 //            beginDynamicRendering(commandBuffer, stack);

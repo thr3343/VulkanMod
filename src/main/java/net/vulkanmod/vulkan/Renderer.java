@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.PipelineManager;
@@ -11,6 +12,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.LegacyMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
 import net.vulkanmod.vulkan.shader.*;
@@ -26,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -44,6 +47,11 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private static boolean effectActive = false;
+    public static boolean renderPassUpdate = false;
+    private static boolean hasCalled = false;
+    private int renderPassidx;
+
     public static void initRenderer() {
         INSTANCE = new Renderer();
         INSTANCE.init();
@@ -77,7 +85,8 @@ public class Renderer {
     private boolean recordingCmds = false;
 
 //    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = LegacyMainPass.PASS;
+    MainPass mainPass = DefaultMainPass.PASS;
+    MainPass[] mainPass2;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
 
@@ -85,6 +94,8 @@ public class Renderer {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+        mainPass2 = new MainPass[imagesNum];
+        Arrays.fill(mainPass2, mainPass);
     }
 
     private void init() {
@@ -172,6 +183,48 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
+        if(renderPassUpdate)
+        {
+//            skipRendering = true;
+//            Minecraft.getInstance().noRender = true;
+//            waitIdle();
+
+            mainPass=effectActive?LegacyMainPass.PASS : DefaultMainPass.PASS;
+            Initializer.LOGGER.error("Using RenderPass: "+ (mainPass instanceof LegacyMainPass ? "Post Effect" : "Default"));
+
+            //Shoemhow this forces/avoids.prevents Invalid command vaildtaion isues such as vkCmdDraw-None W/ Inactive Renderpasses wny idk/have no clue
+//            Minecraft.getInstance().gameRenderer.resize(getSwapChain().getWidth(), getSwapChain().getHeight());
+            renderPassUpdate=false;
+            // target
+            // 36160 GL_FRAMEBUFFER
+            // 36161 GL_RENDERBUFFER
+
+//        if(target != GL30.GL_FRAMEBUFFER) {
+//            throw new IllegalArgumentException("target is not GL_FRAMEBUFFER");
+//        }
+
+            if(GlFramebuffer.boundId != 0) {
+                this.endRenderPass();
+
+                //            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+                //            if(renderTarget != null)
+                //                renderTarget.bindWrite(true);
+//                GlFramebuffer.boundFramebuffer = null;
+                GlFramebuffer.boundId = 0;
+            }
+
+            //            commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+////            swapChainUpdate=true;
+//            Vulkan.waitIdle();
+//
+//            skipRendering = false;
+//            Minecraft.getInstance().noRender = false;
+//            recreateSwapChain2();
+//            renderPassidx = (renderPassidx+1) % mainPass2.length;
+            mainPass2[renderPassidx]=mainPass;
+        }
+
+
         if(swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
@@ -209,7 +262,7 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+
         recordingCmds = true;
 
         try(MemoryStack stack = stackPush()) {
@@ -242,7 +295,8 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            mainPass.begin(commandBuffer, stack);
+
+            mainPass2[renderPassidx].begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
         }
@@ -257,8 +311,18 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("End_rendering");
 
-        mainPass.end(currentCmdBuffer);
-
+        mainPass2[renderPassidx].end(currentCmdBuffer);
+//        if(!hasCalled)
+        if(!hasCalled)
+        {
+            if(effectActive)
+            {
+                scheduleRenderPassUpdate();
+            }
+//            else renderPassidx = (renderPassidx + 1) % mainPass2.length;
+            effectActive = false;
+        }
+        hasCalled=false;
         submitFrame();
         recordingCmds = false;
 
@@ -453,9 +517,9 @@ public class Renderer {
         return boundRenderPass;
     }
 
-    public void setMainPass(MainPass mainPass) { this.mainPass = mainPass; }
+//    public void setMainPass(MainPass mainPass) { this.mainPass = mainPass; }
 
-    public MainPass getMainPass() { return this.mainPass; }
+    public MainPass getMainPass() { return this.mainPass2[renderPassidx]; }
 
     public void addOnResizeCallback(Runnable runnable) {
         this.onResizeCallbacks.add(runnable);
@@ -466,7 +530,7 @@ public class Renderer {
 
         //Debug
         if(boundRenderPass == null)
-            mainPass.mainTargetBindWrite();
+            mainPass2[renderPassidx].mainTargetBindWrite();
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
@@ -590,6 +654,12 @@ public class Renderer {
     }
 
     public static void resetViewport() {
+        hasCalled=true;
+        if(!effectActive/* && getInstance().mainPass instanceof DefaultMainPass*/)
+        {
+            scheduleRenderPassUpdate();
+        }
+        effectActive=true;
         try(MemoryStack stack = stackPush()) {
             int width = getSwapChain().getWidth();
             int height = getSwapChain().getHeight();
@@ -665,4 +735,5 @@ public class Renderer {
     public static boolean isRecording() { return INSTANCE.recordingCmds; }
 
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
+    public static void scheduleRenderPassUpdate() { renderPassUpdate = true; }
 }
