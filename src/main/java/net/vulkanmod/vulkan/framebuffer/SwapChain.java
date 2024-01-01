@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.framebuffer;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.util.MathUtil;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -8,6 +9,7 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -216,7 +218,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        if(Renderer.renderPassUpdate) return;
+
         if(DYNAMIC_RENDERING) {
 //            this.colorAttachmentLayout(stack, commandBuffer, Drawer.getCurrentFrame());
 //            beginDynamicRendering(commandBuffer, stack);
@@ -373,6 +375,22 @@ public class SwapChain extends Framebuffer {
     }
 
     private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
+        if(VideoResolution.isX11()) {
+            //https://github.com/glfw/glfw/blob/master/src/x11_platform.h#L523
+            int Max = VUtil.UNSAFE.getInt(window + 44);
+            int xX11Ptrm = VUtil.UNSAFE.getInt(window + 56);
+            int yX11Ptrm = VUtil.UNSAFE.getInt(window + 52);
+            int xPos = VUtil.UNSAFE.getInt(window + 60);
+            int yPos = VUtil.UNSAFE.getInt(window + 64);
+
+
+            Initializer.LOGGER.error(xX11Ptrm);
+            Initializer.LOGGER.error(yX11Ptrm);
+
+            Initializer.LOGGER.error(xPos);
+            Initializer.LOGGER.error(yPos);
+            Initializer.LOGGER.error(Max);
+        }
 
         if(capabilities.currentExtent().width() != UINT32_MAX) {
             return capabilities.currentExtent();
