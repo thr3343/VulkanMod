@@ -111,13 +111,27 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.isSectionCompiled(blockPos);
     }
 
+
+    @Inject(method = "renderLevel", at=@At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;popPush(Ljava/lang/String;)V", ordinal = 9))
+    private void injectRenderSectionLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
+    {
+        Vec3 vec3 = camera.getPosition();
+        double d = vec3.x();
+        double e = vec3.y();
+        double h = vec3.z();
+        this.worldRenderer.renderSectionLayer(RenderType.solid(), poseStack, d, e, h, matrix4f);
+        this.worldRenderer.renderSectionLayer(RenderType.cutoutMipped(), poseStack, d, e, h, matrix4f);
+        this.worldRenderer.renderSectionLayer(RenderType.cutout(), poseStack, d, e, h, matrix4f);
+        this.worldRenderer.renderSectionLayer(RenderType.translucent(), poseStack, d, e, h, matrix4f);
+    }
+
     /**
      * @author
      * @reason
      */
     @Overwrite
     private void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-        this.worldRenderer.renderSectionLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+
     }
 
     /**

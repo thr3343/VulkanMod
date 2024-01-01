@@ -49,9 +49,9 @@ public class Renderer {
     public static boolean skipRendering = false;
     private static boolean effectActive = false;
     public static boolean renderPassUpdate = false;
-    private static boolean hasCalled = false;
+    public static boolean hasCalled = false;
     private int renderPassidx;
-    private int frames=0;
+    public static boolean useMode=false;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -86,7 +86,7 @@ public class Renderer {
     private boolean recordingCmds = false;
 
 //    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = DefaultMainPass.PASS;
+    MainPass mainPass = LegacyMainPass.PASS;
     MainPass[] mainPass2;
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
@@ -184,38 +184,15 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
-//        if(renderPassUpdate)
+        if(renderPassUpdate)
         {
 //            skipRendering = true;
-//            Minecraft.getInstance().noRender = true;
-//            waitIdle();
-            if((frames++ & 511) ==0) {
 
-                mainPass = effectActive ? LegacyMainPass.PASS : DefaultMainPass.PASS;
-                Initializer.LOGGER.error("Using RenderPass: " + (mainPass instanceof LegacyMainPass ? "Post Effect" : "Default"));
+            useMode=effectActive;
+            Initializer.LOGGER.error("Using RenderPass: "+ (useMode ? "Post Effect" : "Default"));
 
-                //Shoemhow this forces/avoids.prevents Invalid command vaildtaion isues such as vkCmdDraw-None W/ Inactive Renderpasses wny idk/have no clue
-//            Minecraft.getInstance().gameRenderer.resize(getSwapChain().getWidth(), getSwapChain().getHeight());
                 renderPassUpdate = false;
-                // target
-                // 36160 GL_FRAMEBUFFER
-                // 36161 GL_RENDERBUFFER
 
-//        if(target != GL30.GL_FRAMEBUFFER) {
-//            throw new IllegalArgumentException("target is not GL_FRAMEBUFFER");
-//        }
-
-
-            }
-
-            //            commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
-////            swapChainUpdate=true;
-//            Vulkan.waitIdle();
-//
-//            skipRendering = false;
-//            Minecraft.getInstance().noRender = false;
-//            recreateSwapChain2();
-//            renderPassidx = (renderPassidx+1) % mainPass2.length;
             mainPass2[renderPassidx]=mainPass;
         }
 
@@ -325,6 +302,15 @@ public class Renderer {
             }
 //            else renderPassidx = (renderPassidx + 1) % mainPass2.length;
             effectActive = false;
+        }
+        if(renderPassUpdate && GlFramebuffer.boundId != 0) {
+            this.endRenderPass();
+
+            //            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+            //            if(renderTarget != null)
+            //                renderTarget.bindWrite(true);
+//                GlFramebuffer.boundFramebuffer = null;
+            GlFramebuffer.boundId = 0;
         }
         hasCalled=false;
         submitFrame();
