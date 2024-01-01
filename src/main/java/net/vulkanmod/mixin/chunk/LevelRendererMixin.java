@@ -26,6 +26,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -112,7 +113,7 @@ public abstract class LevelRendererMixin {
     }
 
 
-    @Inject(method = "renderLevel", at=@At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;popPush(Ljava/lang/String;)V", ordinal = 9))
+    @Inject(method = "renderLevel", at=@At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;level:Lnet/minecraft/client/multiplayer/ClientLevel;", ordinal = 6, opcode = Opcodes.IF_ICMPNE, shift = At.Shift.BEFORE))
     private void injectRenderSectionLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
     {
         Vec3 vec3 = camera.getPosition();
@@ -123,6 +124,7 @@ public abstract class LevelRendererMixin {
         this.worldRenderer.renderSectionLayer(RenderType.cutoutMipped(), poseStack, d, e, h, matrix4f);
         this.worldRenderer.renderSectionLayer(RenderType.cutout(), poseStack, d, e, h, matrix4f);
         this.worldRenderer.renderSectionLayer(RenderType.translucent(), poseStack, d, e, h, matrix4f);
+        this.worldRenderer.renderSectionLayer(RenderType.tripwire(), poseStack, d, e, h, matrix4f);
     }
 
     /**
