@@ -189,6 +189,7 @@ public class Renderer {
 //            skipRendering = true;
 
             useMode=effectActive;
+            mainPass=effectActive?LegacyMainPass.PASS:DefaultMainPass.PASS;
             Initializer.LOGGER.error("Using RenderPass: "+ (useMode ? "Post Effect" : "Default"));
 
                 renderPassUpdate = false;
@@ -290,15 +291,6 @@ public class Renderer {
             if(effectActive)
             {
                 scheduleRenderPassUpdate();
-                if (GlFramebuffer.boundId != 0) {
-                    this.endRenderPass();
-
-                    //            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-                    //            if(renderTarget != null)
-                    //                renderTarget.bindWrite(true);
-//                GlFramebuffer.boundFramebuffer = null;
-                    GlFramebuffer.boundId = 0;
-                }
             }
 //            else renderPassidx = (renderPassidx + 1) % mainPass2.length;
             effectActive = false;
