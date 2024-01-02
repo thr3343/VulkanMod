@@ -171,12 +171,8 @@ public abstract class DeviceManager {
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
             createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
