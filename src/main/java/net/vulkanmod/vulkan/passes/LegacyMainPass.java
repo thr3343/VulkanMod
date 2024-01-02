@@ -14,13 +14,7 @@ import org.lwjgl.vulkan.VkViewport;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class LegacyMainPass implements MainPass {
-    public static LegacyMainPass PASS = new LegacyMainPass();
-
-    private RenderTarget mainTarget;
-
-    LegacyMainPass() {
-        this.mainTarget = Minecraft.getInstance().getMainRenderTarget();
-    }
+    public static final LegacyMainPass PASS = new LegacyMainPass();
 
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
@@ -42,7 +36,7 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void mainTargetBindWrite() {
-        if(Renderer.useMode||Renderer.hasCalled) {
+        if(Renderer.useMode) {
             RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
             mainTarget.bindWrite(true);
         }

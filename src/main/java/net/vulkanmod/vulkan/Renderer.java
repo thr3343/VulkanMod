@@ -12,7 +12,6 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.LegacyMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
 import net.vulkanmod.vulkan.shader.*;
@@ -28,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -87,18 +85,13 @@ public class Renderer {
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
 
-//    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = LegacyMainPass.PASS;
-    MainPass[] mainPass2;
-
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
 
     public Renderer() {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
-        mainPass2 = new MainPass[imagesNum];
-        Arrays.fill(mainPass2, mainPass);
+
     }
 
     private void init() {
@@ -196,7 +189,7 @@ public class Renderer {
 
                 renderPassUpdate = false;
 
-            mainPass2[renderPassidx]=mainPass;
+//            mainPass2= LegacyMainPass.PASS;
         }
 
 
@@ -271,7 +264,7 @@ public class Renderer {
             }
 
 
-            mainPass2[renderPassidx].begin(commandBuffer, stack);
+            LegacyMainPass.PASS.begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
         }
@@ -286,7 +279,7 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("End_rendering");
 
-        mainPass2[renderPassidx].end(currentCmdBuffer);
+        LegacyMainPass.PASS.end(currentCmdBuffer);
 //        if(!hasCalled)
         if(!hasCalled)
         {
@@ -503,7 +496,7 @@ public class Renderer {
 
 //    public void setMainPass(MainPass mainPass) { this.mainPass = mainPass; }
 
-    public MainPass getMainPass() { return this.mainPass2[renderPassidx]; }
+    public MainPass getMainPass() { return LegacyMainPass.PASS; }
 
     public void addOnResizeCallback(Runnable runnable) {
         this.onResizeCallbacks.add(runnable);
@@ -514,7 +507,7 @@ public class Renderer {
 
         //Debug
         if(boundRenderPass == null)
-            mainPass2[renderPassidx].mainTargetBindWrite();
+            LegacyMainPass.PASS.mainTargetBindWrite();
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));

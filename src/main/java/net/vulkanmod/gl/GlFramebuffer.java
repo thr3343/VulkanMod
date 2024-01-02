@@ -220,7 +220,7 @@ public class GlFramebuffer {
         builder.getColorAttachmentInfo()
                 .setLoadOp(VK_ATTACHMENT_LOAD_OP_LOAD)
                 .setFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
+        //TODO: Set to STORE_OP_DONT_CARE when in Default Mode
         if(hasDepthImage)
             builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_STORE);
 
