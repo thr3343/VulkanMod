@@ -1,16 +1,15 @@
 package net.vulkanmod.mixin.chunk;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -26,10 +25,10 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
@@ -111,29 +110,16 @@ public abstract class LevelRendererMixin {
     public boolean isSectionCompiled(BlockPos blockPos) {
         return this.worldRenderer.isSectionCompiled(blockPos);
     }
-
-
-    @Inject(method = "renderLevel", at=@At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;level:Lnet/minecraft/client/multiplayer/ClientLevel;", ordinal = 6, opcode = Opcodes.IF_ICMPNE, shift = At.Shift.BEFORE))
-    private void injectRenderSectionLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
-    {
-        Vec3 vec3 = camera.getPosition();
-        double d = vec3.x();
-        double e = vec3.y();
-        double h = vec3.z();
-        this.worldRenderer.renderSectionLayer(RenderType.solid(), poseStack, d, e, h, matrix4f);
-        this.worldRenderer.renderSectionLayer(RenderType.cutoutMipped(), poseStack, d, e, h, matrix4f);
-        this.worldRenderer.renderSectionLayer(RenderType.cutout(), poseStack, d, e, h, matrix4f);
-        this.worldRenderer.renderSectionLayer(RenderType.translucent(), poseStack, d, e, h, matrix4f);
-        this.worldRenderer.renderSectionLayer(RenderType.tripwire(), poseStack, d, e, h, matrix4f);
-    }
-
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))
+    private void Fix2(RenderTarget instance, boolean bl)
+    {}
     /**
      * @author
      * @reason
      */
     @Overwrite
     private void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-
+        this.worldRenderer.renderSectionLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
     }
 
     /**
