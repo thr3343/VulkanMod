@@ -191,7 +191,7 @@ public class Renderer {
 //            skipRendering = true;
 
             useMode=effectActive;
-            mainPass=effectActive?LegacyMainPass.PASS:DefaultMainPass.PASS;
+//            mainPass= LegacyMainPass.PASS;
             Initializer.LOGGER.error("Using RenderPass: "+ (useMode ? "Post Effect" : "Default"));
 
                 renderPassUpdate = false;
