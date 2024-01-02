@@ -118,19 +118,6 @@ public class VideoResolution {
 
     //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
     public static boolean GNOME(){return activeDE.equals("GNOME")||activeDE.equals("GNOME_Flashback");}
-    public static boolean KDE(){return activeDE.equals("KDE");}
-    public static boolean LXDE(){return activeDE.equals("LXDE");}
-    public static boolean LXQt(){return activeDE.equals("LXQt");}
-    public static boolean MATE(){return activeDE.equals("MATE");}
-    public static boolean TDE(){return activeDE.equals("TDE");}
-    public static boolean Unity(){return activeDE.equals("Unity");}
-    public static boolean XFCE(){return activeDE.equals("XFCE");}
-    public static boolean EDE(){return activeDE.equals("EDE");}
-    public static boolean Cinnamon(){return activeDE.equals("Cinnamon")||activeDE.equals("X-CINNAMON");}
-    public static boolean Pantheon() {return activeDE.equals("Pantheon");}
-    public static boolean DDE(){return activeDE.equals("DDE");}
-//    public static boolean isKwin() { return activeDE.equals("KWIN"); }
-//    public static boolean isGnome() { return activeDE.equals("GNOME"); }
 
 
 

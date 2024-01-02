@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
@@ -116,11 +117,9 @@ public class SwapChain extends Framebuffer {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
-
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if(QueueFamilyIndices.graphicsFamily!=QueueFamilyIndices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
@@ -311,7 +310,7 @@ public class SwapChain extends Framebuffer {
 
     private void createDepthResources() {
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 false, false);
     }
 
@@ -375,22 +374,6 @@ public class SwapChain extends Framebuffer {
     }
 
     private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
-        if(VideoResolution.isX11()) {
-            //https://github.com/glfw/glfw/blob/master/src/x11_platform.h#L523
-            int Max = VUtil.UNSAFE.getInt(window + 44);
-            int xX11Ptrm = VUtil.UNSAFE.getInt(window + 56);
-            int yX11Ptrm = VUtil.UNSAFE.getInt(window + 52);
-            int xPos = VUtil.UNSAFE.getInt(window + 60);
-            int yPos = VUtil.UNSAFE.getInt(window + 64);
-
-
-            Initializer.LOGGER.error(xX11Ptrm);
-            Initializer.LOGGER.error(yX11Ptrm);
-
-            Initializer.LOGGER.error(xPos);
-            Initializer.LOGGER.error(yPos);
-            Initializer.LOGGER.error(Max);
-        }
 
         if(capabilities.currentExtent().width() != UINT32_MAX) {
             return capabilities.currentExtent();

@@ -1,41 +1,43 @@
 package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.nio.IntBuffer;
-import java.util.stream.IntStream;
-
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
-public abstract class Queue {
-    private static VkDevice DEVICE;
+public enum Queue {
+    GraphicsQueue(QueueFamilyIndices.graphicsFamily, true, 0),
+    TransferQueue(QueueFamilyIndices.transferFamily, true, 0),
+    PresentQueue(QueueFamilyIndices.presentFamily, false, 0);
+    private CommandPool.CommandBuffer currentCmdBuffer;
+    private final CommandPool commandPool;
 
-    private static QueueFamilyIndices queueFamilyIndices;
-    protected CommandPool commandPool;
 
     private final VkQueue queue;
 
-    public synchronized CommandPool.CommandBuffer beginCommands() {
+    public CommandPool.CommandBuffer beginCommands() {
         return this.commandPool.beginCommands();
     }
 
-    Queue(MemoryStack stack, int familyIndex) {
-        this(stack, familyIndex, true);
+    Queue(int familyIndex) {
+        this(familyIndex, true, 0);
     }
 
-    Queue(MemoryStack stack, int familyIndex, boolean initCommandPool) {
-        PointerBuffer pQueue = stack.mallocPointer(1);
-        vkGetDeviceQueue(DeviceManager.device, familyIndex, 0, pQueue);
-        this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
+    Queue(int familyIndex, boolean initCommandPool, int queueIndex) {
+        try (MemoryStack stack = MemoryStack.stackPush())
+        {
+            PointerBuffer pQueue = stack.mallocPointer(1);
+            vkGetDeviceQueue(DeviceManager.device, familyIndex, queueIndex, pQueue);
+            this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
 
-        if(initCommandPool)
-            this.commandPool = new CommandPool(familyIndex);
+            this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+        }
     }
 
     public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
@@ -53,139 +55,209 @@ public abstract class Queue {
         vkQueueWaitIdle(queue);
     }
 
-    public enum Family {
-        Graphics,
-        Transfer,
-        Compute
-    }
 
-    public static QueueFamilyIndices getQueueFamilies() {
-        if(DEVICE == null)
-            DEVICE = Vulkan.getDevice();
-
-        if(queueFamilyIndices == null) {
-            queueFamilyIndices = findQueueFamilies(DEVICE.getPhysicalDevice());
-        }
-        return queueFamilyIndices;
-    }
-
-    public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-
-        QueueFamilyIndices indices = new QueueFamilyIndices();
+    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer queueFamilyCount = stack.ints(0);
+            CommandPool.CommandBuffer commandBuffer = beginCommands();
 
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
 
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.mallocStack(queueFamilyCount.get(0), stack);
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
+            this.submitCommands(commandBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            IntBuffer presentSupport = stack.ints(VK_FALSE);
-
-//            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
-            for(int i = 0; i < queueFamilies.capacity(); i++) {
-                int queueFlags = queueFamilies.get(i).queueFlags();
-
-                if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    indices.graphicsFamily = i;
-
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if(presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                    indices.computeFamily = i;
-                } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                    indices.transferFamily = i;
-                }
-
-                if(indices.presentFamily == null) {
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if(presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                }
-
-                if(indices.isComplete()) break;
-            }
-
-            if(indices.transferFamily == null) {
-
-                int fallback = -1;
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if(fallback == -1)
-                            fallback = i;
-
-                        if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
-                            indices.transferFamily = i;
-
-                            if(i != indices.computeFamily)
-                                break;
-                            fallback = i;
-                        }
-                    }
-
-                    if(fallback == -1)
-                        throw new RuntimeException("Failed to find queue family with transfer support");
-
-                    indices.transferFamily = fallback;
-                }
-            }
-            
-            if(indices.computeFamily == null) {
-                for(int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                        indices.computeFamily = i;
-                        break;
-                    }
-                }
-            }
-
-            if (indices.graphicsFamily == null)
-                throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == null)
-                throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == null)
-                throw new RuntimeException("Unable to find queue family with compute support.");
-
-            return indices;
+            return commandBuffer.fence;
         }
     }
 
-    public static class QueueFamilyIndices {
+    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
-        // We use Integer to use null as the empty value
-        public Integer graphicsFamily;
-        public Integer presentFamily;
-        public Integer transferFamily;
-        public Integer computeFamily;
+        try(MemoryStack stack = stackPush()) {
+            CommandPool.CommandBuffer commandBuffer = this.beginCommands();
 
-        public boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+//            if(Initializer.CONFIG.useGigaBarriers) this.GigaBarrier(commandBuffer.getHandle());
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+            this.submitCommands(commandBuffer);
+            vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, VUtil.UINT64_MAX);
+            commandBuffer.reset();
         }
+    }
 
-        public boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
         }
+    }
 
-        public int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily, transferFamily, computeFamily).distinct().toArray();
+    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long dstBuffer, VkBufferCopy.Buffer vkBufferCopies) {
+        vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, vkBufferCopies);
+    }
+
+    public void startRecording() {
+        currentCmdBuffer = beginCommands();
+    }
+
+    public void endRecordingAndSubmit() {
+        long fence = submitCommands(currentCmdBuffer);
+        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+
+        currentCmdBuffer = null;
+    }
+
+    public CommandPool.CommandBuffer getCommandBuffer() {
+        if (currentCmdBuffer != null) {
+            return currentCmdBuffer;
+        } else {
+            return beginCommands();
         }
+    }
 
-        public int[] array() {
-            return new int[] {graphicsFamily, presentFamily};
+    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+        if (currentCmdBuffer != null) {
+            return VK_NULL_HANDLE;
+        } else {
+            return submitCommands(commandBuffer);
+        }
+    }
+
+    public void trimCmdPool()
+    {
+        if(commandPool==null) return;
+        VK11.vkTrimCommandPool(Vulkan.getDevice(), this.commandPool.id, 0);
+    }
+    public void fillBuffer(long id, int bufferSize, int qNaN) {
+
+        vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
+    }
+
+    public void addWriteBarrier(CommandPool.CommandBuffer commandBuffer, MemoryStack stack) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack)
+                .sType$Default()
+                .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+        vkCmdPipelineBarrier(commandBuffer.getHandle(),
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                memBarrier,
+                null,
+                null);
+    }
+    public void GigaBarrier(CommandPool.CommandBuffer commandBuffer, MemoryStack stack, boolean resize) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
+
+        //Fix WaW on SYNC_COPY_TRANSFER_WRITE
+        memBarrier.get(0).sType$Default()
+                //Wait on Writes depending on other Writes from prior CmdBuffers
+                .srcAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+                .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+        //Fix RaW on SYNC_VERTEX_ATTRIBUTE_INPUT_VERTEX_ATTRIBUTE_READ or SYNC_INDEX_INPUT_INDEX_READ (if Vertex or Index Buffer respectively)
+        memBarrier.get(1).sType$Default()
+                //Wait on Index/Vertex Attributes depending on Prior Writes from prior CmdBuffers
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+
+        //When resizing only wait on this cmdBuffer's Writes
+
+        //When Not resizing, Wait on prior Writes Depending on these Writes
+        // + wait on terrain Shader Vertex+Index reads depending on last CmdBuffer's Writes
+        vkCmdPipelineBarrier(
+                commandBuffer.getHandle(),
+                VK_PIPELINE_STAGE_TRANSFER_BIT/*resize ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT*/,
+                VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                0,
+                memBarrier,
+                null,
+                null);
+    }
+
+    public void UploadCmdWriteBarrier(VkCommandBuffer handle, MemoryStack stack, boolean resize) {
+
+        VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(2, stack);
+
+
+        memBarrier.get(0).sType$Default()
+
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT) //Dependency on prior Read/Write MemBarrier
+                .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT);
+
+        memBarrier.get(1).sType$Default()
+
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_INDEX_READ_BIT|VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+
+
+        vkCmdPipelineBarrier(
+                handle,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | (VK_PIPELINE_STAGE_TRANSFER_BIT),
+                0,
+                memBarrier,
+                null,
+                null);
+
+    }
+    public void PriorWriteBarrier(VkCommandBuffer commandBuffer) {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
+
+            memBarrier.sType$Default()
+                    .srcAccessMask(VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)
+                    .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+
+
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0,
+                    memBarrier,
+                    null,
+                    null);
+        }
+    }
+    public void GigaBarrier(VkCommandBuffer commandBuffer) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
+
+            memBarrier.sType$Default()
+                    .srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+
+
+
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    0,
+                    memBarrier,
+                    null,
+                    null);
         }
     }
 }
+
