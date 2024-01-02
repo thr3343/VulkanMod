@@ -10,6 +10,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.vkWaitForFences;
@@ -38,7 +39,7 @@ public abstract class ImageUtil {
     public static void downloadTexture(VulkanImage image, long ptr) {
         try(MemoryStack stack = stackPush()) {
             int prevLayout = image.getCurrentLayout();
-            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.beginCommands();
             image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
             long imageSize = (long) image.width * image.height * image.formatSize;
@@ -54,7 +55,7 @@ public abstract class ImageUtil {
             copyImageToBuffer(commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width, image.height, 0, 0, 0, 0, 0);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            long fence = GraphicsQueue.submitCommands(commandBuffer);
             vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
@@ -87,7 +88,7 @@ public abstract class ImageUtil {
     public static void generateMipmaps(VulkanImage image) {
         try(MemoryStack stack = stackPush()) {
 
-            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.beginCommands();
 
             image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -186,7 +187,7 @@ public abstract class ImageUtil {
 
             image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            long fence = GraphicsQueue.submitCommands(commandBuffer);
 
             vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
         }

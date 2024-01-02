@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
+
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 import java.nio.ByteBuffer;
@@ -28,7 +29,7 @@ public class IndirectBuffer extends Buffer {
         }
         else {
             if(commandBuffer == null)
-                commandBuffer = DeviceManager.getTransferQueue().beginCommands();
+                commandBuffer = TransferQueue.beginCommands();
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer(size, byteBuffer);
@@ -51,7 +52,7 @@ public class IndirectBuffer extends Buffer {
         if(commandBuffer == null)
             return;
 
-        DeviceManager.getTransferQueue().submitCommands(commandBuffer);
+        TransferQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }

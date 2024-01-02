@@ -7,6 +7,7 @@ import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryTypes {
@@ -66,7 +67,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+            TransferQueue.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
         }
 
         @Override
@@ -79,7 +80,7 @@ public class MemoryTypes {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 
-            return DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
+            return TransferQueue.copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
         }
 
         @Override
@@ -88,7 +89,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
-            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
+            TransferQueue.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
 
         }
 
