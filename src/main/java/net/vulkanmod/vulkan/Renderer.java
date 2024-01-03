@@ -41,6 +41,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    public static boolean reload = false;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -178,7 +179,11 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
-
+        if(reload)
+        {
+            Minecraft.getInstance().levelRenderer.allChanged();
+            reload=false;
+        }
         if(renderPassUpdate)
         {
 //            skipRendering = true;

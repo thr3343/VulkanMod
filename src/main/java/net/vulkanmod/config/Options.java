@@ -129,7 +129,7 @@ public class Options {
                         },
                         (value) -> {
                             minecraftOptions.biomeBlendRadius().set(value);
-                            Minecraft.getInstance().levelRenderer.allChanged();
+                            Renderer.reload=true;
                         },
                         () -> minecraftOptions.biomeBlendRadius().get()),
                 new CyclingOption<>("Chunk Builder Mode",
@@ -221,14 +221,14 @@ public class Options {
                 new SwitchOption("Low VRAM Mode",
                         value -> {
                             config.perRenderTypeAreaBuffers = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
+                            Renderer.reload=true;
                         },
                         () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
                         (WARNING: EXPERIMENTAL)
                         
                         Reduces VRAM usage by up to 40%
-                        May Increase/Decrease FPS:
-                        (This is Architecture specific and varies on Device, Old Nvidia GPUs especially can have FPS gains from this feature)""")),
+                        May Increase/Decrease FPS: How this effects FPS Depends on GPU architecture
+                        (Can boost performance on Old Nvidia cards)""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> {

@@ -150,7 +150,7 @@ public class TaskDispatcher {
             if(uploadBuffer != null) {
                 drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
             } else {
-                section.getDrawParameters(renderType).reset(renderArea);
+                section.getDrawParameters(renderType).reset(renderArea, renderType);
             }
         }
     }

@@ -41,6 +41,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
@@ -53,6 +54,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -104,10 +106,13 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
-        });
+            Renderer.getInstance().addOnResizeCallback(() -> {
+                if (this.indirectBuffers.length != Renderer.getFramesNum())
+                    allocateIndirectBuffers();
+            });
+
+        addOnAllChangedCallback(Vulkan::waitIdle);
+        addOnAllChangedCallback(GraphicsQueue::trimCmdPool);
     }
 
     private void allocateIndirectBuffers() {
