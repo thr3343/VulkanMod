@@ -1,7 +1,9 @@
 package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderType;
+import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -87,5 +89,11 @@ public abstract class PipelineManager {
     public static void reload(RenderPass renderPass) {
         terrainShader.recompilePipeline();
         terrainShaderEarlyZ.recompilePipeline();
+        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
+//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutShader())).getPipeline().recompilePipeline();
+//        ((ShaderMixed)(GameRenderer.getRendertypeEntitySolidShader())).getPipeline().recompilePipeline();
+//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullZOffsetShader())).getPipeline().recompilePipeline();
+//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
+//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
     }
 }

@@ -45,9 +45,11 @@ public class GraphicsPipeline extends Pipeline {
         createPipelineLayout();
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
-        if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
+        if(builder.renderPass != null) {
+            this.state = new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass);
+            graphicsPipelines.computeIfAbsent(state,
                     this::createGraphicsPipeline);
+        }
 
         createDescriptorSets(Renderer.getFramesNum());
 
@@ -72,7 +74,8 @@ public class GraphicsPipeline extends Pipeline {
                         .offset(0)
                         .size(1);
 
-                VkSpecializationInfo vkSpecializationInfo = this.name.equals("basic/terrain/terrain") ? VkSpecializationInfo.calloc(stack)
+            boolean equals = this.name.equals("basic/terrain/terrain")||this.name.equals("minecraft/core/rendertype_entity_cutout_no_cull/rendertype_entity_cutout_no_cull");
+            VkSpecializationInfo vkSpecializationInfo = equals ? VkSpecializationInfo.calloc(stack)
                         .pMapEntries(vkSpecializationMapEntry)
                         .pData(stack.bytes((byte) (Initializer.CONFIG.renderFog ? 1 : 0))) : null;
 
@@ -359,13 +362,13 @@ public class GraphicsPipeline extends Pipeline {
     public void recompilePipeline()
     {
 
-        if(this.graphicsPipelines.containsKey(this.state)) {
-            vkDestroyPipeline(DeviceManager.device, this.graphicsPipelines.get(this.state), null);
+        if(this.graphicsPipelines.containsKey(this.state))
+        {
+            this.graphicsPipelines.replace(this.state, this.createGraphicsPipeline(this.state));
         }
 //        PIPELINES.remove(this);
 //        Renderer.getInstance().removeUsedPipeline(this);
-        this.graphicsPipelines.remove(this.state);
-        this.graphicsPipelines.put(this.state, this.createGraphicsPipeline(this.state));
+//        this.graphicsPipelines.remove(this.state);
 //        PIPELINES.add(this);
 //        Renderer.getInstance().addUsedPipeline(this);
     }
