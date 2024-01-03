@@ -253,7 +253,7 @@ public class DrawBuffers {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(16));
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
         }
 
 
