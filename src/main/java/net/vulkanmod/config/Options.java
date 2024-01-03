@@ -218,6 +218,17 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
+                new SwitchOption("Low VRAM Mode",
+                        value -> {
+                            config.perRenderTypeAreaBuffers = value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
+                        (WARNING: EXPERIMENTAL)
+                        
+                        Reduces VRAM usage by up to 40%
+                        May Increase/Decrease FPS:
+                        (This is Architecture specific and varies on Device, Old Nvidia GPUs especially can have FPS gains from this feature)""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> {
