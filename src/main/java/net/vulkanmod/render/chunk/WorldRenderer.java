@@ -55,6 +55,7 @@ import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -111,7 +112,9 @@ public class WorldRenderer {
                     allocateIndirectBuffers();
             });
 
-        addOnAllChangedCallback(Vulkan::waitIdle);
+//        addOnAllChangedCallback(Vulkan::waitIdle);
+//        addOnAllChangedCallback(() -> AreaUploadManager.INSTANCE.waitAllUploads());
+        addOnAllChangedCallback(TransferQueue::trimCmdPool);
         addOnAllChangedCallback(GraphicsQueue::trimCmdPool);
     }
 

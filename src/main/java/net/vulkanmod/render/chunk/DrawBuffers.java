@@ -276,7 +276,7 @@ public class DrawBuffers {
             this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
         }
         else this.vertexBuffer.freeBuffer();
-
+        this.areaBufferTypes.clear();
         if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
 
         this.vertexBuffer = null;
