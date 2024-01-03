@@ -2,12 +2,14 @@ package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 import java.util.function.Function;
@@ -80,5 +82,10 @@ public abstract class PipelineManager {
         terrainShaderEarlyZ.cleanUp();
         terrainShader.cleanUp();
         fastBlitPipeline.cleanUp();
+    }
+
+    public static void reload(RenderPass renderPass) {
+        terrainShader.recompilePipeline();
+        terrainShaderEarlyZ.recompilePipeline();
     }
 }

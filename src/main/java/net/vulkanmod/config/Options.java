@@ -230,7 +230,10 @@ public class Options {
                         May Increase/Decrease FPS: How this effects FPS Depends on GPU architecture
                         (Can boost performance on Old Nvidia cards)""")),
                 new SwitchOption("RenderFog",
-                        value -> config.renderFog = value,
+                        value -> {
+                            config.renderFog = value;
+                            Renderer.recomp=true;
+                        },
                         () -> config.renderFog),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),

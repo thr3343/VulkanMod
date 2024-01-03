@@ -31,6 +31,7 @@ public class GraphicsPipeline extends Pipeline {
 
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
+    private PipelineState state;
 
     GraphicsPipeline(Builder builder) {
         super(builder.shaderPath);
@@ -58,7 +59,7 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     private long createGraphicsPipeline(PipelineState state) {
-
+        this.state=state;
         try(MemoryStack stack = stackPush()) {
 
             ByteBuffer entryPoint = stack.UTF8("main");
@@ -73,7 +74,7 @@ public class GraphicsPipeline extends Pipeline {
 
                 VkSpecializationInfo vkSpecializationInfo = this.name.equals("basic/terrain/terrain") ? VkSpecializationInfo.calloc(stack)
                         .pMapEntries(vkSpecializationMapEntry)
-                        .pData(stack.bytes((byte) 0)) : null;
+                        .pData(stack.bytes((byte) (Initializer.CONFIG.renderFog ? 1 : 0))) : null;
 
 
 
@@ -353,6 +354,20 @@ public class GraphicsPipeline extends Pipeline {
         }
 
         return attributeDescriptions.rewind();
+    }
+
+    public void recompilePipeline()
+    {
+
+        if(this.graphicsPipelines.containsKey(this.state)) {
+            vkDestroyPipeline(DeviceManager.device, this.graphicsPipelines.get(this.state), null);
+        }
+//        PIPELINES.remove(this);
+//        Renderer.getInstance().removeUsedPipeline(this);
+        this.graphicsPipelines.remove(this.state);
+        this.graphicsPipelines.put(this.state, this.createGraphicsPipeline(this.state));
+//        PIPELINES.add(this);
+//        Renderer.getInstance().addUsedPipeline(this);
     }
 
     public void cleanUp() {

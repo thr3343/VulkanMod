@@ -53,6 +53,7 @@ public class Renderer {
     private static boolean renderPassUpdate = false;
     private static boolean hasCalled = false;
     public static boolean useMode=false;
+    public static boolean recomp = false;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -179,8 +180,16 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
+        if(recomp)
+        {
+            waitIdle();
+            PipelineManager.reload(getSwapChain().getRenderPass());
+            recomp=false;
+        }
         if(reload)
         {
+//            waitIdle();
+//            PipelineManager.reload(getSwapChain().getRenderPass());
             Minecraft.getInstance().levelRenderer.allChanged();
             reload=false;
         }
