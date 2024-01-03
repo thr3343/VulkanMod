@@ -229,6 +229,9 @@ public class Options {
                         Reduces VRAM usage by up to 40%
                         May Increase/Decrease FPS: How this effects FPS Depends on GPU architecture
                         (Can boost performance on Old Nvidia cards)""")),
+                new SwitchOption("RenderFog",
+                        value -> config.renderFog = value,
+                        () -> config.renderFog),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> {

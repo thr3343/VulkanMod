@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -15,6 +16,7 @@ import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.Boolean.FALSE;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static net.vulkanmod.vulkan.shader.PipelineState.DEFAULT_COLORMASK;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -63,12 +65,26 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
+
+                VkSpecializationMapEntry.Buffer vkSpecializationMapEntry = VkSpecializationMapEntry.calloc(1, stack)
+                        .constantID(0)
+                        .offset(0)
+                        .size(1);
+
+                VkSpecializationInfo vkSpecializationInfo = this.name.equals("basic/terrain/terrain") ? VkSpecializationInfo.calloc(stack)
+                        .pMapEntries(vkSpecializationMapEntry)
+                        .pData(stack.bytes((byte) 0)) : null;
+
+
+
+
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
 
             vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
             vertShaderStageInfo.stage(VK_SHADER_STAGE_VERTEX_BIT);
             vertShaderStageInfo.module(vertShaderModule);
             vertShaderStageInfo.pName(entryPoint);
+            vertShaderStageInfo.pSpecializationInfo(vkSpecializationInfo);
 
             VkPipelineShaderStageCreateInfo fragShaderStageInfo = shaderStages.get(1);
 
@@ -76,6 +92,7 @@ public class GraphicsPipeline extends Pipeline {
             fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
             fragShaderStageInfo.module(fragShaderModule);
             fragShaderStageInfo.pName(entryPoint);
+            vertShaderStageInfo.pSpecializationInfo(vkSpecializationInfo);
 
             // ===> VERTEX STAGE <===
 
