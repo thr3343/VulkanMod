@@ -25,10 +25,6 @@ public enum Queue {
         return this.commandPool.beginCommands();
     }
 
-    Queue(int familyIndex) {
-        this(familyIndex, true);
-    }
-
     Queue(int familyIndex, boolean initCommandPool) {
         try (MemoryStack stack = MemoryStack.stackPush())
         {

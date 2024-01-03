@@ -13,7 +13,7 @@ import static org.lwjgl.vulkan.VK11.*;
 public class GlFramebuffer {
     private static int ID_COUNTER = 1;
     private static final Int2ReferenceOpenHashMap<GlFramebuffer> map = new Int2ReferenceOpenHashMap<>();
-    public static int boundId = 0;
+    private static int boundId = 0;
     public static GlFramebuffer boundFramebuffer;
 
     public static int genFramebufferId() {
@@ -132,6 +132,13 @@ public class GlFramebuffer {
 
     GlFramebuffer(int i) {
         this.id = i;
+    }
+
+    public static void cancelPendingCmds() {
+        if(GlFramebuffer.boundId != 0) {
+
+            GlFramebuffer.boundId = 0;
+        }
     }
 
     public boolean beginRendering() {

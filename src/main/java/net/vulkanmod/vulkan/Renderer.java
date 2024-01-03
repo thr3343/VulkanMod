@@ -47,10 +47,10 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+
     private static boolean effectActive = false;
-    public static boolean renderPassUpdate = false;
-    public static boolean hasCalled = false;
-    private int renderPassidx;
+    private static boolean renderPassUpdate = false;
+    private static boolean hasCalled = false;
     public static boolean useMode=false;
 
     public static void initRenderer() {
@@ -290,14 +290,9 @@ public class Renderer {
 //            else renderPassidx = (renderPassidx + 1) % mainPass2.length;
             effectActive = false;
         }
-        if(renderPassUpdate && GlFramebuffer.boundId != 0) {
+        if(renderPassUpdate) {
             this.endRenderPass();
-
-            //            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-            //            if(renderTarget != null)
-            //                renderTarget.bindWrite(true);
-//                GlFramebuffer.boundFramebuffer = null;
-            GlFramebuffer.boundId = 0;
+            GlFramebuffer.cancelPendingCmds();
         }
         hasCalled=false;
         submitFrame();
