@@ -248,9 +248,10 @@ public abstract class Pipeline {
 
                 this.updateUniforms(uniformBuffers);
 //                boolean b = !this.bound || this.boundTextures.length > 0;
+                transitionSamplers(uniformBuffers);
                 if(updates[frame1]||update) {
 //                    this.updateDescriptorSet(stack, uniformBuffers, update||this.boundTextures.length>2);
-                    this.updateDescriptorSet(stack, uniformBuffers, true/*||!this.bound*/);
+                    this.updateDescriptorSet(stack, uniformBuffers /*||!this.bound*/);
                     updates[frame1]=false;
 //                    this.bound=true;
                 }
@@ -283,30 +284,8 @@ public abstract class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers, boolean b) {
+        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
 
-            boolean changed = false;
-            for (int j = 0; j < imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
-                VulkanImage image = imageDescriptor.getImage();
-                long view = imageDescriptor.getImageView(image);
-                long sampler = image.getSampler();
-
-                if(imageDescriptor.isReadOnlyLayout)
-                    image.readOnlyLayout();
-
-                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
-                    changed = true;
-                    break;
-                }
-            }
-
-            if(!changed &&b&& this.currentIdx != -1 &&
-                this.uniformBufferId == uniformBuffers.getId(frame)) {
-                this.currentSet = this.sets.get(this.currentIdx);
-                return;
-            }
-            if(!b) return;
             this.uniformBufferId = uniformBuffers.getId(frame);
             this.currentIdx++;
             if(this.currentIdx >= this.poolSize) {
@@ -319,7 +298,7 @@ public abstract class Pipeline {
 //                System.out.println("resized descriptor pool to: " + this.poolSize);
 
                 this.resetIdx();
-                this.updateDescriptorSet(stack, uniformBuffers, b);
+                this.updateDescriptorSet(stack, uniformBuffers);
                 return;
             }
 
@@ -384,6 +363,29 @@ public abstract class Pipeline {
             }
 
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+        }
+
+        private void transitionSamplers(UniformBuffers uniformBuffers) {
+            boolean changed = false;
+            for (int j = 0; j < imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
+
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
+
+                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
+                    changed = true;
+                    break;
+                }
+            }
+
+            if(!changed && this.currentIdx != -1 &&
+                this.uniformBufferId == uniformBuffers.getId(frame)) {
+                this.currentSet = this.sets.get(this.currentIdx);
+            }
         }
 
         private void createDescriptorSets(MemoryStack stack) {

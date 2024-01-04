@@ -17,7 +17,7 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
-        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
+//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 
         swapChain.beginRenderPass(commandBuffer, stack);
         Renderer.getInstance().setBoundFramebuffer(swapChain);
