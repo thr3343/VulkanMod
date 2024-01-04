@@ -251,7 +251,7 @@ public abstract class Pipeline {
                 transitionSamplers(uniformBuffers);
                 if(updates[frame1]||update) {
 //                    this.updateDescriptorSet(stack, uniformBuffers, update||this.boundTextures.length>2);
-                    this.updateDescriptorSet(stack, uniformBuffers /*||!this.bound*/);
+                    this.updateDescriptorSet(stack, uniformBuffers, true/*||!this.bound*/);
                     updates[frame1]=false;
 //                    this.bound=true;
                 }
@@ -284,7 +284,7 @@ public abstract class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
+        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers, boolean b) {
 
             this.uniformBufferId = uniformBuffers.getId(frame);
             this.currentIdx++;
@@ -298,7 +298,7 @@ public abstract class Pipeline {
 //                System.out.println("resized descriptor pool to: " + this.poolSize);
 
                 this.resetIdx();
-                this.updateDescriptorSet(stack, uniformBuffers);
+                this.updateDescriptorSet(stack, uniformBuffers, b);
                 return;
             }
 
@@ -373,7 +373,7 @@ public abstract class Pipeline {
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
 
-                if(imageDescriptor.isReadOnlyLayout)
+                if(imageDescriptor.isReadOnlyLayout &&image.getCurrentLayout()!=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
                     image.readOnlyLayout();
 
                 if(!this.boundTextures[j].isCurrentState(view, sampler)) {
