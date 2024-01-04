@@ -69,7 +69,7 @@ public class GraphicsPipeline extends Pipeline {
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
 
-            boolean equals = this.name.equals("basic/terrain/terrain")||this.name.equals("minecraft/core/rendertype_entity_cutout_no_cull/rendertype_entity_cutout_no_cull");
+            boolean equals = this.name !=null && (this.name.equals("basic/terrain/terrain")||this.name.equals("minecraft/core/rendertype_entity_cutout_no_cull/rendertype_entity_cutout_no_cull"));
             VkSpecializationInfo vkSpecializationInfo = equals ? VkSpecializationInfo.malloc(stack)
                         .pMapEntries(VkSpecializationMapEntry.malloc(1, stack).constantID(0).offset(0).size(1))
                         .pData(stack.bytes((byte) (Initializer.CONFIG.renderFog ? 1 : 0))) : null;
