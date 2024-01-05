@@ -23,6 +23,7 @@ public class Config {
     public int device = -1;
     public boolean animations = true;
     public boolean renderSky = true;
+    public boolean xWayland = true;
 
     private static Path path;
 

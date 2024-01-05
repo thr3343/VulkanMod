@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -16,7 +16,6 @@ import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.Boolean.FALSE;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static net.vulkanmod.vulkan.shader.PipelineState.DEFAULT_COLORMASK;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -71,8 +70,8 @@ public class GraphicsPipeline extends Pipeline {
 
             boolean equals = this.name !=null && (this.name.equals("basic/terrain/terrain")||this.name.equals("minecraft/core/rendertype_entity_cutout_no_cull/rendertype_entity_cutout_no_cull"));
             VkSpecializationInfo vkSpecializationInfo = equals ? VkSpecializationInfo.malloc(stack)
-                        .pMapEntries(VkSpecializationMapEntry.malloc(1, stack).constantID(0).offset(0).size(1))
-                        .pData(stack.bytes((byte) (Initializer.CONFIG.renderFog ? 1 : 0))) : null;
+                        .pMapEntries(VkSpecializationMapEntry.malloc(1, stack).constantID(0).offset(0).size(4))
+                        .pData(alignedVkBool32(stack, Initializer.CONFIG.renderFog ? 1 : 0)) : null;
 
 
             shaderStages.get(0)
@@ -213,6 +212,10 @@ public class GraphicsPipeline extends Pipeline {
 
             return pGraphicsPipeline.get(0);
         }
+    }
+    //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+    private static ByteBuffer alignedVkBool32(MemoryStack stack, int i) {
+        return stack.malloc(Integer.BYTES).putInt(0, i); //Malloc as Int is always Unaligned, so asIntBuffer doesn't help here afaik
     }
 
     private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {

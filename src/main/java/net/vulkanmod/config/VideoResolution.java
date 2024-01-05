@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.Initializer;
 import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -59,8 +60,10 @@ public class VideoResolution {
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
-        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
-        LOGGER.info("Selecting Platform: "+getStringFromPlat(activePlat));
+        boolean b = Initializer.CONFIG.xWayland && isWayLand();
+        int activePlat1 = b ? GLFW_PLATFORM_X11 : activePlat;
+        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat1);
+        LOGGER.info("Selecting Platform: "+getStringFromPlat(activePlat1) + (b ? "(Xwayland Override)" : null));
         LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
