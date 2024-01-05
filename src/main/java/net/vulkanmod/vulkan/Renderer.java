@@ -178,7 +178,7 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
         if(reload)
-        {
+        {   waitIdle();
             Minecraft.getInstance().levelRenderer.allChanged();
             reload=false;
         }
