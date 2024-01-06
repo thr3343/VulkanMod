@@ -183,7 +183,7 @@ public class Renderer {
         if(recomp)
         {
             waitIdle();
-            PipelineManager.reload(getSwapChain().getRenderPass());
+            PipelineManager.reload();
             recomp=false;
         }
         if(reload)
