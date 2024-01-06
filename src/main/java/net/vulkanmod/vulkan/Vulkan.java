@@ -130,7 +130,6 @@ public class Vulkan {
 
     private static StagingBuffer[] stagingBuffers;
 
-    public static boolean use24BitsDepthFormat = true;
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
     public static void initVulkan(long window) {
@@ -164,9 +163,9 @@ public class Vulkan {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
         }
     }
-
+    //AMD performs best with 32-Bit depth format afaik
     static void setupDepthFormat() {
-        DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat(use24BitsDepthFormat);
+        DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat();
     }
 
     private static void createSwapChain() {

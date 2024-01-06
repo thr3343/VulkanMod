@@ -43,6 +43,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
@@ -104,6 +105,9 @@ public class WorldRenderer {
             if(this.indirectBuffers.length != Renderer.getFramesNum())
                 allocateIndirectBuffers();
         });
+        Runnable queueTrim = () -> EnumSet.allOf(Queue.class).forEach(Queue::trimCmdPool);
+        Renderer.getInstance().addOnResizeCallback(queueTrim);
+        addOnAllChangedCallback(queueTrim);
     }
 
     private void allocateIndirectBuffers() {

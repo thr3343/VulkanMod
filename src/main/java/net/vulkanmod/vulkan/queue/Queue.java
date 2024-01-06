@@ -15,6 +15,8 @@ public enum Queue {
     GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
     TransferQueue(QueueFamilyIndices.transferFamily, true),
     PresentQueue(QueueFamilyIndices.presentFamily, false);
+
+    //Removed Compute queue as its unused atm
     private CommandPool.CommandBuffer currentCmdBuffer;
     private final CommandPool commandPool;
 
@@ -120,19 +122,11 @@ public enum Queue {
     }
 
     public CommandPool.CommandBuffer getCommandBuffer() {
-        if (currentCmdBuffer != null) {
-            return currentCmdBuffer;
-        } else {
-            return beginCommands();
-        }
+        return currentCmdBuffer != null ? currentCmdBuffer : beginCommands();
     }
 
     public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
-        if (currentCmdBuffer != null) {
-            return VK_NULL_HANDLE;
-        } else {
-            return submitCommands(commandBuffer);
-        }
+        return currentCmdBuffer != null ? VK_NULL_HANDLE : submitCommands(commandBuffer);
     }
 
     public void trimCmdPool()

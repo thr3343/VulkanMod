@@ -32,7 +32,7 @@ public class QueueFamilyIndices {
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
-            //            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
+            //Not using vkGetPhysicalDeviceSurfaceSupportKHR() as some Android drivers are bugged and crash during enumeration
             for (int i = 0; i < queueFamilies.capacity(); i++) {
                 int queueFlags = queueFamilies.get(i).queueFlags();
 
