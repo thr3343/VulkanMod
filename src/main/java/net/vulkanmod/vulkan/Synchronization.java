@@ -2,8 +2,8 @@ package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
@@ -20,7 +20,7 @@ public class Synchronization {
     private final LongBuffer fences;
     private int idx = 0;
 
-    private ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
+    private final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
 
     Synchronization(int allocSize) {
         this.fences = MemoryUtil.memAllocLong(allocSize);
