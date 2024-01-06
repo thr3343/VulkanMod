@@ -136,6 +136,13 @@ public enum Queue {
         }
     }
 
+    public static void trimCmdPools()
+    {
+        for(var queue : Queue.values()) {
+            queue.trimCmdPool();
+        }
+    }
+
     public void fillBuffer(long id, int bufferSize, int qNaN) {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
