@@ -37,14 +37,14 @@ public class PipelineState {
     final ColorMask colorMask;
     final LogicOpState logicOpState;
     final boolean cullState;
-    final RenderPass renderPass;
+    final long renderPass;
 
     public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass renderPass) {
         this.blendState = blendState;
         this.depthState = depthState;
         this.logicOpState = logicOpState;
         this.colorMask = colorMask;
-        this.renderPass = renderPass;
+        this.renderPass = renderPass.getId();
         this.cullState = VRenderSystem.cull;
     }
 

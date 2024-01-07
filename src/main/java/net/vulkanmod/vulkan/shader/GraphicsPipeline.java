@@ -195,18 +195,8 @@ public class GraphicsPipeline extends Pipeline {
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 
-            if(!Vulkan.DYNAMIC_RENDERING) {
-                pipelineInfo.renderPass(state.renderPass.getId());
-                pipelineInfo.subpass(0);
-            }
-            else {
-                //dyn-rendering
-                VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
-                renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass.getFramebuffer().getFormat()));
-                renderingInfo.depthAttachmentFormat(state.renderPass.getFramebuffer().getDepthFormat());
-                pipelineInfo.pNext(renderingInfo);
-            }
+            pipelineInfo.renderPass(state.renderPass);
+            pipelineInfo.subpass(0);
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
@@ -326,7 +316,12 @@ public class GraphicsPipeline extends Pipeline {
 
         if(this.specConstants.contains(useFog))
         {
-            this.graphicsPipelines.replace(this.state, this.createGraphicsPipeline(this.state));
+            if(graphicsPipelines.size()>1)
+            {
+                graphicsPipelines.values().forEach(pipeline -> vkDestroyPipeline(DeviceManager.device, pipeline, null));
+                graphicsPipelines.clear();
+            }
+            this.graphicsPipelines.put(this.state, this.createGraphicsPipeline(this.state));
         }
 //        PIPELINES.remove(this);
 //        Renderer.getInstance().removeUsedPipeline(this);
