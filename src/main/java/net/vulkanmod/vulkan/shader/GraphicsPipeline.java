@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -13,6 +12,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +27,7 @@ public class GraphicsPipeline extends Pipeline {
 
     private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private final VertexFormat vertexFormat;
+    private final EnumSet<SPIRVUtils.SpecConstant> specConstants;
 
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
@@ -39,6 +40,7 @@ public class GraphicsPipeline extends Pipeline {
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
+        this.specConstants = builder.specConstants;
 
         createDescriptorSetLayout();
         createPipelineLayout();
@@ -67,15 +69,13 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
+            VkSpecializationMapEntry.Buffer specEntrySet =  VkSpecializationMapEntry.malloc(specConstants.size(), stack);
 
-            boolean equals = this.name !=null && (this.name.equals("basic/terrain/terrain")
-                    ||this.name.equals("minecraft/core/rendertype_entity_solid/rendertype_entity_solid")
-                    ||this.name.equals("minecraft/core/rendertype_beacon_beam/rendertype_beacon_beam")
-                    ||this.name.equals("minecraft/core/rendertype_entity_cutout_no_cull/rendertype_entity_cutout_no_cull")
-                    ||this.name.equals("minecraft/core/rendertype_entity_translucent/rendertype_entity_translucent"));
+
+            boolean equals = !this.specConstants.isEmpty();
             VkSpecializationInfo vkSpecializationInfo = equals ? VkSpecializationInfo.malloc(stack)
-                        .pMapEntries(VkSpecializationMapEntry.malloc(1, stack).constantID(0).offset(0).size(4))
-                        .pData(alignedVkBool32(stack, Initializer.CONFIG.renderFog ? 1 : 0)) : null;
+                        .pMapEntries(specEntrySet)
+                        .pData(enumSpecConstants(stack, specEntrySet)) : null;
 
 
             shaderStages.get(0)
@@ -217,6 +217,26 @@ public class GraphicsPipeline extends Pipeline {
             return pGraphicsPipeline.get(0);
         }
     }
+
+    @NotNull
+    private ByteBuffer enumSpecConstants(MemoryStack stack, VkSpecializationMapEntry.Buffer specEntrySet) {
+        int i = 0;
+        int x = 0;
+        ByteBuffer byteBuffer = stack.malloc(specConstants.size()*Integer.BYTES);
+
+        for(var specDef : specConstants)
+        {
+            specEntrySet.get(i)
+                    .constantID(specDef.ordinal())
+                    .offset(x)
+                    .size(4);
+
+            byteBuffer.putInt(i, specDef.getValue());
+            i++; x+=4;
+        }
+        return byteBuffer;
+    }
+
     //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
     private static ByteBuffer alignedVkBool32(MemoryStack stack, int i) {
         return stack.malloc(Integer.BYTES).putInt(0, i); //Malloc as Int is always Unaligned, so asIntBuffer doesn't help here afaik
@@ -301,10 +321,10 @@ public class GraphicsPipeline extends Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    public void recompilePipeline()
+    public void recompilePipeline(SPIRVUtils.SpecConstant useFog)
     {
 
-        if(this.graphicsPipelines.containsKey(this.state))
+        if(this.specConstants.contains(useFog))
         {
             this.graphicsPipelines.replace(this.state, this.createGraphicsPipeline(this.state));
         }

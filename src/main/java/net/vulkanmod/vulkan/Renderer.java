@@ -68,7 +68,7 @@ public class Renderer {
 
     public static int getCurrentImage() { return imageIndex; }
 
-    private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
 
     private Drawer drawer;
 
@@ -183,7 +183,7 @@ public class Renderer {
         if(recomp)
         {
             waitIdle();
-            PipelineManager.reload();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.recompilePipeline(SPIRVUtils.SpecConstant.USE_FOG));
             recomp=false;
         }
         if(reload)
@@ -413,11 +413,11 @@ public class Renderer {
         Vulkan.getStagingBuffer().reset();
     }
 
-    public void addUsedPipeline(Pipeline pipeline) {
+    public void addUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.add(pipeline);
     }
 
-    public void removeUsedPipeline(Pipeline pipeline) { usedPipelines.remove(pipeline); }
+    public void removeUsedPipeline(GraphicsPipeline pipeline) { usedPipelines.remove(pipeline); }
 
     private void resetDescriptors() {
         for(Pipeline pipeline : usedPipelines) {

@@ -51,6 +51,7 @@ public abstract class VRenderSystem {
     public static final MappedBuffer screenSize = new MappedBuffer(MemoryUtil.memAlloc(2 * 4));
 
     public static float alphaCutout = 0.0f;
+    public static boolean useFog = true;
 
     private static final float[] depthBias = new float[2];
     public static boolean clearColorUpdate = false;

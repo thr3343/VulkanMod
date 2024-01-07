@@ -7,11 +7,8 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 import java.util.function.Function;
@@ -86,16 +83,4 @@ public abstract class PipelineManager {
         fastBlitPipeline.cleanUp();
     }
 
-    public static void reload() {
-        terrainShader.recompilePipeline();
-        terrainShaderEarlyZ.recompilePipeline();
-        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
-        ((ShaderMixed)(GameRenderer.getRendertypeEntityTranslucentShader())).getPipeline().recompilePipeline();
-//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutShader())).getPipeline().recompilePipeline();
-        ((ShaderMixed)(GameRenderer.getRendertypeEntitySolidShader())).getPipeline().recompilePipeline();
-        ((ShaderMixed)(GameRenderer.getRendertypeBeaconBeamShader())).getPipeline().recompilePipeline(); //Bugged
-//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullZOffsetShader())).getPipeline().recompilePipeline();
-//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
-//        ((ShaderMixed)(GameRenderer.getRendertypeEntityCutoutNoCullShader())).getPipeline().recompilePipeline();
-    }
 }
