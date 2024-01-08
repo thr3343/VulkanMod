@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Vulkan;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -311,10 +310,13 @@ public class GraphicsPipeline extends Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    public void recompilePipeline(SPIRVUtils.SpecConstant useFog)
+    // SpecConstants can be set to be unique per Pipeline
+    // but that would involve adding boilerplate to PipelineState
+    // So at least rn specConstants can onyl be controlled this function only handles setting them as "Globals" RN
+    public void updateSpecConstant(SPIRVUtils.SpecConstant specConstant)
     {
 
-        if(this.specConstants.contains(useFog))
+        if(this.specConstants.contains(specConstant))
         {
             if(graphicsPipelines.size()>1)
             {
