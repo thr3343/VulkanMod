@@ -40,7 +40,6 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
@@ -88,7 +87,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+    private final EnumMap<TerrainRenderType, IndirectBuffer> indirectBuffers = new EnumMap<>(TerrainRenderType.class);
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -101,26 +100,18 @@ public class WorldRenderer {
         this.renderBuffers = renderBuffers;
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
-        allocateIndirectBuffers();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
-        });
-    }
 
-    private void allocateIndirectBuffers() {
-        if(this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
-
-        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+        for(TerrainRenderType terrainRenderType  : COMPACT_RENDER_TYPES) {
+            this.indirectBuffers.put(terrainRenderType, new IndirectBuffer(20*512*128, MemoryTypes.GPU_MEM));
         }
 
 //        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
+
+//        Renderer.getInstance().addOnResizeCallback(() -> {
+//            if(this.indirectBuffers.length != Renderer.getFramesNum())
+//                allocateIndirectBuffers();
+//        });
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
@@ -244,7 +235,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+//        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
@@ -581,15 +572,15 @@ public class WorldRenderer {
                 var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
                 if(indirectDraw) {
-                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
+                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers.get(terrainRenderType), typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
                 } else {
                     chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
                 }
             }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
-            indirectBuffers[currentFrame].submitUploads();
+        if(indirectDraw && (terrainRenderType.equals(TRIPWIRE))) {
+            indirectBuffers.values().forEach(IndirectBuffer::submitUploads);
 //            uniformBuffers.submitUploads();
         }
         p.pop();
@@ -729,8 +720,12 @@ public class WorldRenderer {
     }
 
     public void cleanUp() {
-        if(indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
+        if(!indirectBuffers.isEmpty()) {
+            indirectBuffers.forEach((key, value) -> value.freeBuffer());
+        }
     }
 
+    public void release2(int index) {
+        indirectBuffers.values().forEach(indirectBuffer ->  indirectBuffer.freeOffset(index));
+    }
 }

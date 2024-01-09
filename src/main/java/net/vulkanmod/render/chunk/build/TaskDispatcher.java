@@ -143,8 +143,7 @@ public class TaskDispatcher {
     }
 
     private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+        DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
         for(TerrainRenderType renderType : uploadBuffers.keySet()) {
             UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
@@ -152,7 +151,7 @@ public class TaskDispatcher {
             if(uploadBuffer != null) {
                 drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
             } else {
-                section.getDrawParameters(renderType).reset(renderArea, renderType);
+                section.getDrawParameters(renderType).reset(drawBuffers, renderType);
             }
         }
     }

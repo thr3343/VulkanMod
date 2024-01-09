@@ -136,5 +136,6 @@ public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuff
 
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
+        WorldRenderer.getInstance().release2(drawBuffers.index);
     }
 }
