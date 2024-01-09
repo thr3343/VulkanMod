@@ -2,14 +2,19 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkBufferCopy;
 
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
 
 public class IndirectBuffer extends Buffer {
     private static final int size_t = 20*512;
@@ -17,6 +22,7 @@ public class IndirectBuffer extends Buffer {
 
     private final Int2IntArrayMap baseOffsets = new Int2IntArrayMap(8);
     private final IntArrayFIFOQueue freeBaseOffsets = new IntArrayFIFOQueue(128);
+    private final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
     public IndirectBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, type);
@@ -43,7 +49,7 @@ public class IndirectBuffer extends Buffer {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer(size, byteBuffer);
 
-        TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), stagingBuffer.id, stagingBuffer.offset, this.getId(), pOffset, size);
+        subCmdUploads.enqueue(new SubCopyCommand(stagingBuffer.offset, pOffset, size));
 
     }
 
@@ -76,8 +82,18 @@ public class IndirectBuffer extends Buffer {
     }
 
     public void submitUploads() {
-        if(commandBuffer == null)
+        if(commandBuffer == null||subCmdUploads.isEmpty())
             return;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
+            while (!subCmdUploads.isEmpty()) {
+                for (var a : vkBufferCopies) {
+                    SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
+                    a.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
+                }
+            }
+            vkCmdCopyBuffer(commandBuffer.getHandle(), Vulkan.getStagingBuffer().getId(), this.id, vkBufferCopies);
+        }
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);

@@ -17,7 +17,6 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.nio.LongBuffer;
 import java.util.EnumMap;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -123,10 +122,9 @@ public class DrawBuffers {
 
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
 
-        if(queue==null || queue.size() == 0) return;
 
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -137,15 +135,8 @@ public class DrawBuffers {
             uploadIndirectCmds(indirectBuffer, queue, terrainRenderType, stack, isTranslucent);
         }
 
-        if (isTranslucent) {
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
-        LongBuffer pVertexBuffer = stack.longs(getAreaBuffer(terrainRenderType).getId());
-        LongBuffer pOffset = stack.longs(0);
-        vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
-
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+
         vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getBaseOffset(this.index), queue.size(), 20);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
@@ -244,11 +235,20 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
-        if(queue==null || queue.size() == 0) return;
+    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
+
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+
+        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
+            final DrawParameters drawParameters = iterator.next();
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+
+        }
+    }
+
+    void bindBuffers(TerrainRenderType terrainRenderType, VkCommandBuffer commandBuffer, boolean isTranslucent, double camX, double camY, double camZ, long layout) {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
             updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
@@ -257,12 +257,6 @@ public class DrawBuffers {
 
         if(isTranslucent) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
-
-        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
-            final DrawParameters drawParameters = iterator.next();
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
-
         }
     }
 

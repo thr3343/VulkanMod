@@ -569,12 +569,12 @@ public class WorldRenderer {
 
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
-                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
-                if(indirectDraw) {
-                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers.get(terrainRenderType), typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
-                } else {
-                    chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
+                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
+                if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
+                    chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, isTranslucent, camX, camY, camZ, layout);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers.get(terrainRenderType), typedSectionQueue, terrainRenderType);
+                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
             }
         }
