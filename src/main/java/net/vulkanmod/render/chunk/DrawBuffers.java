@@ -76,11 +76,12 @@ public class DrawBuffers {
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
 
+        boolean x = drawParameters.indexCount != buffer.indexCount;
         drawParameters.indexCount = buffer.indexCount;
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        this.drwCnts.put(renderType, ~0);
+        if(x) this.drwCnts.put(renderType, ~0);
 
         buffer.release();
 
