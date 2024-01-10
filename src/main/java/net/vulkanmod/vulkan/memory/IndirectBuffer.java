@@ -22,7 +22,7 @@ public class IndirectBuffer extends Buffer {
 
     private final Int2IntArrayMap baseOffsets = new Int2IntArrayMap(8);
     private final IntArrayFIFOQueue freeBaseOffsets = new IntArrayFIFOQueue(128);
-    private final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
+    public final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
     public IndirectBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, type);
@@ -68,7 +68,7 @@ public class IndirectBuffer extends Buffer {
     {
         if(this.baseOffsets.containsKey(index))
         {
-            freeBaseOffsets.enqueue(baseOffsets.remove(index));
+            freeBaseOffsets.enqueueFirst(baseOffsets.remove(index));
             usedBytes -= size_t;
 
         }
@@ -106,6 +106,6 @@ public class IndirectBuffer extends Buffer {
     }
 
     public int getBaseOffset(int index) {
-        return this.baseOffsets.get(index);
+            return this.baseOffsets.get(index);
     }
 }
