@@ -28,10 +28,11 @@ public class DrawBuffers {
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated = false;
+    private boolean allocated, needsUpdate = false;
     AreaBuffer vertexBuffer, indexBuffer;
     private final EnumMap<TerrainRenderType, Integer> drwCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
+    private static float x, m;
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -46,7 +47,7 @@ public class DrawBuffers {
         drwCnts.put(TerrainRenderType.TRANSLUCENT, 0);
         if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
-        this.allocated = true;
+        this.allocated = needsUpdate = true;
     }
 
     public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType) {
@@ -81,7 +82,8 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        if(x) this.drwCnts.put(renderType, ~0);
+//        if(x) this.drwCnts.put(renderType, ~0);
+        needsUpdate=true;
 
         buffer.release();
 
@@ -125,25 +127,28 @@ public class DrawBuffers {
 
 
 
-        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        MemoryStack stack = MemoryStack.stackPush();
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+            boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+            m++;
+            if (needsUpdate || drwCnts.get(terrainRenderType) != queue.size()) {
+                uploadIndirectCmds(indirectBuffer, queue, terrainRenderType, stack, isTranslucent);
+                x++;
+                Initializer.LOGGER.info(terrainRenderType.name() + "(" + (x / m) + ") -> " + indirectBuffer.getUsedBytes());
+            }
 
-        if(drwCnts.get(terrainRenderType)!=queue.size()) {
-            uploadIndirectCmds(indirectBuffer, queue, terrainRenderType, stack, isTranslucent);
-        }
 
-        if(isTranslucent) {
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
+            if (isTranslucent) {
+                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+            }
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
 
-        vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getBaseOffset(this.index), queue.size(), 20);
+            vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getBaseOffset(this.index), queue.size(), 20);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
 
 //        MemoryUtil.memFree(byteBuffer);
-        MemoryStack.stackPop();
+        }
 
     }
 
@@ -175,6 +180,7 @@ public class DrawBuffers {
         indirectBuffer.recordCopyCmd(byteBuffer, this.index);
 
         drwCnts.put(terrainRenderType, queue.size());
+        needsUpdate=false;
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
