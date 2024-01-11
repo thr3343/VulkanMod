@@ -88,7 +88,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+//    IndirectBuffer[] indirectBuffers;
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -103,22 +103,22 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
-        });
+//        Renderer.getInstance().addOnResizeCallback(() -> {
+//            if(this.indirectBuffers.length != Renderer.getFramesNum())
+//                allocateIndirectBuffers();
+//        });
     }
 
     private void allocateIndirectBuffers() {
-        if(this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
-
-        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
-        }
+//        if(this.indirectBuffers != null)
+//            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+//
+//        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
+//
+//        for(int i = 0; i < this.indirectBuffers.length; ++i) {
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+//        }
 
 //        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
     }
@@ -244,7 +244,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+//        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
@@ -581,14 +581,14 @@ public class WorldRenderer {
 
                 if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
                     chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
             }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
-            indirectBuffers[currentFrame].submitUploads();
+        if(indirectDraw && (terrainRenderType.equals(TRIPWIRE))) {
+            DrawBuffers.indirectBuffers2.values().forEach(ArenaBuffer::SubmitAll);
 //            uniformBuffers.submitUploads();
         }
         p.pop();
@@ -728,8 +728,7 @@ public class WorldRenderer {
     }
 
     public void cleanUp() {
-        if(indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
+
     }
 
 }

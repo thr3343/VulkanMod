@@ -33,6 +33,20 @@ public class StagingBuffer extends Buffer {
 
         //createVertexBuffer(vertexSize, vertexCount, byteBuffer);
     }
+    public void copyBuffer2(int size, long byteBuffer) {
+
+        if(size > this.bufferSize - this.usedBytes) {
+            resizeBuffer((this.bufferSize + size) * 2);
+        }
+
+//        VUtil.memcpy(byteBuffer, this.data.getByteBuffer(0, this.bufferSize), this.usedBytes);
+        nmemcpy(this.data.get(0) + this.usedBytes, (byteBuffer), size);
+
+        offset = usedBytes;
+        usedBytes += size;
+
+        //createVertexBuffer(vertexSize, vertexCount, byteBuffer);
+    }
 
     public void align(int alignment) {
         int alignedValue = Util.align(usedBytes, alignment);

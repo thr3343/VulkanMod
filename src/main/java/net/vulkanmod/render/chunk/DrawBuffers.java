@@ -7,18 +7,17 @@ import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.EnumMap;
 
-import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -29,9 +28,18 @@ public class DrawBuffers {
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated = false;
+    private boolean allocated, needsUpdate = false;
     AreaBuffer vertexBuffer, indexBuffer;
+    static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
+    private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
+
+    static
+    {
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
+    }
+
+    private static float x,m;
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -42,7 +50,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-
+        COMPACT_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
         if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
@@ -79,7 +87,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-
+        needsUpdate=true;
 
         buffer.release();
 
@@ -118,45 +126,53 @@ public class DrawBuffers {
 
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
-
+    public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
+        if(queue.size()==0) return;
         try (MemoryStack stack = MemoryStack.stackPush()) {
+        m++;
+            ArenaBuffer arenaBuffer = indirectBuffers2.get(terrainRenderType);
+            if(needsUpdate || drawCnts.get(terrainRenderType)!=queue.size())
+            {
+                x++;
+                updateIndirectCmds(queue, terrainRenderType, stack, arenaBuffer);
+                drawCnts.put(terrainRenderType, queue.size());
+                needsUpdate=false;
 
-            ByteBuffer byteBuffer = stack.malloc(20 * queue.size());
-            long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-
-
-            int drawCount = 0;
-            for (var iterator = queue.iterator(terrainRenderType == TerrainRenderType.TRANSLUCENT); iterator.hasNext(); ) {
-
-                DrawParameters drawParameters = iterator.next();
-
-                //TODO
-                if (!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
-                    if (!drawParameters.vertexBufferSegment.isReady())
-                        continue;
-                    drawParameters.ready = true;
-                }
-
-                long ptr = bufferPtr + (drawCount * 20L);
-                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
-                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
-                MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-                MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
-
-                drawCount++;
+                float v = (x / m);
+                Initializer.LOGGER.info(terrainRenderType.name() +"(" +v +") -> "+ arenaBuffer.usedBytes2);
             }
 
-            if (drawCount == 0) return;
 
-            indirectBuffer.recordCopyCmd(byteBuffer.position(0));
-
-
-            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
+            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
         }
 
 
+    }
+
+    private void updateIndirectCmds(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, MemoryStack stack, ArenaBuffer indirectBuffer2S11) {
+        long bufferPtr = stack.nmalloc(20 * queue.size());
+
+
+        int drawCount = 0;
+        boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); drawCount++) {
+
+            DrawParameters drawParameters = iterator.next();
+
+
+
+            long ptr = bufferPtr + (drawCount * 20L);
+            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+            MemoryUtil.memPutInt(ptr + 4, 1);
+            MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
+            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+            MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+
+
+        }
+
+
+        indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index);
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
@@ -194,6 +210,9 @@ public class DrawBuffers {
         this.areaBufferTypes.clear();
         if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
 
+        indirectBuffers2.values().forEach(arenaBuffer -> arenaBuffer.rem(this.index));
+        drawCnts.replaceAll((t, v) -> 0);
+
         this.vertexBuffer = null;
         this.indexBuffer = null;
         this.allocated = false;
@@ -207,7 +226,6 @@ public class DrawBuffers {
         int indexCount, firstIndex, vertexOffset, baseInstance;
         final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
         final AreaBuffer.Segment indexBufferSegment;
-        boolean ready = false;
 
         DrawParameters(boolean translucent) {
             indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
@@ -222,6 +240,7 @@ public class DrawBuffers {
             if(chunkArea != null && chunkArea.drawBuffers().hasRenderType(r) && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
                 chunkArea.drawBuffers().getAreaBuffer(r).setSegmentFree(this.vertexBufferSegment);
+                chunkArea.drawBuffers().needsUpdate=true;
             }
         }
     }
