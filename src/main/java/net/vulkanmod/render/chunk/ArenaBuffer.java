@@ -3,14 +3,15 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import net.vulkanmod.render.chunk.util.StaticArray;
-import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferCopy;
 
@@ -66,7 +67,8 @@ public class ArenaBuffer extends Buffer {
     public void SubmitAll()
     {
         if(subCmdUploads.isEmpty()) return;
-        CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().beginCommands();
+        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.beginCommands();
+        GraphicsQueue.BufferBarrier(commandBuffer.getHandle(), this.id, BlockSize_t*suballocs);
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
             while (!subCmdUploads.isEmpty()) {
@@ -78,7 +80,8 @@ public class ArenaBuffer extends Buffer {
             vkCmdCopyBuffer(commandBuffer.getHandle(), Vulkan.getStagingBuffer().getId(), this.id, vkBufferCopies);
         }
 
-        DeviceManager.getTransferQueue().submitCommands(commandBuffer);
+//        GraphicsQueue.BufferBarrier(commandBuffer.getHandle(), this.id, BlockSize_t*suballocs);
+        GraphicsQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 

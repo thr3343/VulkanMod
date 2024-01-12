@@ -106,7 +106,7 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
-        
+
 
         addOnAllChangedCallback(Queue::trimCmdPools);
     }

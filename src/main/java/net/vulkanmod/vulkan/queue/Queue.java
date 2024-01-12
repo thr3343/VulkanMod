@@ -15,6 +15,7 @@ public enum Queue {
     GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
     TransferQueue(QueueFamilyIndices.transferFamily, true),
     PresentQueue(QueueFamilyIndices.presentFamily, false);
+    private final int familyIndex;
     private CommandPool.CommandBuffer currentCmdBuffer;
     private final CommandPool commandPool;
     private final VkQueue queue;
@@ -27,10 +28,11 @@ public enum Queue {
         try (MemoryStack stack = MemoryStack.stackPush())
         {
             PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(DeviceManager.device, familyIndex, 0, pQueue);
+            this.familyIndex = familyIndex;
+            vkGetDeviceQueue(DeviceManager.device, this.familyIndex, 0, pQueue);
             this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
 
-            this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+            this.commandPool = initCommandPool ? new CommandPool(this.familyIndex) : null;
         }
     }
 
@@ -140,6 +142,28 @@ public enum Queue {
 
     public void fillBuffer(long id, int bufferSize, int qNaN) {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
+    }
+
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)
+                    .sType$Default()
+                    .buffer(bufferhdle)
+                    .srcQueueFamilyIndex(this.familyIndex)
+                    .dstQueueFamilyIndex(familyIndex)
+                    .srcAccessMask(VK_ACCESS_INDIRECT_COMMAND_READ_BIT)
+                    .dstAccessMask(0)
+                    .size(size_t);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0,
+                    null,
+                    memBarrier,
+                    null);
+
+        }
     }
 
     public void GigaBarrier(VkCommandBuffer commandBuffer) {
