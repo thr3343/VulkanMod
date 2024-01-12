@@ -28,7 +28,7 @@ public class DrawBuffers {
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated, needsUpdate = false;
+    private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
     static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
@@ -38,8 +38,7 @@ public class DrawBuffers {
     {
         COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
     }
-
-    private static float x,m;
+    private int updateIndex=-1;
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -87,7 +86,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        needsUpdate=true;
+        updateIndex=renderType.ordinal();
 
         buffer.release();
 
@@ -127,19 +126,14 @@ public class DrawBuffers {
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
-        if(queue.size()==0) return;
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
-        m++;
             ArenaBuffer arenaBuffer = indirectBuffers2.get(terrainRenderType);
-            if(needsUpdate || drawCnts.get(terrainRenderType)!=queue.size())
+            if(updateIndex==terrainRenderType.ordinal() || drawCnts.get(terrainRenderType)!=queue.size())
             {
-                x++;
                 updateIndirectCmds(queue, terrainRenderType, stack, arenaBuffer);
                 drawCnts.put(terrainRenderType, queue.size());
-                needsUpdate=false;
-
-                float v = (x / m);
-                Initializer.LOGGER.info(terrainRenderType.name() +"(" +v +") -> "+ arenaBuffer.usedBytes2);
+                updateIndex=-1;
             }
 
 
@@ -240,7 +234,6 @@ public class DrawBuffers {
             if(chunkArea != null && chunkArea.drawBuffers().hasRenderType(r) && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
                 chunkArea.drawBuffers().getAreaBuffer(r).setSegmentFree(this.vertexBufferSegment);
-                chunkArea.drawBuffers().needsUpdate=true;
             }
         }
     }

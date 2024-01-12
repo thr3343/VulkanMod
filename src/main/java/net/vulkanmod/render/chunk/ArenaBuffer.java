@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.render.chunk.util.StaticArray;
 import net.vulkanmod.vulkan.DeviceManager;
@@ -22,11 +23,11 @@ public class ArenaBuffer extends Buffer {
     int suballocs;
     int lastIndex, currentOffset;
 
-    final StaticArray<Integer> subCopyIndices;
+//    final StaticArray<Integer> subCopyIndices;
     final Int2IntArrayMap baseOffsets;
+    final IntArrayList freeOffsets;
     private int byteMark;
     int usedBytes2;
-    private CommandPool.CommandBuffer commandBuffer;
 
     public final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
@@ -36,8 +37,13 @@ public class ArenaBuffer extends Buffer {
 //        this.BlockSize_t = align;
         this.suballocs = suballocs;
 
-        subCopyIndices = new StaticArray<>(suballocs);
+//        subCopyIndices = new StaticArray<>(suballocs);
         baseOffsets = new Int2IntArrayMap(suballocs);
+        freeOffsets = new IntArrayList(suballocs);
+        for(int i = 0; i<BlockSize_t*suballocs; i+=BlockSize_t)
+        {
+            freeOffsets.push(i);
+        }
     }
 
 
@@ -46,12 +52,11 @@ public class ArenaBuffer extends Buffer {
     {
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
-        if(commandBuffer == null)
-            commandBuffer = DeviceManager.getTransferQueue().beginCommands();
+
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer2(BlockSize_t, ptr);
 
-        TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), stagingBuffer.getId(), stagingBuffer.getOffset(), this.getId(), BaseOffset, BlockSize_t);
+
 
         subCmdUploads.enqueue(new SubCopyCommand(stagingBuffer.getOffset(), BaseOffset, BlockSize_t));
 
@@ -60,9 +65,8 @@ public class ArenaBuffer extends Buffer {
 
     public void SubmitAll()
     {
-        if(commandBuffer == null||subCmdUploads.isEmpty())
-            if(commandBuffer == null)
-                return;
+        if(subCmdUploads.isEmpty()) return;
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().beginCommands();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
             while (!subCmdUploads.isEmpty()) {
@@ -76,11 +80,10 @@ public class ArenaBuffer extends Buffer {
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
-        commandBuffer = null;
     }
 
     private int addSubAlloc(int index) {
-        baseOffsets.put(index, byteMark);
+        baseOffsets.put(index, freeOffsets.popInt());
         byteMark += BlockSize_t;
         usedBytes2 += BlockSize_t;
         return baseOffsets.get(index);
@@ -88,7 +91,7 @@ public class ArenaBuffer extends Buffer {
 
     void rem(int index) {
         if(isBaseOffsetEmpty(index)) return;
-        baseOffsets.remove(index);
+        freeOffsets.push(baseOffsets.remove(index));
 
 
         usedBytes2 -= BlockSize_t;
