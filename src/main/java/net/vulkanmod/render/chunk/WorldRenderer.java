@@ -583,12 +583,13 @@ public class WorldRenderer {
                     if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
+
+            }
+            if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
+            {
                 int i = currentFrame == 0 ? 1 : 0;
                 DrawBuffers.indirectBuffers2[i].get(terrainRenderType).copyAll();
-                if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
-                {
-                    DrawBuffers.indirectBuffers2[i].get(terrainRenderType).extracted();
-                }
+                DrawBuffers.indirectBuffers2[i].get(terrainRenderType).extracted();
                 DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).copyAll();
             }
         }
