@@ -3,18 +3,25 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkBufferCopy;
 
 import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.VK10.VK_WHOLE_SIZE;
+import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
 
 public class ArenaBuffer extends Buffer {
 
     final static int BlockSize_t = 20*512;
+    private final TerrainRenderType renderType;
     int suballocs;
     int lastIndex, currentOffset;
 
@@ -26,8 +33,9 @@ public class ArenaBuffer extends Buffer {
     CommandPool.CommandBuffer commandBuffer;
     public final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
-    public ArenaBuffer(int type, int suballocs) {
+    public ArenaBuffer(int type, int suballocs, TerrainRenderType renderType) {
         super(type, GPU_MEM);
+        this.renderType = renderType;
         createBuffer(BlockSize_t*suballocs);
 //        this.BlockSize_t = align;
         this.suballocs = suballocs;
@@ -51,22 +59,18 @@ public class ArenaBuffer extends Buffer {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer2(BlockSize_t, ptr);
 
-        if(commandBuffer==null)
-        {
-            commandBuffer = TransferQueue.beginCommands();
-        }
 
-        TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), Vulkan.getStagingBuffer().getId(), stagingBuffer.getOffset(), this.id, BaseOffset, size_t);
 
+        subCmdUploads.enqueue(new SubCopyCommand(stagingBuffer.getOffset(), BaseOffset, size_t));
 
     }
 
-    void extracted(long id1) {
+    void extracted() {
         if(commandBuffer==null)
         {
             commandBuffer = TransferQueue.beginCommands();
         }
-        TransferQueue.BufferBarrier(commandBuffer.getHandle(), id1, BlockSize_t*suballocs);
+        TransferQueue.BufferBarrier(commandBuffer.getHandle(), this.id, ~0);
     }
 
 
@@ -79,6 +83,25 @@ public class ArenaBuffer extends Buffer {
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
         commandBuffer = null;
+    }
+
+    void copyAll() {
+        if(subCmdUploads.isEmpty()) return;
+        if(commandBuffer==null) commandBuffer = TransferQueue.beginCommands();
+
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(subCmdUploads.size(), stack);
+            for(var subCpy : copyRegion)  {
+                SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
+                subCpy.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
+            }
+
+            TransferQueue.uploadBufferCmds(commandBuffer, Vulkan.getStagingBuffer().getId(), this.id, copyRegion);
+        }
+
+
     }
 
     private int addSubAlloc(int index) {

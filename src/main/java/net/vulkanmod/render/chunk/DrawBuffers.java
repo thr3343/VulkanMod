@@ -35,8 +35,8 @@ public class DrawBuffers {
 
     static
     {
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024,renderType)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024, renderType)));
     }
     private int updateIndex=-1;
 
@@ -172,9 +172,9 @@ public class DrawBuffers {
         int i = Renderer.getCurrentFrame() == 0 ? 1 : 0;
         {
             //Has WaW issues
-            indirectBuffers2[i].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
         }
-        indirectBuffers2[i].get(terrainRenderType).extracted(indirectBuffers2[i].get(terrainRenderType).getId());
+
+        indirectBuffers2[i].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
         indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
     }
 

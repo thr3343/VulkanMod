@@ -171,11 +171,11 @@ public enum Queue {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
             memBarrier.sType$Default();
-            memBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-            memBarrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            memBarrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+            memBarrier.dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
 
             vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_AT, VK_PIPELINE_STAGE_AT,
                     0,
                     memBarrier,
                     null,

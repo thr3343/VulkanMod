@@ -40,12 +40,8 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import org.checkerframework.checker.units.qual.C;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -54,8 +50,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -555,10 +549,7 @@ public class WorldRenderer {
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
-            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
-//            uniformBuffers.submitUploads();
-        }
+
         this.sortTranslucentSections(camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
@@ -592,8 +583,21 @@ public class WorldRenderer {
                     if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
+                int i = currentFrame == 0 ? 1 : 0;
+                DrawBuffers.indirectBuffers2[i].get(terrainRenderType).copyAll();
+                if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
+                {
+                    DrawBuffers.indirectBuffers2[i].get(terrainRenderType).extracted();
+                }
+                DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).copyAll();
             }
         }
+
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
+//            uniformBuffers.submitUploads();
+        }
+
         p.pop();
 
 
