@@ -43,7 +43,7 @@ public class ArenaBuffer extends Buffer {
 
 
 
-    public void uploadSubAlloc(long ptr, int index, int size_t, long id1)
+    public void uploadSubAlloc(long ptr, int index, int size_t)
     {
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
@@ -57,8 +57,16 @@ public class ArenaBuffer extends Buffer {
         }
 
         TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), Vulkan.getStagingBuffer().getId(), stagingBuffer.getOffset(), this.id, BaseOffset, size_t);
-        TransferQueue.BufferBarrier(commandBuffer.getHandle(), id1, BlockSize_t*suballocs);
 
+
+    }
+
+    void extracted(long id1) {
+        if(commandBuffer==null)
+        {
+            commandBuffer = TransferQueue.beginCommands();
+        }
+        TransferQueue.BufferBarrier(commandBuffer.getHandle(), id1, BlockSize_t*suballocs);
     }
 
 

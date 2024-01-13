@@ -152,8 +152,8 @@ public enum Queue {
                     .buffer(bufferhdle)
                     .srcQueueFamilyIndex(this.familyIndex)
                     .dstQueueFamilyIndex(familyIndex)
-                    .srcAccessMask(VK_ACCESS_MEMORY_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_MEMORY_WRITE_BIT)
+                    .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
                     .size(size_t);
 
             vkCmdPipelineBarrier(commandBuffer,

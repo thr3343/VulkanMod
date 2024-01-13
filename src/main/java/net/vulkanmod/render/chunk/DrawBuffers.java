@@ -168,12 +168,14 @@ public class DrawBuffers {
         }
 
 //        if(indirectBuffer2S11.isBaseOffsetEmpty(index))
+
         int i = Renderer.getCurrentFrame() == 0 ? 1 : 0;
         {
             //Has WaW issues
-            indirectBuffers2[i].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20, indirectBuffers2[i].get(terrainRenderType).getId());
+            indirectBuffers2[i].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
         }
-        indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index, queue.size()*20, indirectBuffers2[i].get(terrainRenderType).getId());
+        indirectBuffers2[i].get(terrainRenderType).extracted(indirectBuffers2[i].get(terrainRenderType).getId());
+        indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
