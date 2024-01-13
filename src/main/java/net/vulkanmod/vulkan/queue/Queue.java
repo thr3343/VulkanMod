@@ -152,12 +152,12 @@ public enum Queue {
                     .buffer(bufferhdle)
                     .srcQueueFamilyIndex(this.familyIndex)
                     .dstQueueFamilyIndex(familyIndex)
-                    .srcAccessMask(VK_ACCESS_INDIRECT_COMMAND_READ_BIT)
-                    .dstAccessMask(0)
+                    .srcAccessMask(VK_ACCESS_MEMORY_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_MEMORY_WRITE_BIT)
                     .size(size_t);
 
             vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
                     null,
                     memBarrier,
@@ -171,11 +171,11 @@ public enum Queue {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
             memBarrier.sType$Default();
-            memBarrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
-            memBarrier.dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+            memBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            memBarrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
             vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
                     memBarrier,
                     null,

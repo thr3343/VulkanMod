@@ -11,7 +11,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.FloatBuffer;
@@ -30,13 +29,14 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
-    static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
+    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[]{new EnumMap<>(TerrainRenderType.class), new EnumMap<>(TerrainRenderType.class)};
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
     static
     {
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024)));
     }
     private int updateIndex=-1;
 
@@ -128,12 +128,14 @@ public class DrawBuffers {
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ArenaBuffer arenaBuffer = indirectBuffers2.get(terrainRenderType);
+            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
             if(updateIndex==terrainRenderType.ordinal() || drawCnts.get(terrainRenderType)!=queue.size())
             {
                 updateIndirectCmds(queue, terrainRenderType, stack, arenaBuffer);
-                drawCnts.put(terrainRenderType, queue.size());
-                updateIndex=-1;
+                /*if(!baseOffsetEmpty)*/{
+                    drawCnts.put(terrainRenderType, queue.size());
+                    updateIndex=-1;
+                }
             }
 
 
@@ -165,8 +167,13 @@ public class DrawBuffers {
 
         }
 
-
-        indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index);
+//        if(indirectBuffer2S11.isBaseOffsetEmpty(index))
+        int i = Renderer.getCurrentFrame() == 0 ? 1 : 0;
+        {
+            //Has WaW issues
+            indirectBuffers2[i].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20, indirectBuffers2[i].get(terrainRenderType).getId());
+        }
+        indirectBuffer2S11.uploadSubAlloc(bufferPtr, this.index, queue.size()*20, indirectBuffers2[i].get(terrainRenderType).getId());
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
@@ -204,7 +211,11 @@ public class DrawBuffers {
         this.areaBufferTypes.clear();
         if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
 
-        indirectBuffers2.values().forEach(arenaBuffer -> arenaBuffer.rem(this.index));
+        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : indirectBuffers2) {
+            for (ArenaBuffer a : bufferEnumMap.values()) {
+                a.rem(this.index);
+            }
+        }
         drawCnts.replaceAll((t, v) -> 0);
 
         this.vertexBuffer = null;

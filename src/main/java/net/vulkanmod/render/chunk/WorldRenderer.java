@@ -45,6 +45,7 @@ import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import org.checkerframework.checker.units.qual.C;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -546,18 +547,23 @@ public class WorldRenderer {
             p.pop();
             p.push("Translucent_terrain_pass");
         }
+        final int currentFrame = Renderer.getCurrentFrame();
+        final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+
 
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
+//            uniformBuffers.submitUploads();
+        }
         this.sortTranslucentSections(camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
-        final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -566,7 +572,7 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        final int currentFrame = Renderer.getCurrentFrame();
+
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
 
@@ -587,11 +593,6 @@ public class WorldRenderer {
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
             }
-        }
-
-        if(indirectDraw && (terrainRenderType.equals(TRIPWIRE))) {
-            DrawBuffers.indirectBuffers2.values().forEach(ArenaBuffer::SubmitAll);
-//            uniformBuffers.submitUploads();
         }
         p.pop();
 
