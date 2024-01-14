@@ -101,6 +101,13 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
+        Renderer.getInstance().addOnResizeCallback(() -> {
+            for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
+                for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : bufferEnumMap.entrySet()) {
+                    entry.getValue().SubmitAll();
+                }
+            }
+        });
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
