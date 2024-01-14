@@ -36,11 +36,12 @@ public class ArenaBuffer extends Buffer {
 //        subCopyIndices = new StaticArray<>(suballocs);
         baseOffsets = new Int2IntArrayMap(this.suballocs);
         freeOffsets = new IntArrayList(this.suballocs);
-        populateFreeSections(this.suballocs, 0);
+        populateFreeSections(0);
     }
 
-    private void populateFreeSections(int suballocs1, int offset) {
-        for(int i = offset; i<BlockSize_t* suballocs1; i+=BlockSize_t)
+    private void populateFreeSections(int offset) {
+        freeOffsets.ensureCapacity(this.suballocs);
+        for(int i = offset; i<BlockSize_t* this.suballocs; i+=BlockSize_t)
         {
             freeOffsets.push(i);
         }
@@ -140,7 +141,7 @@ public class ArenaBuffer extends Buffer {
 
 
 
-        populateFreeSections(this.suballocs, prevSize_t);
+        populateFreeSections(prevSize_t);
 
     }
 
@@ -151,7 +152,7 @@ public class ArenaBuffer extends Buffer {
         usedBytes=offset=0;
 
 
-        populateFreeSections(this.suballocs, 0);
+        populateFreeSections(0);
     }
 
 }
