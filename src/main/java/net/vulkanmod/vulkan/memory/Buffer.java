@@ -3,10 +3,13 @@ package net.vulkanmod.vulkan.memory;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 
-public class Buffer {
-    protected long id, allocation;
+public abstract class Buffer {
+    protected long id;
+    protected long allocation;
 
-    protected int bufferSize, usedBytes, offset;
+    protected int bufferSize;
+    protected int usedBytes;
+    protected int offset;
 
     protected final MemoryType type;
     protected final int usage;
