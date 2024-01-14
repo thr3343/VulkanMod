@@ -595,10 +595,9 @@ public class WorldRenderer {
             if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
             {
 
-                int i = currentFrame + 1 & 0x1;
-                for (int j = 0; j < DrawBuffers.indirectBuffers2.length; j++) {
-                    DrawBuffers.indirectBuffers2[j].get(terrainRenderType).copyAll(i==j);
-                }
+                int i = currentFrame & 0x1; //isOdd Or Even
+                DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
+                DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
             }
         }
 
