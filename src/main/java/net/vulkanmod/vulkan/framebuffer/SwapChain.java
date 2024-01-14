@@ -34,7 +34,7 @@ public class SwapChain extends Framebuffer {
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
     //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
     //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
-    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
     private RenderPass renderPass;
     private long[] framebuffers;
