@@ -15,13 +15,10 @@ import org.lwjgl.vulkan.VkBufferCopy;
 import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.VK_WHOLE_SIZE;
-import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
 
 public class ArenaBuffer extends Buffer {
 
     final static int BlockSize_t = 20*512;
-    private final TerrainRenderType renderType;
     int suballocs;
     int lastIndex, currentOffset;
 
@@ -33,9 +30,8 @@ public class ArenaBuffer extends Buffer {
     CommandPool.CommandBuffer commandBuffer;
     public final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
-    public ArenaBuffer(int type, int suballocs, TerrainRenderType renderType) {
+    public ArenaBuffer(int type, int suballocs) {
         super(type, GPU_MEM);
-        this.renderType = renderType;
         createBuffer(BlockSize_t*suballocs);
 //        this.BlockSize_t = align;
         this.suballocs = suballocs;
@@ -65,14 +61,6 @@ public class ArenaBuffer extends Buffer {
 
     }
 
-    void extracted() {
-        if(commandBuffer==null)
-        {
-            commandBuffer = TransferQueue.beginCommands();
-        }
-        TransferQueue.BufferBarrier(commandBuffer.getHandle(), this.id, ~0);
-    }
-
 
     public void SubmitAll()
     {
@@ -85,10 +73,10 @@ public class ArenaBuffer extends Buffer {
         commandBuffer = null;
     }
 
-    void copyAll() {
+    void copyAll(boolean execDep) {
         if(subCmdUploads.isEmpty()) return;
         if(commandBuffer==null) commandBuffer = TransferQueue.beginCommands();
-
+        if(execDep) TransferQueue.BufferBarrier(commandBuffer.getHandle(), this.id, ~0);
 
         try(MemoryStack stack = stackPush()) {
 

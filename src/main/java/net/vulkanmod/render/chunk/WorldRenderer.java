@@ -594,10 +594,11 @@ public class WorldRenderer {
             }
             if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
             {
-                int i = currentFrame == 0 ? 1 : 0;
-                DrawBuffers.indirectBuffers2[i].get(terrainRenderType).copyAll();
-                DrawBuffers.indirectBuffers2[i].get(terrainRenderType).extracted();
-                DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).copyAll();
+
+                int i = currentFrame + 1 & 0x1;
+                for (int j = 0; j < DrawBuffers.indirectBuffers2.length; j++) {
+                    DrawBuffers.indirectBuffers2[j].get(terrainRenderType).copyAll(i==j);
+                }
             }
         }
 

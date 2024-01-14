@@ -35,8 +35,8 @@ public class DrawBuffers {
 
     static
     {
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024,renderType)));
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 1024, renderType)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
+        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
     }
     private int updateIndex=-1;
 
