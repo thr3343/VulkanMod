@@ -27,7 +27,7 @@ public class ArenaBuffer extends Buffer {
     final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
     public ArenaBuffer(int type, int suballocs) {
-        super(type, GPU_MEM);
+        super(type, GPU_MEM, BlockSize_t* suballocs);
         this.suballocs = suballocs;
         createBuffer(BlockSize_t* this.suballocs);
 //        this.BlockSize_t = align;

@@ -13,7 +13,7 @@ public class IndexBuffer extends Buffer {
     }
 
     public IndexBuffer(int size, MemoryType type) {
-        super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, type);
+        super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, type, size);
         this.createBuffer(size);
     }
 

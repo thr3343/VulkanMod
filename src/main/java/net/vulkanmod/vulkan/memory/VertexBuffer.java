@@ -11,7 +11,7 @@ public class VertexBuffer extends Buffer {
     }
 
     public VertexBuffer(int size, MemoryType type) {
-        super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
+        super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type, size);
         this.createBuffer(size);
 
     }
