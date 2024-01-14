@@ -144,4 +144,14 @@ public class ArenaBuffer extends Buffer {
 
     }
 
+    public void flushAll()
+    {
+        baseOffsets.clear();
+        freeOffsets.clear();
+        usedBytes=offset=0;
+
+
+        populateFreeSections(this.suballocs, 0);
+    }
+
 }

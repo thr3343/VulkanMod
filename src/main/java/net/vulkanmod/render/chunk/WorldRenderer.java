@@ -111,6 +111,7 @@ public class WorldRenderer {
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
+        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.flushAll())));
     }
 
     private void allocateIndirectBuffers() {
