@@ -191,6 +191,14 @@ public class Renderer {
         }
 
 
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
+        }
+
+
         if(swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
