@@ -17,12 +17,13 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
-    public boolean indirectDraw = false;
+    public boolean indirectDraw = true;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
-    public boolean animations = true;
-    public boolean renderSky = true;
+    public boolean animations = false;
+    public boolean renderSky = false;
+    public boolean renderFog = false;
 
 
     private static Path path;
@@ -32,7 +33,6 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
     public boolean perRenderTypeAreaBuffers = false;
-    public boolean renderFog = true;
 
     public static Config load(Path path) {
         Config config;

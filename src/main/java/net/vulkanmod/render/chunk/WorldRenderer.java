@@ -550,8 +550,6 @@ public class WorldRenderer {
         }
         final int currentFrame = Renderer.getCurrentFrame();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
-
 
 
         RenderSystem.assertOnRenderThread();
@@ -587,8 +585,7 @@ public class WorldRenderer {
 
                 if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
                     chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
-                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
+                    chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                 }
 
             }
@@ -601,7 +598,7 @@ public class WorldRenderer {
             }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+        if((terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
@@ -743,7 +740,8 @@ public class WorldRenderer {
     }
 
     public void cleanUp() {
-
+        DrawBuffers.indirectBuffers2[0].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
     }
 
 }

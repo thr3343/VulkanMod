@@ -3,7 +3,6 @@ package net.vulkanmod.render.chunk;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
@@ -18,37 +17,40 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 
 public class ArenaBuffer extends Buffer {
 
-    final static int BlockSize_t = 20*512;
-    int suballocs;
-    int lastIndex, currentOffset;
+    private static final int BlockSize_t = 20*512;
 
-//    final StaticArray<Integer> subCopyIndices;
-    final Int2IntArrayMap baseOffsets;
-    final IntArrayList freeOffsets;
-    private int byteMark;
-    int usedBytes2;
-    CommandPool.CommandBuffer commandBuffer;
-    public final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
+    //    final StaticArray<Integer> subCopyIndices;
+    private final Int2IntArrayMap baseOffsets;
+    private final IntArrayList freeOffsets;
+    private int suballocs;
+    private CommandPool.CommandBuffer commandBuffer;
+    final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
 
     public ArenaBuffer(int type, int suballocs) {
         super(type, GPU_MEM);
-        createBuffer(BlockSize_t*suballocs);
-//        this.BlockSize_t = align;
         this.suballocs = suballocs;
+        createBuffer(BlockSize_t* this.suballocs);
+//        this.BlockSize_t = align;
+//        this.suballocs = suballocs;
 
 //        subCopyIndices = new StaticArray<>(suballocs);
-        baseOffsets = new Int2IntArrayMap(suballocs);
-        freeOffsets = new IntArrayList(suballocs);
-        for(int i = 0; i<BlockSize_t*suballocs; i+=BlockSize_t)
+        baseOffsets = new Int2IntArrayMap(this.suballocs);
+        freeOffsets = new IntArrayList(this.suballocs);
+        populateFreeSections(this.suballocs, 0);
+    }
+
+    private void populateFreeSections(int suballocs1, int offset) {
+        for(int i = offset; i<BlockSize_t* suballocs1; i+=BlockSize_t)
         {
             freeOffsets.push(i);
         }
     }
 
 
-
     public void uploadSubAlloc(long ptr, int index, int size_t)
     {
+
+        if(freeOffsets.isEmpty()) reSize();
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
 
@@ -94,8 +96,7 @@ public class ArenaBuffer extends Buffer {
 
     private int addSubAlloc(int index) {
         baseOffsets.put(index, freeOffsets.popInt());
-        byteMark += BlockSize_t;
-        usedBytes2 += BlockSize_t;
+//        usedBytes2 += BlockSize_t;
         return baseOffsets.get(index);
     }
 
@@ -104,7 +105,7 @@ public class ArenaBuffer extends Buffer {
         freeOffsets.push(baseOffsets.remove(index));
 
 
-        usedBytes2 -= BlockSize_t;
+//        usedBytes2 -= BlockSize_t;
     }
 
     public boolean isBaseOffsetEmpty(int index)
@@ -117,8 +118,30 @@ public class ArenaBuffer extends Buffer {
         return baseOffsets.get(index);
     }
 
-    public int getIndex(int a)
+
+    public void reSize()
     {
-        return currentOffset* BlockSize_t;
+        long prevId = this.id;
+        int prevSize_t = BlockSize_t*suballocs;
+
+
+        this.SubmitAll();
+
+        TransferQueue.waitIdle();
+
+        suballocs <<= 1;
+        int newSize_t = prevSize_t << 1;
+        this.freeBuffer();
+
+        this.createBuffer(newSize_t);
+
+        TransferQueue.uploadBufferImmediate(prevId, 0, this.id, 0, prevSize_t);
+
+
+
+
+        populateFreeSections(this.suballocs, prevSize_t);
+
     }
+
 }
