@@ -89,7 +89,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+//    IndirectBuffer[] indirectBuffers;
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -105,23 +105,28 @@ public class WorldRenderer {
         allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
+            for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
+                for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : bufferEnumMap.entrySet()) {
+                    entry.getValue().SubmitAll();
+                }
+            }
         });
 
+
         addOnAllChangedCallback(Queue::trimCmdPools);
+        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.flushAll())));
     }
 
     private void allocateIndirectBuffers() {
-        if(this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
-
-        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
-        }
+//        if(this.indirectBuffers != null)
+//            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+//
+//        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
+//
+//        for(int i = 0; i < this.indirectBuffers.length; ++i) {
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+//        }
 
 //        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
     }
@@ -247,7 +252,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+//        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
@@ -584,14 +589,22 @@ public class WorldRenderer {
 
                 if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
                     chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
+
+            }
+            if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
+            {
+
+                int i = currentFrame & 0x1; //isOdd Or Even
+                DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
+                DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
             }
         }
 
         if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
-            indirectBuffers[currentFrame].submitUploads();
+            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
         p.pop();
@@ -731,8 +744,8 @@ public class WorldRenderer {
     }
 
     public void cleanUp() {
-        if(indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
+        DrawBuffers.indirectBuffers2[0].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
     }
 
 }

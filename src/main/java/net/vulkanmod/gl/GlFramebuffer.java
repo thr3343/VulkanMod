@@ -202,7 +202,7 @@ public class GlFramebuffer {
 
     void createAndBind() {
         //Cannot create without color attachment
-        if(this.colorAttachment == null)
+        if(this.colorAttachment == null || !Renderer.useMode)
             return;
 
         if(this.framebuffer != null) {
@@ -238,8 +238,8 @@ public class GlFramebuffer {
     }
 
     void cleanUp() {
-        this.framebuffer.cleanUp(false);
-        this.renderPass.cleanUp();
+        if(this.framebuffer!=null) this.framebuffer.cleanUp(false);
+        if(this.renderPass!=null) this.renderPass.cleanUp();
 
         this.framebuffer = null;
         this.renderPass = null;
