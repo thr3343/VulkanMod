@@ -587,13 +587,13 @@ public class WorldRenderer {
                 }
 
             }
-            if(!DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).subCmdUploads.isEmpty())
-            {
 
-                int i = currentFrame & 0x1; //isOdd Or Even
-                DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
-                DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
-            }
+           if(indirectDraw)
+           {
+               int i = currentFrame & 0x1; //isOdd Or Even
+               DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
+               DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
+           }
         }
 
         if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
