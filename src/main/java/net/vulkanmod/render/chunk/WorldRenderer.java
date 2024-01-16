@@ -556,7 +556,6 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -572,7 +571,7 @@ public class WorldRenderer {
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame, false);
 
             final long layout = terrainShader.getLayout();
 
@@ -582,21 +581,17 @@ public class WorldRenderer {
 
                 if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
                     chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
-                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
+                    chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                 }
 
             }
 
-           if(indirectDraw)
-           {
-               int i = currentFrame & 0x1; //isOdd Or Even
-               DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
-               DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
-           }
+            int i = currentFrame & 0x1; //isOdd Or Even
+            DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
+            DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+        if((terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
