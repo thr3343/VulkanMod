@@ -35,10 +35,10 @@ public class LegacyMainPass implements MainPass {
     }
 
     @Override
-    public void mainTargetBindWrite() {
+    public void mainTargetBindWrite(boolean bl) {
         if(Renderer.useMode) {
             RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
-            mainTarget.bindWrite(true);
+            mainTarget.bindWrite(bl);
         }
     }
 

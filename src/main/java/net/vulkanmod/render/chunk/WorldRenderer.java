@@ -40,9 +40,6 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
@@ -76,7 +73,6 @@ public class WorldRenderer {
     private SectionGrid sectionGrid;
 
     private boolean needsUpdate;
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
@@ -489,9 +485,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized(this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
             this.chunkAreaQueue = new AreaSetQueue(this.sectionGrid.chunkAreaManager.size);

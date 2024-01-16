@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
@@ -34,8 +35,6 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -50,7 +49,7 @@ public class Renderer {
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering, useMode = false;
 
-    private static boolean effectActive,renderPassUpdate,hasCalled = false;
+    public static boolean effectActive,renderPassUpdate,hasCalled = false;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -185,9 +184,24 @@ public class Renderer {
 //        }
         if(renderPassUpdate)
         {
+//            LegacyMainPass.PASS.mainTargetBindWrite(effectActive);
+//
+//            if(!effectActive)
+//            {
+//                LegacyMainPass.PASS.mainTargetUnbindWrite();
+//            }
+
+            updateRenderPassState();
+
+            //Minecraft.getInstance().gameRenderer.resize(getSwapChain().getWidth(), getSwapChain().getHeight());
+
             useMode=effectActive;
             Initializer.LOGGER.error("Using RenderPass: "+ (useMode ? "Post Effect" : "Default"));
             renderPassUpdate = false;
+
+
+//                GlFramebuffer.framebufferTexture2D(0, GL30.GL_COLOR_ATTACHMENT0, GL30.GL_TEXTURE_2D, 1, 0);
+//                GlFramebuffer.framebufferTexture2D(0, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_TEXTURE_2D, 1, 0);
         }
 
 
@@ -278,6 +292,19 @@ public class Renderer {
         p.pop();
     }
 
+    private static void updateRenderPassState() {
+        RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+        int i = getSwapChain().getWidth();
+        int j = getSwapChain().getHeight();
+
+        if (renderTarget.frameBufferId >= 0) {
+            renderTarget.destroyBuffers();
+        }
+
+        renderTarget.createBuffers(i, j, false);
+        GlFramebuffer.bindFramebuffer(36160, 0);
+    }
+
     public void endFrame() {
         if(skipRendering)
             return;
@@ -294,6 +321,7 @@ public class Renderer {
             effectActive = false;
         }
         if(renderPassUpdate) {
+
             this.endRenderPass();
             GlFramebuffer.bindFramebuffer(0,0); //Avoid NPE when switching post effect modes
         }
@@ -505,7 +533,7 @@ public class Renderer {
 
         //Debug
         if(boundRenderPass == null)
-            LegacyMainPass.PASS.mainTargetBindWrite();
+            LegacyMainPass.PASS.mainTargetBindWrite(true);
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));

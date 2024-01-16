@@ -9,7 +9,7 @@ public interface MainPass {
     void begin(VkCommandBuffer commandBuffer, MemoryStack stack);
     void end(VkCommandBuffer commandBuffer);
 
-    default void mainTargetBindWrite() {}
+    default void mainTargetBindWrite(boolean bl) {}
 
     default void mainTargetUnbindWrite() {}
 }
