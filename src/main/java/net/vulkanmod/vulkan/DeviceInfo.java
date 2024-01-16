@@ -30,7 +30,8 @@ public class DeviceInfo {
     public final String vendorIdString;
     public final String deviceName;
     public final String driverVersion;
-    public final String vkVersion;
+    public final String vkDriverVersion;
+    public final String vkInstanceLoaderVersion;
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
@@ -56,7 +57,8 @@ public class DeviceInfo {
         this.vendorIdString = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+        this.vkDriverVersion = decDefVersion(properties.apiVersion());
+        this.vkInstanceLoaderVersion = decDefVersion(getVkVer());
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
