@@ -7,6 +7,8 @@ import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.memory.StagingBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
@@ -146,7 +148,8 @@ public class DrawBuffers {
     }
 
     private void updateIndirectCmds(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, MemoryStack stack) {
-        long bufferPtr = stack.nmalloc(20 * queue.size());
+        int size = queue.size() * 20;
+        long bufferPtr = stack.nmalloc(size);
 
 
         int drawCount = 0;
@@ -166,9 +169,10 @@ public class DrawBuffers {
 
 
         }
-
-        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
-        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, queue.size()*20);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+        stagingBuffer.copyBuffer2(size, bufferPtr);
+        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
+        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {

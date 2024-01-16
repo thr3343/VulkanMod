@@ -10,8 +10,8 @@ public abstract class Buffer {
     protected int usedBytes;
     protected int offset;
 
-    protected MemoryType type;
-    protected int usage;
+    protected final MemoryType type;
+    protected final int usage;
     protected PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
@@ -37,9 +37,9 @@ public abstract class Buffer {
 
     public long getAllocation() { return allocation; }
 
-    public long getUsedBytes() { return usedBytes; }
+    public int getUsedBytes() { return usedBytes; }
 
-    public long getOffset() { return offset; }
+    public int getOffset() { return offset; }
 
     public long getId() { return id; }
 

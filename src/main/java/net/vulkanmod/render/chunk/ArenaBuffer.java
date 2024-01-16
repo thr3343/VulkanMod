@@ -48,19 +48,18 @@ public class ArenaBuffer extends Buffer {
     }
 
 
-    public void uploadSubAlloc(long ptr, int index, int size_t)
+    public void uploadSubAlloc(int offset, int index, int size_t)
     {
 
         if(freeOffsets.isEmpty()) reSize();
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-        stagingBuffer.copyBuffer2(BlockSize_t, ptr);
 
 
 
-        subCmdUploads.enqueue(new SubCopyCommand(stagingBuffer.getOffset(), BaseOffset, size_t));
+
+        subCmdUploads.enqueue(new SubCopyCommand(offset, BaseOffset, size_t));
 
     }
 
