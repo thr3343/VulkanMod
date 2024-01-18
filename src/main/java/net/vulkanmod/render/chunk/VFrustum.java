@@ -5,12 +5,11 @@ import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import static org.joml.FrustumIntersection.*;
-
 public class VFrustum {
-    private static final int allPlanes = PLANE_MASK_NX | PLANE_MASK_PX | PLANE_MASK_NY | PLANE_MASK_PY | PLANE_MASK_NZ | PLANE_MASK_PZ;
     private Vector4f viewVector = new Vector4f();
-    private double camX, camY, camZ;
+    private double camX;
+    private double camY;
+    private double camZ;
 
     private final FrustumIntersection frustum = new FrustumIntersection();
     private final Matrix4f matrix = new Matrix4f();
@@ -23,7 +22,7 @@ public class VFrustum {
         double d4 = Math.ceil(this.camY / (double)offset) * (double)offset;
         double d5 = Math.ceil(this.camZ / (double)offset) * (double)offset;
 
-        while(this.testLeftFrustumPlane((float)(d0 - this.camX), (float)(d1 - this.camY), (float)(d2 - this.camZ), (float)(d3 - this.camX), (float)(d4 - this.camY), (float)(d5 - this.camZ))) {
+        while(this.intersectAab((float)(d0 - this.camX), (float)(d1 - this.camY), (float)(d2 - this.camZ), (float)(d3 - this.camX), (float)(d4 - this.camY), (float)(d5 - this.camZ)) >= 0) {
             this.camZ -= (this.viewVector.z() * 4.0F);
             this.camX -= (this.viewVector.x() * 4.0F);
             this.camY -= (this.viewVector.y() * 4.0F);
@@ -54,28 +53,22 @@ public class VFrustum {
         float f5 = (float)(z2 - this.camZ);
         return this.intersectAab(f, f1, f2, f3, f4, f5);
     }
-    //Test all Frustum Planes, but skipping left plane
+
     private int intersectAab(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
         return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ, ~0 ^ (PLANE_MASK_NX));
     }
-    //test only one Frustum plane
-    /*intersectAabFast*/
-    private boolean testLeftFrustumPlane(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ, allPlanes, PLANE_NX)==PLANE_NX;
-    }
 
     public boolean isVisible(AABB aABB) {
-        return this.AABBInFrustum(aABB.minX, aABB.minY, aABB.minZ, aABB.maxX, aABB.maxY, aABB.maxZ);
+        return this.cubeInFrustum(aABB.minX, aABB.minY, aABB.minZ, aABB.maxX, aABB.maxY, aABB.maxZ);
     }
 
-    public boolean AABBInFrustum(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        float j = (float)(minX - this.camX);
-        float k = (float)(minY - this.camY);
-        float l = (float)(minZ - this.camZ);
-        float m = (float)(maxX - this.camX);
-        float n = (float)(maxY - this.camY);
-        float o = (float)(maxZ - this.camZ);
-        return testLeftFrustumPlane(j, k, l, m, n, o);
-//        return this.frustum.intersectAab(j, k, l, m, n, o, PLANE_MASK_NX, PLANE_NX)==OUTSIDE;
+    private boolean cubeInFrustum(double d, double e, double f, double g, double h, double i) {
+        float j = (float)(d - this.camX);
+        float k = (float)(e - this.camY);
+        float l = (float)(f - this.camZ);
+        float m = (float)(g - this.camX);
+        float n = (float)(h - this.camY);
+        float o = (float)(i - this.camZ);
+        return this.frustum.testAab(j, k, l, m, n, o);
     }
 }

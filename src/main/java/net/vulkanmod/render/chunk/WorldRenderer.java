@@ -50,7 +50,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static org.joml.FrustumIntersection.PLANE_NX;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -386,8 +385,7 @@ public class WorldRenderer {
     }
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
-        final byte b = relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex);
-        if (b >= FrustumIntersection.PLANE_NX) {
+        if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) >= 0) {
             return;
         }
         else if (relativeChunk.getLastFrame() == this.lastFrame) {
@@ -400,9 +398,9 @@ public class WorldRenderer {
 
             return;
         }
-        else if(b == FrustumIntersection.INTERSECT) {
-            if(frustum.AABBInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
-                    relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16))
+        else if(relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) == FrustumIntersection.INTERSECT) {
+            if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
+                    relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
                 return;
         }
 
