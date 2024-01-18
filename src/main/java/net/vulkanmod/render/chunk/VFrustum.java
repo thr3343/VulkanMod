@@ -54,7 +54,7 @@ public class VFrustum {
         float f5 = (float)(z2 - this.camZ);
         return this.intersectAab(f, f1, f2, f3, f4, f5);
     }
-    //Test all Frustum Planes, but skipping left plane
+    //Test all Frustum Planes
     private int intersectAab(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
         return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ);
     }
