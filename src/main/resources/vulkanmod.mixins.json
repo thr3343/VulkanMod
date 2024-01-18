@@ -4,8 +4,6 @@
   "package": "net.vulkanmod.mixin",
   "compatibilityLevel": "JAVA_17",
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
-  "mixins": [
-  ],
   "client": [
     "window.WindowMixin",
     "window.WindowAccessor",
@@ -31,6 +29,7 @@
     "gui.DebugHudM",
     "gui.GuiM",
 
+    "matrix.FrustumIntersectionM",
     "matrix.Matrix4fM",
 
     "profiling.GuiMixin",
