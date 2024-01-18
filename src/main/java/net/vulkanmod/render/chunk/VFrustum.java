@@ -55,7 +55,7 @@ public class VFrustum {
     }
 
     private int intersectAab(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ, ~0 ^ (PLANE_MASK_NX));
+        return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     public boolean isVisible(AABB aABB) {
