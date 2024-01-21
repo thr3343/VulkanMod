@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk;
 import net.minecraft.world.phys.AABB;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector4f;
 
 public class VFrustum {
@@ -12,6 +13,7 @@ public class VFrustum {
     private double camZ;
 
     private final FrustumIntersection frustum = new FrustumIntersection();
+    private final Vector4f[] vFrustum = new Vector4f[6];
     private final Matrix4f matrix = new Matrix4f();
 
     public VFrustum offsetToFullyIncludeCameraCube(int offset) {
@@ -39,8 +41,38 @@ public class VFrustum {
 
     public void calculateFrustum(Matrix4f modelViewMatrix, Matrix4f projMatrix) {
         projMatrix.mul(modelViewMatrix, this.matrix);
-
         this.frustum.set(this.matrix, false);
+//        float invl;
+//        float nxX = this.matrix.m03() + this.matrix.m00();
+//        float nxY = this.matrix.m13() + this.matrix.m10();
+//        float nxZ = this.matrix.m23() + this.matrix.m20();
+//        float nxW = this.matrix.m33() + this.matrix.m30();
+//        this.vFrustum[0].set(nxX, nxY, nxZ, nxW);
+//        float pxX = this.matrix.m03() - this.matrix.m00();
+//        float pxY = this.matrix.m13() - this.matrix.m10();
+//        float pxZ = this.matrix.m23() - this.matrix.m20();
+//        float pxW = this.matrix.m33() - this.matrix.m30();
+//        this.vFrustum[1].set(pxX, pxY, pxZ, pxW);
+//        float nyX = this.matrix.m03() + this.matrix.m01();
+//        float nyY = this.matrix.m13() + this.matrix.m11();
+//        float nyZ = this.matrix.m23() + this.matrix.m21();
+//        float nyW = this.matrix.m33() + this.matrix.m31();
+//        this.vFrustum[2].set(nyX, nyY, nyZ, nyW);
+//        float pyX = this.matrix.m03() - this.matrix.m01();
+//        float pyY = this.matrix.m13() - this.matrix.m11();
+//        float pyZ = this.matrix.m23() - this.matrix.m21();
+//        float pyW = this.matrix.m33() - this.matrix.m31();
+//        this.vFrustum[3].set(pyX, pyY, pyZ, pyW);
+//        float nzX = this.matrix.m03() + this.matrix.m02();
+//        float nzY = this.matrix.m13() + this.matrix.m12();
+//        float nzZ = this.matrix.m23() + this.matrix.m22();
+//        float nzW = this.matrix.m33() + this.matrix.m32();
+//        this.vFrustum[4].set(nzX, nzY, nzZ, nzW);
+//        float pzX = this.matrix.m03() - this.matrix.m02();
+//        float pzY = this.matrix.m13() - this.matrix.m12();
+//        float pzZ = this.matrix.m23() - this.matrix.m22();
+//        float pzW = this.matrix.m33() - this.matrix.m32();
+//        this.vFrustum[5].set(pzX, pzY, pzZ, pzW);
         this.viewVector = this.matrix.transformTranspose(new Vector4f(0.0F, 0.0F, 1.0F, 0.0F));
     }
 

@@ -118,8 +118,7 @@ public class RenderSection {
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
-        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
-        dispatcher.schedule(chunkCompileTask);
+        dispatcher.schedule(this.createCompileTask(renderRegionCache));
     }
 
     public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {

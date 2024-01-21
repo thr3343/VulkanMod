@@ -13,6 +13,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.FloatBuffer;
@@ -129,20 +130,18 @@ public class DrawBuffers {
     }
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
-            if(updateIndex==terrainRenderType.ordinal() || drawCnts.get(terrainRenderType)!=queue.size())
-            {
-                updateIndirectCmds(queue, terrainRenderType, stack);
-                /*if(!baseOffsetEmpty)*/{
-                    drawCnts.put(terrainRenderType, queue.size());
-                    updateIndex=-1;
-                }
-            }
+        ArenaBuffer indirectBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
 
+        //Donlt need updates as IndirectCountGPU Culls + generates DrawCmds internally
 
-            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
-        }
+        //Count buffer contaisn darwCall count, COntrolled by GPU
+        VK12.vkCmdDrawIndexedIndirectCount(Renderer.getCommandBuffer(),
+                indirectBuffer.getId(),
+                indirectBuffer.getBaseOffset(this.index),
+                countBuffer,
+                countBuffer.getBaseOffset(this.index),
+                queue.size(),
+                20);
 
 
     }

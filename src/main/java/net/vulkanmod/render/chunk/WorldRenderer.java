@@ -193,14 +193,14 @@ public class WorldRenderer {
 //        this.chunkRenderDispatcher.setCamera(cameraPos);
         this.level.getProfiler().popPush("cull");
         this.minecraft.getProfiler().popPush("culling");
-        BlockPos blockpos = camera.getBlockPosition();
+//        BlockPos blockpos = camera.getBlockPosition();
 
         this.minecraft.getProfiler().popPush("update");
 
-        boolean flag = this.minecraft.smartCull;
-        if (spectator && this.level.getBlockState(blockpos).isSolidRender(this.level, blockpos)) {
-            flag = false;
-        }
+//        boolean flag = this.minecraft.smartCull;
+//        if (spectator && this.level.getBlockState(blockpos).isSolidRender(this.level, blockpos)) {
+//            flag = false;
+//        }
 
         float d_xRot = Math.abs(camera.getXRot() - this.lastCamRotX);
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
@@ -229,13 +229,13 @@ public class WorldRenderer {
 
                 this.minecraft.getProfiler().push("partial_update");
 
-                this.chunkQueue.clear();
+                if(!spectator) this.chunkQueue.clear();
                 this.initUpdate();
                 this.initializeQueueForFullUpdate(camera);
 
                 this.renderRegionCache = new RenderRegionCache();
 
-                if(flag)
+                if(!spectator)
                     this.updateRenderChunks();
                 else
                     this.updateRenderChunksSpectator();
@@ -351,16 +351,13 @@ public class WorldRenderer {
 
     }
 
-    private void updateRenderChunksSpectator() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
+    private void updateRenderChunksHostSide() {
 
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
 
-        if(rebuildLimit == 0)
-            this.needsUpdate = true;
 
-        while(this.chunkQueue.hasNext()) {
-            RenderSection renderSection = this.chunkQueue.poll();
+
+        for(RenderSection renderSection : this.chunkQueue) {
+
 
 
             if(!renderSection.isCompletelyEmpty()) {
@@ -369,17 +366,9 @@ public class WorldRenderer {
                 this.nonEmptyChunks++;
             }
 
-            this.scheduleUpdate(renderSection);
 
-            for(Direction direction : Util.DIRECTIONS) {
-                RenderSection relativeChunk = renderSection.getNeighbour(direction);
 
-                if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
 
-                    this.addNode(renderSection, relativeChunk, direction);
-
-                }
-            }
         }
 
     }
