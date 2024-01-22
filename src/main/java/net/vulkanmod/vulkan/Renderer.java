@@ -543,7 +543,7 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame, true);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
     }
 
     public void pushConstants(Pipeline pipeline) {
