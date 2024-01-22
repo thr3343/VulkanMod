@@ -72,7 +72,7 @@ public class RenderSection {
 
     }
 
-    public RenderSection setGraphInfo(@Nullable Direction from, byte step) {
+    public void setGraphInfo(@Nullable Direction from, byte step) {
         mainDir = from;
 
         sourceDirs = (byte) (from != null ? 1 << from.ordinal() : 0);
@@ -80,13 +80,12 @@ public class RenderSection {
         this.step = step;
         this.directions = 0;
         this.directionChanges = 0;
-        return this;
     }
 
     public void addDir(Direction direction) {
         if(sourceDirs == 0)
             return;
-        sourceDirs |= 1 << direction.ordinal();
+        sourceDirs |= (byte) (1 << direction.ordinal());
     }
 
     public void setDirections(byte p_109855_, Direction p_109856_) {
@@ -111,7 +110,7 @@ public class RenderSection {
             this.compileStatus.sortTask.cancel();
         }
 
-        if (this.getCompiledSection().renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
+        if (this.getCompiledSection().renderTypes.containsKey(TerrainRenderType.TRANSLUCENT)) {
             this.compileStatus.sortTask = new ChunkTask.SortTransparencyTask(this);
             taskDispatcher.schedule(this.compileStatus.sortTask);
         }
@@ -261,7 +260,7 @@ public class RenderSection {
     }
 
     private void resetDrawParameters() {
-        for(TerrainRenderType r : this.getCompiledSection().renderTypes) {
+        for(TerrainRenderType r : this.getCompiledSection().renderTypes.keySet()) {
             getDrawParameters(r).reset(this.chunkArea, r);
         }
     }

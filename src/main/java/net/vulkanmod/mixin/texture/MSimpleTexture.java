@@ -12,6 +12,7 @@ public class MSimpleTexture {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void doLoad(NativeImage nativeImage, boolean blur, boolean clamp) {
@@ -19,8 +20,8 @@ public class MSimpleTexture {
                 .setLinearFiltering(blur)
                 .setClamp(clamp)
                 .createVulkanImage();
-        ((VAbstractTextureI)this).setVulkanImage(image);
-        ((VAbstractTextureI)this).bindTexture();
+        ((VAbstractTextureI)this).vulkanMod$setVulkanImage(image);
+        ((VAbstractTextureI)this).vulkanMod$bindTexture();
         nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), blur, clamp, false, true);
     }
 

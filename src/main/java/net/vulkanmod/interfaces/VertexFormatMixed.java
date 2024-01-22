@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface VertexFormatMixed {
 
-    int getOffset(int i);
+    int vulkanMod$getOffset(int i);
 
-    List<VertexFormatElement> getFastList();
+    List<VertexFormatElement> vulkanMod$getFastList();
 }

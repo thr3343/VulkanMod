@@ -28,7 +28,7 @@ public class ModelPartCubeM implements ModelPartCubeMixed {
 
 
     @Override
-    public CubeModel getCubeModel() {
+    public CubeModel vulkanMod$getCubeModel() {
         return this.cube;
     }
 }

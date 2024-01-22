@@ -23,18 +23,20 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bind() {
         if (!RenderSystem.isOnRenderThreadOrInit()) {
-            RenderSystem.recordRenderCall(this::bindTexture);
+            RenderSystem.recordRenderCall(this::vulkanMod$bindTexture);
         } else {
-            this.bindTexture();
+            this.vulkanMod$bindTexture();
         }
     }
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void releaseId() {
@@ -48,12 +50,13 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         TextureUtil.releaseTextureId(this.id);
     }
 
-    public void setId(int i) {
+    public void vulkanMod$setId(int i) {
         this.id = i;
     }
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void setFilter(boolean blur, boolean mipmap) {
@@ -66,14 +69,14 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
     }
 
     @Override
-    public void bindTexture() {
+    public void vulkanMod$bindTexture() {
         GlTexture.bindTexture(this.id);
 
         if (vulkanImage != null)
             VTextureSelector.bindTexture(vulkanImage);
     }
 
-    public VulkanImage getVulkanImage() {
+    public VulkanImage vulkanMod$getVulkanImage() {
         if(vulkanImage != null)
             return vulkanImage;
         else {
@@ -81,7 +84,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         }
     }
 
-    public void setVulkanImage(VulkanImage image) {
+    public void vulkanMod$setVulkanImage(VulkanImage image) {
         this.vulkanImage = image;
 
         if(this.id == -1)

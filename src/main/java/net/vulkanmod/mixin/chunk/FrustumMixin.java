@@ -31,7 +31,7 @@ public class FrustumMixin implements FrustumMixed {
     }
 
     @Override
-    public VFrustum customFrustum() {
+    public VFrustum vulkanMod$customFrustum() {
         return vFrustum;
     }
 }

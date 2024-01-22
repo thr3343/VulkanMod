@@ -58,8 +58,8 @@ public abstract class MDynamicTexture extends AbstractTexture {
         VAbstractTextureI texture = ((VAbstractTextureI)(this));
 
         VulkanImage vulkanImage = new VulkanImage.Builder(this.pixels.getWidth(), this.pixels.getHeight()).createVulkanImage();
-        texture.setVulkanImage(vulkanImage);
-        texture.bindTexture();
+        texture.vulkanMod$setVulkanImage(vulkanImage);
+        texture.vulkanMod$bindTexture();
 //        texture.setId(TextureMap.getId(vulkanImage));
     }
 

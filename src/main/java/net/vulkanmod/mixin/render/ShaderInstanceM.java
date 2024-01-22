@@ -64,7 +64,7 @@ public class ShaderInstanceM implements ShaderMixed {
     boolean isLegacy = false;
 
 
-    public GraphicsPipeline getPipeline() {
+    public GraphicsPipeline vulkanMod$getPipeline() {
         return pipeline;
     }
 
@@ -100,6 +100,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void close() {
@@ -108,6 +109,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void apply() {
@@ -174,6 +176,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void clear() {}

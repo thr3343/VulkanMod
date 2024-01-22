@@ -22,22 +22,29 @@ layout (local_size_x = 32, local_size_y = 32, local_size_z = 32) in;
 
 struct VkDrawIndexedIndirectCommand {
     uint   indexCount,
-    instanceCount,
-    firstIndex,
-    vertexOffset,
-    firstInstance;
+    uint   instanceCount,
+    uint   firstIndex,
+    int    vertexOffset,
+    uint   firstInstance;
 
 }; VkDrawIndexedIndirectCommand;
 
 struct drwCllInstance
 {
-    vec3 position; //AND for SubPos Relative to CnkArea
-    int index;
-    VkDrawIndexedIndirectCommand indirectDrwCmd;
+    ivec3 position; //AND for SubPos Relative to CnkArea  /12
+
+    uint   indexCount, //12+4
+
+    uint   firstIndex, ////12+8
+    int    vertexOffset, //12+12
+    uint   firstInstance;   //12+16
+    uint frustumIndex; //32
+
+
 };
 
 
-layout(binding = 0) uniform readonly UniformBufferObject {
+layout(binding = 0) uniform restrict readonly UniformBufferObject {
     drwCllInstance dummy[CnkAreas*512];
 };
 
@@ -96,13 +103,14 @@ bool checkFrustumState(drwCllInstance drwCallInst)
 const VkDrawIndexedIndirectCommand null = VkDrawIndexedIndirectCommand(0,0,0,0,0);
 void main() {
 
-    uint x = gl_GlobalInvocationID.x >> 9;
-    uint y = gl_GlobalInvocationID.y >> 9;
-    uint z = gl_GlobalInvocationID.z >> 9;
+    uint chunkAreaIndex = gl_GlobalInvocationID.x >> 9;
 
-    uvec3 drawIndex = gl_GlobalInvocationID <<uvec3(6, 4, 0);
+    uint baseIndirectOffset = (20*512) * chunkAreaIndex;
 
-    uint xyz  = atomicAdd(sx.drawCnt[0], 1u);
+     //uint subBaseOffset= baseIndirectOffset + (gl_GlobalInvocationID.x & 511);
+
+
+
 
 
     uint subCllIndx = (gl_GlobalInvocationID.x*512) + (gl_GlobalInvocationID.y) & 511;
@@ -110,9 +118,19 @@ void main() {
 
    // uint xyz = drawIndex.x+drawIndex.y+drawIndex.z;
 
-    if(checkFrustumState(dummy[xyz]))
+    if(checkFrustumState(dummy[gl_GlobalInvocationID.x]))
     {
-        indirectCmds.xys[xyz]= dummy[xyz].indirectDrwCmd;
+        uint xyz  = atomicAdd(sx.drawCn[chunkAreaIndex], 1u);
+
+
+        VkDrawIndexedIndirectCommand indirectCmd = VkDrawIndexedIndirectCommand(
+            dummy[xyz].indexCount,
+            1,
+            dummy[xyz].firstIndex,
+            dummy[xyz].vertexOffset,
+            0,
+        )
+        indirectCmds.xys[xyz]= indirectCmd;
     };
 
 

@@ -43,7 +43,7 @@ public class VisibilitySetMixin implements VisibilitySetExtended {
     }
 
     @Override
-    public long getVisibility() {
+    public long vulkanMod$getVisibility() {
         return vis;
     }
 }

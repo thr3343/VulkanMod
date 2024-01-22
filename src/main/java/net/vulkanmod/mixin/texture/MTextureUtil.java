@@ -14,6 +14,7 @@ public class MTextureUtil {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int generateTextureId() {
@@ -23,6 +24,7 @@ public class MTextureUtil {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void prepareImage(NativeImage.InternalGlFormat internalGlFormat, int id, int mipLevels, int width, int height) {

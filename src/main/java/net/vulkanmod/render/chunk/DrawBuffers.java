@@ -13,7 +13,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.FloatBuffer;
@@ -59,14 +58,14 @@ public class DrawBuffers {
     }
 
     public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType) {
-        int vertexOffset = drawParameters.vertexOffset;
+//        int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
             this.getAreaBufferCheckedAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
+//            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -85,9 +84,9 @@ public class DrawBuffers {
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
 
-        drawParameters.indexCount = buffer.indexCount;
+//        drawParameters.indexCount = buffer.indexCount;
         drawParameters.firstIndex = firstIndex;
-        drawParameters.vertexOffset = vertexOffset;
+//        drawParameters.vertexOffset = vertexOffset;
 
         updateIndex=renderType.ordinal();
 
@@ -130,18 +129,20 @@ public class DrawBuffers {
     }
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
-        ArenaBuffer indirectBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
+            if(updateIndex==terrainRenderType.ordinal() || drawCnts.get(terrainRenderType)!=queue.size())
+            {
+                updateIndirectCmds(queue, terrainRenderType, stack);
+                /*if(!baseOffsetEmpty)*/{
+                    drawCnts.put(terrainRenderType, queue.size());
+                    updateIndex=-1;
+                }
+            }
 
-        //Donlt need updates as IndirectCountGPU Culls + generates DrawCmds internally
 
-        //Count buffer contaisn darwCall count, COntrolled by GPU
-        VK12.vkCmdDrawIndexedIndirectCount(Renderer.getCommandBuffer(),
-                indirectBuffer.getId(),
-                indirectBuffer.getBaseOffset(this.index),
-                countBuffer,
-                countBuffer.getBaseOffset(this.index),
-                queue.size(),
-                20);
+            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
+        }
 
 
     }
@@ -158,10 +159,13 @@ public class DrawBuffers {
             DrawParameters drawParameters = iterator.next();
 
 
-
+            if(drawParameters.indexCount==0)
+            {
+                throw new RuntimeException();
+            }
             long ptr = bufferPtr + (drawCount * 20L);
             MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-            MemoryUtil.memPutInt(ptr + 4, 1);
+            MemoryUtil.memPutInt(ptr + 4, drawParameters.instanceCount);
             MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
             MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
             MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
@@ -226,7 +230,7 @@ public class DrawBuffers {
     }
 
     public static class DrawParameters {
-        int indexCount, firstIndex, vertexOffset, baseInstance;
+        int indexCount, instanceCount, firstIndex, vertexOffset, baseInstance;
         final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
         final AreaBuffer.Segment indexBufferSegment;
 

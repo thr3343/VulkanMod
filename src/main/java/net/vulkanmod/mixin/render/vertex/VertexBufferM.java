@@ -35,18 +35,21 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bind() {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static void unbind() {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void upload(BufferBuilder.RenderedBuffer buffer) {
@@ -55,6 +58,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
@@ -64,6 +68,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void draw() {
@@ -72,6 +77,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void close() {

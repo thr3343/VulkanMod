@@ -9,6 +9,7 @@ import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +20,7 @@ public class CompiledSection {
             return false;
         }
     };
-    public final Set<TerrainRenderType> renderTypes = EnumSet.noneOf(TerrainRenderType.class);
+    public final EnumMap<TerrainRenderType, UploadBuffer> renderTypes = new EnumMap<>(TerrainRenderType.class);
     boolean isCompletelyEmpty = true;
     final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
     VisibilitySet visibilitySet = new VisibilitySet();
@@ -31,7 +32,7 @@ public class CompiledSection {
     }
 
     public boolean isEmpty(TerrainRenderType p_112759_) {
-        return !this.renderTypes.contains(p_112759_);
+        return !this.renderTypes.containsKey(p_112759_);
     }
 
     public List<BlockEntity> getRenderableBlockEntities() {

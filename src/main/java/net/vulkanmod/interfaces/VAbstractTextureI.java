@@ -4,11 +4,11 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 
 public interface VAbstractTextureI {
 
-    void bindTexture();
+    void vulkanMod$bindTexture();
 
-    void setId(int i);
+    void vulkanMod$setId(int i);
 
-    VulkanImage getVulkanImage();
+    VulkanImage vulkanMod$getVulkanImage();
 
-    void setVulkanImage(VulkanImage image);
+    void vulkanMod$setVulkanImage(VulkanImage image);
 }

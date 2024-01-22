@@ -81,6 +81,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void updateVsync(boolean vsync) {
@@ -90,6 +91,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void toggleFullScreen() {
@@ -99,6 +101,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void updateDisplay() {
@@ -115,6 +118,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void setMode() {

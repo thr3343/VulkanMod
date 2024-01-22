@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.render.target;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -43,6 +42,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void clear(boolean getError) {
@@ -97,6 +97,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bindRead() {
@@ -113,6 +114,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void unbindRead() {
@@ -122,6 +124,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bindWrite(boolean bl) {
@@ -137,6 +140,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void _bindWrite(boolean bl) {
@@ -158,6 +162,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void unbindWrite() {
@@ -176,6 +181,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
@@ -191,12 +197,12 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     }
 
     @Override
-    public boolean isBound() {
+    public boolean vulkanMod$isBound() {
         return bound;
     }
 
     @Override
-    public RenderPass getRenderPass() {
+    public RenderPass vulkanMod$getRenderPass() {
         return GlFramebuffer.getFramebuffer(this.frameBufferId).getRenderPass();
     }
 }

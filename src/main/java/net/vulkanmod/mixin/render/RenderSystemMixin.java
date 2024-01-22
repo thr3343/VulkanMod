@@ -1,6 +1,5 @@
 package net.vulkanmod.mixin.render;
 
-import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -50,13 +49,14 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static void _setShaderTexture(int i, ResourceLocation location) {
         if (i >= 0 && i < shaderTextures.length) {
             TextureManager textureManager = Minecraft.getInstance().getTextureManager();
             AbstractTexture abstractTexture = textureManager.getTexture(location);
-            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage());
+            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).vulkanMod$getVulkanImage());
 
             //shaderTextures[i] = abstractTexture.getId();
         }
@@ -65,6 +65,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _setShaderTexture(int i, int id) {
@@ -82,6 +83,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void initRenderer(int debugVerbosity, boolean debugSync) {
@@ -92,12 +94,14 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void setupDefaultState(int x, int y, int width, int height) { }
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enableColorLogicOp() {
@@ -107,6 +111,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disableColorLogicOp() {
@@ -116,6 +121,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static void logicOp(GlStateManager.LogicOp op) {
@@ -125,6 +131,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void activeTexture(int texture) {
@@ -133,18 +140,21 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glGenBuffers(Consumer<Integer> consumer) {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glGenVertexArrays(Consumer<Integer> consumer) {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int maxSupportedTextureSize() {
@@ -153,6 +163,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void clear(int mask, boolean getError) {
@@ -161,6 +172,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void flipFrame(long window) {
@@ -171,6 +183,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void viewport(int x, int y, int width, int height) {
@@ -179,6 +192,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enableScissor(int x, int y, int width, int height) {
@@ -187,6 +201,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disableScissor() {
@@ -195,6 +210,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disableDepthTest() {
@@ -205,6 +221,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enableDepthTest() {
@@ -214,6 +231,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void depthFunc(int i) {
@@ -223,6 +241,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void depthMask(boolean b) {
@@ -232,6 +251,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void colorMask(boolean red, boolean green, boolean blue, boolean alpha) {
@@ -240,6 +260,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void blendEquation(int i) {
@@ -249,6 +270,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enableBlend() {
@@ -257,6 +279,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disableBlend() {
@@ -265,6 +288,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void blendFunc(GlStateManager.SourceFactor sourceFactor, GlStateManager.DestFactor destFactor) {
@@ -273,6 +297,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void blendFunc(int srcFactor, int dstFactor) {
@@ -281,6 +306,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void blendFuncSeparate(GlStateManager.SourceFactor p_69417_, GlStateManager.DestFactor p_69418_, GlStateManager.SourceFactor p_69419_, GlStateManager.DestFactor p_69420_) {
@@ -289,6 +315,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
@@ -297,6 +324,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enableCull() {
@@ -306,6 +334,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disableCull() {
@@ -315,6 +344,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void enablePolygonOffset() {
@@ -324,6 +354,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void disablePolygonOffset() {
@@ -333,6 +364,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void polygonOffset(float p_69864_, float p_69865_) {
@@ -342,6 +374,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void clearColor(float p_69425_, float p_69426_, float p_69427_, float p_69428_) {
@@ -351,6 +384,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
@@ -368,6 +402,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     private static void _setShaderColor(float r, float g, float b, float a) {
@@ -381,6 +416,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     private static void _setShaderFogColor(float f, float g, float h, float i) {
@@ -394,6 +430,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void setProjectionMatrix(Matrix4f projectionMatrix, VertexSorting vertexSorting) {
@@ -416,6 +453,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void setTextureMatrix(Matrix4f matrix4f) {
@@ -433,6 +471,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void resetTextureMatrix() {
@@ -446,6 +485,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void applyModelViewMatrix() {
@@ -468,6 +508,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     private static void _restoreProjectionMatrix() {
@@ -479,6 +520,7 @@ public abstract class RenderSystemMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void texParameter(int target, int pname, int param) {

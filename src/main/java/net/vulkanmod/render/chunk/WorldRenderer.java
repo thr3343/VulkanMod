@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -217,7 +216,7 @@ public class WorldRenderer {
             if (this.needsUpdate) {
                 this.needsUpdate = false;
 
-                this.frustum = (((FrustumMixed)(frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
+                this.frustum = (((FrustumMixed)(frustum)).vulkanMod$customFrustum()).offsetToFullyIncludeCameraCube(8);
                 this.sectionGrid.updateFrustumVisibility(this.frustum);
                 this.lastCameraX = cameraX;
                 this.lastCameraY = cameraY;
@@ -229,16 +228,18 @@ public class WorldRenderer {
 
                 this.minecraft.getProfiler().push("partial_update");
 
-                if(!spectator) this.chunkQueue.clear();
-                this.initUpdate();
+                if(!spectator) {
+                    this.chunkQueue.clear();
+                    this.initUpdate();
+                }
                 this.initializeQueueForFullUpdate(camera);
 
                 this.renderRegionCache = new RenderRegionCache();
 
                 if(!spectator)
                     this.updateRenderChunks();
-                else
-                    this.updateRenderChunksSpectator();
+//                else
+//                    this.updateRenderChunksHostSide();
 
                 this.minecraft.getProfiler().pop();
 
@@ -355,12 +356,30 @@ public class WorldRenderer {
 
 
 
+//        arenaBuffer.getBaseOffset(this.index)
+
+
+        /*TODO: need to obtain Offsets early to allow complete Instance Buffer info
+        *  This is Ok For Frustum but not for Drawing the correct meshes
+        *  Could do partial update,2nd pass but that is shitty.suboptimal
+        *
+        *
+        *   A global/shared drawCmd Queue via Build Chunks could work,
+        *   despite Thread Sharing overheads+Slight Dynamic DeSync Risks/issues
+        *       + being later/Closer to draw
+        *
+        *   TODO: Only check Section Updates, not all Sections iN Frustum
+        *
+        *   Thanfully can due All drawCmd in one Dispatch due to InstanceBuffer Contuguity + not needing to bind Seperate AreaBuffers
+        *   *///TODO:FIlter into GPUINdirecyArrayASYNCSYNC...
 
         for(RenderSection renderSection : this.chunkQueue) {
 
 
 
             if(!renderSection.isCompletelyEmpty()) {
+
+
                 renderSection.getChunkArea().addSections(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
@@ -690,6 +709,11 @@ public class WorldRenderer {
     }
 
     public void setSectionDirty(int x, int y, int z, boolean flag) {
+
+        //Skip Dirties if already in GPU IndiretcBuffer
+        //May als hel skip Lihgitn update uplaoegeomerts as well (if vertex data dosnelt change
+
+
         this.sectionGrid.setDirty(x, y, z, flag);
     }
 

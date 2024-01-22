@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.NotNull;
@@ -121,8 +122,19 @@ public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuff
 //    }
 
     public void addSections(RenderSection section) {
-        for(var t : section.getCompiledSection().renderTypes) {
-            this.sectionQueues.get(t).add(section.getDrawParameters(t));
+        for(var t : section.getCompiledSection().renderTypes.entrySet()) {
+
+//            DrawBuffers.DrawParameters drawParameters = new DrawBuffers.DrawParameters(t.getKey()==TerrainRenderType.TRANSLUCENT);
+
+
+            final DrawBuffers.DrawParameters drawParameters1 = section.getDrawParameters(t.getKey());
+            drawParameters1.indexCount =t.getValue().indexCount;
+
+            final boolean b = drawParameters1.vertexBufferSegment.status != 0;
+            drawParameters1.instanceCount = b ? 1 : 0;
+
+            drawParameters1.vertexOffset = b ? drawParameters1.vertexBufferSegment.getOffset()/ 20 : drawParameters1.vertexOffset;
+            this.sectionQueues.get(t.getKey()).add(drawParameters1);
         }
     }
 

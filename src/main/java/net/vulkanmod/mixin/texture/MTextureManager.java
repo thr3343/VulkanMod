@@ -27,6 +27,7 @@ public abstract class MTextureManager {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void tick() {
@@ -48,6 +49,7 @@ public abstract class MTextureManager {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void release(ResourceLocation id) {

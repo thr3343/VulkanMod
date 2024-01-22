@@ -20,7 +20,7 @@ public class VertexFormatMixin implements VertexFormatMixed {
 
     private ObjectArrayList<VertexFormatElement> fastList;
 
-    public int getOffset(int i) {
+    public int vulkanMod$getOffset(int i) {
         return offsets.getInt(i);
     }
 
@@ -28,7 +28,7 @@ public class VertexFormatMixin implements VertexFormatMixed {
         return this.fastList.get(i);
     }
 
-    public List<VertexFormatElement> getFastList() {
+    public List<VertexFormatElement> vulkanMod$getFastList() {
         return this.fastList;
     }
 

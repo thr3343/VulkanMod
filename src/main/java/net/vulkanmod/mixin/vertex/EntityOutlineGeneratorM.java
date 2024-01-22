@@ -19,8 +19,8 @@ public class EntityOutlineGeneratorM implements ExtendedVertexBuilder {
     }
 
     @Override
-    public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
-        this.extDelegate.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
+    public void vulkanMod$vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+        this.extDelegate.vulkanMod$vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
 //        this.delegate.vertex((double)f, (double)g, (double)h).color(this.defaultR, this.defaultG, this.defaultB, this.defaultA).uv(m, n);
     }
 }

@@ -53,7 +53,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
     }
 
-    public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+    public void vulkanMod$vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
         this.ptr = this.nextElementPtr();
 
         if(this.format == DefaultVertexFormat.NEW_ENTITY) {
@@ -88,7 +88,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     }
 
-    public void vertex(float x, float y, float z, float u, float v, int packedColor, int light) {
+    public void vulkanMod$vertex(float x, float y, float z, float u, float v, int packedColor, int light) {
         this.ptr = this.nextElementPtr();
 
         MemoryUtil.memPutFloat(ptr + 0, x);
@@ -163,6 +163,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
@@ -200,11 +201,12 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void nextElement() {
         VertexFormatElement vertexFormatElement;
-        List<VertexFormatElement> list = ((VertexFormatMixed)(this.format)).getFastList();
+        List<VertexFormatElement> list = ((VertexFormatMixed)(this.format)).vulkanMod$getFastList();
 
         this.elementIndex = (this.elementIndex + 1) % list.size();
         this.nextElementByte += this.currentElement.getByteSize();

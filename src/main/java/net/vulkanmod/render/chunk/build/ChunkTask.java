@@ -2,10 +2,8 @@ package net.vulkanmod.render.chunk.build;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -125,10 +123,10 @@ public abstract class ChunkTask {
                         compiledChunk.isCompletelyEmpty = false;
 
                     taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
-                    compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
+                    compiledChunk.renderTypes.putAll(compileResults.renderedLayers);
 
                     this.renderSection.setCompiledSection(compiledChunk);
-                    this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
+                    this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).vulkanMod$getVisibility());
                     this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
 
                     this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
@@ -298,7 +296,7 @@ public abstract class ChunkTask {
                 float f1 = (float)vec3.y;
                 float f2 = (float)vec3.z;
                 TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
-                if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
+                if (transparencyState != null && this.compiledSection.renderTypes.containsKey(TRANSLUCENT)) {
                     TerrainBufferBuilder bufferbuilder = builderPack.builder(TRANSLUCENT);
                     bufferbuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
                     bufferbuilder.restoreSortState(transparencyState);

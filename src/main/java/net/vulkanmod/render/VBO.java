@@ -11,7 +11,6 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -101,7 +100,7 @@ public class VBO {
 
             RenderSystem.setShader(() -> shader);
 
-            drawWithShader(MV, P, ((ShaderMixed)shader).getPipeline());
+            drawWithShader(MV, P, ((ShaderMixed)shader).vulkanMod$getPipeline());
 
         }
     }

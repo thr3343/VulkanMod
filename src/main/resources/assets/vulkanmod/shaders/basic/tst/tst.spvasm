@@ -1,12 +1,12 @@
 ; SPIR-V
-; Version: 1.6
+; Version: 1.0
 ; Generator: Google Shaderc over Glslang; 11
-; Bound: 193
+; Bound: 229
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %4 "main" %32 %101 %122 %136
+               OpEntryPoint GLCompute %4 "main"
                OpExecutionMode %4 LocalSize 32 32 32
                OpMemberDecorate %_struct_30 0 Offset 0
                OpMemberDecorate %_struct_30 1 Offset 16
@@ -22,7 +22,7 @@
                OpMemberDecorate %_struct_99 0 Restrict
                OpMemberDecorate %_struct_99 0 NonReadable
                OpMemberDecorate %_struct_99 0 Offset 0
-               OpDecorate %_struct_99 Block
+               OpDecorate %_struct_99 BufferBlock
                OpDecorate %101 DescriptorSet 0
                OpDecorate %101 Binding 2
                OpMemberDecorate %_struct_115 0 Offset 0
@@ -39,25 +39,24 @@
                OpDecorate %_struct_120 Block
                OpDecorate %122 DescriptorSet 0
                OpDecorate %122 Binding 0
-               OpMemberDecorate %_struct_132 0 Offset 0
-               OpMemberDecorate %_struct_132 1 Offset 4
-               OpMemberDecorate %_struct_132 2 Offset 8
-               OpMemberDecorate %_struct_132 3 Offset 12
-               OpMemberDecorate %_struct_132 4 Offset 16
-               OpDecorate %_arr__struct_132_97 ArrayStride 20
-               OpMemberDecorate %_struct_134 0 NonReadable
-               OpMemberDecorate %_struct_134 0 Offset 0
-               OpDecorate %_struct_134 Block
-               OpDecorate %136 DescriptorSet 0
-               OpDecorate %136 Binding 1
+               OpMemberDecorate %_struct_152 0 Offset 0
+               OpMemberDecorate %_struct_152 1 Offset 4
+               OpMemberDecorate %_struct_152 2 Offset 8
+               OpMemberDecorate %_struct_152 3 Offset 12
+               OpMemberDecorate %_struct_152 4 Offset 16
+               OpDecorate %_arr__struct_152_97 ArrayStride 20
+               OpMemberDecorate %_struct_154 0 NonReadable
+               OpMemberDecorate %_struct_154 0 Offset 0
+               OpDecorate %_struct_154 BufferBlock
+               OpDecorate %156 DescriptorSet 0
+               OpDecorate %156 Binding 1
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
     %v3float = OpTypeVector %float 3
         %int = OpTypeInt 32 1
        %uint = OpTypeInt 32 0
- %_struct_10 = OpTypeStruct %uint %uint %uint %uint %uint
- %_struct_11 = OpTypeStruct %v3float %int %_struct_10
        %bool = OpTypeBool
       %int_0 = OpConstant %int 0
    %float_16 = OpConstant %float 16
@@ -70,14 +69,15 @@
       %int_6 = OpConstant %int 6
     %float_0 = OpConstant %float 0
          %53 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+     %v3uint = OpTypeVector %uint 3
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
          %97 = OpSpecConstant %uint 32
 %_arr_uint_97 = OpTypeArray %uint %97
  %_struct_99 = OpTypeStruct %_arr_uint_97
-%_ptr_StorageBuffer__struct_99 = OpTypePointer StorageBuffer %_struct_99
-        %101 = OpVariable %_ptr_StorageBuffer__struct_99 StorageBuffer
-%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_ptr_Uniform__struct_99 = OpTypePointer Uniform %_struct_99
+        %101 = OpVariable %_ptr_Uniform__struct_99 Uniform
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
    %uint_512 = OpConstant %uint 512
 %_struct_115 = OpTypeStruct %uint %uint %uint %uint %uint
 %_struct_116 = OpTypeStruct %v3float %int %_struct_115
@@ -88,43 +88,59 @@
 %_ptr_Uniform__struct_120 = OpTypePointer Uniform %_struct_120
         %122 = OpVariable %_ptr_Uniform__struct_120 Uniform
 %_ptr_Uniform__struct_116 = OpTypePointer Uniform %_struct_116
-%_struct_132 = OpTypeStruct %uint %uint %uint %uint %uint
-%_arr__struct_132_97 = OpTypeArray %_struct_132 %97
-%_struct_134 = OpTypeStruct %_arr__struct_132_97
-%_ptr_StorageBuffer__struct_134 = OpTypePointer StorageBuffer %_struct_134
-        %136 = OpVariable %_ptr_StorageBuffer__struct_134 StorageBuffer
+      %int_1 = OpConstant %int 1
+      %int_3 = OpConstant %int 3
+      %int_4 = OpConstant %int 4
+%_struct_152 = OpTypeStruct %uint %uint %uint %uint %uint
+%_arr__struct_152_97 = OpTypeArray %_struct_152 %97
+%_struct_154 = OpTypeStruct %_arr__struct_152_97
+%_ptr_Uniform__struct_154 = OpTypePointer Uniform %_struct_154
+        %156 = OpVariable %_ptr_Uniform__struct_154 Uniform
 %_ptr_Uniform__struct_115 = OpTypePointer Uniform %_struct_115
-%_ptr_StorageBuffer__struct_132 = OpTypePointer StorageBuffer %_struct_132
-        %192 = OpConstantComposite %v3float %float_16 %float_16 %float_16
+    %uint_32 = OpConstant %uint 32
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_32 %uint_32 %uint_32
+        %225 = OpConstantComposite %v3float %float_16 %float_16 %float_16
+%_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
           %4 = OpFunction %void None %3
           %5 = OpLabel
-        %103 = OpAccessChain %_ptr_StorageBuffer_uint %101 %int_0 %int_0
+        %103 = OpAccessChain %_ptr_Uniform_uint %101 %int_0 %int_0
         %104 = OpAtomicIAdd %uint %103 %uint_1 %uint_0 %uint_1
         %126 = OpAccessChain %_ptr_Uniform__struct_116 %122 %int_0 %104
-        %127 = OpLoad %_struct_116 %126
-        %128 = OpCopyLogical %_struct_11 %127
-        %191 = OpCompositeExtract %v3float %128 0
-        %165 = OpFAdd %v3float %191 %192
-        %166 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_0
-        %167 = OpLoad %v3float %166
-        %168 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_2
-        %169 = OpLoad %v3float %168
-        %177 = OpExtInst %v3float %1 FMin %191 %53
-        %178 = OpExtInst %v3float %1 FMax %165 %177
-        %182 = OpExtInst %v3float %1 Fma %178 %169 %167
-        %183 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_6
-        %184 = OpLoad %v3float %183
-        %185 = OpFOrdLessThan %v3bool %182 %184
-        %187 = OpAny %bool %185
-               OpSelectionMerge %131 None
-               OpBranchConditional %187 %130 %131
-        %130 = OpLabel
-        %140 = OpAccessChain %_ptr_Uniform__struct_115 %122 %int_0 %104 %int_2
-        %141 = OpLoad %_struct_115 %140
-        %143 = OpAccessChain %_ptr_StorageBuffer__struct_132 %136 %int_0 %104
-        %144 = OpCopyLogical %_struct_132 %141
-               OpStore %143 %144
-               OpBranch %131
-        %131 = OpLabel
+        %227 = OpAccessChain %_ptr_Uniform_v3float %126 %uint_0
+        %228 = OpLoad %v3float %227
+        %194 = OpFAdd %v3float %228 %225
+        %195 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_0
+        %196 = OpLoad %v3float %195
+        %197 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_2
+        %198 = OpLoad %v3float %197
+        %206 = OpExtInst %v3float %1 FMin %228 %53
+        %207 = OpExtInst %v3float %1 FMax %194 %206
+        %211 = OpExtInst %v3float %1 Fma %207 %198 %196
+        %212 = OpAccessChain %_ptr_PushConstant_v3float %32 %int_6
+        %213 = OpLoad %v3float %212
+        %214 = OpFOrdLessThan %v3bool %211 %213
+        %216 = OpAny %bool %214
+               OpSelectionMerge %151 None
+               OpBranchConditional %216 %150 %151
+        %150 = OpLabel
+        %160 = OpAccessChain %_ptr_Uniform__struct_115 %122 %int_0 %104 %int_2
+        %161 = OpLoad %_struct_115 %160
+        %164 = OpCompositeExtract %uint %161 0
+        %165 = OpAccessChain %_ptr_Uniform_uint %156 %int_0 %104 %int_0
+               OpStore %165 %164
+        %166 = OpCompositeExtract %uint %161 1
+        %167 = OpAccessChain %_ptr_Uniform_uint %156 %int_0 %104 %int_1
+               OpStore %167 %166
+        %168 = OpCompositeExtract %uint %161 2
+        %169 = OpAccessChain %_ptr_Uniform_uint %156 %int_0 %104 %int_2
+               OpStore %169 %168
+        %170 = OpCompositeExtract %uint %161 3
+        %171 = OpAccessChain %_ptr_Uniform_uint %156 %int_0 %104 %int_3
+               OpStore %171 %170
+        %172 = OpCompositeExtract %uint %161 4
+        %173 = OpAccessChain %_ptr_Uniform_uint %156 %int_0 %104 %int_4
+               OpStore %173 %172
+               OpBranch %151
+        %151 = OpLabel
                OpReturn
                OpFunctionEnd
