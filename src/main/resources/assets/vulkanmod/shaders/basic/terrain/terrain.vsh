@@ -7,8 +7,7 @@ layout(binding = 0) uniform UniformBufferObject {
 };
 
 layout(push_constant) uniform pushConstant {
-    mat4 MVP;
-    mat4 ModelViewMat;
+    mat4 MVP,ModelViewMat;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;

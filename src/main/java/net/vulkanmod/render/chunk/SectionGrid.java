@@ -16,8 +16,8 @@ import java.util.List;
 public class SectionGrid {
 
     protected final Level level;
-    protected int gridHeight;
-    protected int gridWidth;
+    protected final int gridHeight;
+    protected final int gridWidth;
     public RenderSection[] chunks;
     final ChunkAreaManager chunkAreaManager;
 
@@ -26,7 +26,10 @@ public class SectionGrid {
 
     public SectionGrid(Level level, int viewDistance) {
         this.level = level;
-        this.setViewDistance(viewDistance);
+        this.gridWidth = viewDistance * 2 + 1;
+
+        //TOOD: Fix bug w/ duplicated+Redundant chunks areas (Multiplied by 16 scaling bug)
+        this.gridHeight = this.level.getSectionsCount();
         this.createChunks();
         this.chunkAreaManager = new ChunkAreaManager(this.gridWidth, this.gridHeight, this.level.getMinBuildHeight());
 
@@ -60,13 +63,6 @@ public class SectionGrid {
 
     private int getChunkIndex(int x, int y, int z) {
         return (z * this.gridHeight + y) * this.gridWidth + x;
-    }
-
-    protected void setViewDistance(int radius) {
-        int i = radius * 2 + 1;
-        this.gridWidth = i;
-        this.gridHeight = this.level.getSectionsCount();
-        this.gridWidth = i;
     }
 
     public void repositionCamera(double x, double z) {
