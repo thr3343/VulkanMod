@@ -2,14 +2,15 @@ package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
+import java.util.HashMap;
 import java.util.function.Function;
 
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
@@ -17,6 +18,7 @@ import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
 public abstract class PipelineManager {
     private static final String resourcePath1 = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
     public static VertexFormat TERRAIN_VERTEX_FORMAT;
+    private static final HashMap<String, GraphicsPipeline> postEffectPipelines=new HashMap<>();
 
     public static void setTerrainVertexFormat(VertexFormat format) {
         TERRAIN_VERTEX_FORMAT = format;
@@ -80,5 +82,32 @@ public abstract class PipelineManager {
         terrainShaderEarlyZ.cleanUp();
         terrainShader.cleanUp();
         fastBlitPipeline.cleanUp();
+    }
+
+    public static void releasePipeline(String name) {
+        if(postEffectPipelines.containsKey(name))
+        {
+            postEffectPipelines.remove(name).cleanUp();
+        }
+        if(postEffectPipelines.isEmpty())
+        {
+            Renderer.scheduleRenderPassUpdate(false);
+        }
+    }
+
+    public static void addPipeline(String name, GraphicsPipeline pipeline) {
+        if(!postEffectPipelines.containsKey(name))
+        {
+            postEffectPipelines.put(name, pipeline);
+        }
+        Renderer.scheduleRenderPassUpdate(true);
+    }
+
+    public static boolean checkPipeline(String name) {
+        return postEffectPipelines.containsKey(name);
+    }
+
+    public static GraphicsPipeline getPipeline(String name) {
+        return postEffectPipelines.get(name);
     }
 }

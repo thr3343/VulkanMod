@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -38,7 +39,6 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -72,7 +72,7 @@ public class EffectInstanceM {
     )
     private void inj(ResourceManager resourceManager, String string, CallbackInfo ci,
                      ResourceLocation resourceLocation, Resource resource, Reader reader, JsonObject jsonObject, String string2, String string3) {
-        createShaders(resourceManager, string2, string3);
+        createShaders(resourceLocation, resourceManager, string2, string3);
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -92,11 +92,13 @@ public class EffectInstanceM {
             uniform.close();
         }
 
+
+        PipelineManager.releasePipeline(this.name);
         //TODO
 //        ProgramManager.releaseProgram(this);
     }
 
-    private void createShaders(ResourceManager resourceManager, String vertexShader, String fragShader) {
+    private void createShaders(ResourceLocation resourceLocation, ResourceManager resourceManager, String vertexShader, String fragShader) {
 
         try {
             String[] vshPathInfo = this.decompose(vertexShader, ':');
@@ -118,11 +120,14 @@ public class EffectInstanceM {
             UBO ubo = converter.getUBO();
             this.setUniformSuppliers(ubo);
 
-            Pipeline.Builder builder = new Pipeline.Builder(DefaultVertexFormat.POSITION);
+            Pipeline.Builder builder = new Pipeline.Builder(DefaultVertexFormat.POSITION, resourceLocation.getPath());
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline();
+            final boolean b = !PipelineManager.checkPipeline(this.name);
+            this.pipeline = b ? builder.createGraphicsPipeline() : PipelineManager.getPipeline(this.name);
+
+            if(b) PipelineManager.addPipeline(this.name, this.pipeline);
 
         } catch (IOException e) {
             throw new RuntimeException(e);

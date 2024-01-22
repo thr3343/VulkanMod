@@ -56,7 +56,18 @@ public class GraphicsPipeline extends Pipeline {
 
         PIPELINES.add(this);
     }
-
+    boolean isCore()
+    {
+        return this.name.contains("core");
+    }
+    boolean isCustom()
+    {
+        return this.name.contains("basic");
+    }
+    boolean isPostEffect()
+    {
+        return this.name.contains("program");
+    }
     public long getHandle(PipelineState state) {
         return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }

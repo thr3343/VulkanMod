@@ -314,18 +314,18 @@ public class Renderer {
 
         LegacyMainPass.PASS.end(currentCmdBuffer);
 
-        if(!hasCalled) {
-            if(effectActive) {
-                scheduleRenderPassUpdate();
-            }
-            effectActive = false;
-        }
+//        if(!hasCalled) {
+//            if(effectActive) {
+//                scheduleRenderPassUpdate(stateEnabled);
+//            }
+//            effectActive = false;
+//        }
         if(renderPassUpdate) {
 
             this.endRenderPass();
             GlFramebuffer.bindFramebuffer(0,0); //Avoid NPE when switching post effect modes
         }
-        hasCalled=false;
+
         submitFrame();
         recordingCmds = false;
 
@@ -657,8 +657,6 @@ public class Renderer {
     }
 
     public static void resetViewport() {
-        if(!effectActive) scheduleRenderPassUpdate();
-        effectActive=hasCalled=true;
         try(MemoryStack stack = stackPush()) {
             int width = getSwapChain().getWidth();
             int height = getSwapChain().getHeight();
@@ -734,5 +732,7 @@ public class Renderer {
     public static boolean isRecording() { return INSTANCE.recordingCmds; }
 
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
-    public static void scheduleRenderPassUpdate() { renderPassUpdate = true; }
+    public static void scheduleRenderPassUpdate(boolean stateEnabled) {
+        effectActive= stateEnabled;
+        renderPassUpdate = true; }
 }
