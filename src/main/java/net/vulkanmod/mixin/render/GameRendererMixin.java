@@ -245,7 +245,7 @@ public abstract class GameRendererMixin {
                 rendertypeEntityGlintDirectShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP/*DefaultVertexFormat.NEW_ENTITY*/), (shaderInstance) -> {
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeBreezeWindShader = shaderInstance;
             }));
 
