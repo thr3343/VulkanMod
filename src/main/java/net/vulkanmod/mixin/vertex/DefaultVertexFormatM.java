@@ -21,11 +21,11 @@ public class DefaultVertexFormatM {
 
     @Shadow @Final public static VertexFormatElement ELEMENT_UV2;
     @Shadow @Final @Mutable public static final VertexFormat PARTICLE;
-    @Shadow @Final @Mutable public static final VertexFormat BLOCK;
+
 
     static {
         PARTICLE = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>().put("Position", ELEMENT_POSITION).put("Color", ELEMENT_COLOR).put("UV0", ELEMENT_UV0).put("UV2", ELEMENT_UV2).build());
-        BLOCK = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>().put("Position", ELEMENT_POSITION).put("Color", ELEMENT_COLOR).put("UV0", ELEMENT_UV0).put("UV2", ELEMENT_UV2).build());
+        //BLOCK = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>().put("Position", ELEMENT_POSITION).put("Color", ELEMENT_COLOR).put("UV0", ELEMENT_UV0).put("UV2", ELEMENT_UV2).build());
     }
 
 }
