@@ -41,6 +41,8 @@
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
     "render.particle.SingleQuadParticleM",
+    "render.particle.SingleQuadParticleM$VibrationSignalParticleM",
+    "render.particle.SingleQuadParticleM$ShriekParticleM",
     "render.target.MainTargetMixin",
     "render.target.RenderTargetMixin",
     "render.vertex.BufferBuilderM",

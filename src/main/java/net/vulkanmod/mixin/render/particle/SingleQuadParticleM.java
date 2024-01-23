@@ -3,11 +3,7 @@ package net.vulkanmod.mixin.render.particle;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.particle.*;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
@@ -19,6 +15,9 @@ import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+
+import java.util.function.Consumer;
 
 @Mixin(SingleQuadParticle.class)
 public abstract class SingleQuadParticleM extends Particle {
@@ -88,12 +87,8 @@ public abstract class SingleQuadParticleM extends Particle {
         vertexBuilder.vulkanMod$vertex2(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z(), packedColor, u0, v1, light);
     }
 
-    protected int getLightColor(float f) {
-        BlockPos blockPos = BlockPos.containing(this.x, this.y, this.z);
-        return this.level.hasChunkAt(blockPos) ? LevelRenderer.getLightColor(this.level, blockPos) : 0;
-    }
-
-    private boolean cull(WorldRenderer worldRenderer, float x, float y, float z) {
+    @Unique
+    boolean cull(WorldRenderer worldRenderer, float x, float y, float z) {
         RenderSection section = worldRenderer.getSectionGrid().getSectionAtBlockPos((int) x, (int) y, (int) z);
         return section != null && section.getLastFrame() != worldRenderer.getLastFrame();
     }
@@ -101,5 +96,48 @@ public abstract class SingleQuadParticleM extends Particle {
     @Override
     public ParticleRenderType getRenderType() {
         return null;
+    }
+
+    @Mixin(VibrationSignalParticle.class)
+    public abstract static class VibrationSignalParticleM
+    {
+        /**
+         * @author
+         * @reason
+         */
+        @Overwrite
+        public void render(VertexConsumer vertexConsumer, Camera camera, float f) {
+
+        }
+
+        /**
+         * @author
+         * @reason
+         */
+        @Overwrite
+        private void renderSignal(VertexConsumer vertexConsumer, Camera camera, float f, Consumer<Quaternionf> consumer) {
+
+        }
+    }
+    @Mixin(ShriekParticle.class)
+    public abstract static class ShriekParticleM
+    {
+        /**
+         * @author
+         * @reason
+         */
+        @Overwrite
+        public void render(VertexConsumer vertexConsumer, Camera camera, float f) {
+
+        }
+
+        /**
+         * @author
+         * @reason
+         */
+        @Overwrite
+        private void renderRotatedParticle(VertexConsumer vertexConsumer, Camera camera, float f, Consumer<Quaternionf> consumer) {
+
+        }
     }
 }
