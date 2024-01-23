@@ -211,7 +211,8 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEyesShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            ShaderInstance energySwirl = new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY);
+            list1.add(Pair.of(energySwirl, (shaderInstance) -> {
                 rendertypeEnergySwirlShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_leash", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
@@ -245,8 +246,8 @@ public abstract class GameRendererMixin {
                 rendertypeEntityGlintDirectShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
-                rendertypeBreezeWindShader = shaderInstance;
+            list1.add(Pair.of(energySwirl, (shaderInstance) -> {
+                rendertypeBreezeWindShader = energySwirl;
             }));
 
             //Text
