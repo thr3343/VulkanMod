@@ -7,6 +7,7 @@
     "vertex": "rendertype_lightning",
     "fragment": "rendertype_lightning",
     "attributes": [
+        "Position",
         "Color"
     ],
     "samplers": [

@@ -1,10 +1,14 @@
 package net.vulkanmod.mixin.render;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
@@ -12,6 +16,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.ShaderMixed;
+import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
@@ -21,10 +26,7 @@ import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -33,12 +35,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static com.mojang.blaze3d.vertex.DefaultVertexFormat.*;
 
 @Mixin(ShaderInstance.class)
 public class ShaderInstanceM implements ShaderMixed {
@@ -60,7 +66,12 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform TEXTURE_MATRIX;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GAME_TIME;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform SCREEN_SIZE;
+    @Shadow @Final private List<Integer> attributes;
+    @Mutable
+    @Shadow @Final private VertexFormat vertexFormat;
+    @Unique
     private GraphicsPipeline pipeline;
+    @Unique
     boolean isLegacy = false;
 
 
@@ -70,23 +81,66 @@ public class ShaderInstanceM implements ShaderMixed {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void create(ResourceProvider resourceProvider, String name, VertexFormat format, CallbackInfo ci) {
+        try(final InputStream resourceAsStream = Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name))) {
 
-        try {
-            if(Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name)) == null) {
+
+
+            if(resourceAsStream == null) {
                 createLegacyShader(resourceProvider, new ResourceLocation("shaders/core/" + name + ".json"), format);
                 return;
             }
 
-            String path = String.format("minecraft/core/%s/%s", name, name);
-            Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
-            pipelineBuilder.parseBindingsJSON();
-            pipelineBuilder.compileShaders();
-            this.pipeline = pipelineBuilder.createGraphicsPipeline();
+           else {
+                final JsonObject parse = GsonHelper.parse(new InputStreamReader(resourceAsStream, StandardCharsets.UTF_8));
+
+                vertexFormat = /*name.equals("particle") ? CustomVertexFormat.PARTICLE2 : */parseAttributeFormat(parse);
+
+                String path = String.format("minecraft/core/%s/%s", name, name);
+                Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
+                pipelineBuilder.parseBindingsJSON();
+                pipelineBuilder.compileShaders();
+                this.pipeline = pipelineBuilder.createGraphicsPipeline();
+            }
         } catch (Exception e) {
             System.out.printf("Error on shader %s creation\n", name);
-            throw e;
+//            throw e;
         }
 
+    }
+
+    @Unique
+    private VertexFormat parseAttributeFormat(JsonObject jsonObject) {
+        final JsonArray attributes = GsonHelper.getAsJsonArray(jsonObject, "attributes", null);
+        if(attributes==null) return CustomVertexFormat.NONE;
+        final ImmutableMap.Builder<String, VertexFormatElement> stringVertexFormatElementBuilder = new ImmutableMap.Builder<>();
+        int size_t = 0;
+        for (JsonElement a : attributes)
+        {
+            final VertexFormatElement elementUv0 = getElementUv0(a.getAsString());
+            stringVertexFormatElementBuilder.put(a.getAsString(), elementUv0);
+            size_t+=elementUv0.getByteSize();
+
+        }
+        boolean align = size_t % 2 ==0;
+        if(/*contains && */!align) stringVertexFormatElementBuilder.put("Padding", ELEMENT_PADDING);
+        return new VertexFormat(stringVertexFormatElementBuilder.build());
+    }
+
+
+    @Unique
+    private static VertexFormatElement getElementUv0(String name) {
+        return switch (name)
+        {
+            case "UV0" -> ELEMENT_UV0;
+            case "UV1" -> ELEMENT_UV1;
+            case "UV2" -> ELEMENT_UV2;
+            case "UV" -> ELEMENT_UV;
+            case "Padding" -> ELEMENT_PADDING;
+            case "Color" -> ELEMENT_COLOR;
+            case "Position" -> ELEMENT_POSITION;
+            case "Normal" -> ELEMENT_NORMAL;
+            default -> throw new IllegalStateException("Unexpected value: " + name);
+        };
     }
 
     @Inject(method = "getOrCreate", at = @At("HEAD"), cancellable = true)
@@ -244,5 +298,7 @@ public class ShaderInstanceM implements ShaderMixed {
             throw new RuntimeException(e);
         }
     }
+
+
 }
 

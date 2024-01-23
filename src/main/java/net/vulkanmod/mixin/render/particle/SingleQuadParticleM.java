@@ -16,7 +16,6 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -83,10 +82,10 @@ public abstract class SingleQuadParticleM extends Particle {
         ExtendedVertexBuilder vertexBuilder = (ExtendedVertexBuilder)vertexConsumer;
         int packedColor = ColorUtil.packColorIntRGBA(this.rCol, this.gCol, this.bCol, this.alpha);
 
-        vertexBuilder.vertex(vector3fs[0].x(), vector3fs[0].y(), vector3fs[0].z(), u1, v1, packedColor, light);
-        vertexBuilder.vertex(vector3fs[1].x(), vector3fs[1].y(), vector3fs[1].z(), u1, v0, packedColor, light);
-        vertexBuilder.vertex(vector3fs[2].x(), vector3fs[2].y(), vector3fs[2].z(), u0, v0, packedColor, light);
-        vertexBuilder.vertex(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z(), u0, v1, packedColor, light);
+        vertexBuilder.vulkanMod$vertex2(vector3fs[0].x(), vector3fs[0].y(), vector3fs[0].z(), packedColor, u1, v1, light);
+        vertexBuilder.vulkanMod$vertex2(vector3fs[1].x(), vector3fs[1].y(), vector3fs[1].z(), packedColor, u1, v0, light);
+        vertexBuilder.vulkanMod$vertex2(vector3fs[2].x(), vector3fs[2].y(), vector3fs[2].z(), packedColor, u0, v0, light);
+        vertexBuilder.vulkanMod$vertex2(vector3fs[3].x(), vector3fs[3].y(), vector3fs[3].z(), packedColor, u0, v1, light);
     }
 
     protected int getLightColor(float f) {

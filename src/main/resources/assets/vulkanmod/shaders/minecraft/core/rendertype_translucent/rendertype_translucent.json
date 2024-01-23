@@ -10,8 +10,7 @@
         "Position",
         "Color",
         "UV0",
-        "UV2",
-        "Normal"
+        "UV2"
     ],
     "samplers": [
         { "name": "Sampler0" },
