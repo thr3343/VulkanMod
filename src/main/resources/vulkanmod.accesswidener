@@ -12,3 +12,8 @@ accessible class net/minecraft/client/renderer/OutlineBufferSource$EntityOutline
 #1.20
 accessible field com/mojang/blaze3d/systems/RenderSystem vertexSorting Lcom/mojang/blaze3d/vertex/VertexSorting;
 accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
+
+accessible field net/minecraft/client/particle/Particle gCol F
+accessible field net/minecraft/client/particle/Particle rCol F
+accessible field net/minecraft/client/particle/Particle bCol F
+accessible field net/minecraft/client/particle/Particle alpha F

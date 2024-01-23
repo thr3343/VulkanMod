@@ -24,6 +24,7 @@ public abstract class SingleQuadParticleM extends Particle {
 
     @Shadow protected float quadSize;
 
+
     @Shadow protected abstract float getU0();
     @Shadow protected abstract float getU1();
     @Shadow protected abstract float getV0();
@@ -122,22 +123,15 @@ public abstract class SingleQuadParticleM extends Particle {
     @Mixin(ShriekParticle.class)
     public abstract static class ShriekParticleM
     {
-        /**
-         * @author
-         * @reason
-         */
-        @Overwrite
-        public void render(VertexConsumer vertexConsumer, Camera camera, float f) {
-
-        }
 
         /**
          * @author
          * @reason
          */
         @Overwrite
-        private void renderRotatedParticle(VertexConsumer vertexConsumer, Camera camera, float f, Consumer<Quaternionf> consumer) {
-
+        private void makeCornerVertex(VertexConsumer vertexConsumer, Vector3f vector3f, float f, float g, int i) {
+            int packedColor = ColorUtil.packColorIntRGBA(((Particle)(Object)this).rCol, ((Particle)(Object)this).gCol, ((Particle)(Object)this).bCol, ((Particle)(Object)this).alpha);
+            ((ExtendedVertexBuilder)vertexConsumer).vulkanMod$vertex2(vector3f.x(), vector3f.y(), vector3f.z(), packedColor, f, g, i);
         }
     }
 }
