@@ -99,6 +99,8 @@ public abstract class GameRendererMixin {
 
     @Shadow public abstract float getRenderDistance();
 
+    @Shadow private static @Nullable ShaderInstance rendertypeBreezeWindShader;
+
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
@@ -241,6 +243,10 @@ public abstract class GameRendererMixin {
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_glint_direct", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
                 rendertypeEntityGlintDirectShader = shaderInstance;
+            }));
+
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP/*DefaultVertexFormat.NEW_ENTITY*/), (shaderInstance) -> {
+                rendertypeBreezeWindShader = shaderInstance;
             }));
 
             //Text
