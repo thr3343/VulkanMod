@@ -87,7 +87,7 @@ public abstract class PipelineManager {
     public static void releasePipeline(String name) {
         if(postEffectPipelines.containsKey(name))
         {
-            postEffectPipelines.remove(name).cleanUp();
+//            postEffectPipelines.remove(name).scheduleCleanUp();
         }
         if(postEffectPipelines.isEmpty())
         {
