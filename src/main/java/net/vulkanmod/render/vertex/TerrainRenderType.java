@@ -62,4 +62,8 @@ public enum TerrainRenderType {
             default -> TRANSLUCENT;
         };
     }
+
+    public int bitMask() {
+        return 1 << this.ordinal();
+    }
 }

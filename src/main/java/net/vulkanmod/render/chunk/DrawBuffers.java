@@ -40,7 +40,7 @@ public class DrawBuffers {
         COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
         COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
     }
-    private int updateIndex=-1;
+    private int updateIndex;
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -88,7 +88,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        updateIndex=renderType.ordinal();
+        updateIndex |= renderType.bitMask();
 
         buffer.release();
 
@@ -131,13 +131,14 @@ public class DrawBuffers {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
-            if(updateIndex==terrainRenderType.ordinal() || drawCnts.get(terrainRenderType)!=queue.size())
+            if((updateIndex & terrainRenderType.bitMask()) !=0 || drawCnts.get(terrainRenderType)!=queue.size())
             {
                 updateIndirectCmds(queue, terrainRenderType, stack);
-                /*if(!baseOffsetEmpty)*/{
-                    drawCnts.put(terrainRenderType, queue.size());
-                    updateIndex=-1;
-                }
+
+                updateIndex ^= terrainRenderType.bitMask();
+
+                drawCnts.put(terrainRenderType, queue.size());
+
             }
 
 
