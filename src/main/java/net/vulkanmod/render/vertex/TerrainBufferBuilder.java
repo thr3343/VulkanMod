@@ -24,6 +24,8 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	private static final int GROWTH_SIZE = 2097152;
 	private static final Logger LOGGER = LogUtils.getLogger();
+	private static final float TRUNC_OFFSET = Float.floatToRawIntBits(0x38000000);
+	private static final float UNORM_CONV = 255f;
 
 	private ByteBuffer buffer;
 	private int renderedBufferCount;
@@ -562,10 +564,10 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			putFloat(0, x);
 			putFloat(4, y);
 			putFloat(8, z);
-			putByte(12, (byte)((int)(red * 255.0F)));
-			putByte(13, (byte)((int)(green * 255.0F)));
-			putByte(14, (byte)((int)(blue * 255.0F)));
-			putByte(15, (byte)((int)(alpha * 255.0F)));
+			putByte(12, (byte)((int)(red * UNORM_CONV)));
+			putByte(13, (byte)((int)(green * UNORM_CONV)));
+			putByte(14, (byte)((int)(blue * UNORM_CONV)));
+			putByte(15, (byte)((int)(alpha * UNORM_CONV)));
 			putFloat(16, u);
 			putFloat(20, v);
 			byte i;
@@ -586,9 +588,6 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
 			long ptr = bufferPtr + nextElementByte;
 
-			short sX = (short) (x * POS_CONV + 0.1f);
-			short sY = (short) (y * POS_CONV + 0.1f);
-			short sZ = (short) (z * POS_CONV + 0.1f);
 
 			//		short sX = (short) (x * 1.0001f * POS_CONV + 0.1f);
 			//		short sY = (short) (y * 1.0001f * POS_CONV + 0.1f);
@@ -605,9 +604,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			//		if(x1 != sX || y1 != sY || z1 != sZ)
 			//			System.nanoTime();
 
-			MemoryUtil.memPutShort(ptr + 0, sX);
-			MemoryUtil.memPutShort(ptr + 2, sY);
-			MemoryUtil.memPutShort(ptr + 4, sZ);
+			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* UNORM_CONV)+ TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* UNORM_CONV)+ TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* UNORM_CONV)+ TRUNC_OFFSET));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
@@ -619,6 +618,13 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 			nextElementByte += 20;
 			endVertex();
+		}
+		//Convert Floats to IEEE-754 FP16 "Half" Format
+		static short FP32to16(float v)
+		{
+            //Cheated and used Clang assembly output to optimise
+			return (short) ((Float.floatToRawIntBits(v) >> 13) & 32767 ^ 16384);
+
 		}
 	}
 }
