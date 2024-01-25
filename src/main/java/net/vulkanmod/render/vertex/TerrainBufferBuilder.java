@@ -26,6 +26,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	private static final Logger LOGGER = LogUtils.getLogger();
 	private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38000000);
 	private static final float UNORM_CONV = 255f;
+	private static final float FP16_MAX_EXPONENT = 1023f;
 
 	private ByteBuffer buffer;
 	private int renderedBufferCount;
@@ -604,9 +605,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			//		if(x1 != sX || y1 != sY || z1 != sZ)
 			//			System.nanoTime();
 
-			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* UNORM_CONV)+ TRUNC_OFFSET));
-			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* UNORM_CONV)+ TRUNC_OFFSET));
-			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* UNORM_CONV)+ TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* FP16_MAX_EXPONENT)+ TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* FP16_MAX_EXPONENT)+ TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)+ TRUNC_OFFSET));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
