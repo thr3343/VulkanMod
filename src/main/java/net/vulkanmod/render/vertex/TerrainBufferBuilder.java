@@ -24,7 +24,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	private static final int GROWTH_SIZE = 2097152;
 	private static final Logger LOGGER = LogUtils.getLogger();
-	private static final float TRUNC_OFFSET = Float.floatToRawIntBits(0x38000000);
+	private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38000000);
 	private static final float UNORM_CONV = 255f;
 
 	private ByteBuffer buffer;
