@@ -631,12 +631,12 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		}
 		//This Rounds to Zero (RTZ) which is not the IEEE-759 default (Nearest, Ties to Even)
 		static float FP16to32(short v) {
-			int exp = v >>10;
-			final int sig = v & 0x03ff;
-
-			final int FP32Exp = (exp + 112) << 23;
-			final int FP32Sig = sig << 13;
-			return Float.intBitsToFloat((FP32Exp | FP32Sig))*FP16_MAX_EXPONENT_INV;
+//			int exp = v >>10;
+//			final int sig = v & 0x03ff;
+//
+//			final int FP32Exp = (exp + 112) << 23;
+//			final int FP32Sig = sig << 13;
+			return Float.intBitsToFloat((v << 13) + 939524096)*FP16_MAX_EXPONENT_INV;
 		}
 	}
 }
