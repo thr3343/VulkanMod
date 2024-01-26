@@ -605,9 +605,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			//		if(x1 != sX || y1 != sY || z1 != sZ)
 			//			System.nanoTime();
 
-			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* FP16_MAX_EXPONENT)));
-			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* FP16_MAX_EXPONENT)));
-			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)));
+			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
+			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
