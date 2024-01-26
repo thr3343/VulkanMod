@@ -18,6 +18,9 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.function.IntConsumer;
 
+import static net.vulkanmod.render.vertex.TerrainBufferBuilder.CompressedVertexBuilder.FP16to32;
+
+
 public class TerrainBufferBuilder implements VertexConsumer {
 	protected static final float POS_CONV = 1900.0f;
 	protected static final float UV_CONV = 65536.0f;
@@ -27,6 +30,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38000000);
 	private static final float UNORM_CONV = 255f;
 	private static final float FP16_MAX_EXPONENT = 1024f;
+	private static final float FP16_MAX_EXPONENT_INV = 1f/1024f;
 
 	private ByteBuffer buffer;
 	private int renderedBufferCount;
@@ -175,24 +179,22 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
 			stride = this.format.getVertexSize() * this.mode.primitiveStride;
 			j = this.format.getVertexSize();
-			float invConv = 1.0f / POS_CONV;
+			float invConv = 1.0f / FP16_MAX_EXPONENT;
 			for(int m = 0; m < pointsNum; ++m) {
 				long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
 
-				short x1 = MemoryUtil.memGetShort(ptr + 0);
-				short y1 = MemoryUtil.memGetShort(ptr + 2);
-				short z1 = MemoryUtil.memGetShort(ptr + 4);
-//				short x2 = MemoryUtil.memGetShort(ptr + j * 2 + 0);
-//				short y2 = MemoryUtil.memGetShort(ptr + j * 2 + 2);
-//				short z2 = MemoryUtil.memGetShort(ptr + j * 2 + 4);
-				//Am I wrong?
-				short x2 = MemoryUtil.memGetShort(ptr + j * 3 + 0);
-				short y2 = MemoryUtil.memGetShort(ptr + j * 3 + 2);
-				short z2 = MemoryUtil.memGetShort(ptr + j * 3 + 4);
+				float x1 = FP16to32(MemoryUtil.memGetShort(ptr + 0));
+				float y1 = FP16to32(MemoryUtil.memGetShort(ptr + 2));
+				float z1 = FP16to32(MemoryUtil.memGetShort(ptr + 4));
 
-				float q = ((x1 * invConv) + (x2 * invConv)) * 0.5f;
-				float r = ((y1 * invConv) + (y2 * invConv)) * 0.5f;
-				float s = ((z1 * invConv) + (z2 * invConv)) * 0.5f;
+				//Am I wrong?
+				float x2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 0));
+				float y2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 2));
+				float z2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 4));
+
+				float q = ((x1) + (x2)) * 0.5f;
+				float r = ((y1) + (y2)) * 0.5f;
+				float s = ((z1) + (z2)) * 0.5f;
 				vector3fs[m] = new Vector3f(q, r, s);
 			}
 		} else {
@@ -626,6 +628,15 @@ public class TerrainBufferBuilder implements VertexConsumer {
             //Cheated and used Clang assembly output to optimise
 			return (short) ((Float.floatToRawIntBits(v) >> 13) & 32767 ^ 16384);
 
+		}
+		//This Rounds to Zero (RTZ) which is not the IEEE-759 default (Nearest, Ties to Even)
+		static float FP16to32(short v) {
+			int exp = v >>10;
+			final int sig = v & 0x03ff;
+
+			final int FP32Exp = (exp + 112) << 23;
+			final int FP32Sig = sig << 13;
+			return Float.intBitsToFloat((FP32Exp | FP32Sig))*FP16_MAX_EXPONENT_INV;
 		}
 	}
 }
