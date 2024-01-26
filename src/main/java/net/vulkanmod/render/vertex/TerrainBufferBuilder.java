@@ -636,7 +636,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 //
 //			final int FP32Exp = (exp + 112) << 23;
 //			final int FP32Sig = sig << 13;
-			return Float.intBitsToFloat((v << 13) + 939524096)*FP16_MAX_EXPONENT_INV;
+			return Float.intBitsToFloat((v << 13) + 0x38000000)*FP16_MAX_EXPONENT_INV;
 		}
 	}
 }
