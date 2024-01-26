@@ -614,8 +614,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
 
-			MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
-			MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
+			final int u1 = ((int) (u * UV_CONV));
+			final int v1 = ((int) (v * UV_CONV));
+			MemoryUtil.memPutInt(ptr + 12, u1 | v1 << 16);
 
 			MemoryUtil.memPutInt(ptr + 16, light);
 
@@ -629,7 +630,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			return (short) ((Float.floatToRawIntBits(v) >> 13) & 32767 ^ 16384);
 
 		}
-		//This Rounds to Zero (RTZ) which is not the IEEE-759 default (Nearest, Ties to Even)
+		//This Rounds to Zero (RZ) which is not the IEEE-759 default (Nearest, Ties to Even)
 		static float FP16to32(short v) {
 //			int exp = v >>10;
 //			final int sig = v & 0x03ff;
