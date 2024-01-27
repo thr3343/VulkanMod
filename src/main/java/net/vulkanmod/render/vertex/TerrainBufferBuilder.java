@@ -27,7 +27,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	private static final int GROWTH_SIZE = 2097152;
 	private static final Logger LOGGER = LogUtils.getLogger();
-	private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38000000);
+	private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38800000);
 	private static final float UNORM_CONV = 255f;
 	private static final float FP16_MAX_EXPONENT = 1024f;
 	private static final float FP16_MAX_EXPONENT_INV = 1f/1024f;
@@ -625,16 +625,18 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		}
 		//Convert Floats to IEEE-754 FP16 "Half" Format
 		//TODO: Fix precision issues w/ Fire+Waterlogged blocks on negative facing block sides
-		// (negative Axis only, specifc to (-x, +z), (-z,-x), (+x,-z), doesn't effect +x and +z)
+		// (negative Axis only, specific to (-x, +z), (-x,-z), (+x,-z), doesn't effect +x and +z)
 		static short FP32to16(float v)
 		{
 			//IF facing Negative Z or X -> -TRUNC_OFFSET
 			//IF facing Positive Z or X -> +TRUNC_OFFSET
-			
+
             //Cheated and used Clang assembly output to optimise
-			final int i = Float.floatToRawIntBits(v +TRUNC_OFFSET);//Fix Zero conversions
-			final int evens = i & 1; //Nearest, Ties to Even
-			return (short) ((i >> 13)+ evens & 32767 ^ 16384);
+
+            //TRUNC_OFFSET used to Fix Zero conversions
+            //final int evens = i & 1 & truncateToNearest; //Nearest, Ties to Even (unused round mode)
+
+			return (short) ((Float.floatToRawIntBits(v + TRUNC_OFFSET) >> 13) & 32767 ^ 16384);
 
 		}
 		//This Rounds to Zero (RZ) which is not the IEEE-759 default (Nearest, Ties to Even)
