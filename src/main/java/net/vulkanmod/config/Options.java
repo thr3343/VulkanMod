@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 import java.util.stream.IntStream;
 
@@ -163,9 +164,17 @@ public class Options {
                 new SwitchOption("RenderFog",
                         value -> {
                             config.renderFog = value;
+                            Renderer.getInstance().scheduleSpecConstantUpdate(SPIRVUtils.SpecConstant.USE_FOG);
                             Renderer.recomp=true;
                         },
                         () -> config.renderFog),
+                new SwitchOption("Vertex Compression",
+                        value -> {
+                            config.vertexCompression = value;
+                            Renderer.getInstance().scheduleSpecConstantUpdate(SPIRVUtils.SpecConstant.VERTEX_COMPRESSION);
+                            Renderer.recomp=true;
+                        },
+                        () -> config.vertexCompression),
                 new CyclingOption<>("Mipmap Levels",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> Component.nullToEmpty(value.toString()),

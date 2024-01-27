@@ -34,6 +34,7 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
     public boolean renderFog = false;
+    public boolean vertexCompression = false;
 
     public static Config load(Path path) {
         Config config;

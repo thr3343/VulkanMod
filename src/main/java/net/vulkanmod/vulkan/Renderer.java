@@ -9,6 +9,7 @@ import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -29,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -65,6 +67,7 @@ public class Renderer {
     public static int getCurrentImage() { return imageIndex; }
 
     private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final EnumSet<SPIRVUtils.SpecConstant> specConstantUpdate = EnumSet.noneOf(SPIRVUtils.SpecConstant.class);
 
     private Drawer drawer;
 
@@ -90,6 +93,10 @@ public class Renderer {
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
         addOnResizeCallback(Queue::trimCmdPools);
+    }
+
+    public void scheduleSpecConstantUpdate(SPIRVUtils.SpecConstant specConstant) {
+        specConstantUpdate.add(specConstant);
     }
 
     private void init() {
@@ -205,10 +212,22 @@ public class Renderer {
         }
 
 
-        if(recomp)
+        if(!specConstantUpdate.isEmpty())
         {
             waitIdle();
-            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            if(specConstantUpdate.contains(SPIRVUtils.SpecConstant.VERTEX_COMPRESSION))
+            {
+//                resetDescriptors();
+                WorldRenderer.getInstance().getTaskDispatcher().stopThreads();
+                PipelineManager.reloadVertexFormat();
+
+            }
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstants(specConstantUpdate));
+            if(specConstantUpdate.contains(SPIRVUtils.SpecConstant.VERTEX_COMPRESSION))
+            {
+                WorldRenderer.getInstance().allChanged();
+            }
+            specConstantUpdate.clear();
             recomp=false;
         }
 

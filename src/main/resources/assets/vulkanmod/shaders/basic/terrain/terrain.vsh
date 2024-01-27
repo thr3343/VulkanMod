@@ -3,6 +3,7 @@
 
 
 layout (constant_id = 0) const bool USE_FOG = true;
+layout (constant_id = 5) const bool VERTEX_COMPRESSION = false;
 #include "light.glsl"
 
 layout(binding = 0) uniform UniformBufferObject {
@@ -33,7 +34,7 @@ const vec3 FP16_MAX_EXPONENT = vec3(1.0/1024.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 16, 8), 0, 8);
-    const vec3 pos = fma(Position, FP16_MAX_EXPONENT, baseOffset);
+    const vec3 pos = VERTEX_COMPRESSION ? fma(Position, FP16_MAX_EXPONENT, baseOffset) : Position + baseOffset;
     const vec4 xyz = vec4(pos, 1);
     gl_Position = MVP * xyz;
     vertexDistance = USE_FOG ? length((ModelViewMat * xyz).xyz) : 0.0f; //Optimised out by Driver

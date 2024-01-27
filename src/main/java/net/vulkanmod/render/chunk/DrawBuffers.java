@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -23,11 +22,10 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
-    private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
     private final int index;
     private final Vector3i origin;
-    private final int minHeight;
+    private final short minHeight;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
@@ -47,12 +45,12 @@ public class DrawBuffers {
 
         this.index = index;
         this.origin = origin;
-        this.minHeight = minHeight;
+        this.minHeight = (short) minHeight;
     }
 
     public void allocateBuffers() {
         COMPACT_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
-        if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
+        if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, (Initializer.CONFIG.vertexCompression?20:24));
 
         this.allocated = true;
     }
@@ -65,7 +63,7 @@ public class DrawBuffers {
         if(!buffer.indexOnly) {
             this.getAreaBufferCheckedAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
+            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / (Initializer.CONFIG.vertexCompression?20:24);
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -96,7 +94,7 @@ public class DrawBuffers {
     }
     //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
     private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
-        return this.areaBufferTypes.computeIfAbsent(r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
+        return this.areaBufferTypes.computeIfAbsent(r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, (Initializer.CONFIG.vertexCompression?20:24)) : this.vertexBuffer);
     }
     private AreaBuffer getAreaBuffer(TerrainRenderType r) {
         return this.areaBufferTypes.get(r);
@@ -201,8 +199,8 @@ public class DrawBuffers {
     }
 
     public void releaseBuffers() {
-        if(!this.allocated)
-            return;
+//        if(!this.allocated)
+//            return;
 
         if(this.vertexBuffer==null) {
             this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);

@@ -12,9 +12,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static net.vulkanmod.vulkan.shader.PipelineState.DEFAULT_COLORMASK;
@@ -389,16 +387,14 @@ public class GraphicsPipeline extends Pipeline {
     // SpecConstants can be set to be unique per Pipeline
     // but that would involve adding boilerplate to PipelineState
     // So to simplify the code, SpecConstants are limited to "Static Global State" rn
-    public void updateSpecConstant(SPIRVUtils.SpecConstant specConstant)
+    public void updateSpecConstants(EnumSet<SPIRVUtils.SpecConstant> specConstant)
     {
-
-        if(this.specConstants.contains(specConstant))
+        //Just assume all SpecConstants are updated, has no perf ramifications afaik + simplifies code handling
+        if(specConstant.stream().anyMatch(this.specConstants::contains))
         {
-            if(graphicsPipelines.size()>1)
-            {
-                graphicsPipelines.values().forEach(pipeline -> vkDestroyPipeline(DeviceManager.device, pipeline, null));
-                graphicsPipelines.clear();
-            }
+//            if(graphicsPipelines.size()>1)
+            graphicsPipelines.values().forEach(pipeline -> vkDestroyPipeline(DeviceManager.device, pipeline, null));
+            graphicsPipelines.clear();
             this.graphicsPipelines.put(this.state, this.createGraphicsPipeline(this.state));
         }
 //        PIPELINES.remove(this);
