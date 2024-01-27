@@ -606,10 +606,13 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			//
 			//		if(x1 != sX || y1 != sY || z1 != sZ)
 			//			System.nanoTime();
-
-			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
-			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
-			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)+TRUNC_OFFSET));
+			if(x== 0.000000029802322f)
+			{
+				x=TRUNC_OFFSET;//return (short) Float.floatToRawIntBits(15f);
+			}
+			MemoryUtil.memPutShort(ptr + 0, FP32to16((x)));
+			MemoryUtil.memPutShort(ptr + 2, FP32to16((y)));
+			MemoryUtil.memPutShort(ptr + 4, FP32to16((z)));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
@@ -624,10 +627,18 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			endVertex();
 		}
 		//Convert Floats to IEEE-754 FP16 "Half" Format
+		//TODO: add rounding to fix Fire texture on Negative facing Block sides
 		static short FP32to16(float v)
 		{
+
+			if(v== 0.000000029802322f)
+			{
+				v=TRUNC_OFFSET;//return (short) Float.floatToRawIntBits(15f);
+			}
             //Cheated and used Clang assembly output to optimise
-			return (short) ((Float.floatToRawIntBits(v) >> 13) & 32767 ^ 16384);
+			final int i = Float.floatToRawIntBits(v);
+			final int i1 = (i & 1)==1?0:1;
+			return (short) ((i >> 13) & 32767 ^ 16384);
 
 		}
 		//This Rounds to Zero (RZ) which is not the IEEE-759 default (Nearest, Ties to Even)
