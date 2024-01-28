@@ -27,6 +27,11 @@ public abstract class VRenderSystem {
 
     public static boolean cull = true;
     private static boolean canApplyClear = false;
+
+    public static boolean logicOp = false;
+    public static int logicOpFun = 0;
+
+
     public static final float clearDepth = 1.0f;
     private static final float[] checkedClearColor = new float[4];
 
@@ -55,8 +60,21 @@ public abstract class VRenderSystem {
 
         Vulkan.initVulkan(window);
     }
+    public static MappedBuffer getScreenSize() {
+        updateScreenSize();
+        return screenSize;
+    }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
+    public static void updateScreenSize() {
+        Window window = Minecraft.getInstance().getWindow();
+
+        screenSize.putFloat(0, (float)window.getWidth());
+        screenSize.putFloat(4, (float)window.getHeight());
+    }
+
+    public static void setWindow(long window) {
+        VRenderSystem.window = window;
+    }
 
     public static int maxSupportedTextureSize() {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();
@@ -127,18 +145,6 @@ public abstract class VRenderSystem {
         return shaderFogColor;
     }
 
-    public static void enableColorLogicOp() {
-        PipelineState.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
-    }
-
-    public static void disableColorLogicOp() {
-        PipelineState.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
-    }
-
-    public static void logicOp(GlStateManager.LogicOp p_69836_) {
-        PipelineState.currentLogicOpState.setLogicOp(p_69836_);
-    }
-
     public static void clearColor(float f0, float f1, float f2, float f3) {
         //set to true if different color
         if(!(canApplyClear = checkClearColor(f0, f1, f2, f3))) return;
@@ -160,16 +166,14 @@ public abstract class VRenderSystem {
         canApplyClear=false;
     }
 
+    // Pipeline state
+
     public static void disableDepthTest() {
         depthTest = false;
     }
 
     public static void depthMask(boolean b) {
         depthMask = b;
-    }
-
-    public static PipelineState.DepthState getDepthState() {
-        return new PipelineState.DepthState(depthTest, depthMask, depthFun);
     }
 
     public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {
@@ -183,42 +187,13 @@ public abstract class VRenderSystem {
     public static void enableDepthTest() {
         depthTest = true;
     }
-    
+
     public static void enableCull() {
         cull = true;
     }
-    
+
     public static void disableCull() {
         cull = false;
-    }
-
-    public static void polygonOffset(float v, float v1) {
-        depthBias[0] = v;
-        depthBias[1] = v1;
-    }
-
-    public static void enablePolygonOffset() {
-        Renderer.setDepthBias(depthBias[0], depthBias[1]);
-    }
-
-    public static void disablePolygonOffset() {
-        Renderer.setDepthBias(0.0F, 0.0F);
-    }
-
-    public static MappedBuffer getScreenSize() {
-        updateScreenSize();
-        return screenSize;
-    }
-
-    public static void updateScreenSize() {
-        Window window = Minecraft.getInstance().getWindow();
-
-        screenSize.putFloat(0, (float)window.getWidth());
-        screenSize.putFloat(4, (float)window.getHeight());
-    }
-    
-    public static void setWindow(long window) {
-        VRenderSystem.window = window;
     }
 
     public static void depthFunc(int depthFun) {
@@ -248,4 +223,30 @@ public abstract class VRenderSystem {
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
         PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
+
+    public static void enableColorLogicOp() {
+        logicOp = true;
+    }
+
+    public static void disableColorLogicOp() {
+        logicOp = false;
+    }
+
+    public static void logicOp(GlStateManager.LogicOp logicOp) {
+        logicOpFun = logicOp.value;
+    }
+
+    public static void polygonOffset(float v, float v1) {
+        depthBias[0] = v;
+        depthBias[1] = v1;
+    }
+
+    public static void enablePolygonOffset() {
+        Renderer.setDepthBias(depthBias[0], depthBias[1]);
+    }
+
+    public static void disablePolygonOffset() {
+        Renderer.setDepthBias(0.0F, 0.0F);
+    }
+
 }
