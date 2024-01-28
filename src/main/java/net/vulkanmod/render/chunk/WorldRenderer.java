@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -574,25 +573,27 @@ public class WorldRenderer {
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
 
-            final long layout = terrainShader.getLayout();
-
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
-                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
+                var queue = chunkArea.sectionQueue().get(terrainRenderType);
+                DrawBuffers drawBuffers = chunkArea.getDrawBuffers();
 
-                if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
-                    chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
-                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
+
+                if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() != 0) {
+                    drawBuffers.bindBuffers(commandBuffer, terrainShader, terrainRenderType, camX, camY, camZ);
+                    if (indirectDraw) drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
+                    else drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
                 }
 
             }
 
            if(indirectDraw)
            {
-               int i = currentFrame & 0x1; //isOdd Or Even
-               DrawBuffers.indirectBuffers2[0].get(terrainRenderType).copyAll(i == 0);
-               DrawBuffers.indirectBuffers2[1].get(terrainRenderType).copyAll(i == 1);
+               int i=0;// = currentFrame & 0x1; //isOdd Or Even
+
+               for (var a : DrawBuffers.indirectBuffers2) {
+                   a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
+               }
            }
         }
 

@@ -128,8 +128,7 @@ public class SPIRVUtils {
         ALPHA_CUTOUT,
         MAX_OFFSET_COUNT,
         COMPUTE_SIZE_Y,
-        COMPUTE_SIZE_X,
-        VERTEX_COMPRESSION;
+        COMPUTE_SIZE_X;
 
         //Ordinals are used to provide the Constant_ID for VkSpecializationMapEntry
 
@@ -143,7 +142,6 @@ public class SPIRVUtils {
                 case ALPHA_CUTOUT -> Float.floatToRawIntBits(VRenderSystem.alphaCutout);
                 case MAX_OFFSET_COUNT -> 512;
                 case COMPUTE_SIZE_Y, COMPUTE_SIZE_X -> 32;
-                case VERTEX_COMPRESSION -> Initializer.CONFIG.vertexCompression ? 1 : 0;
             };
         }
     }

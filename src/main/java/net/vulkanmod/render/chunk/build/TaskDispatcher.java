@@ -13,8 +13,6 @@ import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Queue;
 
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
-
 public class TaskDispatcher {
     private int highPriorityQuota = 2;
 
@@ -107,8 +105,7 @@ public class TaskDispatcher {
     public void stopThreads() {
         if(this.stopThreads)
             return;
-        this.uploadAllPendingUploads();
-        AreaUploadManager.INSTANCE.waitAllUploads();
+
         this.stopThreads = true;
 
         synchronized (this) {

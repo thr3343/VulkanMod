@@ -6,7 +6,6 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.LogUtils;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.util.SortUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -62,7 +61,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		this.buffer = MemoryTracker.create(i * 6);
 		this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
 
-		this.vertexBuilder = Initializer.CONFIG.vertexCompression ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
+		this.vertexBuilder = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
 	}
 
 	private void ensureVertexCapacity() {
@@ -177,7 +176,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		int pointsNum = this.vertices / this.mode.primitiveStride;
 		Vector3f[] vector3fs = new Vector3f[pointsNum];
 
-		if (this.format.hashCode() == CustomVertexFormat.COMPRESSED_TERRAIN.hashCode()) {
+		if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
 			stride = this.format.getVertexSize() * this.mode.primitiveStride;
 			j = this.format.getVertexSize();
 			float invConv = 1.0f / FP16_MAX_EXPONENT;
@@ -565,22 +564,24 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	class DefaultVertexBuilder implements VertexBuilder {
 
 		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
-			long ptr = bufferPtr + nextElementByte;
+			putFloat(0, x);
+			putFloat(4, y);
+			putFloat(8, z);
+			putByte(12, (byte)((int)(red * UNORM_CONV)));
+			putByte(13, (byte)((int)(green * UNORM_CONV)));
+			putByte(14, (byte)((int)(blue * UNORM_CONV)));
+			putByte(15, (byte)((int)(alpha * UNORM_CONV)));
+			putFloat(16, u);
+			putFloat(20, v);
+			byte i;
+			i = 24;
 
-			MemoryUtil.memPutFloat(ptr + 0, x);
-			MemoryUtil.memPutFloat(ptr + 4, y);
-			MemoryUtil.memPutFloat(ptr + 8, z);
-
-			int temp = VertexUtil.packColor(red, green, blue, alpha);
-			MemoryUtil.memPutInt(ptr + 12, temp);
-
-			final int u1 = ((int) (u * UV_CONV));
-			final int v1 = ((int) (v * UV_CONV));
-			MemoryUtil.memPutInt(ptr + 16, u1 | v1 << 16);
-
-			MemoryUtil.memPutInt(ptr + 20, light);
-
-			nextElementByte += 24;
+			putShort(i, (short)(light & '\uffff'));
+			putShort(i + 2, (short)(light >> 16 & '\uffff'));
+			putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
+			putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
+			putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
+			nextElementByte += i + 8;
 			endVertex();
 		}
 	}

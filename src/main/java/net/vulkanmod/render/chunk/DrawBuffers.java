@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -8,6 +9,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
@@ -15,6 +17,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.EnumMap;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
@@ -22,6 +25,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
+    private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
     private final int index;
     private final Vector3i origin;
@@ -29,14 +33,19 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
-    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[]{new EnumMap<>(TerrainRenderType.class), new EnumMap<>(TerrainRenderType.class)};
+    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[2];
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
-    static
-    {
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[0].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
-        COMPACT_RENDER_TYPES.forEach(renderType -> indirectBuffers2[1].put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128)));
+    static {
+
+        Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
+
+        for (TerrainRenderType renderType : COMPACT_RENDER_TYPES) {
+            for (var bufferEnumMap : indirectBuffers2) {
+                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
+            }
+        }
     }
     private int updateIndex;
 
@@ -50,7 +59,9 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         COMPACT_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
-        if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, (Initializer.CONFIG.vertexCompression?20:24));
+
+        if(!Initializer.CONFIG.perRenderTypeAreaBuffers)
+            vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
     }
@@ -61,9 +72,9 @@ public class DrawBuffers {
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
-            this.getAreaBufferCheckedAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+            this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / (Initializer.CONFIG.vertexCompression?20:24);
+            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -79,9 +90,6 @@ public class DrawBuffers {
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
         }
 
-//        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
-//                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
-
         drawParameters.indexCount = buffer.indexCount;
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
@@ -89,14 +97,16 @@ public class DrawBuffers {
         updateIndex |= renderType.bitMask();
 
         buffer.release();
-
-
     }
+
     //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
-    private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
-        return this.areaBufferTypes.computeIfAbsent(r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, (Initializer.CONFIG.vertexCompression?20:24)) : this.vertexBuffer);
+
+    private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType r) {
+        return this.areaBufferTypes.computeIfAbsent(
+                r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
     }
-    private AreaBuffer getAreaBuffer(TerrainRenderType r) {
+
+    AreaBuffer getAreaBuffer(TerrainRenderType r) {
         return this.areaBufferTypes.get(r);
     }
 
@@ -111,11 +121,10 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout, FloatBuffer mPtr) {
-
-            float x = (float)(camX-(this.origin.x));
-            float y = (float)(camY-(this.origin.y));
-            float z = (float)(camZ-(this.origin.z));
+    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, FloatBuffer mPtr) {
+            float x = (float)(camX - (this.origin.x));
+            float y = (float)(camY - (this.origin.y));
+            float z = (float)(camZ - (this.origin.z));
 
             Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer().asFloatBuffer());
             Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer().asFloatBuffer());
@@ -123,7 +132,7 @@ public class DrawBuffers {
             MVP.translate(-x, -y, -z).get(mPtr);
             MV.translate(-x, -y, -z).get(16,mPtr);
 
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
+            vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
@@ -170,8 +179,9 @@ public class DrawBuffers {
         }
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer2(size, bufferPtr);
-        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
-        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
+        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : indirectBuffers2) {
+            bufferEnumMap.get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
+        }
     }
 
     public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
@@ -185,11 +195,11 @@ public class DrawBuffers {
         }
     }
 
-    void bindBuffers(TerrainRenderType terrainRenderType, VkCommandBuffer commandBuffer, double camX, double camY, double camZ, long layout) {
+    void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack.mallocFloat(32));
         }
 
         if(terrainRenderType == TRANSLUCENT) {
@@ -199,15 +209,18 @@ public class DrawBuffers {
     }
 
     public void releaseBuffers() {
-//        if(!this.allocated)
-//            return;
+        if(!this.allocated)
+            return;
 
-        if(this.vertexBuffer==null) {
+        if(this.vertexBuffer == null) {
             this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
         }
-        else this.vertexBuffer.freeBuffer();
+        else
+            this.vertexBuffer.freeBuffer();
+
         this.areaBufferTypes.clear();
-        if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
+        if(this.indexBuffer != null)
+            this.indexBuffer.freeBuffer();
 
         for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : indirectBuffers2) {
             for (ArenaBuffer a : bufferEnumMap.values()) {
