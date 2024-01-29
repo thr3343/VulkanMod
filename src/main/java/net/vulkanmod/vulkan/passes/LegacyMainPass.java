@@ -18,7 +18,7 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        if(!Renderer.useMode)
+        if(!Renderer.useMode) //DefaultMainPass mode
         {
             SwapChain swapChain = Vulkan.getSwapChain();
             swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
@@ -36,7 +36,7 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void mainTargetBindWrite(boolean bl) {
-        if(Renderer.useMode) {
+        if(Renderer.useMode) { //LegacyMainPass mode
             RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
             mainTarget.bindWrite(bl);
         }
@@ -44,7 +44,7 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void mainTargetUnbindWrite() {
-        if(Renderer.useMode)
+        if(Renderer.useMode) //LegacyMainPass mode
         {
             RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
             mainTarget.unbindWrite();
@@ -53,7 +53,7 @@ public class LegacyMainPass implements MainPass {
 
     @Override
     public void end(VkCommandBuffer commandBuffer) {
-        if(Renderer.useMode) {
+        if(Renderer.useMode) { //LegacyMainPass mode
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 Renderer.getInstance().endRenderPass(commandBuffer);
 
