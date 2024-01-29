@@ -25,7 +25,7 @@ public class Config {
     public int device = -1;
     public boolean animations = false;
     public boolean renderSky = false;
-
+    public boolean renderFog = false;
 
     private static Path path;
 
@@ -33,7 +33,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
-    public boolean renderFog = false;
+
 
     public static Config load(Path path) {
         Config config;

@@ -40,8 +40,9 @@ public class Initializer implements ClientModInitializer {
 		Config config = Config.load(path);
 		if(config == null) {
 			config = new Config();
-			config.write();
+
 		}
+		config.write();
 		return config;
 	}
 
