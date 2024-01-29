@@ -555,7 +555,6 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -581,23 +580,19 @@ public class WorldRenderer {
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() != 0) {
                     drawBuffers.bindBuffers(commandBuffer, terrainShader, terrainRenderType, camX, camY, camZ);
-                    if (indirectDraw) drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
-                    else drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
+                    drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
                 }
 
             }
 
-           if(indirectDraw)
-           {
-               int i=0;// = currentFrame & 0x1; //isOdd Or Even
+            int i = 0;// = currentFrame & 0x1; //isOdd Or Even
 
-               for (var a : DrawBuffers.indirectBuffers2) {
-                   a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
-               }
-           }
+            for (var a : DrawBuffers.indirectBuffers2) {
+                a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
+            }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+        if((terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
