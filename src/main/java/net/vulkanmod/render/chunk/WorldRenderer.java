@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -556,7 +555,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 

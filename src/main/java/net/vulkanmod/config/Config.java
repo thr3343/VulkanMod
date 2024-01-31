@@ -17,7 +17,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
-    public boolean indirectDraw = true;
+    public boolean drawIndirect = true;
 
     public boolean perRenderTypeAreaBuffers = false;
     public boolean uniqueOpaqueLayer = true;
@@ -25,6 +25,7 @@ public class Config {
     public int device = -1;
     public boolean animations = false;
     public boolean renderSky = false;
+    public boolean renderFog = false;
 
 
     private static Path path;
@@ -33,7 +34,6 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
-    public boolean renderFog = false;
 
     public static Config load(Path path) {
         Config config;
