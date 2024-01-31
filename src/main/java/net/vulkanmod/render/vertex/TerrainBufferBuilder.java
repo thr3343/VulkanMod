@@ -183,14 +183,14 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			for(int m = 0; m < pointsNum; ++m) {
 				long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
 
-				float x1 = FP16to32(MemoryUtil.memGetShort(ptr + 0));
-				float y1 = FP16to32(MemoryUtil.memGetShort(ptr + 2));
-				float z1 = FP16to32(MemoryUtil.memGetShort(ptr + 4));
+				float x1 = (MemoryUtil.memGetShort(ptr + 0)*FP16_MAX_EXPONENT_INV);
+				float y1 = (MemoryUtil.memGetShort(ptr + 2)*FP16_MAX_EXPONENT_INV);
+				float z1 = (MemoryUtil.memGetShort(ptr + 4)*FP16_MAX_EXPONENT_INV);
 
 				//Am I wrong?
-				float x2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 0));
-				float y2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 2));
-				float z2 = FP16to32(MemoryUtil.memGetShort(ptr + j * 3 + 4));
+				float x2 = (MemoryUtil.memGetShort(ptr + j * 3 + 0)*FP16_MAX_EXPONENT_INV);
+				float y2 = (MemoryUtil.memGetShort(ptr + j * 3 + 2)*FP16_MAX_EXPONENT_INV);
+				float z2 = (MemoryUtil.memGetShort(ptr + j * 3 + 4)*FP16_MAX_EXPONENT_INV);
 
 				float q = ((x1) + (x2)) * 0.5f;
 				float r = ((y1) + (y2)) * 0.5f;
@@ -607,9 +607,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			//		if(x1 != sX || y1 != sY || z1 != sZ)
 			//			System.nanoTime();
 
-			MemoryUtil.memPutShort(ptr + 0, FP32to16((x* FP16_MAX_EXPONENT)));
-			MemoryUtil.memPutShort(ptr + 2, FP32to16((y* FP16_MAX_EXPONENT)));
-			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)));
+			MemoryUtil.memPutShort(ptr + 0, (short) ((x* FP16_MAX_EXPONENT)));
+			MemoryUtil.memPutShort(ptr + 2, (short) ((y* FP16_MAX_EXPONENT)));
+			MemoryUtil.memPutShort(ptr + 4, (short) ((z* FP16_MAX_EXPONENT)));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
