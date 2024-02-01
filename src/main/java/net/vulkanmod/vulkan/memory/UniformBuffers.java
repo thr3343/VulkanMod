@@ -17,7 +17,7 @@ public class UniformBuffers {
     private int bufferSize;
     private int usedBytes;
 
-    private List<UniformBuffer> uniformBuffers;
+    public List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) DeviceManager.deviceProperties.limits().minUniformBufferOffsetAlignment();
     private final int framesSize = Renderer.getFramesNum();

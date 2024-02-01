@@ -12,7 +12,7 @@ public abstract class Buffer {
 
     protected final MemoryType type;
     protected final int usage;
-    protected PointerBuffer data;
+    public PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
