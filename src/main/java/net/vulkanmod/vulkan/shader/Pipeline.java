@@ -214,7 +214,6 @@ public abstract class Pipeline {
     }
 
     protected class DescriptorSets {
-        private final int baseOffset;
         private int poolSize = 10;
         private long descriptorPool;
         private LongBuffer sets;
@@ -227,17 +226,6 @@ public abstract class Pipeline {
         private final IntBuffer dynamicOffsets = MemoryUtil.memAllocInt(buffers.size());
 
         DescriptorSets(int frame) {
-            this.baseOffset= Renderer.getDrawer().getUniformBuffers().getUsedBytes();
-
-            int totalUBOSize=0;
-           for(UBO ubo : buffers) {
-
-                totalUBOSize += (ubo.getSize());
-            }
-            Renderer.getDrawer().getUniformBuffers().updateOffset( UniformBuffers.getAlignedSize(totalUBOSize));
-
-
-
             this.frame = frame;
 
             Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
@@ -253,7 +241,7 @@ public abstract class Pipeline {
 
                 this.updateUniforms(uniformBuffers);
 
-                if(!this.transitionSamplers(uniformBuffers) | (this.currentIdx == -1 && this.uniformBufferId == uniformBuffers.getId(frame))) {
+                if(!this.transitionSamplers(uniformBuffers)) {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
@@ -263,25 +251,24 @@ public abstract class Pipeline {
         }
 
         private void updateUniforms(UniformBuffers uniformBuffers) {
-
-            int uboOffset = 0;
+            int currentOffset = uniformBuffers.getUsedBytes();
 
             int i = 0;
             for(UBO ubo : buffers) {
 //                ubo.update();
 //                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
 
-                final int i1 = this.baseOffset + uboOffset;
-                this.dynamicOffsets.put(i, i1);
+                this.dynamicOffsets.put(i, currentOffset);
 
                 //TODO non mappable memory
 
+                int alignedSize = UniformBuffers.getAlignedSize(ubo.getSize());
+                uniformBuffers.checkCapacity(alignedSize);
+                ubo.update(uniformBuffers.getPointer(frame));
 
-                uniformBuffers.checkCapacity(ubo.getSize());
-                ubo.update(uniformBuffers.uniformBuffers.get(frame).data.get(0) + i1);
+                uniformBuffers.updateOffset(alignedSize);
 
-
-                uboOffset +=  UniformBuffers.getAlignedSize(ubo.getSize());
+                currentOffset = uniformBuffers.getUsedBytes();
                 ++i;
             }
         }
