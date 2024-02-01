@@ -50,6 +50,7 @@ public class Renderer {
     public static boolean skipRendering, useMode = false;
 
     public static boolean effectActive,renderPassUpdate,hasCalled = false;
+    private long boundPipeline;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -328,7 +329,7 @@ public class Renderer {
         hasCalled=false;
         submitFrame();
         recordingCmds = false;
-
+        boundPipeline=0;
         p.pop();
     }
 
@@ -528,7 +529,7 @@ public class Renderer {
         this.onResizeCallbacks.add(runnable);
     }
 
-    public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
+    public boolean bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         //Debug
@@ -536,14 +537,19 @@ public class Renderer {
             LegacyMainPass.PASS.mainTargetBindWrite(true);
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
-
+        final long handle = pipeline.getHandle(currentState);
+        if(boundPipeline==handle) {
+            return false;
+        }
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
+        boundPipeline=handle;
         addUsedPipeline(pipeline);
+        return true;
     }
 
-    public void uploadAndBindUBOs(Pipeline pipeline) {
+    public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
     }
 
     public void pushConstants(Pipeline pipeline) {

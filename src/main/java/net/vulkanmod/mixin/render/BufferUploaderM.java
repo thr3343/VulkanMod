@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -41,8 +40,10 @@ public class BufferUploaderM {
         shaderInstance.apply();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline);
+        boolean x = renderer.bindGraphicsPipeline(pipeline);
+        {
+            renderer.uploadAndBindUBOs(pipeline, x);
+        }
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
 

@@ -38,7 +38,6 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -180,9 +179,9 @@ public class EffectInstanceM {
         this.blend.apply();
 
         Renderer renderer = Renderer.getInstance();
-
+        boolean shouldUpdate = false;
         if (this.pipeline != lastPipeline) {
-            renderer.bindGraphicsPipeline(pipeline);
+            shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
             lastPipeline = this.pipeline;
         }
 
@@ -203,7 +202,7 @@ public class EffectInstanceM {
             uniform.upload();
         }
 
-        renderer.uploadAndBindUBOs(pipeline);
+        renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
 
     }
 

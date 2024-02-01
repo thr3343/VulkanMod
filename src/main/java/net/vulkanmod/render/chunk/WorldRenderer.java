@@ -569,9 +569,11 @@ public class WorldRenderer {
 
 
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
-            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+            boolean shouldUpdate = (Renderer.getInstance().bindGraphicsPipeline(terrainShader));
+            {
+                Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+                terrainShader.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
+            }
 
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();

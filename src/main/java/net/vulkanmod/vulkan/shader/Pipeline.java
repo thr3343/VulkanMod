@@ -185,13 +185,13 @@ public abstract class Pipeline {
         return imageDescriptors;
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, boolean shouldUpdate) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame) {
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame, boolean shouldUpdate) {
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -236,15 +236,20 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean shouldUpdate) {
             try(MemoryStack stack = stackPush()) {
 
-                this.updateUniforms(uniformBuffers);
+                if(shouldUpdate) this.updateUniforms(uniformBuffers);
 
-                if(!this.transitionSamplers(uniformBuffers)) {
+                final boolean textureUpdate = !this.transitionSamplers(uniformBuffers);
+
+                if(textureUpdate) {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
+                if (!textureUpdate && !shouldUpdate) {
+                    return;
+                }
                 vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
                         0, stack.longs(currentSet), dynamicOffsets);
             }
@@ -326,8 +331,8 @@ public abstract class Pipeline {
                 long sampler = image.getSampler();
                 int layout = imageDescriptor.getLayout();
 
-//                if(imageDescriptor.isReadOnlyLayout)
-//                    image.readOnlyLayout();
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
 
                 imageInfo[j] = VkDescriptorImageInfo.calloc(1, stack);
                 imageInfo[j].imageLayout(layout);
