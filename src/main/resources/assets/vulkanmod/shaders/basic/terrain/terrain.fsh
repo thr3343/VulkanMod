@@ -10,7 +10,7 @@ layout(binding = 1) uniform UBO {
     float FogEnd;
 };
 
-
+//TODO: Organise all Vertex output/Fragment Input attributes by access order
 
 layout(location = 0) in float vertexDistance;
 layout(location = 1) in vec4 vertexColor;

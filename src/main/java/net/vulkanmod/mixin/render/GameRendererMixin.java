@@ -142,19 +142,21 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (shaderInstance) -> {
 //               positionTexLightmapColorShader = shaderInstance;
 //            }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            //Mostly only used for Falling Blocks atm
+            final ShaderInstance rendertypeSolid = new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK);
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeSolidShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutMippedShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
@@ -164,18 +166,18 @@ public abstract class GameRendererMixin {
                 rendertypeEntitySolidShader = shaderInstance;
             }));
             //No diff in these shaders
-            ShaderInstance entity_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+            ShaderInstance rendertype_entity_cutout_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
+            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
                 rendertypeEntityCutoutShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
                 rendertypeEntityCutoutNoCullShader = shaderInstance;
             }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_cutout_no_cull_z_offset", DefaultVertexFormat.POSITION_COLOR_TEX_OVERLAY_LIGHTMAP), (p_172654_) -> {
 //               rendertypeEntityCutoutNoCullZOffsetShader = p_172654_;
 //            }));
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
                 rendertypeEntityCutoutNoCullZOffsetShader = shaderInstance;
             }));
 
@@ -186,13 +188,13 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEntityTranslucentCullShader = shaderInstance;
             }));
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
                 rendertypeEntityTranslucentShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_translucent_emissive", DefaultVertexFormat.NEW_ENTITY), shader -> {
                 rendertypeEntityTranslucentEmissiveShader = shader;
             }));
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
                 rendertypeEntitySmoothCutoutShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_beacon_beam", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
@@ -207,7 +209,8 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_shadow", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEntityShadowShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_alpha", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            //Only used for EnderDragon death (//TODO: may crash)
+            list1.add(Pair.of(positionColorTex, (shaderInstance) -> {
                 rendertypeEntityAlphaShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
@@ -223,16 +226,17 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_water_mask", DefaultVertexFormat.POSITION), (shaderInstance) -> {
                 rendertypeWaterMaskShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_outline", DefaultVertexFormat.POSITION_COLOR_TEX), (shaderInstance) -> {
+            //TODO: might break Glowing Effect (Even thought its disabled currently due to RenderPass-related assignment issues (i.e. Worth using Imageless Framebuffers)
+            list1.add(Pair.of(positionColorTex, (shaderInstance) -> {
                 rendertypeOutlineShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            final ShaderInstance rendertypeGlintTranslucent = new ShaderInstance(provider, "rendertype_glint_translucent", DefaultVertexFormat.POSITION_TEX);
+            list1.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeArmorGlintShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_entity_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeArmorEntityGlintShader = shaderInstance;
             }));
-            final ShaderInstance rendertypeGlintTranslucent = new ShaderInstance(provider, "rendertype_glint_translucent", DefaultVertexFormat.POSITION_TEX);
             list1.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeGlintTranslucentShader = shaderInstance;
             }));
@@ -276,7 +280,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
                 rendertypeLightningShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTripwireShader = shaderInstance;
             }));
             ShaderInstance endPortalShader = new ShaderInstance(provider, "rendertype_end_portal", DefaultVertexFormat.POSITION);
@@ -289,6 +293,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lines", DefaultVertexFormat.POSITION_COLOR_NORMAL), (shaderInstance) -> {
                 rendertypeLinesShader = shaderInstance;
             }));
+            //TODO Replace w/ positionColorTex
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_crumbling", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
                 rendertypeCrumblingShader = shaderInstance;
             }));

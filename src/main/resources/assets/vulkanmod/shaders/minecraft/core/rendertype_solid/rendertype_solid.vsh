@@ -19,8 +19,7 @@ layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec3 normal;
-layout(location = 3) out vec2 texCoord0;
+layout(location = 2) out vec2 texCoord0;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
