@@ -17,7 +17,7 @@ layout(binding = 0) uniform UniformBufferObject {
 };
 
 layout(binding = 3) uniform sampler2D Sampler1;
-layout(binding = 4) uniform sampler2D Sampler2;
+//layout(binding = 4) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec4 overlayColor;

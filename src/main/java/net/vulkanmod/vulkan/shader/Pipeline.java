@@ -242,7 +242,7 @@ public abstract class Pipeline {
 
 
                 final boolean textureUpdate = !this.transitionSamplers(uniformBuffers);
-                if(shouldUpdate||textureUpdate) this.updateUniforms(uniformBuffers);
+                if(textureUpdate || shouldUpdate) this.updateUniforms(uniformBuffers);
 
                 if(textureUpdate) {
                     this.updateDescriptorSet(stack, uniformBuffers);

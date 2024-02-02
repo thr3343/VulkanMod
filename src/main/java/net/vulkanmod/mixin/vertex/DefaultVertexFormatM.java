@@ -23,9 +23,14 @@ public class DefaultVertexFormatM {
     @Shadow @Final @Mutable public static final VertexFormat PARTICLE;
 
 
+    @Shadow @Final @Mutable public static final VertexFormat POSITION_COLOR_TEX_LIGHTMAP;
+
+    @Shadow @Final public static VertexFormat POSITION_COLOR_TEX;
+    //TODO: HACK: Override VertexAttributes with custom Definitions/Overrides
     static {
         PARTICLE = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>().put("Position", ELEMENT_POSITION).put("Color", ELEMENT_COLOR).put("UV0", ELEMENT_UV0).put("UV2", ELEMENT_UV2).build());
         //BLOCK = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>().put("Position", ELEMENT_POSITION).put("Color", ELEMENT_COLOR).put("UV0", ELEMENT_UV0).put("UV2", ELEMENT_UV2).build());
+        POSITION_COLOR_TEX_LIGHTMAP = POSITION_COLOR_TEX;
     }
 
 }
