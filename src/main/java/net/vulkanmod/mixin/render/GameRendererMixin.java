@@ -88,7 +88,7 @@ public abstract class GameRendererMixin {
     @Shadow private static @Nullable ShaderInstance rendertypeGuiOverlayShader;
     @Shadow private static @Nullable ShaderInstance rendertypeGuiTextHighlightShader;
     @Shadow private static @Nullable ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
-
+    //TODO: use as base shaders for deduping...
     @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
@@ -159,42 +159,47 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            //TODO: HACK: use rendertype_entity_translucent_cull instead of rendertype_entity_cutout_no_cull
+            // (potentially more performant)
+            final ShaderInstance rendertypeEntityTranslucentCull = new ShaderInstance(provider, "rendertype_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY);
+
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeArmorCutoutNoCullShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_solid", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntitySolidShader = shaderInstance;
             }));
             //No diff in these shaders
-            ShaderInstance rendertype_entity_cutout_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
-            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
+//            ShaderInstance rendertype_entity_cutout_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
+
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntityCutoutShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntityCutoutNoCullShader = shaderInstance;
             }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_cutout_no_cull_z_offset", DefaultVertexFormat.POSITION_COLOR_TEX_OVERLAY_LIGHTMAP), (p_172654_) -> {
 //               rendertypeEntityCutoutNoCullZOffsetShader = p_172654_;
 //            }));
-            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntityCutoutNoCullZOffsetShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_item_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeItemEntityTranslucentCullShader = shaderInstance;
             }));
 //            final ShaderInstance rendertypeEntityTranslucent = new ShaderInstance(provider, "rendertype_entity_translucent", DefaultVertexFormat.NEW_ENTITY);
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntityTranslucentCullShader = shaderInstance;
             }));
-            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntityTranslucentShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_translucent_emissive", DefaultVertexFormat.NEW_ENTITY), shader -> {
                 rendertypeEntityTranslucentEmissiveShader = shader;
             }));
-            list1.add(Pair.of(rendertype_entity_cutout_no_cull, (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityTranslucentCull, (shaderInstance) -> {
                 rendertypeEntitySmoothCutoutShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_beacon_beam", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
