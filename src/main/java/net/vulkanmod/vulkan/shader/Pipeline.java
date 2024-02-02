@@ -238,20 +238,20 @@ public abstract class Pipeline {
 
         protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean shouldUpdate) {
             try(MemoryStack stack = stackPush()) {
+                //TODO: Skip Descriptor updates based on DescriptorSetLayout (via Externalised/Explicit DescriptorSet Wrapper Class)
 
-                if(shouldUpdate) this.updateUniforms(uniformBuffers);
 
                 final boolean textureUpdate = !this.transitionSamplers(uniformBuffers);
+                if(shouldUpdate||textureUpdate) this.updateUniforms(uniformBuffers);
 
                 if(textureUpdate) {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
-                if (!textureUpdate && !shouldUpdate) {
-                    return;
-                }
-                vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), dynamicOffsets);
+                if (textureUpdate || shouldUpdate)
+                    vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
+                        0, stack.longs(currentSet), dynamicOffsets);;
+
             }
         }
 
