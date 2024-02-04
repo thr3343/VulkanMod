@@ -106,7 +106,7 @@ public abstract class DeviceManager {
         for(DeviceInfo device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties.properties().deviceType();
             if(deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
@@ -145,52 +145,26 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
+            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
+            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
+            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
+            deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
 
-            //TODO indirect draw option disabled in case it is not supported
-            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
 
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
-            deviceVulkan11Features.sType$Default();
 
-            if(deviceInfo.isDrawIndirectSupported()) {
-                deviceFeatures.features().multiDrawIndirect(true);
-                deviceVulkan11Features.shaderDrawParameters(true);
-            }
+            deviceVulkan11Features.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
-
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            // queueCreateInfoCount is automatically set
-
-            createInfo.pEnabledFeatures(deviceFeatures.features());
-
-
-            createInfo.pNext(deviceVulkan11Features);
-
-            //Vulkan 1.3 dynamic rendering
-//            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-//            deviceVulkan13Features.sType$Default();
-//            if(!deviceInfo.availableFeatures13.dynamicRendering())
-//                throw new RuntimeException("Device does not support dynamic rendering feature.");
-//
-//            deviceVulkan13Features.dynamicRendering(true);
-//            createInfo.pNext(deviceVulkan13Features);
-//            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
-
+            createInfo.pNext(deviceFeatures);
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
-
-//            Configuration.DEBUG_FUNCTIONS.set(true);
-
-            if(Vulkan.ENABLE_VALIDATION_LAYERS) {
-                createInfo.ppEnabledLayerNames(asPointerBuffer(Vulkan.VALIDATION_LAYERS));
-            }
+            createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
