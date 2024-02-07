@@ -26,6 +26,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
@@ -43,6 +44,7 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
@@ -554,6 +556,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
+        final boolean isFancy = Minecraft.useFancyGraphics();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
@@ -567,7 +570,8 @@ public class WorldRenderer {
         final int currentFrame = Renderer.getCurrentFrame();
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
-
+            if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);
+            VRenderSystem.depthMask(!isTranslucent);
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             boolean shouldUpdate = (Renderer.getInstance().bindGraphicsPipeline(terrainShader));
             {
