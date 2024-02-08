@@ -30,8 +30,8 @@ public class UniformParser {
         }
     }
 
-    public boolean parseToken(String token) {
-        if(token.matches("uniform")) return false;
+    public void parseToken(String token) {
+        if(token.matches("uniform")) return;
 
         if (this.type == null) {
             this.type = token;
@@ -53,10 +53,8 @@ public class UniformParser {
             }
 
             this.resetSate();
-            return true;
         }
 
-        return false;
     }
 
     public void setCurrentUniforms(GlslConverter.ShaderStage shaderStage) {

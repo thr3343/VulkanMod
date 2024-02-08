@@ -6,7 +6,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferCopy;
@@ -51,7 +50,7 @@ public class ArenaBuffer extends Buffer {
     public void uploadSubAlloc(int offset, int index, int size_t)
     {
 
-        if(freeOffsets.isEmpty()) reSize();
+        if(freeOffsets.isEmpty()) reSize(suballocs << 1);
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
 
@@ -119,8 +118,13 @@ public class ArenaBuffer extends Buffer {
     }
 
 
-    public void reSize()
+    public void defaultState()
     {
+        this.reSize(32);
+    }
+    public void reSize(int newSuballocCount)
+    {
+        if(newSuballocCount==suballocs) return;
         long prevId = this.id;
         int prevSize_t = BlockSize_t*suballocs;
 
@@ -129,18 +133,23 @@ public class ArenaBuffer extends Buffer {
 
         TransferQueue.waitIdle();
 
-        suballocs <<= 1;
-        int newSize_t = prevSize_t << 1;
+        int newSize_t = BlockSize_t * newSuballocCount;
         this.freeBuffer();
 
         this.createBuffer(newSize_t);
 
-        TransferQueue.uploadBufferImmediate(prevId, 0, this.id, 0, prevSize_t);
+        final int min = Math.min(prevSize_t, newSize_t);
+        TransferQueue.uploadBufferImmediate(prevId, 0, this.id, 0, min);
 
+        boolean isDstShrink = prevSize_t > newSize_t;
 
-
-
-        populateFreeSections(prevSize_t);
+        suballocs =newSuballocCount;
+        if(isDstShrink)
+        {
+            flushAll();
+            freeOffsets.trim(newSuballocCount);
+        }
+        else populateFreeSections(prevSize_t);
 
     }
 

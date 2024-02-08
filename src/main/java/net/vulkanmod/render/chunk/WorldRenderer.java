@@ -26,7 +26,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
@@ -51,7 +50,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
-import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -112,7 +110,7 @@ public class WorldRenderer {
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
-        addOnAllChangedCallback(this::cleanUp);
+        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.defaultState())));
     }
 
     private void allocateIndirectBuffers() {
@@ -745,16 +743,8 @@ public class WorldRenderer {
 
     public void cleanUp() {
 
-        for (var bufferEnumMap : DrawBuffers.indirectBuffers2) {
-            bufferEnumMap.forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
-            bufferEnumMap.clear();
-
-            for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
-                    bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 32));
-            }
-        }
-
-
+        DrawBuffers.indirectBuffers2[0].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
 
     }
 

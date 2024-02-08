@@ -161,8 +161,8 @@ public class Profiler2 {
             count++;
         }
 
-        public float computeAvg() {
-            return value /= count * 1000.0f;
+        public void computeAvg() {
+            value /= count * 1000.0f;
         }
 
         public float getValue() { return value; }

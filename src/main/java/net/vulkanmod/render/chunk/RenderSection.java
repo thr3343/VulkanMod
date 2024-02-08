@@ -72,7 +72,7 @@ public class RenderSection {
 
     }
 
-    public RenderSection setGraphInfo(@Nullable Direction from, byte step) {
+    public void setGraphInfo(@Nullable Direction from, byte step) {
         mainDir = from;
 
         sourceDirs = (byte) (from != null ? 1 << from.ordinal() : 0);
@@ -80,7 +80,6 @@ public class RenderSection {
         this.step = step;
         this.directions = 0;
         this.directionChanges = 0;
-        return this;
     }
 
     public void addDir(Direction direction) {
@@ -118,8 +117,7 @@ public class RenderSection {
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
-        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
-        dispatcher.schedule(chunkCompileTask);
+        dispatcher.schedule(this.createCompileTask(renderRegionCache));
     }
 
     public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
@@ -277,11 +275,10 @@ public class RenderSection {
         this.compileStatus.compiledSection = compiledSection;
     }
 
-    public boolean setLastFrame(short i) {
+    public void setLastFrame(short i) {
         boolean res = i == this.lastFrame ;
         if(!res)
             this.lastFrame = i;
-        return res;
     }
 
     public boolean setLastFrame2(short i) {

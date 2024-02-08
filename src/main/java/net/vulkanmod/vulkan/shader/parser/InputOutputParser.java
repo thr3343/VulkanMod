@@ -26,7 +26,7 @@ public class InputOutputParser {
         this.converterInstance = converterInstance;
     }
 
-    public boolean parseToken(String token) {
+    public void parseToken(String token) {
 
         if (this.ioType == null)
             this.ioType = token;
@@ -55,10 +55,8 @@ public class InputOutputParser {
                 }
             }
             this.resetState();
-            return true;
         }
 
-        return false;
     }
 
     private void resetState() {

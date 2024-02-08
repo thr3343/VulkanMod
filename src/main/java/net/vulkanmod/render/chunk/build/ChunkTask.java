@@ -2,10 +2,8 @@ package net.vulkanmod.render.chunk.build;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -56,7 +54,7 @@ public abstract class ChunkTask {
 
     public abstract String name();
 
-    public abstract CompletableFuture<Result> doTask(ThreadBuilderPack builderPack);
+    public abstract void doTask(ThreadBuilderPack builderPack);
 
     public void cancel() {
         this.cancelled.set(true);
@@ -89,57 +87,56 @@ public abstract class ChunkTask {
             return "rend_chk_rebuild";
         }
 
-        public CompletableFuture<Result> doTask(ThreadBuilderPack chunkBufferBuilderPack) {
+        public void doTask(ThreadBuilderPack chunkBufferBuilderPack) {
             //debug
             this.submitted = true;
             long startTime = System.nanoTime();
 
             if (this.cancelled.get()) {
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (!this.renderSection.hasXYNeighbours()) {
+                return;
+            }
+            if (!this.renderSection.hasXYNeighbours()) {
                 this.region = null;
                 this.renderSection.setDirty(false);
                 this.cancelled.set(true);
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (this.cancelled.get()) {
-                return CompletableFuture.completedFuture(Result.CANCELLED);
+                return;
+            }
+            if (this.cancelled.get()) {
+                return;
+            }
+            Vec3 vec3 = WorldRenderer.getCameraPos();
+            float f = (float)vec3.x;
+            float g = (float)vec3.y;
+            float h = (float)vec3.z;
+            CompileResults compileResults = this.compile(f, g, h, chunkBufferBuilderPack);
+
+            this.renderSection.updateGlobalBlockEntities(compileResults.globalBlockEntities);
+
+            if (this.cancelled.get()) {
+                compileResults.renderedLayers.values().forEach(UploadBuffer::release);
             } else {
-                Vec3 vec3 = WorldRenderer.getCameraPos();
-                float f = (float)vec3.x;
-                float g = (float)vec3.y;
-                float h = (float)vec3.z;
-                CompileResults compileResults = this.compile(f, g, h, chunkBufferBuilderPack);
+                CompiledSection compiledChunk = new CompiledSection();
+                compiledChunk.visibilitySet = compileResults.visibilitySet;
+                compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
+                compiledChunk.transparencyState = compileResults.transparencyState;
 
-                this.renderSection.updateGlobalBlockEntities(compileResults.globalBlockEntities);
+                if(!compileResults.renderedLayers.isEmpty())
+                    compiledChunk.isCompletelyEmpty = false;
 
-                if (this.cancelled.get()) {
-                    compileResults.renderedLayers.values().forEach(UploadBuffer::release);
-                    return CompletableFuture.completedFuture(Result.CANCELLED);
-                } else {
-                    CompiledSection compiledChunk = new CompiledSection();
-                    compiledChunk.visibilitySet = compileResults.visibilitySet;
-                    compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
-                    compiledChunk.transparencyState = compileResults.transparencyState;
+                taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
+                compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
 
-                    if(!compileResults.renderedLayers.isEmpty())
-                        compiledChunk.isCompletelyEmpty = false;
+                this.renderSection.setCompiledSection(compiledChunk);
+                this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
+                this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
 
-                    taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
-                    compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
+                this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
 
-                    this.renderSection.setCompiledSection(compiledChunk);
-                    this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
-                    this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
-
-                    this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
-
-                    if(bench) {
-                        totalBuildTime.addAndGet((int)buildTime);
-                        buildCount.addAndGet(1);
-                    }
-
-                    return CompletableFuture.completedFuture(Result.SUCCESSFUL);
+                if(bench) {
+                    totalBuildTime.addAndGet((int)buildTime);
+                    buildCount.addAndGet(1);
                 }
+
             }
         }
 
@@ -286,37 +283,32 @@ public abstract class ChunkTask {
             return "rend_chk_sort";
         }
 
-        public CompletableFuture<Result> doTask(ThreadBuilderPack builderPack) {
+        public void doTask(ThreadBuilderPack builderPack) {
             if (this.cancelled.get()) {
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (!renderSection.hasXYNeighbours()) {
+                return;
+            }
+            if (!renderSection.hasXYNeighbours()) {
                 this.cancelled.set(true);
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else {
-                Vec3 vec3 = WorldRenderer.getCameraPos();
-                float f = (float)vec3.x;
-                float f1 = (float)vec3.y;
-                float f2 = (float)vec3.z;
-                TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
-                if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
-                    TerrainBufferBuilder bufferbuilder = builderPack.builder(TRANSLUCENT);
-                    bufferbuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
-                    bufferbuilder.restoreSortState(transparencyState);
+                return;
+            }
+            Vec3 vec3 = WorldRenderer.getCameraPos();
+            float f = (float)vec3.x;
+            float f1 = (float)vec3.y;
+            float f2 = (float)vec3.z;
+            TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
+            if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
+                TerrainBufferBuilder bufferbuilder = builderPack.builder(TRANSLUCENT);
+                bufferbuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
+                bufferbuilder.restoreSortState(transparencyState);
 //                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
-                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.xOffset(), f1 - (float) renderSection.yOffset(), f2 - (float) renderSection.zOffset());
-                    this.compiledSection.transparencyState = bufferbuilder.getSortState();
-                    TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
-                    if (this.cancelled.get()) {
-                        return CompletableFuture.completedFuture(Result.CANCELLED);
-                    } else {
+                bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.xOffset(), f1 - (float) renderSection.yOffset(), f2 - (float) renderSection.zOffset());
+                this.compiledSection.transparencyState = bufferbuilder.getSortState();
+                TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
+                if (!this.cancelled.get()) {
 
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, new UploadBuffer(renderedBuffer));
-                        renderedBuffer.release();
-                        return CompletableFuture.completedFuture(Result.SUCCESSFUL);
+                    taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, new UploadBuffer(renderedBuffer));
+                    renderedBuffer.release();
 
-                    }
-                } else {
-                    return CompletableFuture.completedFuture(Result.CANCELLED);
                 }
             }
         }
