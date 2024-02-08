@@ -191,6 +191,13 @@ public abstract class LevelRendererMixin {
             lightTexture.turnOffLightLayer();
         }
     }
+
+    @Redirect(method = "renderWorldBorder", at=@At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getDepthFar()F"))
+    private float getRenderDistanceZFar(GameRenderer instance)
+    {
+        return instance.getRenderDistance()*4F;
+    }
+
 //    public void initOutline() {
 //        if (this.entityEffect != null) {
 //            this.entityEffect.close();
