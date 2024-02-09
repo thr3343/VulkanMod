@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 
@@ -109,6 +110,7 @@ public class Options {
                         value -> {
                             minecraftOptions.graphicsMode().set(value);
                             config.uniqueOpaqueLayer=value==GraphicsStatus.FANCY;
+                            WorldRenderer.getInstance().getTaskDispatcher().stopThreads();
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
 
