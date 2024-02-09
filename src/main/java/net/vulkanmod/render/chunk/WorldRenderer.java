@@ -44,6 +44,7 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11C;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
@@ -110,7 +111,7 @@ public class WorldRenderer {
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
-        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.defaultState())));
+        addOnAllChangedCallback(this::reset);
     }
 
     private void allocateIndirectBuffers() {
@@ -739,6 +740,27 @@ public class WorldRenderer {
         int j = this.chunkQueue.size();
         String tasksInfo = this.taskDispatcher == null ? "null" : this.taskDispatcher.getStats();
         return String.format("Chunks: %d(%d)/%d D: %d, %s", this.nonEmptyChunks, j, i, this.lastViewDistance, tasksInfo);
+    }
+
+    public void reset() {
+
+        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
+            for (ArenaBuffer entry : bufferEnumMap.values()) {
+                entry.defaultState();
+            }
+            final boolean uniqueOpaqueLayer = Initializer.CONFIG.uniqueOpaqueLayer;
+            if(uniqueOpaqueLayer == bufferEnumMap.containsKey(CUTOUT))
+            {
+                if (uniqueOpaqueLayer) {
+                    bufferEnumMap.remove(CUTOUT).freeBuffer();
+                }
+                else {
+                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 32));
+                }
+            }
+        }
+
+
     }
 
     public void cleanUp() {
