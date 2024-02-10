@@ -115,7 +115,14 @@ public class Options {
                         },
 
                         () -> minecraftOptions.graphicsMode().get()
-                ),
+                ).setTooltip(Component.nullToEmpty("""
+                        Using Fast Graphics will enable additional Performance Hacks
+                        To improve GPU Performance
+                        
+                        * Fast Grass (< instead of <= Depth Testing)
+                        * Fast Leaves (Early-Z Culling)
+                        """)),
+
                 new CyclingOption<>("Particles",
                         new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                         particlesMode -> Component.translatable(particlesMode.getKey()),
