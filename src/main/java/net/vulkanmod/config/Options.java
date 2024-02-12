@@ -16,12 +16,6 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
-    static
-    {
-        Initializer.CONFIG.uniqueOpaqueLayer=Minecraft.useFancyGraphics();
-        config.uniqueOpaqueLayer=Minecraft.useFancyGraphics();
-    }
-
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
                 new CyclingOption<>("Resolution",
@@ -107,13 +101,7 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> {
-                            minecraftOptions.graphicsMode().set(value);
-                            config.uniqueOpaqueLayer=value==GraphicsStatus.FANCY;
-                            WorldRenderer.getInstance().getTaskDispatcher().stopThreads();
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-
+                        value -> minecraftOptions.graphicsMode().set(value),
                         () -> minecraftOptions.graphicsMode().get()
                 ).setTooltip(Component.nullToEmpty("""
                         Using Fast Graphics will enable additional Performance Hacks
@@ -133,6 +121,15 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
+                new SwitchOption("Unique opaque layer",
+                        value -> {
+                            config.uniqueOpaqueLayer = value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> config.uniqueOpaqueLayer)
+                        .setTooltip(Component.nullToEmpty("""
+                        Improves performance by using a unique render layer for opaque terrain rendering.
+                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                     int v = value * 2 + 1;

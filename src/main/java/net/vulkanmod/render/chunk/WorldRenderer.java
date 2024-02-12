@@ -111,7 +111,7 @@ public class WorldRenderer {
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
-        addOnAllChangedCallback(this::reset);
+        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.flushAll())));
     }
 
     private void allocateIndirectBuffers() {
@@ -556,7 +556,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
-        final boolean isFancy = Initializer.CONFIG.uniqueOpaqueLayer;
+        final boolean isFancy = Minecraft.useFancyGraphics();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
@@ -568,7 +568,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((isFancy ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
             if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);
             VRenderSystem.depthMask(!isTranslucent);
@@ -600,12 +600,13 @@ public class WorldRenderer {
                for (var a : DrawBuffers.indirectBuffers2) {
                    a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
                }
-               DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).SubmitAll();
-//            uniformBuffers.submitUploads();
            }
         }
 
-
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
+            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
+//            uniformBuffers.submitUploads();
+        }
         p.pop();
 
 
@@ -755,7 +756,7 @@ public class WorldRenderer {
                     bufferEnumMap.remove(CUTOUT).freeBuffer();
                 }
                 else {
-                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 32));
+                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
                 }
             }
         }
