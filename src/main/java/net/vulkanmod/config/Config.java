@@ -2,7 +2,6 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.client.Minecraft;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -21,7 +20,7 @@ public class Config {
     public boolean drawIndirect = true;
 
     public boolean perRenderTypeAreaBuffers = false;
-    public boolean uniqueOpaqueLayer = true; //TODO: not using Minecraft.useFancyGraphics() to reduce Cache Misses/Locality issues + //TODO: not updated properly due to sharing state with Minecraft.useFancyGraphics()
+    public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
     public boolean animations = false;
