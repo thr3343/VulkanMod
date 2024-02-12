@@ -755,7 +755,7 @@ public class WorldRenderer {
                     bufferEnumMap.remove(CUTOUT).freeBuffer();
                 }
                 else {
-                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 32));
+                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
                 }
             }
         }
