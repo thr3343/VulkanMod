@@ -26,6 +26,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
@@ -207,7 +208,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         this.needsUpdate |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY)>2.0f;
+        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY) > 2.0f;
 
         if (!isCapturedFrustum) {
 
@@ -519,7 +520,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
-        final boolean isFancy = Minecraft.useFancyGraphics();
+        final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
@@ -531,7 +532,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if((isFancy ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
             if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);
             VRenderSystem.depthMask(!isTranslucent);
@@ -564,12 +565,13 @@ public class WorldRenderer {
                    a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
                }
            }
+           if(indirectDraw) {
+                DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).SubmitAll();
+//            uniformBuffers.submitUploads();
+            }
         }
 
-        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
-            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType == CUTOUT?CUTOUT_MIPPED : TRANSLUCENT).SubmitAll();
-//            uniformBuffers.submitUploads();
-        }
+
         p.pop();
 
 
@@ -712,7 +714,7 @@ public class WorldRenderer {
             for (ArenaBuffer entry : bufferEnumMap.values()) {
                 entry.defaultState();
             }
-            final boolean uniqueOpaqueLayer = Initializer.CONFIG.uniqueOpaqueLayer;
+            final boolean uniqueOpaqueLayer = Options.getGraphicsState();
             if(uniqueOpaqueLayer == bufferEnumMap.containsKey(CUTOUT))
             {
                 if (uniqueOpaqueLayer) {

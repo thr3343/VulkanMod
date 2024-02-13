@@ -20,7 +20,6 @@ public class Config {
     public boolean drawIndirect = true;
 
     public boolean perRenderTypeAreaBuffers = false;
-    public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
     public boolean animations = false;

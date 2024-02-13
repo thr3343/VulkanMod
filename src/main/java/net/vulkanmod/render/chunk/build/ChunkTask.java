@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.PipelineManager;
@@ -26,6 +27,7 @@ import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
+import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -233,7 +235,7 @@ public abstract class ChunkTask {
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
 
-            if(Initializer.CONFIG.uniqueOpaqueLayer) {
+            if(Options.getGraphicsState()) {
                 if (renderType != TRANSLUCENT) {
                     renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
                 }

@@ -40,14 +40,7 @@ public class DrawBuffers {
     static {
 
         Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
-        for (TerrainRenderType renderType : COMPACT_RENDER_TYPES) {
-            for (var bufferEnumMap : indirectBuffers2) {
-                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
-            }
-        }
-
-
-        for (TerrainRenderType renderType : COMPACT_RENDER_TYPES) {
+        for (TerrainRenderType renderType : getActiveLayers()) {
             for (var bufferEnumMap : indirectBuffers2) {
                 bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
             }
@@ -64,7 +57,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        COMPACT_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
+        getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, 0));
 
         if(!Initializer.CONFIG.perRenderTypeAreaBuffers)
             vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);

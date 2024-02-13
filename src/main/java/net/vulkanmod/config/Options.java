@@ -15,6 +15,7 @@ public class Options {
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+    public static boolean fancy = Minecraft.useFancyGraphics();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -101,7 +102,12 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> minecraftOptions.graphicsMode().set(value),
+                        value -> {
+                            fancy=value==GraphicsStatus.FANCY;
+                            minecraftOptions.graphicsMode().set(value);
+                            WorldRenderer.getInstance().getTaskDispatcher().stopThreads();
+                            WorldRenderer.getInstance().allChanged();
+                        },
                         () -> minecraftOptions.graphicsMode().get()
                 ).setTooltip(Component.nullToEmpty("""
                         Using Fast Graphics will enable additional Performance Hacks
@@ -121,15 +127,6 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
-                new SwitchOption("Unique opaque layer",
-                        value -> {
-                            config.uniqueOpaqueLayer = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.uniqueOpaqueLayer)
-                        .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                     int v = value * 2 + 1;
@@ -269,5 +266,9 @@ public class Options {
         }
 
         config.write();
+    }
+
+    public static boolean getGraphicsState() {
+        return fancy;
     }
 }
