@@ -20,7 +20,7 @@ public class Synchronization {
     private final LongBuffer fences;
     private int idx = 0;
 
-    private ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
+    private final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
 
     Synchronization(int allocSize) {
         this.fences = MemoryUtil.memAllocLong(allocSize);
@@ -40,16 +40,15 @@ public class Synchronization {
     }
 
     public synchronized void waitFences() {
-
+        //TODO: TimelineSemaphore Index
         if(idx == 0) return;
 
         VkDevice device = Vulkan.getDevice();
 
         fences.limit(idx);
 
-        for (int i = 0; i < idx; i++) {
-            vkWaitForFences(device, fences.get(i), true, VUtil.UINT64_MAX);
-        }
+
+        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
