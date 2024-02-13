@@ -207,7 +207,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         this.needsUpdate |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        this.needsUpdate |= cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ;
+        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY)>2.0f;
 
         if (!isCapturedFrustum) {
 
@@ -315,9 +315,7 @@ public class WorldRenderer {
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
-
-        if(buildLimit == 0)
+        if(taskDispatcher.getIdleThreadsCount() == 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {
@@ -386,7 +384,8 @@ public class WorldRenderer {
     }
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
-        if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) >= 0) {
+        final byte b = relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex);
+        if (b >= 0) {
             return;
         }
         else if (relativeChunk.getLastFrame() == this.lastFrame) {
@@ -399,7 +398,7 @@ public class WorldRenderer {
 
             return;
         }
-        else if(relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) == FrustumIntersection.INTERSECT) {
+        else if(b == FrustumIntersection.INTERSECT) {
             if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
                     relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
                 return;
