@@ -465,7 +465,7 @@ public class Renderer {
     private void recreateSwapChain() {
         Vulkan.waitIdle();
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+        vkResetCommandPool(Vulkan.getDevice(), getCommandPool(), VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
         Vulkan.recreateSwapChain();
 
