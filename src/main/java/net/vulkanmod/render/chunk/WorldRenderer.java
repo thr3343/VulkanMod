@@ -236,10 +236,7 @@ public class WorldRenderer {
 
                 this.renderRegionCache = new RenderRegionCache();
 
-                if(flag)
-                    this.updateRenderChunks();
-                else
-                    this.updateRenderChunksSpectator();
+                if(flag) this.updateRenderChunks();
 
                 this.minecraft.getProfiler().pop();
 
@@ -344,39 +341,6 @@ public class WorldRenderer {
                     }
 
                     this.addNode(renderSection, relativeChunk, direction);
-                }
-            }
-        }
-
-    }
-
-    private void updateRenderChunksSpectator() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-
-        if(rebuildLimit == 0)
-            this.needsUpdate = true;
-
-        while(this.chunkQueue.hasNext()) {
-            RenderSection renderSection = this.chunkQueue.poll();
-
-
-            if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().addSections(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
-                this.nonEmptyChunks++;
-            }
-
-            this.scheduleUpdate(renderSection);
-
-            for(Direction direction : Util.DIRECTIONS) {
-                RenderSection relativeChunk = renderSection.getNeighbour(direction);
-
-                if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
-
-                    this.addNode(renderSection, relativeChunk, direction);
-
                 }
             }
         }
