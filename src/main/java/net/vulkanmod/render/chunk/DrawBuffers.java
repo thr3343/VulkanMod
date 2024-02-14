@@ -42,7 +42,7 @@ public class DrawBuffers {
         Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
         for (TerrainRenderType renderType : getActiveLayers()) {
             for (var bufferEnumMap : indirectBuffers2) {
-                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
+                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 64));
             }
         }
     }

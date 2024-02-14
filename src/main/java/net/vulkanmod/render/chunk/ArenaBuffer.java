@@ -118,9 +118,13 @@ public class ArenaBuffer extends Buffer {
     }
 
 
-    public void defaultState()
+    public void defaultState(int newSuballocCount)
     {
-        this.reSize(32);
+        if(newSuballocCount==suballocs) {
+            flushAll();
+            return;
+        }
+        this.reSize(newSuballocCount);
     }
     public void reSize(int newSuballocCount)
     {

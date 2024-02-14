@@ -112,7 +112,7 @@ public class WorldRenderer {
 
 
         addOnAllChangedCallback(Queue::trimCmdPools);
-        addOnAllChangedCallback(() -> Arrays.stream(DrawBuffers.indirectBuffers2).forEach(bufferEnumMap -> bufferEnumMap.forEach((key, value) -> value.flushAll())));
+        addOnAllChangedCallback(this::reset);
     }
 
     private void allocateIndirectBuffers() {
@@ -712,7 +712,7 @@ public class WorldRenderer {
 
         for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
             for (ArenaBuffer entry : bufferEnumMap.values()) {
-                entry.defaultState();
+                entry.defaultState(lastViewDistance*4);
             }
             final boolean uniqueOpaqueLayer = Options.getGraphicsState();
             if(uniqueOpaqueLayer == bufferEnumMap.containsKey(CUTOUT))
@@ -721,7 +721,7 @@ public class WorldRenderer {
                     bufferEnumMap.remove(CUTOUT).freeBuffer();
                 }
                 else {
-                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 128));
+                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, lastViewDistance*4));
                 }
             }
         }
