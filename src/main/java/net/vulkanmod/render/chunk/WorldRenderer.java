@@ -522,7 +522,6 @@ public class WorldRenderer {
 
         final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -551,24 +550,18 @@ public class WorldRenderer {
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() != 0) {
                     drawBuffers.bindBuffers(commandBuffer, terrainShader, terrainRenderType, camX, camY, camZ);
-                    if (indirectDraw) drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
-                    else drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
+                    drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
                 }
 
             }
 
-           if(indirectDraw)
-           {
-               int i=0;// = currentFrame & 0x1; //isOdd Or Even
+            int i = 0;// = currentFrame & 0x1; //isOdd Or Even
 
-               for (var a : DrawBuffers.indirectBuffers2) {
-                   a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
-               }
-           }
-           if(indirectDraw) {
-                DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).SubmitAll();
-//            uniformBuffers.submitUploads();
+            for (var a : DrawBuffers.indirectBuffers2) {
+                a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
             }
+            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).SubmitAll();
+//            uniformBuffers.submitUploads();
         }
 
 
