@@ -182,7 +182,7 @@ public abstract class ChunkTask {
 
                         bufferBuilder.setBlockAttributes(fluidState.createLegacyBlock());
                         //Is Exposed To Air
-                        if (!fluidState.isSource() || waterOccluded(blockState, blockPos, renderChunkRegion)) {
+                        if (!fluidState.isSource() || isSideExposed(blockPos, renderChunkRegion)) {
                             blockRenderDispatcher.renderLiquid(blockPos, renderChunkRegion, bufferBuilder, blockState, fluidState);
                         }
                     }
@@ -232,23 +232,19 @@ public abstract class ChunkTask {
             return compileResults;
         }
 
-        private static boolean waterOccluded(BlockState blockPos, BlockPos pos, RenderChunkRegion renderChunkRegion) {
-            if(!renderChunkRegion.canSeeSky(pos.above())) {
-                final BlockPos east = pos.east();
-                final boolean left = blockPos.isViewBlocking(renderChunkRegion, east)|| isFluid(renderChunkRegion, east);
-                final BlockPos west = pos.west();
-                final boolean right = blockPos.isViewBlocking(renderChunkRegion, west)|| isFluid(renderChunkRegion, west);
-                final BlockPos north = pos.north();
-                final boolean front = blockPos.isViewBlocking(renderChunkRegion, north)|| isFluid(renderChunkRegion, north);
-                final BlockPos south = pos.south();
-                final boolean back = blockPos.isViewBlocking(renderChunkRegion, south)|| isFluid(renderChunkRegion, south);
+        private static boolean isSideExposed(BlockPos pos, RenderChunkRegion renderChunkRegion) {
+            if(!isSolid(renderChunkRegion, pos.above())) {
+                final boolean left = isSolid(renderChunkRegion, pos.east());
+                final boolean right = isSolid(renderChunkRegion, pos.west());
+                final boolean front = isSolid(renderChunkRegion, pos.north());
+                final boolean back = isSolid(renderChunkRegion, pos.south());
                return left | front | back | right;
            }
            return true;
         }
 
-        private static boolean isFluid(RenderChunkRegion renderChunkRegion, BlockPos east) {
-            return renderChunkRegion.getFluidState(east).isEmpty();
+        private static boolean isSolid(RenderChunkRegion renderChunkRegion, BlockPos pos) {
+            return renderChunkRegion.getFluidState(pos).isEmpty();
         }
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
