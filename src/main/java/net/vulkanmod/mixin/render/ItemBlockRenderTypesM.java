@@ -18,5 +18,9 @@ public class ItemBlockRenderTypesM {
     static {
         TYPE_BY_BLOCK.remove(Blocks.GLASS_PANE);
         TYPE_BY_BLOCK.put(Blocks.GLASS_PANE, RenderType.translucent());
+        TYPE_BY_BLOCK.remove(Blocks.IRON_BARS);
+        TYPE_BY_BLOCK.put(Blocks.IRON_BARS, RenderType.translucent());
+        TYPE_BY_BLOCK.remove(Blocks.CHAIN);
+        TYPE_BY_BLOCK.put(Blocks.CHAIN, RenderType.translucent());
     }
 }

@@ -17,7 +17,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
-    public boolean drawIndirect = true;
+    public boolean indirectDraw = true;
 
     public boolean perRenderTypeAreaBuffers = false;
     public boolean entityCulling = true;
