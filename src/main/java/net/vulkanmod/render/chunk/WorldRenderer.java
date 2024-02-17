@@ -560,7 +560,7 @@ public class WorldRenderer {
             for (var a : DrawBuffers.indirectBuffers2) {
                 a.get(terrainRenderType).copyAll((currentFrame & 0x1) == i++);
             }
-            DrawBuffers.indirectBuffers2[currentFrame].get(terrainRenderType).SubmitAll();
+            DrawBuffers.indirectBuffers2[currentFrame&0x1].get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 

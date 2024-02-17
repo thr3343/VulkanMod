@@ -136,7 +136,7 @@ public class DrawBuffers {
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()].get(terrainRenderType);
+            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()&0x1].get(terrainRenderType);
             if((updateIndex & terrainRenderType.bitMask()) !=0 || drawCnts.get(terrainRenderType)!=queue.size())
             {
                 updateIndirectCmds(queue, terrainRenderType, stack);
