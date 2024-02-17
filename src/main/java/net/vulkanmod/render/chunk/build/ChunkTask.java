@@ -233,14 +233,8 @@ public abstract class ChunkTask {
         }
 
         private static boolean isSideExposed(BlockPos pos, RenderChunkRegion renderChunkRegion) {
-            if(!isSolid(renderChunkRegion, pos.above())) {
-                final boolean left = isSolid(renderChunkRegion, pos.east());
-                final boolean right = isSolid(renderChunkRegion, pos.west());
-                final boolean front = isSolid(renderChunkRegion, pos.north());
-                final boolean back = isSolid(renderChunkRegion, pos.south());
-               return left | front | back | right;
-           }
-           return true;
+            return isSolid(renderChunkRegion, pos.above())
+                    || isSolid(renderChunkRegion, pos.east()) | isSolid(renderChunkRegion, pos.north()) | isSolid(renderChunkRegion, pos.south()) | isSolid(renderChunkRegion, pos.west());
         }
 
         private static boolean isSolid(RenderChunkRegion renderChunkRegion, BlockPos pos) {
