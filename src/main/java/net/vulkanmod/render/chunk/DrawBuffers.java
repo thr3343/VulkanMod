@@ -183,17 +183,6 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
-
-        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-
-        for (var iterator = queue.iterator(terrainRenderType == TerrainRenderType.TRANSLUCENT); iterator.hasNext(); ) {
-            final DrawParameters drawParameters = iterator.next();
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.instanceCount, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
-
-        }
-    }
-
     void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {

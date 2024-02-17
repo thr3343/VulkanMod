@@ -69,10 +69,6 @@ public abstract class ChunkTask {
         @Nullable
         protected RenderChunkRegion region;
 
-        //debug
-        private float buildTime;
-        private boolean submitted = false;
-
         public BuildTask(RenderSection renderSection, RenderChunkRegion renderChunkRegion, boolean highPriority) {
             super(renderSection);
             this.region = renderChunkRegion;
@@ -88,8 +84,7 @@ public abstract class ChunkTask {
 
         public void doTask(ThreadBuilderPack chunkBufferBuilderPack) {
             //debug
-            this.submitted = true;
-            long startTime = System.nanoTime();
+            long startTime = bench ? System.nanoTime() : 0;
 
             if (this.cancelled.get()) {
                 return;
@@ -129,10 +124,10 @@ public abstract class ChunkTask {
                 this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
                 this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
 
-                this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
+                //debug
 
                 if(bench) {
-                    totalBuildTime.addAndGet((int)buildTime);
+                    totalBuildTime.addAndGet((int) ((System.nanoTime() - startTime) * 0.000001f));
                     buildCount.addAndGet(1);
                 }
 
@@ -233,28 +228,11 @@ public abstract class ChunkTask {
         }
 
         private static boolean isSideExposed(BlockPos pos, RenderChunkRegion renderChunkRegion) {
-            return isSolid(renderChunkRegion, pos.above())
-                    || isSolid(renderChunkRegion, pos.east()) | isSolid(renderChunkRegion, pos.north()) | isSolid(renderChunkRegion, pos.south()) | isSolid(renderChunkRegion, pos.west());
+            return isSolid(renderChunkRegion, pos.above()) || isSolid(renderChunkRegion, pos.east()) | isSolid(renderChunkRegion, pos.north()) | isSolid(renderChunkRegion, pos.south()) | isSolid(renderChunkRegion, pos.west());
         }
 
         private static boolean isSolid(RenderChunkRegion renderChunkRegion, BlockPos pos) {
             return renderChunkRegion.getFluidState(pos).isEmpty();
-        }
-
-        private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-
-            if(Options.getGraphicsState()) {
-                if (renderType != TRANSLUCENT) {
-                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
-                }
-            }
-            else {
-                if (renderType != TRANSLUCENT && renderType != CUTOUT) {
-                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
-                }
-            }
-
-            return renderType;
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {
@@ -323,9 +301,5 @@ public abstract class ChunkTask {
             }
         }
     }
-    
-    public enum Result {
-        CANCELLED,
-        SUCCESSFUL
-    }
+
 }
