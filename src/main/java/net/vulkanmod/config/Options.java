@@ -7,6 +7,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import org.lwjgl.vulkan.KHRSurface;
 
 import java.util.stream.IntStream;
 
@@ -16,6 +18,9 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
     public static boolean fancy = Minecraft.useFancyGraphics();
+
+    private static final Integer[] uncappedModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
+    private static final Integer[] vsyncModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_FIFO_KHR, KHRSurface.VK_PRESENT_MODE_FIFO_RELAXED_KHR);
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -42,19 +47,54 @@ public class Options {
                             fullscreenDirty = true;
                         },
                         () -> minecraftOptions.fullscreen().get()),
-                new RangeOption("Max Framerate", 10, 260, 10,
-                        value -> value == 260 ? "Unlimited" : String.valueOf(value),
-                        value -> {
-                            minecraftOptions.framerateLimit().set(value);
-                            window.setFramerateLimit(value);
+                new RangeOption("Framerate Limit", 0, 260, 10,
+                        value -> switch (value) {
+                            case 0 -> "VSync";
+                            case 260 -> "Unlimited";
+                            default -> String.valueOf(value);
                         },
-                        () -> minecraftOptions.framerateLimit().get()),
-                new SwitchOption("VSync",
                         value -> {
-                            minecraftOptions.enableVsync().set(value);
-                            Minecraft.getInstance().getWindow().updateVsync(value);
+                            final boolean vsync = value == 0;
+
+                            minecraftOptions.framerateLimit().set( vsync ? 260 : value);
+                            window.setFramerateLimit(vsync ? 260 : value);
+
+                            minecraftOptions.enableVsync().set(vsync);
+                            Minecraft.getInstance().getWindow().updateVsync(vsync);
                         },
-                        () -> minecraftOptions.enableVsync().get()),
+                        () -> minecraftOptions.enableVsync().get() ? 0 : minecraftOptions.framerateLimit().get()),
+                new CyclingOption<>("VSync Mode",
+                        vsyncModes,
+                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_FIFO_KHR ? "Default (FIFO)" : "Adaptive (Relaxed FIFO)"),
+                        value -> {
+                            config.vsyncMode =value;
+                            if(minecraftOptions.enableVsync().get()) {
+                                Renderer.scheduleSwapChainUpdate();
+                            }
+                        },
+                        () -> config.vsyncMode).setTooltip(Component.nullToEmpty("""
+                        Specifies the default VSync Mode:
+                        Default is always suprpted
+                        Adaptive Vsync not available in all GPU Drivers
+                        
+                        Default: Causes stutter but Avoids Screen tearing
+                        Adaptive: Reduces stutter but causes Screen tearing""")),
+                new CyclingOption<>("Permit Screen Tearing",
+                        uncappedModes,
+                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync/Mailbox"),
+                        value -> {
+                            config.uncappedMode =value;
+                            if(!minecraftOptions.enableVsync().get()) {
+                                Renderer.scheduleSwapChainUpdate();
+                            }
+                        },
+                        () -> config.uncappedMode).setTooltip(Component.nullToEmpty("""
+                        Configures Screen Tearing if Supported by the GPU Driver:
+                        Disabled: Use Immediate mode (Low latency, Screen tearing)
+                        Enabled: Use FastSync (Higher latency, No Screen Tearing)
+                        Support varies: Some Drivers force FastSync, while others are Immediate mode only
+                        Available Modes vary on GPU Driver + Platform
+                        """)),
                 new CyclingOption<>("Gui Scale",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString()),
