@@ -8,11 +8,14 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkBufferCopy;
 
 import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
+import static net.vulkanmod.vulkan.memory.MemoryTypes.HOST_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.libc.LibCString.nmemcpy;
 
 public class ArenaBuffer extends Buffer {
 
@@ -24,9 +27,9 @@ public class ArenaBuffer extends Buffer {
     private int suballocs;
     private CommandPool.CommandBuffer commandBuffer;
     final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
-
+    boolean needsResize = false;
     public ArenaBuffer(int type, int suballocs) {
-        super(type, GPU_MEM);
+        super(type, HOST_MEM);
         this.suballocs = suballocs;
         createBuffer(BlockSize_t* this.suballocs);
 //        this.BlockSize_t = align;
@@ -47,7 +50,7 @@ public class ArenaBuffer extends Buffer {
     }
 
 
-    public void uploadSubAlloc(int offset, int index, int size_t)
+    public void uploadSubAlloc(long bufferPtr, int index, int size_t)
     {
 
         if(freeOffsets.isEmpty()) reSize(suballocs << 1);
@@ -56,9 +59,9 @@ public class ArenaBuffer extends Buffer {
 
 
 
+        nmemcpy(this.data.get(0) + BaseOffset, bufferPtr, size_t);
 
-
-        subCmdUploads.enqueue(new SubCopyCommand(offset, BaseOffset, size_t));
+//        subCmdUploads.enqueue(new SubCopyCommand(offset, BaseOffset, size_t));
 
     }
 

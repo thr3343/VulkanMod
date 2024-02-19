@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
@@ -42,39 +42,23 @@ public class AreaUploadManager {
     public synchronized void submitUploads() {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
-
-        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
+        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+        GraphicsQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
-        if(!dstBuffers.add(bufferId)) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                barrier.sType$Default();
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
 
-                vkCmdPipelineBarrier(commandBuffer,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        0,
-                        barrier,
-                        null,
-                        null);
-            }
-
-            dstBuffers.clear();
-        }
-
-        TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
+        GraphicsQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
 
         this.recordedUploads[this.currentFrame].add(uploadSegment);
     }

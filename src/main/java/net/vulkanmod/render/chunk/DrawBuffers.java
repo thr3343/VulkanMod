@@ -5,6 +5,7 @@ import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
@@ -33,7 +34,7 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
-    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[2];
+    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[1];
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
@@ -42,7 +43,7 @@ public class DrawBuffers {
         Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
         for (TerrainRenderType renderType : getActiveLayers()) {
             for (var bufferEnumMap : indirectBuffers2) {
-                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 64));
+                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 4));
             }
         }
     }
@@ -136,7 +137,6 @@ public class DrawBuffers {
     public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ArenaBuffer arenaBuffer = indirectBuffers2[Renderer.getCurrentFrame()&0x1].get(terrainRenderType);
             if((updateIndex & terrainRenderType.bitMask()) !=0 || drawCnts.get(terrainRenderType)!=queue.size())
             {
                 updateIndirectCmds(queue, terrainRenderType, stack);
@@ -147,6 +147,7 @@ public class DrawBuffers {
 
             }
 
+            ArenaBuffer arenaBuffer = indirectBuffers2[0].get(terrainRenderType);
 
             vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
         }
@@ -156,7 +157,7 @@ public class DrawBuffers {
 
     private void updateIndirectCmds(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, MemoryStack stack) {
         int size = queue.size() * 20;
-        long bufferPtr = stack.nmalloc(size);
+        long bufferPtr = MemoryUtil.memAddress0(stack.calloc(size));
 
 
         int drawCount = 0;
@@ -176,11 +177,9 @@ public class DrawBuffers {
 
 
         }
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-        stagingBuffer.copyBuffer2(size, bufferPtr);
-        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : indirectBuffers2) {
-            bufferEnumMap.get(terrainRenderType).uploadSubAlloc(stagingBuffer.getOffset(), this.index, size);
-        }
+        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, drawCount*20);
+//        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, drawCount*20);
+//        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
     }
 
     void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
