@@ -154,7 +154,7 @@ public class MemoryTypes {
         @Override
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
-                    buffer.usage,
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | buffer.usage,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         }
     }

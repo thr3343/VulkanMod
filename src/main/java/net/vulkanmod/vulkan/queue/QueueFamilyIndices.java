@@ -32,7 +32,7 @@ public class QueueFamilyIndices {
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
-            //Not using vkGetPhysicalDeviceSurfaceSupportKHR() as some Android drivers are bugged and crash when attempting to call it
+
             //Instead using VK_QUEUE_COMPUTE_BIT to check for Present Support
             for (int i = 0; i < queueFamilies.capacity(); i++) {
                 int queueFlags = queueFamilies.get(i).queueFlags();
@@ -99,7 +99,7 @@ public class QueueFamilyIndices {
     }
 
 
-    public static int graphicsFamily, presentFamily, transferFamily = VK_QUEUE_FAMILY_IGNORED;
+    public static int graphicsFamily = VK_QUEUE_FAMILY_IGNORED, presentFamily = VK_QUEUE_FAMILY_IGNORED, transferFamily = VK_QUEUE_FAMILY_IGNORED;
 
     public static boolean hasDedicatedTransferQueue = false;
 
