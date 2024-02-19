@@ -23,10 +23,7 @@ public class QueueFamilyIndices {
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
 
-            if (queueFamilyCount.get(0) == 1) {
-                transferFamily = presentFamily = graphicsFamily = 0;
-                return true;
-            }
+
 
             VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
 

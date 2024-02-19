@@ -49,14 +49,24 @@ public class AreaUploadManager {
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
 
         if(commandBuffers[currentFrame] == null)
+        {
             this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
+            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+        }
 
         VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
-        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+        if(!dstBuffers.add(bufferId)) {
+            {
+
+                GraphicsQueue.BufferBarrier(commandBuffers[currentFrame].getHandle(), bufferId, ~0);
+            }
+
+            dstBuffers.clear();
+        }
 
         GraphicsQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
 
