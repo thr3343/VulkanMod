@@ -1,8 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
-import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
@@ -15,7 +13,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class QueueFamilyIndices {
 
 
-    public static boolean findQueueFamilies(VkPhysicalDevice device) {
+    public static void findQueueFamilies(VkPhysicalDevice device) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -32,7 +30,7 @@ public class QueueFamilyIndices {
             if(queueFamilies.capacity()==1)
             {
                 graphicsFamily = transferFamily = presentFamily = 0;
-                return true;
+                return;
             }
 
 
@@ -97,10 +95,15 @@ public class QueueFamilyIndices {
             if (presentFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with present support.");
 
-            return isComplete();
         }
     }
 
+    public static boolean hasQueues(VkPhysicalDevice device, MemoryStack stack) {
+        IntBuffer queueFamilyCount = stack.ints(0);
+
+        vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
+        return queueFamilyCount.get()!=0;
+    }
 
     public static int graphicsFamily = VK_QUEUE_FAMILY_IGNORED, presentFamily = VK_QUEUE_FAMILY_IGNORED, transferFamily = VK_QUEUE_FAMILY_IGNORED;
 

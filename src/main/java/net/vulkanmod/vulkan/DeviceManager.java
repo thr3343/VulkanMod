@@ -84,7 +84,7 @@ public abstract class DeviceManager {
             }
 
             physicalDevice = deviceInfo.physicalDevice;
-
+            QueueFamilyIndices.findQueueFamilies(physicalDevice);
             //Get device properties
             deviceProperties = VkPhysicalDeviceProperties.malloc();
             vkGetPhysicalDeviceProperties(physicalDevice, deviceProperties);
@@ -225,9 +225,9 @@ public abstract class DeviceManager {
             VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.malloc(stack);
             vkGetPhysicalDeviceFeatures(device, supportedFeatures);
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
+            return QueueFamilyIndices.hasQueues(device, stack) && extensionsSupported && swapChainAdequate;
         }
 
-        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
