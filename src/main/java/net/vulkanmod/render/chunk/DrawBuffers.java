@@ -34,17 +34,14 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
-    static final EnumMap<TerrainRenderType, ArenaBuffer>[] indirectBuffers2 = new EnumMap[1];
+    static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
     static {
 
-        Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
         for (TerrainRenderType renderType : getActiveLayers()) {
-            for (var bufferEnumMap : indirectBuffers2) {
-                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
-            }
+            indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
         }
     }
     private int updateIndex;
@@ -147,7 +144,7 @@ public class DrawBuffers {
 
             }
 
-            ArenaBuffer arenaBuffer = indirectBuffers2[0].get(terrainRenderType);
+            ArenaBuffer arenaBuffer = indirectBuffers2.get(terrainRenderType);
 
             vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
         }
@@ -177,7 +174,7 @@ public class DrawBuffers {
 
 
         }
-        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
+        indirectBuffers2.get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
 //        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, drawCount*20);
 //        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
     }
@@ -209,11 +206,11 @@ public class DrawBuffers {
         if(this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
 
-        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : indirectBuffers2) {
-            for (ArenaBuffer a : bufferEnumMap.values()) {
-                a.rem(this.index);
-            }
+
+        for (ArenaBuffer a : indirectBuffers2.values()) {
+            a.rem(this.index);
         }
+
         drawCnts.replaceAll((t, v) -> 0);
 
         this.vertexBuffer = null;

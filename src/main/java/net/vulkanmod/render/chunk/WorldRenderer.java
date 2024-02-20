@@ -103,10 +103,8 @@ public class WorldRenderer {
         allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
-            for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
-                for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : bufferEnumMap.entrySet()) {
-                    entry.getValue().SubmitAll();
-                }
+            for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : DrawBuffers.indirectBuffers2.entrySet()) {
+                entry.getValue().SubmitAll();
             }
         });
 
@@ -554,7 +552,7 @@ public class WorldRenderer {
                 }
 
             }
-            DrawBuffers.indirectBuffers2[0].get(terrainRenderType).SubmitAll();
+            DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 
@@ -697,19 +695,17 @@ public class WorldRenderer {
 
     public void reset() {
 
-        for (EnumMap<TerrainRenderType, ArenaBuffer> bufferEnumMap : DrawBuffers.indirectBuffers2) {
-            for (ArenaBuffer entry : bufferEnumMap.values()) {
-                entry.defaultState(4);
+        for (ArenaBuffer entry : DrawBuffers.indirectBuffers2.values()) {
+            entry.defaultState(4);
+        }
+        final boolean uniqueOpaqueLayer = Options.getGraphicsState();
+        if(uniqueOpaqueLayer == DrawBuffers.indirectBuffers2.containsKey(CUTOUT))
+        {
+            if (uniqueOpaqueLayer) {
+                DrawBuffers.indirectBuffers2.remove(CUTOUT).freeBuffer();
             }
-            final boolean uniqueOpaqueLayer = Options.getGraphicsState();
-            if(uniqueOpaqueLayer == bufferEnumMap.containsKey(CUTOUT))
-            {
-                if (uniqueOpaqueLayer) {
-                    bufferEnumMap.remove(CUTOUT).freeBuffer();
-                }
-                else {
-                    bufferEnumMap.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
-                }
+            else {
+                DrawBuffers.indirectBuffers2.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
             }
         }
 
@@ -718,7 +714,7 @@ public class WorldRenderer {
 
     public void cleanUp() {
 
-        DrawBuffers.indirectBuffers2[0].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+        DrawBuffers.indirectBuffers2.forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
 //        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
 
     }

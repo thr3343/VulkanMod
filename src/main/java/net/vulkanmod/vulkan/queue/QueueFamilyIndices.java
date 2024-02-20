@@ -29,6 +29,12 @@ public class QueueFamilyIndices {
 
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
+            if(queueFamilies.capacity()==1)
+            {
+                graphicsFamily = transferFamily = presentFamily = 0;
+                return true;
+            }
+
 
             //Instead using VK_QUEUE_COMPUTE_BIT to check for Present Support
             for (int i = 0; i < queueFamilies.capacity(); i++) {

@@ -329,7 +329,6 @@ public class Renderer {
         hasCalled=false;
         submitFrame();
         recordingCmds = false;
-        boundPipeline=0;
         p.pop();
     }
 
@@ -543,6 +542,12 @@ public class Renderer {
         }
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
         boundPipeline=handle;
+//        if(usedPipelines.contains(pipeline))
+//        {
+////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
+//            return true;
+//        }
+
         addUsedPipeline(pipeline);
         return true;
     }
