@@ -43,7 +43,7 @@ public class DrawBuffers {
         Arrays.setAll(indirectBuffers2, i -> new EnumMap<>(TerrainRenderType.class));
         for (TerrainRenderType renderType : getActiveLayers()) {
             for (var bufferEnumMap : indirectBuffers2) {
-                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 4));
+                bufferEnumMap.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
             }
         }
     }
@@ -157,7 +157,7 @@ public class DrawBuffers {
 
     private void updateIndirectCmds(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, MemoryStack stack) {
         int size = queue.size() * 20;
-        long bufferPtr = MemoryUtil.memAddress0(stack.calloc(size));
+        long bufferPtr = stack.nmalloc(size);
 
 
         int drawCount = 0;
@@ -177,7 +177,7 @@ public class DrawBuffers {
 
 
         }
-        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, drawCount*20);
+        indirectBuffers2[0].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
 //        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, drawCount*20);
 //        indirectBuffers2[1].get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
     }

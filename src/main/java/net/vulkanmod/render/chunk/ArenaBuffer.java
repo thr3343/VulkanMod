@@ -2,20 +2,16 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.VkBufferCopy;
 
 import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
 import static net.vulkanmod.vulkan.memory.MemoryTypes.HOST_MEM;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
-import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.libc.LibCString.nmemcpy;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class ArenaBuffer extends Buffer {
 
@@ -26,10 +22,11 @@ public class ArenaBuffer extends Buffer {
     private final IntArrayList freeOffsets;
     private int suballocs;
     private CommandPool.CommandBuffer commandBuffer;
-    final ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = new ObjectArrayFIFOQueue<>(128);
     boolean needsResize = false;
+    private int cmdSize;
+
     public ArenaBuffer(int type, int suballocs) {
-        super(type, HOST_MEM);
+        super(type, GPU_MEM);
         this.suballocs = suballocs;
         createBuffer(BlockSize_t* this.suballocs);
 //        this.BlockSize_t = align;
@@ -53,13 +50,35 @@ public class ArenaBuffer extends Buffer {
     public void uploadSubAlloc(long bufferPtr, int index, int size_t)
     {
 
-        if(freeOffsets.isEmpty()) reSize(suballocs << 1);
+        if(freeOffsets.isEmpty()) {
+
+            reSize(suballocs << 1);
+        }
 
         int BaseOffset = baseOffsets.computeIfAbsent(index, i -> addSubAlloc(index));
 
+        if(commandBuffer==null) {
+            commandBuffer = GraphicsQueue.beginCommands();
+//            GraphicsQueue.BufferBarrier(commandBuffer.getHandle(),
+//                    this.id,
+//                    ~0,
+//                    VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+//                    0,
+//                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+//                    VK_PIPELINE_STAGE_TRANSFER_BIT);
+            GraphicsQueue.BufferBarrier(commandBuffer.getHandle(),
+                    this.id,
+                    ~0,
+                    0,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 
-        nmemcpy(this.data.get(0) + BaseOffset, bufferPtr, size_t);
+        }
+        GraphicsQueue.updateBuffer(commandBuffer, this.id, BaseOffset, bufferPtr, size_t);
+        this.cmdSize+=size_t;
+//        nmemcpy(this.data.get(0) + BaseOffset, bufferPtr, size_t);
 
 //        subCmdUploads.enqueue(new SubCopyCommand(offset, BaseOffset, size_t));
 
@@ -69,29 +88,17 @@ public class ArenaBuffer extends Buffer {
     public void SubmitAll()
     {
         if(commandBuffer==null) return;
+//        Initializer.LOGGER.info(cmdSize);
 
-
-        TransferQueue.submitCommands(commandBuffer);
+        GraphicsQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
-
+        needsResize=false;
         commandBuffer = null;
+        cmdSize = 0;
     }
 
     void copyAll(boolean execDep) {
-        if(subCmdUploads.isEmpty()) return;
-        if(commandBuffer==null) commandBuffer = TransferQueue.beginCommands();
-        if(execDep) TransferQueue.BufferBarrier(commandBuffer.getHandle(), this.id, ~0);
 
-        try(MemoryStack stack = stackPush()) {
-
-            VkBufferCopy.Buffer copyRegion = VkBufferCopy.malloc(subCmdUploads.size(), stack);
-            for(var subCpy : copyRegion)  {
-                SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
-                subCpy.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
-            }
-
-            TransferQueue.uploadBufferCmds(commandBuffer, Vulkan.getStagingBuffer().getId(), this.id, copyRegion);
-        }
 
 
     }
@@ -135,10 +142,10 @@ public class ArenaBuffer extends Buffer {
         long prevId = this.id;
         int prevSize_t = BlockSize_t*suballocs;
 
-
+        needsResize=true;
         this.SubmitAll();
 
-        TransferQueue.waitIdle();
+        GraphicsQueue.waitIdle();
 
         int newSize_t = BlockSize_t * newSuballocCount;
         this.freeBuffer();

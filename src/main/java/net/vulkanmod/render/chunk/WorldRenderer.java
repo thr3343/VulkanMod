@@ -554,6 +554,7 @@ public class WorldRenderer {
                 }
 
             }
+            DrawBuffers.indirectBuffers2[0].get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 

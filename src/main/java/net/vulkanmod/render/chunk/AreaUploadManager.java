@@ -1,19 +1,15 @@
 package net.vulkanmod.render.chunk;
 
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
+import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.ByteBuffer;
-
-import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 public class AreaUploadManager {
     public static final int FRAME_NUM = 2;
@@ -26,7 +22,9 @@ public class AreaUploadManager {
     ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
     CommandPool.CommandBuffer[] commandBuffers;
 
-    LongOpenHashSet dstBuffers = new LongOpenHashSet();
+    Long2ObjectArrayMap< ObjectArrayFIFOQueue<SubCopyCommand>> dstBuffers = new Long2ObjectArrayMap<>(8);
+
+
 
     int currentFrame;
 
@@ -40,36 +38,50 @@ public class AreaUploadManager {
     }
 
     public synchronized void submitUploads() {
-        if(this.recordedUploads[this.currentFrame].isEmpty())
+        if(dstBuffers.isEmpty()) return;
+        if(this.recordedUploads[this.currentFrame].isEmpty()) {
             return;
-        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+        }
+        GraphicsQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
+                dstBuffers.keySet(),
+                VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                0,
+                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+
+           
+
+        GraphicsQueue.uploadBufferCmds(this.commandBuffers[currentFrame], Vulkan.getStagingBuffer().getId(), dstBuffers.long2ObjectEntrySet());
+            
+        
+
+
+        dstBuffers.clear();
+        
+//        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
         GraphicsQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, ByteBuffer src) {
 
         if(commandBuffers[currentFrame] == null)
         {
             this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
-            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+//            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
 
-        VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
-        if(!dstBuffers.add(bufferId)) {
-            {
 
-                GraphicsQueue.BufferBarrier(commandBuffers[currentFrame].getHandle(), bufferId, ~0);
-            }
 
-            dstBuffers.clear();
+        if(!dstBuffers.containsKey(bufferId))
+        {
+            dstBuffers.put(bufferId, new ObjectArrayFIFOQueue<>(32));
         }
-
-        GraphicsQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-
+        dstBuffers.get(bufferId).enqueue(new SubCopyCommand(stagingBuffer.getOffset(), dstOffset, bufferSize));
         this.recordedUploads[this.currentFrame].add(uploadSegment);
     }
 
