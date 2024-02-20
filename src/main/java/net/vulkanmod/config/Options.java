@@ -62,10 +62,11 @@ public class Options {
                             minecraftOptions.enableVsync().set(vsync);
                             Minecraft.getInstance().getWindow().updateVsync(vsync);
                         },
-                        () -> minecraftOptions.enableVsync().get() ? 0 : minecraftOptions.framerateLimit().get()),
+                        () -> minecraftOptions.enableVsync().get() ? 0 : minecraftOptions.framerateLimit().get())
+                        .setTooltip(Component.nullToEmpty("Set to zero to enable VSync")),
                 new CyclingOption<>("VSync Mode",
                         vsyncModes,
-                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_FIFO_KHR ? "Default (FIFO)" : "Adaptive (Relaxed FIFO)"),
+                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_FIFO_KHR ? "Default" : "Adaptive"),
                         value -> {
                             config.vsyncMode =value;
                             if(minecraftOptions.enableVsync().get()) {
@@ -74,14 +75,13 @@ public class Options {
                         },
                         () -> config.vsyncMode).setTooltip(Component.nullToEmpty("""
                         Specifies the default VSync Mode:
-                        Default is always suprpted
-                        Adaptive Vsync not available in all GPU Drivers
+                        (Some Drivers don't support Adaptive VSync)
                         
-                        Default: Causes stutter but Avoids Screen tearing
-                        Adaptive: Reduces stutter but causes Screen tearing""")),
+                        Default: Stutter, Avoids Screen tearing
+                        Adaptive: Less stutter, Allows Screen tearing""")),
                 new CyclingOption<>("Permit Screen Tearing",
                         uncappedModes,
-                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync/Mailbox"),
+                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync)"),
                         value -> {
                             config.uncappedMode =value;
                             if(!minecraftOptions.enableVsync().get()) {
@@ -89,10 +89,9 @@ public class Options {
                             }
                         },
                         () -> config.uncappedMode).setTooltip(Component.nullToEmpty("""
-                        Configures Screen Tearing if Supported by the GPU Driver:
-                        Disabled: Use Immediate mode (Low latency, Screen tearing)
-                        Enabled: Use FastSync (Higher latency, No Screen Tearing)
-                        Support varies: Some Drivers force FastSync, while others are Immediate mode only
+                        Configures Screen Tearing if supported by Driver:
+                        Disabled: Immediate (Tearing)
+                        Enabled: FastSync/MailBox (No Tearing)
                         Available Modes vary on GPU Driver + Platform
                         """)),
                 new CyclingOption<>("Gui Scale",
