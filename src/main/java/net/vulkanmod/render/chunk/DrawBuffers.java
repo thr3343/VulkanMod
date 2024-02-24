@@ -30,6 +30,7 @@ public class DrawBuffers {
     private static final int INDEX_SIZE = Short.BYTES;
     private final int index;
     private final Vector3i origin;
+    private int updateIndex;
     private final short minHeight;
 
     private boolean allocated = false;
@@ -44,7 +45,6 @@ public class DrawBuffers {
             indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
         }
     }
-    private int updateIndex;
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -214,7 +214,7 @@ public class DrawBuffers {
     public boolean isAllocated() {
         return allocated;
     }
-
+    //instanceCount was added to encourage memcpy optimisations _(JIT doesn't need to insert a 1, which generates better ASM + helps JIT)_
     public static class DrawParameters {
         int indexCount, instanceCount = 1, firstIndex, vertexOffset, baseInstance;
         final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();

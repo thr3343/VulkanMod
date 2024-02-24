@@ -206,7 +206,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         this.needsUpdate |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY) > 2.0f;
+        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY) > 2.0f; //May have very minor issues, but reduces FPS drops alot when moving
 
         if (!isCapturedFrustum) {
 
@@ -531,8 +531,9 @@ public class WorldRenderer {
         final int currentFrame = Renderer.getCurrentFrame();
         if((isFancy ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
-            if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);
-            VRenderSystem.depthMask(!isTranslucent);
+            if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS); //Fast Grass
+            VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
+
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             boolean shouldUpdate = (Renderer.getInstance().bindGraphicsPipeline(terrainShader));
             {

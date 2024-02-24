@@ -180,7 +180,8 @@ public enum Queue {
                     null);
 
         }
-    }    
+    }
+    //Using barrier batching to allow Driver optimisations
     public void MultiBufferBarriers(VkCommandBuffer commandBuffer, LongSet bufferhdles, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {

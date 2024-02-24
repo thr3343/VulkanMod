@@ -6,6 +6,7 @@ import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkDevice;
 
 import java.nio.LongBuffer;
@@ -49,7 +50,7 @@ public class Synchronization {
 
 
         vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
-
+        //VK12.vkWaitSemaphores(device, tmSemWaitInfo, VUtil.UINT64_MAX)
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
 

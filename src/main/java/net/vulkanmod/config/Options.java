@@ -12,15 +12,19 @@ import org.lwjgl.vulkan.KHRSurface;
 
 import java.util.stream.IntStream;
 
+import static org.lwjgl.vulkan.KHRSurface.*;
+
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    //Used instead of Minecraft.useFancyGraphics() to reduce CPU cache Spills  (minecraftOptions is smaller than the huge Minecraft class)
     public static boolean fancy = Minecraft.useFancyGraphics();
 
-    private static final Integer[] uncappedModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
-    private static final Integer[] vsyncModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_FIFO_KHR, KHRSurface.VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+    private static final Integer[] uncappedModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    private static final Integer[] vsyncModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_FIFO_RELAXED_KHR);
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -66,7 +70,7 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("Set to zero to enable VSync")),
                 new CyclingOption<>("VSync Mode",
                         vsyncModes,
-                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_FIFO_KHR ? "Default" : "Adaptive"),
+                        value -> Component.nullToEmpty(value== VK_PRESENT_MODE_FIFO_KHR ? "Default" : "Adaptive"),
                         value -> {
                             config.vsyncMode =value;
                             if(minecraftOptions.enableVsync().get()) {
@@ -81,7 +85,7 @@ public class Options {
                         Adaptive: Less stutter, Allows Screen tearing""")),
                 new CyclingOption<>("Permit Screen Tearing",
                         uncappedModes,
-                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync)"),
+                        value -> Component.nullToEmpty(value== VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync)"),
                         value -> {
                             config.uncappedMode =value;
                             if(!minecraftOptions.enableVsync().get()) {
@@ -149,7 +153,7 @@ public class Options {
                         },
                         () -> minecraftOptions.graphicsMode().get()
                 ).setTooltip(Component.nullToEmpty("""
-                        Using Fast Graphics will enable additional Performance Hacks
+                        Fast Graphics enables additional Performance Hacks
                         To improve GPU Performance
                         
                         * Fast Grass (< instead of <= Depth Testing)

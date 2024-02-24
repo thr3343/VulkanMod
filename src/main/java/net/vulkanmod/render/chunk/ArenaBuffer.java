@@ -76,6 +76,8 @@ public class ArenaBuffer extends Buffer {
 
 
         }
+        // Not ideal as VkCmdUpdateBuffer() causes cmdbuffer allocs if mroe than 65KB is transferred
+        // but it avoids Sync Glitches + doesn't cause FPS drops in game afaict
         GraphicsQueue.updateBuffer(commandBuffer, this.id, BaseOffset, bufferPtr, size_t);
         this.cmdSize+=size_t;
 //        nmemcpy(this.data.get(0) + BaseOffset, bufferPtr, size_t);

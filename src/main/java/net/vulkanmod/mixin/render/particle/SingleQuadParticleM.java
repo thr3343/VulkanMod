@@ -104,7 +104,7 @@ public abstract class SingleQuadParticleM extends Particle {
     {
         /**
          * @author
-         * @reason
+         * @reason Only exists for custom Particle Vertex format in DefaultVertexFormatM
          */
         @Overwrite
         public void render(VertexConsumer vertexConsumer, Camera camera, float f) {
@@ -113,7 +113,7 @@ public abstract class SingleQuadParticleM extends Particle {
 
         /**
          * @author
-         * @reason
+         * @reason Only exists for custom Particle Vertex format in DefaultVertexFormatM
          */
         @Overwrite
         private void renderSignal(VertexConsumer vertexConsumer, Camera camera, float f, Consumer<Quaternionf> consumer) {
@@ -126,7 +126,7 @@ public abstract class SingleQuadParticleM extends Particle {
 
         /**
          * @author
-         * @reason
+         * @reason Only exists for custom Particle Vertex format in DefaultVertexFormatM
          */
         @Overwrite
         private void makeCornerVertex(VertexConsumer vertexConsumer, Vector3f vector3f, float f, float g, int i) {

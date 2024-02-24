@@ -89,22 +89,20 @@ public abstract class GameRendererMixin {
     @Shadow private static @Nullable ShaderInstance rendertypeGuiTextHighlightShader;
     @Shadow private static @Nullable ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
     //TODO: use as base shaders for deduping...
-    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
-    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
-    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
+//    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
+//    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
+//    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
 
     @Shadow public ShaderInstance blitShader;
 
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
-
-    @Shadow public abstract float getRenderDistance();
 
     @Shadow private static @Nullable ShaderInstance rendertypeBreezeWindShader;
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
-        List<Program> list = Lists.newArrayList();
+//        List<Program> list = Lists.newArrayList();
 //        list.addAll(Program.Type.FRAGMENT.getPrograms().values());
 //        list.addAll(Program.Type.VERTEX.getPrograms().values());
 //        list.forEach(Program::close);
@@ -142,7 +140,7 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (shaderInstance) -> {
 //               positionTexLightmapColorShader = shaderInstance;
 //            }));
-            //Mostly only used for Falling Blocks atm
+            //TODO: only used for Falling Blocks,
             final ShaderInstance rendertypeSolid = new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK);
             list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeSolidShader = shaderInstance;
@@ -159,8 +157,8 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
-            //TODO: HACK: use rendertype_entity_translucent_cull instead of rendertype_entity_cutout_no_cull
-            // (potentially more performant)
+            //TODO: HACK: Use rendertype_entity_translucent_cull instead of rendertype_entity_cutout_no_cull
+            // (Is potentially more performant)
             final ShaderInstance rendertypeEntityDef = new ShaderInstance(provider, "rendertype_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY);
             final ShaderInstance rendertypeEntityEarlyZ = new ShaderInstance(provider, "rendertype_entity_no_outline", DefaultVertexFormat.NEW_ENTITY);
 
@@ -233,7 +231,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_water_mask", DefaultVertexFormat.POSITION), (shaderInstance) -> {
                 rendertypeWaterMaskShader = shaderInstance;
             }));
-            //TODO: might break Glowing Effect (Even thought its disabled currently due to RenderPass-related assignment issues (i.e. Worth using Imageless Framebuffers)
+            //TODO: might break Glowing Effect (Even though its disabled currently due to RenderPass-related issues (i.e. Imageless Framebuffers meight help alot)
             list1.add(Pair.of(positionColorTex, (shaderInstance) -> {
                 rendertypeOutlineShader = shaderInstance;
             }));

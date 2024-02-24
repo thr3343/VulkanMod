@@ -42,6 +42,7 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty()) {
             return;
         }
+        //Using Graphics Queue as uploads are used immediately + is recommended by AMD: https://gpuopen.com/learn/rdna-performance-guide/#copying
         GraphicsQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
                 dstBuffers.keySet(),
                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,

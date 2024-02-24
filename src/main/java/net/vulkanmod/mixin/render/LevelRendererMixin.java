@@ -65,7 +65,7 @@ public abstract class LevelRendererMixin {
 
     /**
      * @author
-     * @reason
+     * @reason This only exists for the custom Particle Vertex format in DefaultVertexFormatM
      */
     @Overwrite
     private void renderSnowAndRain(LightTexture lightTexture, float f, double d, double e, double g) {
@@ -222,8 +222,9 @@ public abstract class LevelRendererMixin {
 
 //}
 
-    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
-    private void redirectClear2(int i, boolean bl) {}
+//Temp fix to avoid Mojang splash colour from causing screen flashing red when entering world
+//    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+//    private void redirectClear2(int i, boolean bl) {}
 
     @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;clear(Z)V"))
     private void redirectClear(RenderTarget instance, boolean bl) {}

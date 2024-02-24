@@ -238,21 +238,18 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean shouldUpdate) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean pipelineUpdate) {
             try(MemoryStack stack = stackPush()) {
-                /*TODO: Skip Descriptor updates based on DescriptorSetLayout (via Externalised/Explicit DescriptorSet Wrapper Class)
-                   i.e. Skip update if the DescriptorSetLayout is the same*/
 
+                if(pipelineUpdate) this.updateUniforms(uniformBuffers);
 
-                if(shouldUpdate) this.updateUniforms(uniformBuffers);
-
-                final boolean textureUpdate = !this.transitionSamplers(uniformBuffers);
+                final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
                 if(textureUpdate) {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
-                if (textureUpdate || shouldUpdate)
+                if (textureUpdate || pipelineUpdate)
                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
                         0, stack.longs(currentSet), dynamicOffsets);
 
@@ -261,7 +258,7 @@ public abstract class Pipeline {
 
         private void updateUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
-
+            //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
             for(UBO ubo : buffers) {
 //                ubo.update();
@@ -381,9 +378,9 @@ public abstract class Pipeline {
             if(!changed && this.currentIdx != -1 &&
                 this.uniformBufferId == uniformBuffers.getId(frame)) {
                 this.currentSet = this.sets.get(this.currentIdx);
-                return true;
+                return false;
             }
-            return false;
+            return true;
         }
 
         private void createDescriptorSets(MemoryStack stack) {
