@@ -19,8 +19,6 @@ public class Config {
     public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean drawIndirect = true;
-
-    public boolean perRenderTypeAreaBuffers = false;
     public boolean entityCulling = true;
     public int device = -1;
     public boolean animations = false;
