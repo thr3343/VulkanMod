@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormatElement;
 
 public class CustomVertexFormat {
 
-    public static final VertexFormatElement ELEMENT_POSITION = new VertexFormatElement(0,VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.POSITION, 4);
+    public static final VertexFormatElement ELEMENT_POSITION = new VertexFormatElement(0,VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.POSITION, 3);
     public static final VertexFormatElement ELEMENT_COLOR = new VertexFormatElement(0, VertexFormatElement.Type.UBYTE, VertexFormatElement.Usage.COLOR, 4);
     public static final VertexFormatElement ELEMENT_UV0 = new VertexFormatElement(0, VertexFormatElement.Type.UINT, VertexFormatElement.Usage.UV, 1);
     public static final VertexFormatElement ELEMENT_UV2 = new VertexFormatElement(2, VertexFormatElement.Type.SHORT, VertexFormatElement.Usage.UV, 2);

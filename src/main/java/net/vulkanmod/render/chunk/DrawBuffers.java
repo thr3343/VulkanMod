@@ -26,7 +26,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
-    private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
+    private static final int VERTEX_SIZE = 18;
     private static final int INDEX_SIZE = Short.BYTES;
     private final int index;
     private final Vector3i origin;

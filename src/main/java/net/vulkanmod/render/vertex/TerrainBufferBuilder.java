@@ -612,15 +612,15 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			MemoryUtil.memPutShort(ptr + 4, FP32to16((z* FP16_MAX_EXPONENT)));
 
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
-			MemoryUtil.memPutInt(ptr + 8, temp);
+			MemoryUtil.memPutInt(ptr + 6, temp);
 
 			final int u1 = ((int) (u * UV_CONV));
 			final int v1 = ((int) (v * UV_CONV));
-			MemoryUtil.memPutInt(ptr + 12, u1 | v1 << 16);
+			MemoryUtil.memPutInt(ptr + 10, u1 | v1 << 16);
 
-			MemoryUtil.memPutInt(ptr + 16, light);
+			MemoryUtil.memPutInt(ptr + 14, light);
 
-			nextElementByte += 20;
+			nextElementByte += 18;
 			endVertex();
 		}
 		//Convert Floats to IEEE-754 FP16 "Half" Format
