@@ -25,8 +25,8 @@ public class MemoryTypes {
                 GPU_MEM.type = MemoryType.Type.DEVICE_LOCAL;
             }
 
-            if(memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
-                HOST_MEM = new HostLocalCachedMemory();
+            if(memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                HOST_MEM = new HostLocalWriteOnlyMemory();
             }
         }
 
@@ -119,14 +119,14 @@ public class MemoryTypes {
             return true;
         }
     }
-
-    static class HostLocalCachedMemory extends MappableMemory {
+    //Apparently removing HOST_CACHED is faster for Write-Only Staging Mem that's never readback by the Host
+    static class HostLocalWriteOnlyMemory extends MappableMemory {
         @Override
         void createBuffer(Buffer buffer, int size) {
 
             MemoryManager.getInstance().createBuffer(buffer, size,
                     buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
 
         void copyToBuffer(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer byteBuffer) {
