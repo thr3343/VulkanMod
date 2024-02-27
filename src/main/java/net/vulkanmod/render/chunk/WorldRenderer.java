@@ -121,10 +121,10 @@ public class WorldRenderer {
 //
 //        for(int i = 0; i < this.indirectBuffers.length; ++i) {
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
 //        }
 
-//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
+//        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {

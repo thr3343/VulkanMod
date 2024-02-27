@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -54,7 +53,7 @@ public class Drawer {
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
         for (int i = 0; i < framesNum; ++i) {
-            this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM);
+            this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryType.GPU_MEM);
         }
 
         if(this.uniformBuffers != null)

@@ -9,7 +9,7 @@ public class IndexBuffer extends Buffer {
 //    public IndexType indexType = IndexType.SHORT;
 
     public IndexBuffer(int size) {
-        this(size, MemoryTypes.HOST_MEM);
+        this(size, MemoryType.BAR_MEM);
     }
 
     public IndexBuffer(int size, MemoryType type) {
@@ -37,7 +37,7 @@ public class IndexBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
         System.out.println("resized vertexBuffer to: " + newSize);

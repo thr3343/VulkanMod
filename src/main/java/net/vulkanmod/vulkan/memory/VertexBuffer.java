@@ -7,7 +7,7 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 public class VertexBuffer extends Buffer {
 
     public VertexBuffer(int size) {
-        this(size, MemoryTypes.HOST_MEM);
+        this(size, MemoryType.BAR_MEM);
     }
 
     public VertexBuffer(int size, MemoryType type) {
@@ -31,7 +31,7 @@ public class VertexBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
 //        System.out.println("resized vertexBuffer to: " + newSize);

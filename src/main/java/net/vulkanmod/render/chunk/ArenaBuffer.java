@@ -6,8 +6,9 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
-import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
-import static net.vulkanmod.vulkan.memory.MemoryTypes.HOST_MEM;
+import java.nio.ByteBuffer;
+
+import static net.vulkanmod.vulkan.memory.MemoryType.GPU_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.libc.LibCString.nmemcpy;
@@ -46,7 +47,8 @@ public class ArenaBuffer extends Buffer {
         }
     }
 
-
+    //TODO; use Transfer DMA Queue for BAR uploads + Then Graphics Queue for BAR to LOCAL (Allows FIF =-Style
+    // w/ Actual Indirect buffer being LOCAL only to faciliate sync
     public void uploadSubAlloc(long bufferPtr, int index, int size_t)
     {
 

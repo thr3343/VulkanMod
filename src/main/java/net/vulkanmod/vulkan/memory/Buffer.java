@@ -30,7 +30,7 @@ public abstract class Buffer {
     }
 
     public void freeBuffer() {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
     }
 
     public void reset() { usedBytes = 0; }
