@@ -56,7 +56,7 @@ public enum Queue {
     }
 
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -72,7 +72,6 @@ public enum Queue {
             this.submitCommands(commandBuffer);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            return commandBuffer.fence;
         }
     }
 

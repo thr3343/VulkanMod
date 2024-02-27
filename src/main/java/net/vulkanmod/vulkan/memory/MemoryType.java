@@ -11,9 +11,9 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
-    GPU_MEM(Type.DEVICE_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT),
+    GPU_MEM(Type.DEVICE_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true),
 
-    BAR_MEM(Type.STAGING_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
+    BAR_MEM(Type.STAGING_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
 //    HOST_MEM(Type.HOST_LOCAL, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
     private final Type type;
@@ -21,12 +21,13 @@ public enum MemoryType {
     private final int flags;
     private long usedBytes;
 
-    MemoryType(Type type, int preferredFlags, int heapFlag) {
+    MemoryType(Type type, int preferredFlags, boolean useVRAM) {
         this.type = type;
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
 
 
+        final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
         if(DeviceManager.memoryProperties.memoryTypeCount()==1)
         {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(0);
@@ -50,7 +51,7 @@ public enum MemoryType {
             }
         }
 
-        throw new RuntimeException();
+        throw new RuntimeException("Unsupported MemoryType: "+type);
 
     }
 
@@ -106,11 +107,11 @@ public enum MemoryType {
       else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer.remaining(), dstOffset);
     }
 
-    final boolean mappable() { return this.ordinal()!=0; }
+    final boolean mappable() { return !this.equals(GPU_MEM); }
 
     public int usedBytes() { return (int) (this.usedBytes >> 20); }
 
-    public long getMaxSize() { return maxSize >> 20; }
+    public int getMaxSize() { return (int) (maxSize >> 20); }
 
     public final Type getType() {
        return this.type;
