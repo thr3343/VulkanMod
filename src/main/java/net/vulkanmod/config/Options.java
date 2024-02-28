@@ -17,7 +17,7 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
     //Used instead of Minecraft.useFancyGraphics() to reduce CPU cache Spills  (minecraftOptions is smaller than the huge Minecraft class)
@@ -70,7 +70,7 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("Set to zero to enable VSync")),
                 new CyclingOption<>("VSync Mode",
                         vsyncModes,
-                        value -> Component.nullToEmpty(value== VK_PRESENT_MODE_FIFO_KHR ? "Default" : "Adaptive"),
+                        value -> Component.nullToEmpty(value == VK_PRESENT_MODE_FIFO_KHR ? "Default (Fifo)" : "Adaptive (Relaxed Fifo)"),
                         value -> {
                             config.vsyncMode =value;
                             if(minecraftOptions.enableVsync().get()) {
@@ -81,11 +81,13 @@ public class Options {
                         Specifies the default VSync Mode:
                         (Some Drivers don't support Adaptive VSync)
                         
-                        Default: Stutter, Avoids Screen tearing
-                        Adaptive: Less stutter, Allows Screen tearing""")),
+                            Default: Stutter, Avoids tearing
+                            Adaptive: Less stutter, Allows tearing
+                            
+                        Available Modes vary on GPU Driver + Platform""")),
                 new CyclingOption<>("Permit Screen Tearing",
                         uncappedModes,
-                        value -> Component.nullToEmpty(value== VK_PRESENT_MODE_IMMEDIATE_KHR? "Yes (Immediate)" : "No (FastSync)"),
+                        value -> Component.nullToEmpty(value == VK_PRESENT_MODE_IMMEDIATE_KHR ? "Yes (Immediate)" : "No (FastSync)"),
                         value -> {
                             config.uncappedMode =value;
                             if(!minecraftOptions.enableVsync().get()) {
@@ -94,8 +96,8 @@ public class Options {
                         },
                         () -> config.uncappedMode).setTooltip(Component.nullToEmpty("""
                         Configures Screen Tearing if supported by Driver:
-                        Disabled: Immediate (Tearing)
-                        Enabled: FastSync/MailBox (No Tearing)
+                            Disabled: Immediate (Tearing)
+                            Enabled: FastSync/MailBox (No Tearing)
                         Available Modes vary on GPU Driver + Platform
                         """)),
                 new CyclingOption<>("Gui Scale",
@@ -107,11 +109,11 @@ public class Options {
                         },
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
-                        value -> {
-                          if(value == 0) return Component.translatable("options.gamma.min").getString();
-                          else if(value == 50) return Component.translatable("options.gamma.default").getString();
-                          else if(value == 100) return Component.translatable("options.gamma.max").getString();
-                          return value.toString();
+                        value -> switch (value) {
+                            case 0 -> Component.translatable("options.gamma.min").getString();
+                            case 50 -> Component.translatable("options.gamma.default").getString();
+                            case 100 -> Component.translatable("options.gamma.max").getString();
+                            default -> value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -142,7 +144,7 @@ public class Options {
 
     public static Option<?>[] getGraphicsOpts() {
         return new Option[] {
-                new CyclingOption<>("Graphics",
+                new CyclingOption<>("Fast Graphics Hacks",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
                         value -> {
@@ -268,16 +270,7 @@ public class Options {
                         Enables culling for entities on not visible sections.""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
-                        value -> {
-                            String t;
-
-                            if(value == -1)
-                                t = "Auto";
-                            else
-                                t = DeviceManager.suitableDevices.get(value).deviceName;
-
-                            return Component.nullToEmpty(t);
-                        },
+                        value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(
