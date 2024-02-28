@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
@@ -182,12 +181,9 @@ public class MemoryManager {
 
     }
 
-    public PointerBuffer Map(long allocation) {
-        PointerBuffer data = MemoryUtil.memAllocPointer(1);
+    public void Map(long allocation, PointerBuffer data) {
 
         vmaMapMemory(allocator, allocation, data);
-
-        return data;
     }
 
     public static void freeBuffer(long buffer, long allocation) {

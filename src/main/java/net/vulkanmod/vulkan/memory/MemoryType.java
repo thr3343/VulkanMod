@@ -11,18 +11,17 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
-    GPU_MEM(Type.DEVICE_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true),
+    GPU_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true),
 
-    BAR_MEM(Type.STAGING_LOCAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+    BAR_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
 //    HOST_MEM(Type.HOST_LOCAL, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
-    private final Type type;
     final long maxSize;
     private final int flags;
     private long usedBytes;
 
-    MemoryType(Type type, int preferredFlags, boolean useVRAM) {
-        this.type = type;
+    MemoryType(int preferredFlags, boolean useVRAM) {
+
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
 
@@ -51,7 +50,7 @@ public enum MemoryType {
             }
         }
 
-        throw new RuntimeException("Unsupported MemoryType: "+type);
+        throw new RuntimeException("Unsupported MemoryType: "+this.name());
 
     }
 
@@ -59,14 +58,9 @@ public enum MemoryType {
     {
 
 
-        final int usage = switch (this.type)
-        {
-            case DEVICE_LOCAL, HOST_LOCAL -> buffer.usage|VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            case STAGING_LOCAL -> buffer.usage;
-        };
-        MemoryManager.getInstance().createBuffer(buffer, size,
-                usage,
-                this.flags);
+        final int usage = buffer.usage | (this.equals(BAR_MEM) ? 0 : VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+
+        MemoryManager.getInstance().createBuffer(buffer, size, usage, this.flags);
         this.usedBytes+=size;
     }
     void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
@@ -104,7 +98,7 @@ public enum MemoryType {
           DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), dstOffset, bufferSize);
       }
 
-      else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer.remaining(), dstOffset);
+      else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), byteBuffer.remaining(), dstOffset);
     }
 
     final boolean mappable() { return !this.equals(GPU_MEM); }
@@ -113,13 +107,7 @@ public enum MemoryType {
 
     public int getMaxSize() { return (int) (maxSize >> 20); }
 
-    public final Type getType() {
-       return this.type;
-    }
-
-    public enum Type {
-        DEVICE_LOCAL,
-        STAGING_LOCAL,
-        HOST_LOCAL
-    }
+//    public int checkUsage(int usage) {
+//        return (usage & this.flags) !=0 ? usage : this.flags;
+//    }
 }

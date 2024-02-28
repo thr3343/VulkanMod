@@ -1,31 +1,30 @@
 package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryUtil;
 
-public abstract class Buffer {
+public class Buffer {
     protected long id;
     protected long allocation;
 
-    protected int bufferSize;
-    protected int usedBytes;
-    protected int offset;
+    protected int bufferSize, usedBytes, offset;
 
     protected final MemoryType type;
     protected final int usage;
-    public PointerBuffer data;
+    public final PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
         this.usage = usage;
         this.type = type;
-
+        this.data = type.mappable() ? MemoryUtil.memAllocPointer(1) : null;
     }
 
     protected void createBuffer(int bufferSize) {
         this.type.createBuffer(this, bufferSize);
 
         if(this.type.mappable()) {
-            this.data = MemoryManager.getInstance().Map(this.allocation);
+            MemoryManager.getInstance().Map(this.allocation, this.data);
         }
     }
 
@@ -51,9 +50,9 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType()); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize); }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize) {
 
     }
 }

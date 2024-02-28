@@ -40,7 +40,7 @@ public class IndexBuffer extends Buffer {
         this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
-        System.out.println("resized vertexBuffer to: " + newSize);
+//        System.out.println("resized vertexBuffer to: " + newSize);
     }
 
     public enum IndexType {
