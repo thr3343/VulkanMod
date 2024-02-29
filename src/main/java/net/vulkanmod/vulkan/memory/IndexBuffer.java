@@ -8,10 +8,6 @@ public class IndexBuffer extends Buffer {
 
 //    public IndexType indexType = IndexType.SHORT;
 
-    public IndexBuffer(int size) {
-        this(size, MemoryType.BAR_MEM);
-    }
-
     public IndexBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, type);
         this.createBuffer(size);
