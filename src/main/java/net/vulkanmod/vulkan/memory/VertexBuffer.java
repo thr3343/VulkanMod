@@ -17,6 +17,8 @@ public class VertexBuffer extends Buffer {
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {
+        //TODO: Skip Redundant/duplicated uploads
+        // Or do upload/Copy Batching here as well
         int bufferSize = (int) (vertexSize * vertexCount);
 //        long bufferSize = byteBuffer.limit();
 
