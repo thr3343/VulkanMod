@@ -63,6 +63,19 @@ public enum MemoryType {
         MemoryManager.getInstance().createBuffer(buffer, size, usage, this.flags);
         this.usedBytes+=size;
     }
+
+//    void addSubCopy(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
+//    {
+//        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+//
+//        var a = new SubCopyCommand()
+//        if(subCpyContiguous)
+//    }
+//
+//    void executeSubCopy(Buffer srcBuffer, Buffer dstBuffer)
+//    {
+//
+//    }
     void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
     {
          if(this.equals(GPU_MEM)){
