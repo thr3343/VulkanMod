@@ -68,6 +68,7 @@ public class ArenaBuffer extends Buffer {
 //                    0,
 //                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
 //                    VK_PIPELINE_STAGE_TRANSFER_BIT);
+            //TODO; Replace w/ TransferQueue + Timeline Semaphore Wait signalling VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT
             GraphicsQueue.BufferBarrier(commandBuffer.getHandle(),
                     this.id,
                     ~0,
@@ -80,8 +81,9 @@ public class ArenaBuffer extends Buffer {
         }
         // Not ideal as VkCmdUpdateBuffer() causes cmdbuffer allocs if mroe than 65KB is transferred
         // but it avoids Sync Glitches + doesn't cause FPS drops in game afaict
+        // Also avoids Host-Side memcpys placing implcit fences after each copy
         GraphicsQueue.updateBuffer(commandBuffer, this.id, BaseOffset, bufferPtr, size_t);
-        this.cmdSize+=size_t;
+
 //        nmemcpy(this.data.get(0) + BaseOffset, bufferPtr, size_t);
 
 //        subCmdUploads.enqueue(new SubCopyCommand(offset, BaseOffset, size_t));
