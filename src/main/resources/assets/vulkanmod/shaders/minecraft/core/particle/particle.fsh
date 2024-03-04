@@ -24,11 +24,11 @@ layout(location = 2) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
+    vec4 color = texture(Sampler0, texCoord0);
     if (color.a < 0.5) {
         discard;
     }
-    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
+    fragColor = (USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color)*vertexColor;
 }
 
 /*
