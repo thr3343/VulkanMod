@@ -312,8 +312,9 @@ public class WorldRenderer {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
         if(taskDispatcher.getIdleThreadsCount() == 0)
-            this.needsUpdate = true;
-
+            /*return;*/this.needsUpdate = true;
+        //TODO maybe decouple Segments from DrawIndirectCmds: execute ChunkTask then asign a specific section/ via Morton codes, indexes or some other decoupled assignment/indexing implementation.
+        // Concerned with the culling. not the drawCallIndirectCommand Contents; at least for Basic Frustum Culling tbh, (i.e. this isn't occlusion Culling, and/or Lods e.g.)_ teselation eg..
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 

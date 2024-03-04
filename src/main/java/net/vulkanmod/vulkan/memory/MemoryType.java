@@ -11,48 +11,70 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
-    GPU_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true),
+    GPU_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
 
-    BAR_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+    BAR_MEM(true, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 //    HOST_MEM(Type.HOST_LOCAL, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
     final long maxSize;
     private final int flags;
     private long usedBytes;
 
-    MemoryType(int preferredFlags, boolean useVRAM) {
+    //requiredFlags: MemType MUST have this flag(s) to be used
+    //optimalFlags: MemType IDEALLY has these flags for Optimal performance, but are not strictly required to have these flags to be used
+
+    MemoryType(boolean useVRAM, int... optimalFlags) {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
 
+        /*requiredFlags | */
+        int optimalFlagMask = 0;
+        for (int optimalFlag : optimalFlags) {
+            optimalFlagMask |= optimalFlag;
+        }
 
         final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
-        if(DeviceManager.memoryProperties.memoryTypeCount()==1)
-        {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(0);
-            VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(0);
-            this.maxSize = memoryHeap.size();
-            this.flags = memoryType.propertyFlags();
-            return;
-        }
-
-        for(VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
-
-            VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
 
-            final int flag = memoryType.propertyFlags();
-            if (flag == preferredFlags&&memoryHeap.flags()==heapFlag) {
-                this.maxSize = memoryHeap.size();
-                this.flags = flag;
+        for (int currentFlagCount = optimalFlags.length- 1; currentFlagCount >= 0; currentFlagCount--) {
 
-                return;
+            for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
+
+                VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+
+
+                final int queriedMemFlags = memoryType.propertyFlags();
+                final int queriedFlagCount = Integer.bitCount(queriedMemFlags);
+
+                //Not all drivers have DEVICE_LOCAL only memType, == checks will cause false negatives
+                final boolean hasRequiredFlags = (queriedFlagCount >= currentFlagCount) & VUtil.checkUsage(optimalFlagMask, queriedMemFlags);
+                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
+                if (hasRequiredFlags & hasRequiredHeapType) {
+                    this.maxSize = memoryHeap.size();
+                    this.flags = queriedMemFlags;
+
+                    return;
+                }
             }
+            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }
 
-        throw new RuntimeException("Unsupported MemoryType: "+this.name());
+        throw new RuntimeException("Unsupported MemoryType: "+this.name() + ": Try updating your driver and/or Vulkan version");
+
+//        VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(0);
+//        VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(0);
+//        this.maxSize = memoryHeap.size();
+//        this.flags = memoryType.propertyFlags();
+//            return;
+//
+//
 
     }
+
+//    private static boolean getVRAMHeaps(int heapFlag) {
+//        return DeviceManager.memoryProperties.memoryHeaps().stream().anyMatch(vkMemoryHeap -> vkMemoryHeap.flags() == heapFlag);
+//    }
 
     void createBuffer(Buffer buffer, int size)
     {
