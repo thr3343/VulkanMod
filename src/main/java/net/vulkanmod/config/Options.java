@@ -51,23 +51,19 @@ public class Options {
                             fullscreenDirty = true;
                         },
                         () -> minecraftOptions.fullscreen().get()),
-                new RangeOption("Framerate Limit", 0, 260, 10,
-                        value -> switch (value) {
-                            case 0 -> "VSync";
-                            case 260 -> "Unlimited";
-                            default -> String.valueOf(value);
-                        },
+                new RangeOption("Framerate Limit", 10, 260, 10,
+                        value -> value == 260 ? "Unlimited" : String.valueOf(value),
                         value -> {
-                            final boolean vsync = value == 0;
-
-                            minecraftOptions.framerateLimit().set( vsync ? 260 : value);
-                            window.setFramerateLimit(vsync ? 260 : value);
-
-                            minecraftOptions.enableVsync().set(vsync);
-                            Minecraft.getInstance().getWindow().updateVsync(vsync);
+                            minecraftOptions.framerateLimit().set(value);
+                            window.setFramerateLimit(value);
                         },
-                        () -> minecraftOptions.enableVsync().get() ? 0 : minecraftOptions.framerateLimit().get())
-                        .setTooltip(Component.nullToEmpty("Set to zero to enable VSync")),
+                        () -> minecraftOptions.framerateLimit().get()),
+                new SwitchOption("VSync",
+                        value -> {
+                            minecraftOptions.enableVsync().set(value);
+                            Minecraft.getInstance().getWindow().updateVsync(value);
+                        },
+                        () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("VSync Mode",
                         vsyncModes,
                         value -> Component.nullToEmpty(value == VK_PRESENT_MODE_FIFO_KHR ? "Default (Fifo)" : "Adaptive (Relaxed Fifo)"),
@@ -81,8 +77,8 @@ public class Options {
                         Specifies the default VSync Mode:
                         (Some Drivers don't support Adaptive VSync)
                         
-                            Default: Stutter, Avoids tearing
-                            Adaptive: Less stutter, Allows tearing
+                        Default: Stutter, Avoids tearing
+                        Adaptive: Less stutter, Allows tearing
                             
                         Available Modes vary on GPU Driver + Platform""")),
                 new CyclingOption<>("Permit Screen Tearing",
@@ -96,8 +92,10 @@ public class Options {
                         },
                         () -> config.uncappedMode).setTooltip(Component.nullToEmpty("""
                         Configures Screen Tearing if supported by Driver:
-                            Disabled: Immediate (Tearing)
-                            Enabled: FastSync/MailBox (No Tearing)
+                        
+                        Yes: Immediate (Tearing)
+                        No: FastSync/MailBox (No Tearing)
+                        
                         Available Modes vary on GPU Driver + Platform
                         """)),
                 new CyclingOption<>("Gui Scale",

@@ -343,6 +343,7 @@ public class WorldRenderer {
                     this.addNode(renderSection, relativeChunk, direction);
                 }
             }
+            //Push/Insert into updateIndexQueue
         }
 
     }
