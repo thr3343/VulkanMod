@@ -66,9 +66,7 @@ public class WorldRenderer {
     private int lastCameraSectionX;
     private int lastCameraSectionY;
     private int lastCameraSectionZ;
-    private float lastCameraX;
     private float lastCameraY;
-    private float lastCameraZ;
     private float lastCamRotX;
     private float lastCamRotY;
 
@@ -111,6 +109,7 @@ public class WorldRenderer {
 
         addOnAllChangedCallback(Queue::trimCmdPools);
         addOnAllChangedCallback(this::reset);
+        addOnAllChangedCallback(this::trimChunkQueue);
     }
 
     private void allocateIndirectBuffers() {
@@ -219,9 +218,7 @@ public class WorldRenderer {
 
                 this.frustum = (((FrustumMixed)(frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
                 this.sectionGrid.updateFrustumVisibility(this.frustum);
-                this.lastCameraX = cameraX;
                 this.lastCameraY = cameraY;
-                this.lastCameraZ = cameraZ;
                 this.lastCamRotX = camera.getXRot();
                 this.lastCamRotY = camera.getYRot();
 
@@ -294,6 +291,15 @@ public class WorldRenderer {
             this.chunkQueue.add(renderSection);
         }
 
+    }
+
+    private void trimChunkQueue() {
+
+        final int i = Math.max(1024, (this.lastViewDistance * this.lastViewDistance << 4));
+        if(this.chunkQueue.capacity() > i)
+        {
+            this.chunkQueue.trim(i);
+        }
     }
 
     private void initUpdate() {
@@ -465,9 +471,7 @@ public class WorldRenderer {
     }
 
     public void setLevel(@Nullable ClientLevel level) {
-        this.lastCameraX = Float.MIN_VALUE;
         this.lastCameraY = Float.MIN_VALUE;
-        this.lastCameraZ = Float.MIN_VALUE;
         this.lastCameraSectionX = Integer.MIN_VALUE;
         this.lastCameraSectionY = Integer.MIN_VALUE;
         this.lastCameraSectionZ = Integer.MIN_VALUE;
@@ -656,8 +660,8 @@ public class WorldRenderer {
         this.needsUpdate = true;
     }
 
-    public boolean needsUpdate() {
-        return this.needsUpdate;
+    public boolean allUpdated() {
+        return !this.needsUpdate;
     }
 
     public int getVisibleSectionsCount() {
