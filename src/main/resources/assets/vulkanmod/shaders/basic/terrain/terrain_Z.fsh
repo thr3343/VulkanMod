@@ -20,6 +20,6 @@ layout(location = 2) in vec2 texCoord0;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
-    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color; //Optimised out by Driver
+    const vec4 color = texture(Sampler0, texCoord0);
+    fragColor = USE_FOG ? linear_fog(color*vertexColor, vertexDistance, FogStart, FogEnd, FogColor) : color*vertexColor; //Optimised out by Driver
 }
