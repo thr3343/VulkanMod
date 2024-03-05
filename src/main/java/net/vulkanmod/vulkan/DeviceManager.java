@@ -150,19 +150,20 @@ public abstract class DeviceManager {
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
+//            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
             deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
             deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
             deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
 
-
+            deviceVulkan12Features.timelineSemaphore(true);
 
             deviceVulkan11Features.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(deviceFeatures);
+            createInfo.pNext(deviceVulkan12Features);
+            createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
