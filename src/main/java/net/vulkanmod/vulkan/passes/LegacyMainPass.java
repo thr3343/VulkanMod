@@ -21,7 +21,7 @@ public class LegacyMainPass implements MainPass {
         if(!Renderer.useMode) //DefaultMainPass mode
         {
             SwapChain swapChain = Vulkan.getSwapChain();
-            swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
+//            swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 
             swapChain.beginRenderPass(commandBuffer, stack);
             Renderer.getInstance().setBoundFramebuffer(swapChain);
