@@ -26,6 +26,10 @@ public class Options {
     private static final Integer[] uncappedModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     private static final Integer[] vsyncModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_FIFO_RELAXED_KHR);
 
+    static {
+        minecraftOptions.darkMojangStudiosBackground().set(true);
+    }
+
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
                 new CyclingOption<>("Resolution",
