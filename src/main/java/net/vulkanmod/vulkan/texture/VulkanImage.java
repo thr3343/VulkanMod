@@ -200,12 +200,11 @@ public class VulkanImage {
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+                stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize, unpackRowLength, height);
 
-        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
-        if (fence != VK_NULL_HANDLE)
+        if (DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer) != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
-            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+            Synchronization.waitSubmit(commandBuffer);
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
@@ -221,7 +220,7 @@ public class VulkanImage {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
         DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        Synchronization.addSubmit(commandBuffer);
     }
 
     public void readOnlyLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {

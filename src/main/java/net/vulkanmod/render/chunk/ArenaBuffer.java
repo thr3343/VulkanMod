@@ -6,8 +6,6 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
-import java.nio.ByteBuffer;
-
 import static net.vulkanmod.vulkan.memory.MemoryType.GPU_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
@@ -93,11 +91,12 @@ public class ArenaBuffer extends Buffer {
 
     public void SubmitAll()
     {
-        if(commandBuffer==null) return;
-//        Initializer.LOGGER.info(cmdSize);
-
-        GraphicsQueue.submitCommands(commandBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        if(commandBuffer!=null)
+        {
+            GraphicsQueue.GigaBarrier(commandBuffer.getHandle(), VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false);
+            GraphicsQueue.submitCommands(commandBuffer);
+            Synchronization.addSubmit(commandBuffer);
+        }
         needsResize=false;
         commandBuffer = null;
         cmdSize = 0;

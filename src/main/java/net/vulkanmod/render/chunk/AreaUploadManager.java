@@ -10,6 +10,9 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
 
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static org.lwjgl.vulkan.VK10.*;
+
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -90,13 +93,13 @@ public class AreaUploadManager {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
-        Synchronization.waitFence(commandBuffers[frame].getFence());
+        Synchronization.waitSubmit(commandBuffer);
 
         for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
             uploadSegment.setReady();
         }
 
-        this.commandBuffers[frame].reset();
+//        this.commandBuffers[frame].reset();
         this.commandBuffers[frame] = null;
         this.recordedUploads[frame].clear();
     }

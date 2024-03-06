@@ -83,7 +83,7 @@ public class UniformBuffers {
             return;
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        Synchronization.addSubmit(commandBuffer);
         commandBuffer = null;
     }
 
