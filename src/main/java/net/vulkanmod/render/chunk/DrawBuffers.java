@@ -35,7 +35,7 @@ public class DrawBuffers {
     private final short minHeight;
 
     private boolean allocated = false;
-    AreaBuffer indexBuffer;
+    AreaBuffer vertexBuffer, indexBuffer;
     static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
@@ -57,6 +57,9 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, 0));
+
+        if(!Initializer.CONFIG.perRenderTypeAreaBuffers)
+            vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
     }
@@ -98,7 +101,7 @@ public class DrawBuffers {
 
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType r) {
         return this.areaBufferTypes.computeIfAbsent(
-                r, t -> new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
+                r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
     }
 
     AreaBuffer getAreaBuffer(TerrainRenderType r) {
@@ -194,7 +197,11 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
+        if(this.vertexBuffer == null) {
+            this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
+        }
+        else
+            this.vertexBuffer.freeBuffer();
 
         this.areaBufferTypes.clear();
         if(this.indexBuffer != null)
@@ -207,7 +214,7 @@ public class DrawBuffers {
 
         drawCnts.replaceAll((t, v) -> 0);
 
-
+        this.vertexBuffer = null;
         this.indexBuffer = null;
         this.allocated = false;
     }

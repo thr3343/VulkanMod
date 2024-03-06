@@ -270,6 +270,15 @@ public class Options {
                         () -> config.entityCulling)
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
+                new SwitchOption("Low VRAM Mode",
+                        value -> {
+                            config.perRenderTypeAreaBuffers = value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
+                        Reduces VRAM usage by approx 20%
+                        May Increase/Decrease FPS: Depends on GPU architecture
+                        (Can boost performance on Old Nvidia cards)""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
