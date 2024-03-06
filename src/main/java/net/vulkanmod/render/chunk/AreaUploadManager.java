@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -97,13 +98,13 @@ public class AreaUploadManager {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
-        Synchronization.waitFence(commandBuffers[frame].getFence());
+        Synchronization.waitSubmit(commandBuffer);
 
         for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
             uploadSegment.setReady();
         }
 
-        this.commandBuffers[frame].reset();
+//        this.commandBuffers[frame].reset();
         this.commandBuffers[frame] = null;
         this.recordedUploads[frame].clear();
     }

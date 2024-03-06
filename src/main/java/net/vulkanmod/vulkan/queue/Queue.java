@@ -7,7 +7,6 @@ import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -70,7 +69,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+            Synchronization.addSubmit(commandBuffer);
 
         }
     }
@@ -89,8 +88,8 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, VUtil.UINT64_MAX);
-            commandBuffer.reset();
+            Synchronization.waitSubmit(commandBuffer);
+//            commandBuffer.reset();
         }
     }
 
@@ -128,8 +127,8 @@ public enum Queue {
     }
 
     public void endRecordingAndSubmit() {
-        long fence = submitCommands(currentCmdBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+        submitCommands(currentCmdBuffer);
+        Synchronization.addSubmit(currentCmdBuffer);
 
         currentCmdBuffer = null;
     }

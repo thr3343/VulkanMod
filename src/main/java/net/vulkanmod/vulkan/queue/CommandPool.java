@@ -1,10 +1,10 @@
 package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -55,16 +55,12 @@ public class CommandPool {
                 PointerBuffer pCommandBuffer = stack.mallocPointer(size);
                 vkAllocateCommandBuffers(Vulkan.getDevice(), allocInfo, pCommandBuffer);
 
-                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-                fenceInfo.sType$Default();
-                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-                LongBuffer pFence = stack.mallocLong(1);
 
                 for(int i = 0; i < size; ++i) {
-                    vkCreateFence(Vulkan.getDevice(), fenceInfo, null, pFence);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()), pFence.get(0));
+
+                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()));
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -88,19 +84,32 @@ public class CommandPool {
     public long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
 
         try(MemoryStack stack = stackPush()) {
-            long fence = commandBuffer.fence;
+
 
             vkEndCommandBuffer(commandBuffer.handle);
+            int currentIdx = Synchronization.getValue();
+            commandBuffer.updateSubmitId(Synchronization.updateValue());
+//            final int x = Synchronization.updateValue();
+            VkTimelineSemaphoreSubmitInfo timelineInfo3 = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .waitSemaphoreValueCount(1)
+                    .pWaitSemaphoreValues(stack.longs(0))
+                    .signalSemaphoreValueCount(1)
+                    .pSignalSemaphoreValues(stack.longs(commandBuffer.getSubmitId()/*-1*/)); //TODO:!
 
-            vkResetFences(Vulkan.getDevice(), commandBuffer.fence);
+
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pNext(timelineInfo3);
+            submitInfo.waitSemaphoreCount(1);
+            submitInfo.pWaitSemaphores(stack.longs(Synchronization.tSemaphore));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
+            submitInfo.pSignalSemaphores(stack.longs(Synchronization.tSemaphore));
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
-
-            return fence;
+            vkQueueSubmit(queue, submitInfo, 0);
+            return 1;
         }
     }
 
@@ -109,31 +118,27 @@ public class CommandPool {
     }
 
     public void cleanUp() {
-        for(CommandBuffer commandBuffer : commandBuffers) {
-            vkDestroyFence(Vulkan.getDevice(), commandBuffer.fence, null);
-        }
         vkResetCommandPool(Vulkan.getDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getDevice(), id, null);
     }
 
     public class CommandBuffer {
         final VkCommandBuffer handle;
-        final long fence;
+
         boolean submitted;
         boolean recording;
+        private long submitId;
 
-        public CommandBuffer(VkCommandBuffer handle, long fence) {
+        public CommandBuffer(VkCommandBuffer handle) {
             this.handle = handle;
-            this.fence = fence;
+
         }
 
         public VkCommandBuffer getHandle() {
             return handle;
         }
 
-        public long getFence() {
-            return fence;
-        }
+
 
         public boolean isSubmitted() {
             return submitted;
@@ -146,7 +151,16 @@ public class CommandPool {
         public void reset() {
             this.submitted = false;
             this.recording = false;
+//            this.submitId = 0;
             addToAvailable(this);
+        }
+
+        public long getSubmitId() {
+            return this.submitId;
+        }
+
+        public void updateSubmitId(int i) {
+            this.submitId=i;
         }
     }
 }
