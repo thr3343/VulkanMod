@@ -66,7 +66,9 @@ public class WorldRenderer {
     private int lastCameraSectionX;
     private int lastCameraSectionY;
     private int lastCameraSectionZ;
+    private float lastCameraX;
     private float lastCameraY;
+    private float lastCameraZ;
     private float lastCamRotX;
     private float lastCamRotY;
 
@@ -205,7 +207,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         this.needsUpdate |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        this.needsUpdate |= Math.abs(cameraY - this.lastCameraY) > 2.0f; //May have very minor issues, but reduces FPS drops alot when moving
+        this.needsUpdate |= Initializer.CONFIG.BFSMode ? Math.abs(cameraY - this.lastCameraY) > 2.0f : cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ; //May have very minor issues, but reduces FPS drops alot when moving
 
         if (!isCapturedFrustum) {
 

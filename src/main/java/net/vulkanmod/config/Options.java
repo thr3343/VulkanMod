@@ -279,6 +279,11 @@ public class Options {
                         Reduces VRAM usage by approx 20%
                         May Increase/Decrease FPS: Depends on GPU architecture
                         (Can boost performance on Old Nvidia cards)""")),
+                new CyclingOption<>("Chunk Update Frequency",
+                        new Boolean[]{true, false},
+                        value -> Component.nullToEmpty(value ? "Low" : "High"),
+                        value -> config.BFSMode = value,
+                        () -> config.BFSMode).setTooltip(Component.nullToEmpty("Chunk update Frequency")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
