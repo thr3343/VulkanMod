@@ -37,6 +37,13 @@ public class AreaUploadManager {
         }
     }
 
+
+    public void swapBuffers(long srcBuffer, long dstBuffer)
+    {
+        if(!dstBuffers.containsKey(srcBuffer)) return;// throw new RuntimeException("NOBuffer");
+        dstBuffers.put(dstBuffer,dstBuffers.remove(srcBuffer));
+    }
+
     public synchronized void submitUploads() {
         if(dstBuffers.isEmpty()) return;
         if(this.recordedUploads[this.currentFrame].isEmpty()) {
