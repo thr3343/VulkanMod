@@ -49,6 +49,11 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty()) {
             return;
         }
+        if(commandBuffers[currentFrame] == null)
+        {
+            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
+//            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+        }
         //Using Graphics Queue as uploads are used immediately + is recommended by AMD: https://gpuopen.com/learn/rdna-performance-guide/#copying
         GraphicsQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
                 dstBuffers.keySet(),
@@ -73,15 +78,11 @@ public class AreaUploadManager {
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, ByteBuffer src) {
 
-        if(commandBuffers[currentFrame] == null)
-        {
-            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
-//            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-        }
+
 
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-        stagingBuffer.copyBuffer((int) bufferSize, src);
+        stagingBuffer.copyBuffer(bufferSize, src);
 
 
 

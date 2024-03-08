@@ -7,7 +7,9 @@ public class Buffer {
     protected long id;
     protected long allocation;
 
-    protected int bufferSize, usedBytes, offset;
+    protected int bufferSize;
+    protected int usedBytes;
+    protected int offset;
 
     protected final MemoryType type;
     protected final int usage;

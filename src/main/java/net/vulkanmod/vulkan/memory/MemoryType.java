@@ -98,14 +98,14 @@ public enum MemoryType {
 //    {
 //
 //    }
-    void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
+    void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer)
     {
          if(this.equals(GPU_MEM)){
              StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
+             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
              DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
          }
-         else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), (int) bufferSize, buffer.getUsedBytes());
+         else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), bufferSize, buffer.getUsedBytes());
     }
 
 

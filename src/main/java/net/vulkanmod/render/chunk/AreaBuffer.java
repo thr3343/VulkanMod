@@ -48,33 +48,37 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
+    public void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
         //free old segment
-        if(uploadSegment.offset != -1) {
-            this.setSegmentFree(uploadSegment);
-        }
 
-        int size = byteBuffer.remaining();
 
-        if(size % elementSize != 0)
+        Segment segment = getSegment(uploadSegment);
+        final int size = byteBuffer.remaining();
+
+        if (size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
 
-        Segment segment = findSegment(size);
+        if(segment == null || size>segment.size) {
+            this.setSegmentFree(uploadSegment);
 
-        if(segment.size - size > 0) {
-            freeSegments.add(new Segment(segment.offset + size, segment.size - size));
+
+            segment = findSegment(size);
+
+            if (segment.size - size > 0) {
+                freeSegments.add(new Segment(segment.offset + size, segment.size - size));
+            }
+
+            usedSegments.put(uploadSegment, new Segment(segment.offset, size));
+            this.used += size;
         }
 
-        usedSegments.put(uploadSegment, new Segment(segment.offset, size));
-
-        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, this.buffer.getId(), segment.offset, size, byteBuffer);
 
         uploadSegment.offset = segment.offset;
         uploadSegment.size = size;
         uploadSegment.status = Segment.PENDING_BIT;
 
-        this.used += size;
+
 
     }
 
@@ -221,7 +225,7 @@ public class AreaBuffer {
         return (s1.offset >= s2.offset && s1.offset < (s2.offset + s2.size)) || (s2.offset >= s1.offset && s2.offset < (s1.offset + s1.size));
     }
 
-    public Segment getSegment(int offset) {
+    public Segment getSegment(Segment offset) {
         return this.usedSegments.get(offset);
     }
 }
