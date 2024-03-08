@@ -361,17 +361,15 @@ public class WorldRenderer {
         if (b >= 0) {
             return;
         }
-        else if (relativeChunk.getLastFrame() == this.lastFrame) {
-            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
-                    renderSection.directionChanges + 1 : renderSection.directionChanges;
+        if (relativeChunk.getLastFrame() == this.lastFrame) {
 
             relativeChunk.addDir(direction);
 
-            relativeChunk.directionChanges = d < relativeChunk.directionChanges ? (byte) d : relativeChunk.directionChanges;
+            relativeChunk.directionChanges = (byte) Math.min(renderSection.directionChanges + 1, relativeChunk.directionChanges);
 
             return;
         }
-        else if(b == FrustumIntersection.INTERSECT) {
+        if(b == FrustumIntersection.INTERSECT) {
             if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
                     relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
                 return;
