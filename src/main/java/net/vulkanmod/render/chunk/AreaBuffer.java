@@ -1,6 +1,6 @@
 package net.vulkanmod.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.memory.*;
 
@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -15,7 +16,7 @@ public class AreaBuffer {
     private final int usage;
 
     private final LinkedList<Segment> freeSegments = new LinkedList<>();
-    private final Reference2ReferenceOpenHashMap<Segment, Segment> usedSegments = new Reference2ReferenceOpenHashMap<>();
+    private final Int2ReferenceOpenHashMap<Segment> usedSegments = new Int2ReferenceOpenHashMap<>();
 
     private final int elementSize;
 
@@ -37,29 +38,22 @@ public class AreaBuffer {
     }
 
     private Buffer allocateBuffer(int size) {
-        int bufferSize = size;
 
-        Buffer buffer;
-        if(this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
-            buffer = new VertexBuffer(bufferSize, memoryType);
-        } else {
-            buffer = new IndexBuffer(bufferSize, memoryType);
-        }
-        return buffer;
+        return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
+    public void upload(ByteBuffer byteBuffer, Segment uploadSegment, int idx) {
         //free old segment
 
 
-        Segment segment = getSegment(uploadSegment);
+        Segment segment = this.usedSegments.get(idx);
         final int size = byteBuffer.remaining();
 
         if (size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
 
         if(segment == null || size>segment.size) {
-            this.setSegmentFree(uploadSegment);
+            this.setSegmentFree(idx);
 
 
             segment = findSegment(size);
@@ -68,7 +62,7 @@ public class AreaBuffer {
                 freeSegments.add(new Segment(segment.offset + size, segment.size - size));
             }
 
-            usedSegments.put(uploadSegment, new Segment(segment.offset, size));
+            usedSegments.put(idx, new Segment(segment.offset, size));
             this.used += size;
         }
 
@@ -126,7 +120,7 @@ public class AreaBuffer {
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload
-        GraphicsQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 
@@ -134,12 +128,11 @@ public class AreaBuffer {
 
         int offset = Util.align(oldSize, elementSize);
 
-        Segment segment = new Segment(offset, increment);
-        return segment;
+        return new Segment(offset, increment);
     }
 
-    public synchronized void setSegmentFree(Segment uploadSegment) {
-        Segment segment = usedSegments.remove(uploadSegment);
+    public synchronized void setSegmentFree(int index) {
+        Segment segment = usedSegments.remove(index);
 
         if(segment == null)
             return;
@@ -177,7 +170,7 @@ public class AreaBuffer {
         public void reset() {
             this.offset = -1;
             this.size = -1;
-            this.status = 0;
+
         }
 
         public int getOffset() {
@@ -225,7 +218,4 @@ public class AreaBuffer {
         return (s1.offset >= s2.offset && s1.offset < (s2.offset + s2.size)) || (s2.offset >= s1.offset && s2.offset < (s1.offset + s1.size));
     }
 
-    public Segment getSegment(Segment offset) {
-        return this.usedSegments.get(offset);
-    }
 }

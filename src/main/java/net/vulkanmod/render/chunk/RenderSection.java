@@ -36,6 +36,7 @@ public class RenderSection {
     private boolean completelyEmpty = true;
     private long visibility;
 
+    public final int index;
     int xOffset, yOffset, zOffset;
 
 //    private final DrawBuffers.DrawParameters[] drawParametersArray =
@@ -53,6 +54,7 @@ public class RenderSection {
 
 
     public RenderSection(int index, int x, int y, int z) {
+        this.index = index;
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
@@ -261,7 +263,7 @@ public class RenderSection {
 
     private void resetDrawParameters() {
         for(TerrainRenderType r : this.getCompiledSection().renderTypes) {
-            getDrawParameters(r).reset(this.chunkArea, r);
+            getDrawParameters(r).reset(this.chunkArea, r, this.index);
         }
     }
 

@@ -19,8 +19,8 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager();
     }
 
-    ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
-    CommandPool.CommandBuffer[] commandBuffers;
+    private final ObjectArrayList<AreaBuffer.Segment>[] recordedUploads = new ObjectArrayList[FRAME_NUM];
+    private final CommandPool.CommandBuffer[] commandBuffers = new CommandPool.CommandBuffer[FRAME_NUM];
 
     Long2ObjectArrayMap< ObjectArrayFIFOQueue<SubCopyCommand>> dstBuffers = new Long2ObjectArrayMap<>(8);
 
@@ -29,8 +29,6 @@ public class AreaUploadManager {
     int currentFrame;
 
     public void init() {
-        this.commandBuffers = new CommandPool.CommandBuffer[FRAME_NUM];
-        this.recordedUploads = new ObjectArrayList[FRAME_NUM];
 
         for (int i = 0; i < FRAME_NUM; i++) {
             this.recordedUploads[i] = new ObjectArrayList<>();
@@ -44,7 +42,7 @@ public class AreaUploadManager {
         dstBuffers.put(dstBuffer,dstBuffers.remove(srcBuffer));
     }
 
-    public synchronized void submitUploads() {
+    public void submitUploads() {
         if(dstBuffers.isEmpty()) return;
         if(this.recordedUploads[this.currentFrame].isEmpty()) {
             return;
@@ -57,7 +55,7 @@ public class AreaUploadManager {
         //Using Graphics Queue as uploads are used immediately + is recommended by AMD: https://gpuopen.com/learn/rdna-performance-guide/#copying
         GraphicsQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
                 dstBuffers.keySet(),
-                VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                VK_ACCESS_INDEX_READ_BIT,
                 0,
                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
                 VK_PIPELINE_STAGE_TRANSFER_BIT);

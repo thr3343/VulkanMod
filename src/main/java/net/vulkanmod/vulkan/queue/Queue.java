@@ -184,12 +184,14 @@ public enum Queue {
     public void MultiBufferBarriers(VkCommandBuffer commandBuffer, LongSet bufferhdles, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            VkBufferMemoryBarrier.Buffer memBarriers = VkBufferMemoryBarrier.calloc(bufferhdles.size(), stack);
+            VkBufferMemoryBarrier.Buffer memBarriers = VkBufferMemoryBarrier.malloc(bufferhdles.size(), stack);
                     int i = 0;
             for (var a : bufferhdles) {
 
                 memBarriers.get(i).sType$Default()
                     .buffer(a)
+                    .pNext(0)
+                    .offset(0)
                     .srcQueueFamilyIndex(this.familyIndex)
                     .dstQueueFamilyIndex(this.familyIndex)
                     .srcAccessMask(srcAccess) //Not sure if VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT or VK_ACCESS_INDEX_READ_BIT is Faster
