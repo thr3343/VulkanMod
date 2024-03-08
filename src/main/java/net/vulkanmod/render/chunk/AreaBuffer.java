@@ -106,7 +106,7 @@ public class AreaBuffer {
 
         //Try to increase size increment 8 times
         for(int i = 0; i < 8 && increment <= uploadSize; ++i) {
-            increment *= 2;
+            increment <<= 1;
         }
 
         if(increment <= uploadSize)
@@ -131,7 +131,7 @@ public class AreaBuffer {
         return new Segment(offset, increment);
     }
 
-    public synchronized void setSegmentFree(int index) {
+    public void setSegmentFree(int index) {
         Segment segment = usedSegments.remove(index);
 
         if(segment == null)
