@@ -18,6 +18,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
+    public boolean indirectDraw = false;
     public boolean perRenderTypeAreaBuffers = true;
     public boolean entityCulling = true;
     public int device = -1;

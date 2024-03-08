@@ -270,6 +270,12 @@ public class Options {
                         () -> config.entityCulling)
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
+                new SwitchOption("Indirect Draw",
+                        value -> config.indirectDraw = value,
+                        () -> config.indirectDraw)
+                        .setTooltip(Component.nullToEmpty("""
+                        Reduces CPU overhead but increases GPU overhead.
+                        Enabling it might help in CPU limited systems.""")),
                 new SwitchOption("Low VRAM Mode",
                         value -> {
                             config.perRenderTypeAreaBuffers = value;

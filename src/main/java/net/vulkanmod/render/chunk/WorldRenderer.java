@@ -526,6 +526,7 @@ public class WorldRenderer {
 
         final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -555,11 +556,12 @@ public class WorldRenderer {
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() != 0) {
                     drawBuffers.bindBuffers(commandBuffer, terrainShader, terrainRenderType, camX, camY, camZ);
-                    drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
+                    if (indirectDraw) drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
+                    else drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
                 }
 
             }
-            DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
+            if(indirectDraw) DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 
