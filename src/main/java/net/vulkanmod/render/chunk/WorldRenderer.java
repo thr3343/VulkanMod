@@ -529,7 +529,7 @@ public class WorldRenderer {
 
         final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 

@@ -8,7 +8,6 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
-import org.lwjgl.vulkan.KHRSurface;
 
 import java.util.stream.IntStream;
 
@@ -271,25 +270,16 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = value,
-                        () -> config.indirectDraw)
+                        value -> config.drawIndirect = value,
+                        () -> config.drawIndirect)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new SwitchOption("Low VRAM Mode",
-                        value -> {
-                            config.perRenderTypeAreaBuffers = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
-                        Reduces VRAM usage by approx 20%
-                        May Increase/Decrease FPS: Depends on GPU architecture
-                        (Can boost performance on Old Nvidia cards)""")),
                 new CyclingOption<>("Chunk Update Frequency",
                         new Boolean[]{true, false},
                         value -> Component.nullToEmpty(value ? "Low" : "High"),
                         value -> config.BFSMode = value,
-                        () -> config.BFSMode).setTooltip(Component.nullToEmpty("Chunk update Frequency")),
+                        () -> config.BFSMode).setTooltip(Component.nullToEmpty("May increase CPU lag if set to High")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                         value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
