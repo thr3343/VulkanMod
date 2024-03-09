@@ -358,14 +358,16 @@ public class WorldRenderer {
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
         final byte b = relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex);
-        if (b >= 0) {
+        if (b >= FrustumIntersection.PLANE_NX) {
             return;
         }
         if (relativeChunk.getLastFrame() == this.lastFrame) {
+            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
+                    renderSection.directionChanges + 1 : renderSection.directionChanges;
 
             relativeChunk.addDir(direction);
 
-            relativeChunk.directionChanges = (byte) Math.min(renderSection.directionChanges + 1, relativeChunk.directionChanges);
+            relativeChunk.directionChanges = d < relativeChunk.directionChanges ? (byte) d : relativeChunk.directionChanges;
 
             return;
         }
