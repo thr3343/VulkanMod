@@ -364,8 +364,7 @@ public class WorldRenderer {
             return;
         }
         if (relativeChunk.getLastFrame() == this.lastFrame) {
-            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
-                    renderSection.directionChanges + 1 : renderSection.directionChanges;
+            int d = renderSection.mainDir != direction? renderSection.directionChanges + 1 : renderSection.directionChanges;
 
             relativeChunk.addDir(direction);
 
