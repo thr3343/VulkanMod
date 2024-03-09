@@ -220,7 +220,9 @@ public class WorldRenderer {
 
                 this.frustum = (((FrustumMixed)(frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
                 this.sectionGrid.updateFrustumVisibility(this.frustum);
+                this.lastCameraX = cameraX;
                 this.lastCameraY = cameraY;
+                this.lastCameraZ = cameraZ;
                 this.lastCamRotX = camera.getXRot();
                 this.lastCamRotY = camera.getYRot();
 
