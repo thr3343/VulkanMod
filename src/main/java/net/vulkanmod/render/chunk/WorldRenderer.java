@@ -46,6 +46,7 @@ import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -220,10 +221,7 @@ public class WorldRenderer {
 
                 this.renderRegionCache = new RenderRegionCache();
 
-                if(flag)
-                    this.updateRenderChunks();
-                else
-                    this.updateRenderChunksSpectator();
+                if(flag) this.updateRenderChunks();
 
                 this.minecraft.getProfiler().pop();
 
@@ -336,39 +334,6 @@ public class WorldRenderer {
 
     }
 
-    private void updateRenderChunksSpectator() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-
-        if(rebuildLimit == 0)
-            this.needsUpdate = true;
-
-        while(this.chunkQueue.hasNext()) {
-            RenderSection renderSection = this.chunkQueue.poll();
-
-
-            if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
-                this.nonEmptyChunks++;
-            }
-
-            this.scheduleUpdate(renderSection);
-
-            for(Direction direction : Util.DIRECTIONS) {
-                RenderSection relativeChunk = renderSection.getNeighbour(direction);
-
-                if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
-
-                    this.addNode(renderSection, relativeChunk, direction);
-
-                }
-            }
-        }
-
-    }
-
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
         if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) >= 0) {
             return;
@@ -414,7 +379,7 @@ public class WorldRenderer {
         section.setNotDirty();
     }
 
-    public void compileSections(Camera camera) {
+    public void compileSections() {
         this.minecraft.getProfiler().push("populate_chunks_to_compile");
 //        RenderRegionCache renderregioncache = new RenderRegionCache();
 //        BlockPos cameraPos = camera.getBlockPosition();
@@ -534,25 +499,24 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
         Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-        renderer.bindGraphicsPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
 
+        final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
-            terrainRenderType.setCutoutUniform();
+            GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
+            renderer.bindGraphicsPipeline(pipeline);
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
+            renderer.uploadAndBindUBOs(pipeline);
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
                 DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
-                renderer.uploadAndBindUBOs(pipeline);
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, terrainRenderType, camX, camY, camZ);
-                    renderer.uploadAndBindUBOs(pipeline);
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
                     if (indirectDraw)
                         drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
@@ -562,15 +526,9 @@ public class WorldRenderer {
             }
         }
 
-        if(terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE) {
+        if(indirectDraw && (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE)) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        //Need to reset push constants in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         this.minecraft.getProfiler().pop();
