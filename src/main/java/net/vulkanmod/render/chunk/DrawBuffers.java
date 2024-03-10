@@ -55,13 +55,13 @@ public class DrawBuffers {
         this.allocated = true;
     }
 
-    public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType, int idx) {
+    public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType) {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
-            this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment, idx);
+            this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -74,7 +74,7 @@ public class DrawBuffers {
         if(!buffer.autoIndices) {
             if (this.indexBuffer==null)
                 this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 786432 /*RenderType.SMALL_BUFFER_SIZE*/, INDEX_SIZE);
-            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, idx);
+            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
         }
@@ -230,7 +230,7 @@ public class DrawBuffers {
             indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
         }
 
-        public void reset(ChunkArea chunkArea, TerrainRenderType r, int index) {
+        public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             this.indexCount = 0;
             this.firstIndex = 0;
             this.vertexOffset = 0;
@@ -238,7 +238,7 @@ public class DrawBuffers {
             int segmentOffset = this.vertexBufferSegment.getOffset();
             if(chunkArea != null && chunkArea.drawBuffers().hasRenderType(r) && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers().getAreaBuffer(r).setSegmentFree(index);
+                chunkArea.drawBuffers().getAreaBuffer(r).setSegmentFree(this.vertexBufferSegment);
             }
         }
     }
