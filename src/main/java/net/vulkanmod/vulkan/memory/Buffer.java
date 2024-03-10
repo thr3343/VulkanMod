@@ -30,7 +30,7 @@ public abstract class Buffer {
     }
 
     public void freeBuffer() {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
     }
 
     public void reset() { usedBytes = 0; }
@@ -51,9 +51,9 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType()); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize); }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize) {
 
     }
 }

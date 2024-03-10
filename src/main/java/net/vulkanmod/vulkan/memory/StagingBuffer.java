@@ -12,7 +12,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class StagingBuffer extends Buffer {
 
     public StagingBuffer(int bufferSize) {
-        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryType.BAR_MEM);
         this.usedBytes = 0;
         this.offset = 0;
 
@@ -45,7 +45,7 @@ public class StagingBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
         System.out.println("resized staging buffer to: " + newSize);
