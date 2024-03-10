@@ -150,17 +150,17 @@ public abstract class VRenderSystem {
     }
 
 
-    public static void enableColorLogicOp() {
-        PipelineState.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
-    }
-
-    public static void disableColorLogicOp() {
-        PipelineState.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
-    }
-
-    public static void logicOp(GlStateManager.LogicOp p_69836_) {
-        PipelineState.currentLogicOpState.setLogicOp(p_69836_);
-    }
+//    public static void enableColorLogicOp() {
+//        PipelineState.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
+//    }
+//
+//    public static void disableColorLogicOp() {
+//        PipelineState.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
+//    }
+//
+//    public static void logicOp(GlStateManager.LogicOp p_69836_) {
+//        PipelineState.currentLogicOpState.setLogicOp(p_69836_);
+//    }
 
     public static void clearColor(float f0, float f1, float f2, float f3) {
         //set to true if different color
