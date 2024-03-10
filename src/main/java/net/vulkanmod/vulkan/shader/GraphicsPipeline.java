@@ -252,11 +252,11 @@ public class GraphicsPipeline extends Pipeline {
 
                         offset += 12;
                     }
-                    else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                    else if (type == VertexFormatElement.Type.USHORT) {
+                        posDescription.format(VK_FORMAT_R16G16B16_SFLOAT);
                         posDescription.offset(offset);
 
-                        offset += 8;
+                        offset += 6;
                     }
                     else if (type == VertexFormatElement.Type.BYTE) {
                         posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
@@ -290,6 +290,12 @@ public class GraphicsPipeline extends Pipeline {
                     }
                     else if(type == VertexFormatElement.Type.USHORT){
                         posDescription.format(VK_FORMAT_R16G16_UINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+                    else if(type == VertexFormatElement.Type.UINT){
+                        posDescription.format(VK_FORMAT_R32_UINT);
                         posDescription.offset(offset);
 
                         offset += 4;
