@@ -130,7 +130,7 @@ public class TaskDispatcher {
 
         AreaUploadManager.INSTANCE.submitUploads();
 
-        return flag;
+        return false;
     }
 
     public void scheduleSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
@@ -187,4 +187,7 @@ public class TaskDispatcher {
         return String.format("iT: %d", this.idleThreads);
     }
 
+    public boolean hasUploads() {
+        return !this.toUpload.isEmpty();
+    }
 }
