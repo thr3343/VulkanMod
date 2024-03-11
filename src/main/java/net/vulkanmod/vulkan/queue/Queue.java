@@ -1,6 +1,9 @@
 package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -99,6 +102,22 @@ public enum Queue {
             copyRegion.dstOffset(dstOffset);
 
             vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
+        }
+    }
+
+    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, Long2ObjectMap.FastEntrySet<ObjectArrayFIFOQueue<SubCopyCommand>> dstBuffers) {
+
+        try(MemoryStack stack = stackPush()) {
+            for (var a : dstBuffers) {
+                ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = a.getValue();
+                VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
+                for (var subCpy : vkBufferCopies) {
+                    SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
+                    subCpy.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
+                }
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, a.getLongKey(), vkBufferCopies);
+            }
         }
     }
 
