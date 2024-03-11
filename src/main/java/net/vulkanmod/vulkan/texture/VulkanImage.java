@@ -187,7 +187,7 @@ public class VulkanImage {
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
-        long imageSize = buffer.limit();
+        int imageSize = buffer.limit();
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try(MemoryStack stack = stackPush()) {
@@ -197,7 +197,7 @@ public class VulkanImage {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.align(this.formatSize);
 
-        stagingBuffer.copyBuffer((int)imageSize, buffer);
+        stagingBuffer.copyBuffer(imageSize, buffer);
 
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize, unpackRowLength, height);
