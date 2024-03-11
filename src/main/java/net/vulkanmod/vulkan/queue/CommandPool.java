@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -60,14 +61,13 @@ public class CommandPool {
 
                 VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
                 fenceInfo.sType$Default();
-                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+//                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
                 for(int i = 0; i < size; ++i) {
                     LongBuffer pFence = stack.mallocLong(size);
                     vkCreateFence(Vulkan.getDevice(), fenceInfo, null, pFence);
 
                     CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()), pFence.get(0));
-                    commandBuffer.handle = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice());
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -95,11 +95,12 @@ public class CommandPool {
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-            vkResetFences(Vulkan.getDevice(), commandBuffer.fence);
-
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
+
+//            if(Synchronization.checkFenceStatus(fence))
+//                throw new RuntimeException("BAD Fence!: is Signalled");
 
             vkQueueSubmit(queue, submitInfo, fence);
 
@@ -120,8 +121,8 @@ public class CommandPool {
     }
 
     public class CommandBuffer {
-        VkCommandBuffer handle;
-        long fence;
+        final VkCommandBuffer handle;
+        final long fence;
         boolean submitted;
         boolean recording;
 
@@ -149,6 +150,7 @@ public class CommandPool {
         public void reset() {
             this.submitted = false;
             this.recording = false;
+//            vkResetFences(Vulkan.getDevice(), this.fence);
             addToAvailable(this);
         }
     }

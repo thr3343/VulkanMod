@@ -380,7 +380,7 @@ public class Vulkan {
 
             VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
             fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+//            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
             LongBuffer pFence = stack.mallocLong(1);
             vkCreateFence(DeviceManager.device, fenceInfo, null, pFence);
