@@ -1,5 +1,7 @@
 #version 460
 
+
+layout (constant_id = 0) const bool USE_FOG = true;
 #include "light.glsl"
 
 
@@ -31,8 +33,7 @@ void main() {
     const vec3 pos = fma(Position, FP16_MAX_EXPONENT, baseOffset);
     const vec4 xyz = vec4(pos, 1);
     gl_Position = MVP * xyz;
-
-    vertexDistance = length((ModelViewMat * xyz).xyz);
+    vertexDistance = USE_FOG ? length((ModelViewMat * xyz).xyz) : 0.0f; //Optimised out by Driver
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = unpackUnorm2x16(UV0);
 //    normal = MVP * vec4(Normal, 0.0);

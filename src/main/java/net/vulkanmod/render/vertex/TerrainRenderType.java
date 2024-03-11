@@ -26,9 +26,6 @@ public enum TerrainRenderType {
         this.alphaCutout = alphaCutout;
         this.initialSize = initialSize;
     }
-    public static EnumSet<TerrainRenderType> getActiveLayers() {
-        return Options.getGraphicsState() ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
-    }
 
     public static TerrainRenderType get(RenderType renderType) {
         return ((ExtendedRenderType)renderType).getTerrainRenderType();

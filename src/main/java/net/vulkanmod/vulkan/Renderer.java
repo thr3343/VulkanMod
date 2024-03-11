@@ -43,6 +43,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    public static boolean recomp;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -204,6 +205,14 @@ public class Renderer {
 
 //                GlFramebuffer.framebufferTexture2D(0, GL30.GL_COLOR_ATTACHMENT0, GL30.GL_TEXTURE_2D, 1, 0);
 //                GlFramebuffer.framebufferTexture2D(0, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_TEXTURE_2D, 1, 0);
+        }
+
+
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
         }
 
 
