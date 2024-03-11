@@ -2,7 +2,6 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
@@ -69,7 +68,6 @@ public class ArenaBuffer extends Buffer {
             //TODO; Replace w/ TransferQueue + Timeline Semaphore Wait signalling VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT
             GraphicsQueue.BufferBarrier(commandBuffer.getHandle(),
                     this.id,
-                    ~0,
                     0,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
@@ -94,8 +92,7 @@ public class ArenaBuffer extends Buffer {
         if(commandBuffer!=null)
         {
 //            GraphicsQueue.GigaBarrier(commandBuffer.getHandle(), VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false);
-            GraphicsQueue.submitCommands(commandBuffer, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
-            Synchronization.addSubmit(commandBuffer);
+            GraphicsQueue.submitCommands(commandBuffer, 0);
         }
         needsResize=false;
         commandBuffer = null;

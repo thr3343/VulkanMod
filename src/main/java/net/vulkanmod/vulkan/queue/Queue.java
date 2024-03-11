@@ -39,8 +39,8 @@ public enum Queue {
         }
     }
 
-    public long submitCommands(CommandPool.CommandBuffer commandBuffer, int mask) {
-        return this.commandPool.submitCommands(commandBuffer, this, mask);
+    public void submitCommands(CommandPool.CommandBuffer commandBuffer, int mask) {
+        this.commandPool.submitCommands(commandBuffer, this.queue(), mask);
     }
 
     public VkQueue queue() { return this.queue; }
@@ -69,7 +69,6 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer, 0);
-            Synchronization.addSubmit(commandBuffer);
 
         }
     }
@@ -128,7 +127,6 @@ public enum Queue {
 
     public void endRecordingAndSubmit() {
         submitCommands(currentCmdBuffer, 0);
-        Synchronization.addSubmit(currentCmdBuffer);
 
         currentCmdBuffer = null;
     }
@@ -137,8 +135,10 @@ public enum Queue {
         return currentCmdBuffer != null ? currentCmdBuffer : beginCommands();
     }
 
-    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
-        return currentCmdBuffer != null ? VK_NULL_HANDLE : submitCommands(commandBuffer, 0);
+    public void endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+        if (currentCmdBuffer == null) {
+            submitCommands(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        }
     }
 
     public void trimCmdPool()
@@ -158,7 +158,7 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)
@@ -168,7 +168,7 @@ public enum Queue {
                     .dstQueueFamilyIndex(this.familyIndex)
                     .srcAccessMask(srcAccess)
                     .dstAccessMask(dstAccess)
-                    .size(size_t);
+                    .size(~0);
 
             vkCmdPipelineBarrier(commandBuffer,
                     srcStage, dstStage,
@@ -232,8 +232,5 @@ public enum Queue {
 
     }
 
-    public int getFamilyIndex() {
-        return familyIndex;
-    }
 }
 

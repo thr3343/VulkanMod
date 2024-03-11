@@ -85,7 +85,7 @@ public class CommandPool {
         }
     }
 
-    public long submitCommands(CommandBuffer commandBuffer, Queue queue, int mask) {
+    public void submitCommands(CommandBuffer commandBuffer, VkQueue queue, int mask) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -114,8 +114,8 @@ public class CommandPool {
             submitInfo.pSignalSemaphores(stack.longs(Synchronization.tSemaphore));
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue.queue(), submitInfo, 0);
-            return 1;
+            vkQueueSubmit(queue, submitInfo, 0);
+            Synchronization.addSubmit(commandBuffer);
         }
     }
 

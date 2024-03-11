@@ -218,8 +218,7 @@ public class VulkanImage {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
-        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-        Synchronization.addSubmit(commandBuffer);
+        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer, 0);
     }
 
     public void readOnlyLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {

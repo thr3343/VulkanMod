@@ -6,10 +6,8 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferMemoryBarrier;
+
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -59,24 +57,13 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkBufferMemoryBarrier.Buffer bufferBarrier = VkBufferMemoryBarrier.calloc(1, stack);
-                bufferBarrier.sType$Default();
-                bufferBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                bufferBarrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                bufferBarrier.srcQueueFamilyIndex(TransferQueue.getFamilyIndex());
-                bufferBarrier.dstQueueFamilyIndex(TransferQueue.getFamilyIndex());
-                bufferBarrier.buffer(bufferId);
-                bufferBarrier.size(~0);
 
-
-                vkCmdPipelineBarrier(commandBuffer,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        0,
-                        null,
-                        bufferBarrier,
-                        null);
-            }
+            TransferQueue.BufferBarrier(commandBuffer,
+                    bufferId,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             dstBuffers.clear();
         }

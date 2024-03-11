@@ -15,13 +15,13 @@ import static org.lwjgl.vulkan.VK10.*;
 public class Synchronization {
     private static final int ALLOCATION_SIZE = 64;
 
-    public static final Synchronization INSTANCE = new Synchronization();
+//    public static final Synchronization INSTANCE = new Synchronization();
 
-    private final LongBuffer value = MemoryUtil.memAllocLong(1);
+//    private final LongBuffer value = MemoryUtil.memAllocLong(1);
 
 
-    public static int submits;
-    public static int idx = 0;
+    private static int submits;
+    private static int idx = 0;
 
     private static final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
     public static final long tSemaphore;
@@ -88,10 +88,19 @@ public class Synchronization {
 
 //        //VK12.vkWaitSemaphores(device, tmSemWaitInfo, VUtil.UINT64_MAX)
 //        commandBuffers.forEach(CommandPool.CommandBuffer::reset);
-        commandBuffers.clear();
+//        commandBuffers.clear();
 
 
         idx = 0;
+    }
+
+    public static void resetCmdBuffers()
+    {
+        for (int i = 0; i < commandBuffers.size()&&i<8 ; i++) {
+            CommandPool.CommandBuffer commandBuffer = commandBuffers.get(i);
+            commandBuffer.reset();
+        }
+        commandBuffers.clear();
     }
 
 
@@ -142,12 +151,12 @@ public class Synchronization {
 
     }
 
-    public boolean checkSemaphoreStatus(long fence) {
-        VkDevice device = Vulkan.getDevice();
-
-        final int i = VK12.vkGetSemaphoreCounterValue(device, tSemaphore, value);
-        return i == VK_SUCCESS;
-    }
+//    public boolean checkSemaphoreStatus(long fence) {
+//        VkDevice device = Vulkan.getDevice();
+//
+//        final int i = VK12.vkGetSemaphoreCounterValue(device, tSemaphore, value);
+//        return i == VK_SUCCESS;
+//    }
 
     public static int updateValue() {
 
