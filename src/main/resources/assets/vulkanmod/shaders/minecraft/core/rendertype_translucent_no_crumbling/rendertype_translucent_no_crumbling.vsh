@@ -10,11 +10,10 @@ layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
 };
 
-layout(binding = 3) uniform sampler2D Sampler2;
+//layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
-layout(location = 1) out vec3 normal;
-layout(location = 2) out vec2 texCoord0;
+layout(location = 1) out vec2 texCoord0;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
@@ -22,7 +21,7 @@ void main() {
     vertexColor = Color;
     texCoord0 = UV0;
     //texCoord2 = UV2;
-    normal = (MVP * vec4(Normal, 0.0)).xyz;
+    //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }
 
 /*

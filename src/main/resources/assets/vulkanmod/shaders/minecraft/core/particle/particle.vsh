@@ -1,5 +1,5 @@
 #version 450
-
+layout (constant_id = 0) const bool USE_FOG = true;
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec2 UV0;
 layout(location = 2) in vec4 Color;
@@ -19,7 +19,7 @@ layout(location = 2) out float vertexDistance;
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = USE_FOG ? length((ModelViewMat * vec4(Position, 1.0)).xyz) : 0.0f;
     texCoord0 = UV0;
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
 }
