@@ -23,6 +23,9 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
+    public boolean animations = false;
+    public boolean renderSky = false;
+    public boolean renderFog = false;
 
     private static Path path;
 
