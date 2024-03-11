@@ -1,6 +1,7 @@
 package net.vulkanmod.render.vertex;
 
 import net.minecraft.client.renderer.RenderType;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.ExtendedRenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 
@@ -24,6 +25,9 @@ public enum TerrainRenderType {
     TerrainRenderType(float alphaCutout, int initialSize) {
         this.alphaCutout = alphaCutout;
         this.initialSize = initialSize;
+    }
+    public static EnumSet<TerrainRenderType> getActiveLayers() {
+        return Options.getGraphicsState() ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
     }
 
     public static TerrainRenderType get(RenderType renderType) {
@@ -49,5 +53,9 @@ public enum TerrainRenderType {
             case TRANSLUCENT -> RenderType.translucent();
             case TRIPWIRE -> RenderType.tripwire();
         };
+    }
+
+    public int bitMask() {
+        return 1 << this.ordinal();
     }
 }

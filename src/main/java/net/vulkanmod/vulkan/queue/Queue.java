@@ -1,5 +1,9 @@
 package net.vulkanmod.vulkan.queue;
 
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -15,6 +19,7 @@ public enum Queue {
     GraphicsQueue(QueueFamilyIndices.graphicsFamily, true),
     TransferQueue(QueueFamilyIndices.transferFamily, true),
     PresentQueue(QueueFamilyIndices.presentFamily, false);
+    private final int familyIndex;
     private CommandPool.CommandBuffer currentCmdBuffer;
     private final CommandPool commandPool;
     private final VkQueue queue;
@@ -27,10 +32,11 @@ public enum Queue {
         try (MemoryStack stack = MemoryStack.stackPush())
         {
             PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(DeviceManager.device, familyIndex, 0, pQueue);
+            this.familyIndex = familyIndex;
+            vkGetDeviceQueue(DeviceManager.device, this.familyIndex, 0, pQueue);
             this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
 
-            this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+            this.commandPool = initCommandPool ? new CommandPool(this.familyIndex) : null;
         }
     }
 
@@ -50,7 +56,7 @@ public enum Queue {
     }
 
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -66,7 +72,6 @@ public enum Queue {
             this.submitCommands(commandBuffer);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            return commandBuffer.fence;
         }
     }
 
@@ -80,7 +85,7 @@ public enum Queue {
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
-
+//            this.BufferBarrier(commandBuffer.getHandle(), srcBuffer, ~0,VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT/*|VK_ACCESS_TRANSFER_WRITE_BIT*/,  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT/*|VK_PIPELINE_STAGE_TRANSFER_BIT*/, VK_PIPELINE_STAGE_TRANSFER_BIT);
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
@@ -102,8 +107,20 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long dstBuffer, VkBufferCopy.Buffer vkBufferCopies) {
-        vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, vkBufferCopies);
+    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, Long2ObjectMap.FastEntrySet<ObjectArrayFIFOQueue<SubCopyCommand>> dstBuffers) {
+
+        try(MemoryStack stack = stackPush()) {
+            for (var a : dstBuffers) {
+                ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = a.getValue();
+                VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
+                for (var subCpy : vkBufferCopies) {
+                    SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
+                    subCpy.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
+                }
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, a.getLongKey(), vkBufferCopies);
+            }
+        }
     }
 
     public void startRecording() {
@@ -142,21 +159,78 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void GigaBarrier(VkCommandBuffer commandBuffer) {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)
+                    .sType$Default()
+                    .buffer(bufferhdle)
+                    .srcQueueFamilyIndex(this.familyIndex)
+                    .dstQueueFamilyIndex(this.familyIndex)
+                    .srcAccessMask(srcAccess)
+                    .dstAccessMask(dstAccess)
+                    .size(size_t);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    srcStage, dstStage,
+                    0,
+                    null,
+                    memBarrier,
+                    null);
+
+        }
+    }
+    //Using barrier batching to allow Driver optimisations
+    public void MultiBufferBarriers(VkCommandBuffer commandBuffer, LongSet bufferhdles, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferMemoryBarrier.Buffer memBarriers = VkBufferMemoryBarrier.malloc(bufferhdles.size(), stack);
+                    int i = 0;
+            for (var a : bufferhdles) {
+
+                memBarriers.get(i).sType$Default()
+                    .buffer(a)
+                    .pNext(0)
+                    .offset(0)
+                    .srcQueueFamilyIndex(this.familyIndex)
+                    .dstQueueFamilyIndex(this.familyIndex)
+                    .srcAccessMask(srcAccess) //Not sure if VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT or VK_ACCESS_INDEX_READ_BIT is Faster
+                    .dstAccessMask(dstAccess)
+                    .size(~0 /*VK_WHOLE_SIZE*/);
+                i++;
+            }
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    srcStage, dstStage,
+                    0,
+                    null,
+                    memBarriers,
+                    null);
+
+        }
+    }
+
+    public void GigaBarrier(VkCommandBuffer commandBuffer, int srcStage, int dstStage, boolean flushReads) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack);
             memBarrier.sType$Default();
-            memBarrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
-            memBarrier.dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+            memBarrier.srcAccessMask(flushReads ? VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT : 0);
+            memBarrier.dstAccessMask(flushReads ? VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_MEMORY_WRITE_BIT);
 
             vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    srcStage, dstStage,
                     0,
                     memBarrier,
                     null,
                     null);
         }
+    }
+
+    public void updateBuffer(CommandPool.CommandBuffer commandBuffer, long id, int baseOffset, long bufferPtr, int sizeT) {
+
+        nvkCmdUpdateBuffer(commandBuffer.getHandle(), id, baseOffset, sizeT, bufferPtr);
+
     }
 }
 

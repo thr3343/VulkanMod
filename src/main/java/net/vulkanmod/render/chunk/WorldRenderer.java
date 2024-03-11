@@ -27,6 +27,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
@@ -47,11 +48,14 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11C;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
@@ -77,7 +81,6 @@ public class WorldRenderer {
     private SectionGrid sectionGrid;
 
     private boolean needsUpdate;
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
@@ -90,7 +93,7 @@ public class WorldRenderer {
 
     private VFrustum frustum;
 
-    IndirectBuffer[] indirectBuffers;
+//    IndirectBuffer[] indirectBuffers;
 //    UniformBuffers uniformBuffers;
 
     public RenderRegionCache renderRegionCache;
@@ -103,28 +106,31 @@ public class WorldRenderer {
         this.renderBuffers = renderBuffers;
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
-        allocateIndirectBuffers();
+//        allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
-            if(this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
+            for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : DrawBuffers.indirectBuffers2.entrySet()) {
+                entry.getValue().SubmitAll();
+            }
         });
 
         addOnAllChangedCallback(Queue::trimCmdPools);
+        addOnAllChangedCallback(this::reset);
+//        addOnAllChangedCallback(this::trimChunkQueue);
     }
 
     private void allocateIndirectBuffers() {
-        if(this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+//        if(this.indirectBuffers != null)
+//            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+//
+//        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
+//
+//        for(int i = 0; i < this.indirectBuffers.length; ++i) {
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+////            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
+//        }
 
-        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.BAR_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
-        }
-
-//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
+//        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
@@ -237,7 +243,7 @@ public class WorldRenderer {
 //            p.round();
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+
 //        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
@@ -441,9 +447,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized(this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.chunkAreaQueue = new AreaSetQueue(this.sectionGrid.chunkAreaManager.size);
@@ -499,6 +502,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
+        final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
@@ -507,9 +511,12 @@ public class WorldRenderer {
         Renderer renderer = Renderer.getInstance();
 
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
+
+            if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS); //Fast Grass
+            VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
+
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             boolean shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
@@ -522,14 +529,11 @@ public class WorldRenderer {
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && typedSectionQueue.size() > 0) {
                     drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
             }
-        }
-
-        if(indirectDraw && (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE)) {
-            indirectBuffers[currentFrame].submitUploads();
+            if(indirectDraw) DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 
@@ -653,9 +657,30 @@ public class WorldRenderer {
         return String.format("Chunks: %d(%d)/%d D: %d, %s", this.nonEmptyChunks, j, i, this.renderDistance, tasksInfo);
     }
 
+    public void reset() {
+
+        for (ArenaBuffer entry : DrawBuffers.indirectBuffers2.values()) {
+            entry.defaultState(4);
+        }
+        final boolean uniqueOpaqueLayer = Options.getGraphicsState();
+        if(uniqueOpaqueLayer == DrawBuffers.indirectBuffers2.containsKey(CUTOUT))
+        {
+            if (uniqueOpaqueLayer) {
+                DrawBuffers.indirectBuffers2.remove(CUTOUT).freeBuffer();
+            }
+            else {
+                DrawBuffers.indirectBuffers2.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
+            }
+        }
+
+
+    }
+
     public void cleanUp() {
-        if(indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
+
+        DrawBuffers.indirectBuffers2.forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+//        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+
     }
 
 }

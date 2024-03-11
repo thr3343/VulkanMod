@@ -5,6 +5,7 @@ import net.minecraft.client.*;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 
@@ -13,8 +14,11 @@ import java.util.stream.IntStream;
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    //Used instead of Minecraft.useFancyGraphics() to reduce CPU cache Spills  (minecraftOptions is smaller than the huge Minecraft class)
+    public static boolean fancy = Minecraft.useFancyGraphics();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -101,9 +105,21 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> minecraftOptions.graphicsMode().set(value),
+                        value -> {
+                            fancy=value==GraphicsStatus.FANCY;
+                            minecraftOptions.graphicsMode().set(value);
+                            WorldRenderer.getInstance().getTaskDispatcher().stopThreads();
+                            WorldRenderer.getInstance().allChanged();
+                        },
                         () -> minecraftOptions.graphicsMode().get()
-                ),
+                ).setTooltip(Component.nullToEmpty("""
+                        Fast Graphics enables additional Performance Hacks
+                        To improve GPU Performance
+                        
+                        * Fast Grass (< instead of <= Depth Testing)
+                        * Fast Leaves (Early-Z Culling)
+                        """)),
+
                 new CyclingOption<>("Particles",
                         new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                         particlesMode -> Component.translatable(particlesMode.getKey()),
@@ -141,9 +157,7 @@ public class Options {
                 new RangeOption("Render Distance", 2, 32, 1,
                         (value) -> {
                             minecraftOptions.renderDistance().set(value);
-                            LevelRenderer levelRenderer = Minecraft.getInstance().levelRenderer;
-                            levelRenderer.needsUpdate();
-                            levelRenderer.allChanged();
+                            Minecraft.getInstance().levelRenderer.needsUpdate();
                         },
                         () -> minecraftOptions.renderDistance().get()),
                 new RangeOption("Simulation Distance", 5, 32, 1,
@@ -252,5 +266,9 @@ public class Options {
         }
 
         config.write();
+    }
+
+    public static boolean getGraphicsState() {
+        return fancy;
     }
 }
