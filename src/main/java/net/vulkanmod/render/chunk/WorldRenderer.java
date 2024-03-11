@@ -27,6 +27,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
@@ -500,6 +501,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
+        final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
