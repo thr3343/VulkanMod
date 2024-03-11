@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.vulkanmod.vulkan.*;
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -202,9 +201,9 @@ public class VulkanImage {
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize, unpackRowLength, height);
 
-        if (DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer) != VK_NULL_HANDLE)
+        DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
 //            Synchronization.INSTANCE.addFence(fence);
-            Synchronization.waitSubmit(commandBuffer);
+//            Synchronization.waitSubmit(commandBuffer);
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
@@ -219,7 +218,7 @@ public class VulkanImage {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
-        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
         Synchronization.addSubmit(commandBuffer);
     }
 

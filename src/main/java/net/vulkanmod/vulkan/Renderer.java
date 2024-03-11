@@ -254,7 +254,7 @@ public class Renderer {
 
 
             VK12.vkWaitSemaphores(device, waitInfo, VUtil.UINT64_MAX);
-            Synchronization.waitSemaphores();
+//            Synchronization.waitSemaphores();
             p.pop();
             p.round();
             p.push("Begin_rendering");
@@ -374,7 +374,7 @@ public class Renderer {
             submitInfo.pNext(timelineInfo3);
             submitInfo.waitSemaphoreCount(2);
             submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), Synchronization.tSemaphore));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)); //Must use Image Semaphore to signal present completion for Subpass Execution Dep: any other semaphore will not work + will cause Sync Hazards
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT)); //Must use Image Semaphore to signal present completion for Subpass Execution Dep: any other semaphore will not work + will cause Sync Hazards
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), tSemaphore)); //Not using Image Semaphore to avoid submitting signaled image semaphores to vkAcquireNextImageKHR() too early
 

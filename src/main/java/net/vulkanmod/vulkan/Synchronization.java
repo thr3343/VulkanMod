@@ -8,11 +8,12 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Synchronization {
-    private static final int ALLOCATION_SIZE = 50;
+    private static final int ALLOCATION_SIZE = 64;
 
     public static final Synchronization INSTANCE = new Synchronization();
 
@@ -63,9 +64,9 @@ public class Synchronization {
 //        return this.submits + this.idx;
 //    }
 
-
+    //TimelineSemaphores are Atomic, synchronized may not be needed
     public static void waitSemaphores() {
-        //TODO: TimelineSemaphore Index
+        //TODO: replace with GPU-Side Synchronisation + Split into per Queue tmSemaphores to skip Graphics Submits
         if(idx == 0) return;
 
         VkDevice device = Vulkan.getDevice();
@@ -96,6 +97,7 @@ public class Synchronization {
 
 
     public static void waitSubmit(CommandPool.CommandBuffer commandBuffer) {
+        if(idx==0) return; //Fence/Submit Skip: skip Waits if no Submits have actually occurred
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
@@ -109,6 +111,33 @@ public class Synchronization {
             VK12.vkWaitSemaphores(Vulkan.getDevice(), waitInfo, VUtil.UINT64_MAX);
         }
         commandBuffer.reset();
+
+
+    }
+    public static void waitSubmits(LongBuffer longBuffer, CommandPool.CommandBuffer... commandBuffer) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+
+//            LongBuffer waitValues = stack.mallocLong(commandBuffer.length);
+//
+//            for (int i = 0; i < commandBuffer.length; i++) {
+//                var submitId = commandBuffer[i];
+//                waitValues.put(i, submitId.getSubmitId());
+//            }
+
+            VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                    .sType$Default()
+                    .flags(0)
+                    .semaphoreCount(1)
+                    .pSemaphores(stack.longs(tSemaphore))
+                    .pValues(longBuffer);
+
+
+            VK12.vkWaitSemaphores(Vulkan.getDevice(), waitInfo, VUtil.UINT64_MAX);
+        }
+        for (CommandPool.CommandBuffer buffer : commandBuffer) {
+            buffer.reset();
+        }
 
 
     }

@@ -85,13 +85,12 @@ public class CommandPool {
         }
     }
 
-    public long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
+    public long submitCommands(CommandBuffer commandBuffer, Queue queue, int mask) {
 
         try(MemoryStack stack = stackPush()) {
 
 
             vkEndCommandBuffer(commandBuffer.handle);
-            int currentIdx = Synchronization.getValue();
             commandBuffer.updateSubmitId(Synchronization.updateValue());
 //            final int x = Synchronization.updateValue();
             VkTimelineSemaphoreSubmitInfo timelineInfo3 = VkTimelineSemaphoreSubmitInfo.calloc(stack)
@@ -106,13 +105,16 @@ public class CommandPool {
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pNext(timelineInfo3);
-            submitInfo.waitSemaphoreCount(1);
-            submitInfo.pWaitSemaphores(stack.longs(Synchronization.tSemaphore));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
+            if(mask!=0)
+            {
+                submitInfo.waitSemaphoreCount(1);
+                submitInfo.pWaitSemaphores(stack.longs(Synchronization.tSemaphore));
+                submitInfo.pWaitDstStageMask(stack.ints(mask));
+            }
             submitInfo.pSignalSemaphores(stack.longs(Synchronization.tSemaphore));
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, 0);
+            vkQueueSubmit(queue.queue(), submitInfo, 0);
             return 1;
         }
     }

@@ -55,7 +55,7 @@ public abstract class ImageUtil {
             copyImageToBuffer(commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width, image.height, 0, 0, 0, 0, 0);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
-            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
             Synchronization.waitSubmit(commandBuffer);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
@@ -187,7 +187,7 @@ public abstract class ImageUtil {
 
             image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer, 0);
 
             Synchronization.waitSubmit(commandBuffer);
         }

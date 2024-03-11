@@ -93,8 +93,8 @@ public class ArenaBuffer extends Buffer {
     {
         if(commandBuffer!=null)
         {
-            GraphicsQueue.GigaBarrier(commandBuffer.getHandle(), VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false);
-            GraphicsQueue.submitCommands(commandBuffer);
+//            GraphicsQueue.GigaBarrier(commandBuffer.getHandle(), VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false);
+            GraphicsQueue.submitCommands(commandBuffer, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
             Synchronization.addSubmit(commandBuffer);
         }
         needsResize=false;

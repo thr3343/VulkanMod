@@ -1,18 +1,17 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
-import com.mojang.logging.LogUtils;
 import net.vulkanmod.render.chunk.AreaUploadManager;
-import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Queue;
+
+import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 public class TaskDispatcher {
     private int highPriorityQuota = 2;
@@ -132,7 +131,7 @@ public class TaskDispatcher {
             runnable.run();
         }
 
-        AreaUploadManager.INSTANCE.submitUploads();
+        AreaUploadManager.INSTANCE.submitUploads(0);
 
         return flag;
     }

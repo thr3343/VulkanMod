@@ -7,15 +7,14 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
 
-import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.ByteBuffer;
 
-import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 public class AreaUploadManager {
@@ -42,11 +41,11 @@ public class AreaUploadManager {
         }
     }
 
-    public synchronized void submitUploads() {
+    public synchronized void submitUploads(int mask) {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
 
-        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame], mask);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
@@ -61,16 +60,21 @@ public class AreaUploadManager {
 
         if(!dstBuffers.add(bufferId)) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                barrier.sType$Default();
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                VkBufferMemoryBarrier.Buffer bufferBarrier = VkBufferMemoryBarrier.calloc(1, stack);
+                bufferBarrier.sType$Default();
+                bufferBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                bufferBarrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                bufferBarrier.srcQueueFamilyIndex(TransferQueue.getFamilyIndex());
+                bufferBarrier.dstQueueFamilyIndex(TransferQueue.getFamilyIndex());
+                bufferBarrier.buffer(bufferId);
+                bufferBarrier.size(~0);
+
 
                 vkCmdPipelineBarrier(commandBuffer,
                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                         0,
-                        barrier,
                         null,
+                        bufferBarrier,
                         null);
             }
 

@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 public class AreaBuffer {
     private final MemoryType memoryType;
@@ -118,7 +119,7 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-        AreaUploadManager.INSTANCE.submitUploads();
+        AreaUploadManager.INSTANCE.submitUploads(VK_PIPELINE_STAGE_TRANSFER_BIT);
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload

@@ -39,8 +39,8 @@ public enum Queue {
         }
     }
 
-    public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        return this.commandPool.submitCommands(commandBuffer, queue);
+    public long submitCommands(CommandPool.CommandBuffer commandBuffer, int mask) {
+        return this.commandPool.submitCommands(commandBuffer, this, mask);
     }
 
     public VkQueue queue() { return this.queue; }
@@ -68,7 +68,7 @@ public enum Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            this.submitCommands(commandBuffer, 0);
             Synchronization.addSubmit(commandBuffer);
 
         }
@@ -87,7 +87,7 @@ public enum Queue {
 //            this.BufferBarrier(commandBuffer.getHandle(), srcBuffer, ~0,VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT/*|VK_ACCESS_TRANSFER_WRITE_BIT*/,  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT/*|VK_PIPELINE_STAGE_TRANSFER_BIT*/, VK_PIPELINE_STAGE_TRANSFER_BIT);
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            this.submitCommands(commandBuffer, 0);
             Synchronization.waitSubmit(commandBuffer);
 //            commandBuffer.reset();
         }
@@ -127,7 +127,7 @@ public enum Queue {
     }
 
     public void endRecordingAndSubmit() {
-        submitCommands(currentCmdBuffer);
+        submitCommands(currentCmdBuffer, 0);
         Synchronization.addSubmit(currentCmdBuffer);
 
         currentCmdBuffer = null;
@@ -138,7 +138,7 @@ public enum Queue {
     }
 
     public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
-        return currentCmdBuffer != null ? VK_NULL_HANDLE : submitCommands(commandBuffer);
+        return currentCmdBuffer != null ? VK_NULL_HANDLE : submitCommands(commandBuffer, 0);
     }
 
     public void trimCmdPool()
@@ -230,6 +230,10 @@ public enum Queue {
 
         nvkCmdUpdateBuffer(commandBuffer.getHandle(), id, baseOffset, sizeT, bufferPtr);
 
+    }
+
+    public int getFamilyIndex() {
+        return familyIndex;
     }
 }
 
