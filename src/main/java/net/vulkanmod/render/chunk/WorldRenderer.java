@@ -100,7 +100,7 @@ public class WorldRenderer {
         this.renderBuffers = renderBuffers;
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
-//        allocateIndirectBuffers();
+        allocateIndirectBuffers();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
             for (Map.Entry<TerrainRenderType, ArenaBuffer> entry : DrawBuffers.indirectBuffers2.entrySet()) {
@@ -111,7 +111,7 @@ public class WorldRenderer {
 
         addOnAllChangedCallback(Queue::trimCmdPools);
         addOnAllChangedCallback(this::reset);
-//        addOnAllChangedCallback(this::trimChunkQueue);
+        addOnAllChangedCallback(this::trimChunkQueue);
     }
 
     private void allocateIndirectBuffers() {
@@ -297,14 +297,14 @@ public class WorldRenderer {
 
     }
 
-//    private void trimChunkQueue() {
-//
-//        final int i = Math.max(1024, (this.lastViewDistance * this.lastViewDistance << 4));
-//        if(this.chunkQueue.capacity() > i)
-//        {
-//            this.chunkQueue.trim(i);
-//        }
-//    }
+    private void trimChunkQueue() {
+
+        final int i = Math.max(1024, (this.lastViewDistance * this.lastViewDistance << 4));
+        if(this.chunkQueue.capacity() > i)
+        {
+            this.chunkQueue.trim(i);
+        }
+    }
 
     private void initUpdate() {
         this.resetUpdateQueues();
@@ -320,12 +320,11 @@ public class WorldRenderer {
 
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
-
-        if(buildLimit == 0)
-            this.needsUpdate = true;
-
+        if(!needsUpdate) return;
+//        if(taskDispatcher.getIdleThreadsCount() == 0)
+//            /*return;*/this.needsUpdate = true;
+        //TODO maybe decouple Segments from DrawIndirectCmds: execute ChunkTask then asign a specific section/ via Morton codes, indexes or some other decoupled assignment/indexing implementation.
+        // Concerned with the culling. not the drawCallIndirectCommand Contents; at least for Basic Frustum Culling tbh, (i.e. this isn't occlusion Culling, and/or Lods e.g.)_ teselation eg..
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
@@ -371,12 +370,12 @@ public class WorldRenderer {
     }
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
-        if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) >= 0) {
+        final byte b = relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex);
+        if (b >= FrustumIntersection.PLANE_NX) {
             return;
         }
-        else if (relativeChunk.getLastFrame() == this.lastFrame) {
-            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
-                    renderSection.directionChanges + 1 : renderSection.directionChanges;
+        if (relativeChunk.getLastFrame() == this.lastFrame) {
+            int d = renderSection.mainDir != direction? renderSection.directionChanges + 1 : renderSection.directionChanges;
 
             relativeChunk.addDir(direction);
 
@@ -384,7 +383,7 @@ public class WorldRenderer {
 
             return;
         }
-        else if(relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) == FrustumIntersection.INTERSECT) {
+        if(b == FrustumIntersection.INTERSECT) {
             if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
                     relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
                 return;
@@ -430,8 +429,7 @@ public class WorldRenderer {
 
         if(this.taskDispatcher.hasUploads())
             this.needsUpdate = true;
-//        this.chunkAreaQueue.add(getSectionGrid().chunkAreaManager.getChunkArea(1));
-
+        this.chunkAreaQueue.add(getSectionGrid().chunkAreaManager.getChunkArea(1));
         profiler.pop();
         this.minecraft.getProfiler().popPush("schedule_async_compile");
 

@@ -142,7 +142,7 @@ public class TaskDispatcher {
     private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
         DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
-        uploadBuffers.forEach((key, value) -> drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), value, section.getDrawParameters(key), key));
+        uploadBuffers.forEach((key, value) -> drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), value, section.getDrawParameters(key), key, section.index));
     }
 
     public void scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
@@ -154,7 +154,7 @@ public class TaskDispatcher {
     private void doUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
         DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
-        drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
+        drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType, section.index);
     }
 
     public int getIdleThreadsCount() {
