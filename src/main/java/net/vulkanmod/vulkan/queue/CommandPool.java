@@ -227,7 +227,7 @@ public class CommandPool {
     }
 
     public void waitSubmit(CommandPool.CommandBuffer commandBuffer) {
-        if(prevSubmitValue==submits) return; //Fence/Submit Skip: skip Waits if no Submits have actually occurred
+        if(prevSubmitValue.get() == submits.get()) return; //Fence/Submit Skip: skip Waits if no Submits have actually occurred
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
