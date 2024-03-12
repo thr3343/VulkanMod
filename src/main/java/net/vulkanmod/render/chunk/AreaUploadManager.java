@@ -5,11 +5,10 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
-import org.lwjgl.system.MemoryStack;
+
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
@@ -23,8 +22,6 @@ public class AreaUploadManager {
     public static void createInstance() {
         INSTANCE = new AreaUploadManager();
     }
-
-    Queue queue = DeviceManager.getTransferQueue();
 
     ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
     CommandPool.CommandBuffer[] commandBuffers;
@@ -46,13 +43,13 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
 
-        queue.submitCommands(this.commandBuffers[currentFrame]);
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = queue.beginCommands();
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
@@ -60,19 +57,13 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                barrier.sType$Default();
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-
-                vkCmdPipelineBarrier(commandBuffer,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        0,
-                        barrier,
-                        null,
-                        null);
-            }
+            TransferQueue.BufferBarrier(commandBuffer,
+                    bufferId,
+                    ~0,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             dstBuffers.clear();
         }
