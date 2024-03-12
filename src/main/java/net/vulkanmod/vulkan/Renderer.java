@@ -254,7 +254,7 @@ public class Renderer {
 
 
             VK12.vkWaitSemaphores(device, waitInfo, VUtil.UINT64_MAX);
-//            Synchronization.waitSemaphores();
+//            GraphicsQueue.resetCompletedCmds();
             p.pop();
             p.round();
             p.push("Begin_rendering");
@@ -365,7 +365,7 @@ public class Renderer {
             VkTimelineSemaphoreSubmitInfo timelineInfo3 = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
                     .waitSemaphoreValueCount(2)
-                    .pWaitSemaphoreValues(stack.longs(0, Synchronization.getValue()))
+                    .pWaitSemaphoreValues(stack.longs(0, GraphicsQueue.getValue()))
                     .signalSemaphoreValueCount(2)
                     .pSignalSemaphoreValues(stack.longs(0, ++SUBMITS));
 
@@ -373,7 +373,7 @@ public class Renderer {
             submitInfo.sType$Default();
             submitInfo.pNext(timelineInfo3);
             submitInfo.waitSemaphoreCount(2);
-            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), Synchronization.tSemaphore));
+            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), GraphicsQueue.getTSemaphore()));
             submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT)); //Must use Image Semaphore to signal present completion for Subpass Execution Dep: any other semaphore will not work + will cause Sync Hazards
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), tSemaphore)); //Not using Image Semaphore to avoid submitting signaled image semaphores to vkAcquireNextImageKHR() too early
@@ -382,7 +382,8 @@ public class Renderer {
 
 
 
-            Synchronization.waitSemaphores();
+            GraphicsQueue.waitSemaphores();
+            TransferQueue.waitSemaphores();
 
             if((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, 0)) != VK_SUCCESS) {
 

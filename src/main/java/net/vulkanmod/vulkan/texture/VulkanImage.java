@@ -203,7 +203,7 @@ public class VulkanImage {
 
         DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
 //            Synchronization.INSTANCE.addFence(fence);
-//            Synchronization.waitSubmit(commandBuffer);
+        DeviceManager.getGraphicsQueue().waitSubmit(commandBuffer);
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {

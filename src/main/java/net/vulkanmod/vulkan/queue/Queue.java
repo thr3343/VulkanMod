@@ -1,11 +1,10 @@
 package net.vulkanmod.vulkan.queue;
 
-import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.vulkan.DeviceManager;
-import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -87,7 +86,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer, 0);
-            Synchronization.waitSubmit(commandBuffer);
+            this.commandPool.waitSubmit(commandBuffer);
 //            commandBuffer.reset();
         }
     }
@@ -232,5 +231,24 @@ public enum Queue {
 
     }
 
+    public void waitSemaphores() {
+        this.commandPool.waitSemaphores();
+    }
+
+    public void waitSubmit(CommandPool.CommandBuffer commandBuffer) {
+       if(commandBuffer!=null) this.commandPool.waitSubmit(commandBuffer);
+    }
+
+    public long getTSemaphore() {
+        return this.commandPool.tSemaphore;
+    }
+
+    public long getValue() {
+        return this.commandPool.submits;
+    }
+
+//    public void resetCompletedCmds() {
+//        this.commandPool.resetCompletedCmds();
+//    }
 }
 

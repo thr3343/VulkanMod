@@ -1,8 +1,9 @@
 package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -15,22 +16,24 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
+    private static final int ALLOCATION_SIZE = 64;
+    int submits;
+
     long id;
 
     private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
+//    private final java.util.Queue<CommandBuffer> activeCmdBuffers = new ArrayDeque<>();
+    final long tSemaphore;
+    private int prevSubmitValue;
 
     CommandPool(int queueFamilyIndex) {
-        this.createCommandPool(queueFamilyIndex);
-    }
-
-    public void createCommandPool(int familyIndex) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(familyIndex);
+            poolInfo.queueFamilyIndex(queueFamilyIndex);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -40,6 +43,20 @@ public class CommandPool {
             }
 
             this.id = pCommandPool.get(0);
+
+
+            VkSemaphoreTypeCreateInfo semaphoreInfoTypeT = VkSemaphoreTypeCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE)
+                    .initialValue(submits);
+
+            VkSemaphoreCreateInfo semaphoreInfo2 = VkSemaphoreCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO)
+                    .pNext(semaphoreInfoTypeT);
+
+            LongBuffer pSemaphore = stack.mallocLong(1);
+            VK12.vkCreateSemaphore(Vulkan.getDevice(), semaphoreInfo2, null, pSemaphore);
+            tSemaphore=pSemaphore.get(0);
         }
     }
 
@@ -90,33 +107,111 @@ public class CommandPool {
         try(MemoryStack stack = stackPush()) {
 
 
+//            final int l = (int) getSemaphoreCounterValue(stack);
+//            final boolean b = l != submits;
+//            if(b)
+//            {
+////                Initializer.LOGGER.error("Expected value: "+submits + "Actual value: "+ l);
+//                submits=l;
+////                submits++;
+//            }
+            commandBuffer.updateSubmitId(submits);
+
             vkEndCommandBuffer(commandBuffer.handle);
-            commandBuffer.updateSubmitId(Synchronization.updateValue());
 //            final int x = Synchronization.updateValue();
+            final boolean hasWaitOp = mask != 0;
+
+
             VkTimelineSemaphoreSubmitInfo timelineInfo3 = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
-                    .waitSemaphoreValueCount(1)
-                    .pWaitSemaphoreValues(stack.longs(0))
+//                    .waitSemaphoreValueCount(1)
+//                    .pWaitSemaphoreValues(stack.longs(hasWaitOp ? this.getValue() : 0))
                     .signalSemaphoreValueCount(1)
-                    .pSignalSemaphoreValues(stack.longs(commandBuffer.getSubmitId()/*-1*/)); //TODO:!
+                    .pSignalSemaphoreValues(stack.longs(++submits)); //TODO:!
+
+
+
+
 
 
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pNext(timelineInfo3);
-            if(mask!=0)
-            {
-                submitInfo.waitSemaphoreCount(1);
-                submitInfo.pWaitSemaphores(stack.longs(Synchronization.tSemaphore));
-                submitInfo.pWaitDstStageMask(stack.ints(mask));
-            }
-            submitInfo.pSignalSemaphores(stack.longs(Synchronization.tSemaphore));
+//            if(hasWaitOp)
+//            {
+//                submitInfo.waitSemaphoreCount(1);
+//                submitInfo.pWaitSemaphores(stack.longs(this.tSemaphore));
+//                submitInfo.pWaitDstStageMask(stack.ints(mask));
+//            }
+            submitInfo.pSignalSemaphores(stack.longs(this.tSemaphore));
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
             vkQueueSubmit(queue, submitInfo, 0);
-            Synchronization.addSubmit(commandBuffer);
+//            addSubmit(commandBuffer);
+
         }
+    }
+
+    private long getSemaphoreCounterValue(MemoryStack stack) {
+        LongBuffer tSemValue = stack.mallocLong(1);
+        VK12.vkGetSemaphoreCounterValue(Vulkan.getDevice(), this.tSemaphore, tSemValue);
+
+        return tSemValue.get(0);
+    }
+
+    public void addSubmit(CommandPool.CommandBuffer commandBuffer) {
+
+//        if(idx >= ALLOCATION_SIZE) {
+//            waitSemaphores();
+//        }
+
+//        idx++;
+//        commandBuffer.updateSubmitId(this.submits + this.idx);
+
+//        activeCmdBuffers.add(commandBuffer);
+    }
+
+    public void waitSemaphores() {
+        //TODO: replace with GPU-Side Synchronisation + Split into per Queue tmSemaphores to skip Graphics Submits
+        if(prevSubmitValue==submits) return;
+
+        VkDevice device = Vulkan.getDevice();
+
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                    .sType$Default()
+                    .flags(0)
+                    .semaphoreCount(1)
+                    .pSemaphores(stack.longs(tSemaphore))
+                    .pValues(stack.longs(prevSubmitValue));
+
+
+            VK12.vkWaitSemaphores(device, waitInfo, VUtil.UINT64_MAX);
+
+//            VkSemaphoreSignalInfo vkSemaphoreSignalInfo =VkSemaphoreSignalInfo.calloc(stack)
+//                    .sType$Default()
+//                    .semaphore(this.tSemaphore)
+//                    .value(this.submits+idx);
+//            VK12.vkSignalSemaphore(Vulkan.getDevice(), vkSemaphoreSignalInfo);
+            prevSubmitValue=submits= (int) getSemaphoreCounterValue(stack);
+        }
+
+
+
+////        //VK12.vkWaitSemaphores(device, tmSemWaitInfo, VUtil.UINT64_MAX)
+//        for (int i = 0; i < commandBuffers.size() && i<idx; i++) {
+//            CommandBuffer commandBuffer = commandBuffers.get(i);
+//            commandBuffer.reset();
+//        }
+//        for (int i = 0; i < commandBuffers.size() && i < idx; i++) {
+//
+//            commandBuffers.remove(i);
+//        }
+
+
+
     }
 
     public void addToAvailable(CommandBuffer commandBuffer) {
@@ -126,6 +221,26 @@ public class CommandPool {
     public void cleanUp() {
         vkResetCommandPool(Vulkan.getDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getDevice(), id, null);
+        vkDestroySemaphore(Vulkan.getDevice(), tSemaphore, null);
+    }
+
+    public void waitSubmit(CommandPool.CommandBuffer commandBuffer) {
+        if(prevSubmitValue==submits) return; //Fence/Submit Skip: skip Waits if no Submits have actually occurred
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                    .sType$Default()
+                    .flags(0)
+                    .semaphoreCount(1)
+                    .pSemaphores(stack.longs(tSemaphore))
+                    .pValues(stack.longs(commandBuffer.getSubmitId()));
+
+
+            VK12.vkWaitSemaphores(Vulkan.getDevice(), waitInfo, VUtil.UINT64_MAX);
+        }
+//        commandBuffer.reset();
+
+
     }
 
     public class CommandBuffer {
@@ -164,7 +279,7 @@ public class CommandPool {
             return this.submitId;
         }
 
-        public void updateSubmitId(int i) {
+        public void updateSubmitId(long i) {
             this.submitId=i;
         }
     }
