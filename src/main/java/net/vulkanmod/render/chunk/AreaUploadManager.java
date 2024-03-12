@@ -84,7 +84,7 @@ public class AreaUploadManager {
         CommandPool.CommandBuffer commandBuffer = commandBuffers[frame];
         if(commandBuffer == null)
             return;
-        Synchronization.waitFence(commandBuffers[frame]);
+        Synchronization.waitFence(commandBuffers[frame], true);
 
         for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
             uploadSegment.setReady();

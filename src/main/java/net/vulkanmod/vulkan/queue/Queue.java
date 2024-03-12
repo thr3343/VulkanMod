@@ -1,11 +1,9 @@
 package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -87,7 +85,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            Synchronization.waitFence(commandBuffer);
+            Synchronization.waitFence(commandBuffer, false);
         }
     }
 
