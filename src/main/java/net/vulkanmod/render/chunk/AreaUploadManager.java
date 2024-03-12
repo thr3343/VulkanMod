@@ -8,7 +8,6 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
 
@@ -61,13 +60,19 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {
-            TransferQueue.BufferBarrier(commandBuffer,
-                    bufferId,
-                    ~0,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT);
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
+                barrier.sType$Default();
+                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+                vkCmdPipelineBarrier(commandBuffer,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        0,
+                        barrier,
+                        null,
+                        null);
+            }
 
             dstBuffers.clear();
         }
