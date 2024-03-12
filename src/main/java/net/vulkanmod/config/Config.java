@@ -30,6 +30,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
+    public boolean BFSMode = true;
 
 
     public static Config load(Path path) {
