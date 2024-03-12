@@ -11,13 +11,14 @@ import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
     private static final int ALLOCATION_SIZE = 64;
-    int submits;
+    final AtomicInteger submits = new AtomicInteger(0);
 
     long id;
 
@@ -25,7 +26,7 @@ public class CommandPool {
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
 //    private final java.util.Queue<CommandBuffer> activeCmdBuffers = new ArrayDeque<>();
     final long tSemaphore;
-    private int prevSubmitValue;
+    private AtomicInteger prevSubmitValue = new AtomicInteger();
 
     CommandPool(int queueFamilyIndex) {
 
@@ -48,7 +49,7 @@ public class CommandPool {
             VkSemaphoreTypeCreateInfo semaphoreInfoTypeT = VkSemaphoreTypeCreateInfo.calloc(stack)
                     .sType$Default()
                     .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE)
-                    .initialValue(submits);
+                    .initialValue(0);
 
             VkSemaphoreCreateInfo semaphoreInfo2 = VkSemaphoreCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO)
@@ -115,7 +116,7 @@ public class CommandPool {
 //                submits=l;
 ////                submits++;
 //            }
-            commandBuffer.updateSubmitId(submits);
+            commandBuffer.updateSubmitId(submits.get());
 
             vkEndCommandBuffer(commandBuffer.handle);
 //            final int x = Synchronization.updateValue();
@@ -127,7 +128,7 @@ public class CommandPool {
 //                    .waitSemaphoreValueCount(1)
 //                    .pWaitSemaphoreValues(stack.longs(hasWaitOp ? this.getValue() : 0))
                     .signalSemaphoreValueCount(1)
-                    .pSignalSemaphoreValues(stack.longs(++submits)); //TODO:!
+                    .pSignalSemaphoreValues(stack.longs(submits.incrementAndGet())); //TODO:!
 
 
 
@@ -174,7 +175,7 @@ public class CommandPool {
 
     public void waitSemaphores() {
         //TODO: replace with GPU-Side Synchronisation + Split into per Queue tmSemaphores to skip Graphics Submits
-        if(prevSubmitValue==submits) return;
+        if(prevSubmitValue.get() == submits.get()) return;
 
         VkDevice device = Vulkan.getDevice();
 
@@ -185,7 +186,7 @@ public class CommandPool {
                     .flags(0)
                     .semaphoreCount(1)
                     .pSemaphores(stack.longs(tSemaphore))
-                    .pValues(stack.longs(prevSubmitValue));
+                    .pValues(stack.longs(prevSubmitValue.get()));
 
 
             VK12.vkWaitSemaphores(device, waitInfo, VUtil.UINT64_MAX);
@@ -195,10 +196,11 @@ public class CommandPool {
 //                    .semaphore(this.tSemaphore)
 //                    .value(this.submits+idx);
 //            VK12.vkSignalSemaphore(Vulkan.getDevice(), vkSemaphoreSignalInfo);
-            prevSubmitValue=submits= (int) getSemaphoreCounterValue(stack);
+            prevSubmitValue.set(submits.get());
         }
 
-
+        commandBuffers.forEach(CommandBuffer::reset);
+        commandBuffers.clear();
 
 ////        //VK12.vkWaitSemaphores(device, tmSemWaitInfo, VUtil.UINT64_MAX)
 //        for (int i = 0; i < commandBuffers.size() && i<idx; i++) {

@@ -244,7 +244,7 @@ public enum Queue {
     }
 
     public long getValue() {
-        return this.commandPool.submits;
+        return this.commandPool.submits.get();
     }
 
 //    public void resetCompletedCmds() {
