@@ -2,8 +2,6 @@ package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
@@ -18,9 +16,9 @@ public class Synchronization {
     public static final Synchronization INSTANCE = new Synchronization(ALLOCATION_SIZE);
 
     private final LongBuffer fences;
-    private int idx = 0;
+    private static int idx = 0;
 
-    private ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
+    private final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
 
     Synchronization(int allocSize) {
         this.fences = MemoryUtil.memAllocLong(allocSize);
@@ -46,10 +44,9 @@ public class Synchronization {
         VkDevice device = Vulkan.getDevice();
 
         fences.limit(idx);
-
-        for (int i = 0; i < idx; i++) {
-            vkWaitForFences(device, fences.get(i), true, VUtil.UINT64_MAX);
-        }
+        //Use aggregate fence wait: reduces Native Calls
+        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
+//        vkResetFences(device, fences);
 
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
@@ -58,10 +55,13 @@ public class Synchronization {
         idx = 0;
     }
 
-    public static void waitFence(long fence) {
+    public static void waitFence(CommandPool.CommandBuffer commandBuffer) {
+        if(idx == 0) return;
         VkDevice device = Vulkan.getDevice();
 
+        final long fence = commandBuffer.getFence();
         vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+        commandBuffer.reset();
     }
 
     public static boolean checkFenceStatus(long fence) {

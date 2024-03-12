@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -12,7 +13,6 @@ import java.nio.LongBuffer;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 
 public abstract class ImageUtil {
 
@@ -55,7 +55,7 @@ public abstract class ImageUtil {
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-            vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
+            Synchronization.waitFence(commandBuffer);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
                     (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), ptr)
@@ -188,7 +188,7 @@ public abstract class ImageUtil {
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
 
-            vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
+            Synchronization.waitFence(commandBuffer);
         }
     }
 }

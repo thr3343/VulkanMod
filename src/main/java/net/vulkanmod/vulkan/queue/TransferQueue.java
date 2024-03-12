@@ -51,8 +51,7 @@ public class TransferQueue extends Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(DEVICE, commandBuffer.fence, true, VUtil.UINT64_MAX);
-            commandBuffer.reset();
+            Synchronization.waitFence(commandBuffer);
         }
     }
 
