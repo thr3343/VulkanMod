@@ -8,7 +8,9 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
@@ -57,9 +59,7 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {
-            TransferQueue.BufferBarrier(commandBuffer,
-                    bufferId,
-                    ~0,
+            TransferQueue.memBarrier(commandBuffer,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,

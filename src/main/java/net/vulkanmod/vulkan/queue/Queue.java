@@ -211,5 +211,22 @@ public enum Queue {
         nvkCmdUpdateBuffer(commandBuffer.getHandle(), id, baseOffset, sizeT, bufferPtr);
 
     }
+
+    public void memBarrier(VkCommandBuffer commandBuffer, int srcAccessMask, int dstAccessMask, int srcStageMask, int dstStageMask) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack)
+                    .sType$Default()
+                    .srcAccessMask(srcAccessMask)
+                    .dstAccessMask(dstAccessMask);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    srcStageMask, dstStageMask,
+                    0,
+                    barrier,
+                    null,
+                    null);
+        }
+    }
 }
 
