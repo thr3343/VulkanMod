@@ -43,6 +43,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryType;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
@@ -50,6 +51,9 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
+
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -105,6 +109,8 @@ public class WorldRenderer {
             if(this.indirectBuffers.length != Renderer.getFramesNum())
                 allocateIndirectBuffers();
         });
+
+        addOnAllChangedCallback(Queue::trimCmdPools);
     }
 
     private void allocateIndirectBuffers() {
