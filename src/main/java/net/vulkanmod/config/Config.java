@@ -17,6 +17,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
+    public boolean BFSMode = true;
     public boolean indirectDraw = false;
 
     public boolean perRenderTypeAreaBuffers = false;

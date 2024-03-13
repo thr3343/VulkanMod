@@ -97,6 +97,7 @@ public class WorldRenderer {
     int nonEmptyChunks;
 
     private final List<Runnable> onAllChangedCallbacks = new ObjectArrayList<>();
+    private boolean BFSMode = Initializer.CONFIG.BFSMode;
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -191,16 +192,13 @@ public class WorldRenderer {
 
         this.minecraft.getProfiler().popPush("update");
 
-        boolean flag = this.minecraft.smartCull;
-        if (spectator && this.level.getBlockState(blockpos).isSolidRender(this.level, blockpos)) {
-            flag = false;
-        }
+        final boolean flag = (!spectator || !this.level.getBlockState(blockpos).isSolidRender(this.level, blockpos)) && this.minecraft.smartCull;
 
         float d_xRot = Math.abs(camera.getXRot() - this.lastCamRotX);
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         this.needsUpdate |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        this.needsUpdate |= cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ;
+        this.needsUpdate |= this.BFSMode ? Math.abs(cameraY - this.lastCameraY) > 2.0f : cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ; //May have very minor issues, but reduces FPS drops alot when moving
 
         if (!isCapturedFrustum) {
 
@@ -303,9 +301,7 @@ public class WorldRenderer {
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
-
-        if(buildLimit == 0)
+        if(taskDispatcher.getIdleThreadsCount() == 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {
@@ -661,4 +657,7 @@ public class WorldRenderer {
             Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
     }
 
+    public void setBFSMode(boolean value) {
+        this.BFSMode=value;
+    }
 }

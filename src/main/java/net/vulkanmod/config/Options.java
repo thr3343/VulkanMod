@@ -5,6 +5,7 @@ import net.minecraft.client.*;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 
@@ -151,6 +152,14 @@ public class Options {
                             minecraftOptions.simulationDistance().set(value);
                         },
                         () -> minecraftOptions.simulationDistance().get()),
+                new CyclingOption<>("Chunk Update Frequency",
+                        new Boolean[]{true, false},
+                        value -> Component.nullToEmpty(value ? "Low" : "High"),
+                        value -> {
+                            config.BFSMode = value;
+                            WorldRenderer.getInstance().setBFSMode(value);
+                        },
+                        () -> config.BFSMode).setTooltip(Component.nullToEmpty("May increase CPU lag if set to High")),
                 new SwitchOption("Entity Shadows",
                         value -> minecraftOptions.entityShadows().set(value),
                         () -> minecraftOptions.entityShadows().get()),
