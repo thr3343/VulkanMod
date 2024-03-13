@@ -90,7 +90,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-
+        this.updateIndex |= renderType.bitMask(); //Helps avoid sync hazards for some reason: (per-ChunkArea Blocksing.Barriers i.e. Selction./+Graular Barriers...)
 
         buffer.release();
 

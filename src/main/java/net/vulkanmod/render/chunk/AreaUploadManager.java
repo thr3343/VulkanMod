@@ -89,8 +89,7 @@ public class AreaUploadManager {
         for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
             uploadSegment.setReady();
         }
-
-        this.commandBuffers[frame].reset();
+        
         this.commandBuffers[frame] = null;
         this.recordedUploads[frame].clear();
     }
