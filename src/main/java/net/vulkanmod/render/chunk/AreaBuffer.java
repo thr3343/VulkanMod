@@ -118,7 +118,7 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-        AreaUploadManager.INSTANCE.submitUploads();
+        AreaUploadManager.INSTANCE.swapBuffers(this.buffer.getId(), buffer.getId());
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload

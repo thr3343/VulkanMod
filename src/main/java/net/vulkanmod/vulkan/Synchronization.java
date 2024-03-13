@@ -55,8 +55,8 @@ public class Synchronization {
         idx = 0;
     }
 
-    public static void waitFence(CommandPool.CommandBuffer commandBuffer, boolean fenceSkip) {
-        if(!fenceSkip && idx == 0) return;
+    public static void waitFence(CommandPool.CommandBuffer commandBuffer) {
+        if(idx == 0) return;
         VkDevice device = Vulkan.getDevice();
 
         final long fence = commandBuffer.getFence();

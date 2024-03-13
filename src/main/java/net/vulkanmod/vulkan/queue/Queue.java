@@ -4,9 +4,11 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.render.chunk.SubCopyCommand;
+import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -88,7 +90,8 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            Synchronization.waitFence(commandBuffer, false);
+            vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, VUtil.UINT64_MAX);
+            commandBuffer.reset();
         }
     }
 
@@ -105,14 +108,14 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, Long2ObjectMap.FastEntrySet<ObjectArrayFIFOQueue<SubCopyCommand>> dstBuffers) {
+    public void uploadBufferCmds(CommandPool.CommandBuffer commandBuffer, long srcBuffer, Long2ObjectMap.FastEntrySet<ResettableQueue<SubCopyCommand>> dstBuffers) {
 
         try(MemoryStack stack = stackPush()) {
             for (var a : dstBuffers) {
-                ObjectArrayFIFOQueue<SubCopyCommand> subCmdUploads = a.getValue();
+                ResettableQueue<SubCopyCommand> subCmdUploads = a.getValue();
                 VkBufferCopy.Buffer vkBufferCopies = VkBufferCopy.malloc(subCmdUploads.size(), stack);
                 for (var subCpy : vkBufferCopies) {
-                    SubCopyCommand subCopyCommand = subCmdUploads.dequeue();
+                    SubCopyCommand subCopyCommand = subCmdUploads.poll();
                     subCpy.set(subCopyCommand.srcOffset(), subCopyCommand.dstOffset(), subCopyCommand.bufferSize());
                 }
 

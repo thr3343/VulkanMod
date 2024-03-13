@@ -69,6 +69,8 @@ public class ArenaBuffer extends Buffer {
 //                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
 //                    VK_PIPELINE_STAGE_TRANSFER_BIT);
             //TODO; Replace w/ TransferQueue + Timeline Semaphore Wait signalling VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT
+
+
             GraphicsQueue.BufferBarrier(commandBuffer.getHandle(),
                     this.id,
                     ~0,
