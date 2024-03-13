@@ -59,7 +59,7 @@ public class RenderSection {
 
         this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
         for(int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT, index);
         }
     }
 

@@ -11,14 +11,14 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
-public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers, EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueues) {
+public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers) {
 
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
-        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
-        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            sectionQueues.put(renderType, new StaticQueue<>(512));
-        }
+        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight));
+//        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+//            sectionQueues.put(renderType, new StaticQueue<>(512));
+//        }
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -121,13 +121,13 @@ public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuff
 //    }
 
     public void addSections(RenderSection section) {
-        for(var t : section.getCompiledSection().renderTypes) {
-            this.sectionQueues.get(t).add(section.getDrawParameters(t));
-        }
+//        for(var t : section.getCompiledSection().renderTypes) {
+//            this.sectionQueues.get(t).add(section.getDrawParameters(t));
+//        }
     }
 
     public void resetQueue() {
-        this.sectionQueues.forEach((renderType, drawParameters) -> drawParameters.clear());
+        this.drawBuffers().resetQueues();
     }
 
     public void setPosition(int x, int y, int z) {

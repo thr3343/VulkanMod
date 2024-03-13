@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -40,9 +39,6 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
@@ -314,7 +310,7 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().addSections(renderSection);
+                renderSection.getChunkArea().drawBuffers().addSections(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -518,12 +514,11 @@ public class WorldRenderer {
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
                 DrawBuffers drawBuffers = chunkArea.drawBuffers();
-                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
-                if(drawBuffers.getAreaBuffer(terrainRenderType) != null && typedSectionQueue.size() > 0) {
+                if(drawBuffers.getAreaBuffer(terrainRenderType) != null && drawBuffers.drawCnts.get(terrainRenderType).size() > 0) {
                     drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(typedSectionQueue, terrainRenderType);
-                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(terrainRenderType);
+                    else chunkArea.drawBuffers().buildDrawBatchesDirect(terrainRenderType);
                 }
             }
             if(indirectDraw) DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();

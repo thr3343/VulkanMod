@@ -1,13 +1,11 @@
 package net.vulkanmod.render.chunk;
 
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 import org.joml.Vector3i;
@@ -15,9 +13,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.nio.LongBuffer;
 import java.util.EnumMap;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.getActiveLayers;
@@ -35,7 +31,7 @@ public class DrawBuffers {
     private boolean allocated = false;
     AreaBuffer indexBuffer;
     static final EnumMap<TerrainRenderType, ArenaBuffer> indirectBuffers2 = new EnumMap<>(TerrainRenderType.class);
-    private final EnumMap<TerrainRenderType, Integer> drawCnts = new EnumMap<>(TerrainRenderType.class);
+    final EnumMap<TerrainRenderType, StaticQueue<DrawParameters>> drawCnts = new EnumMap<>(TerrainRenderType.class);
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
     static {
@@ -54,7 +50,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, 0));
+        getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, new StaticQueue<>(512)));
 
         this.allocated = true;
     }
@@ -91,6 +87,9 @@ public class DrawBuffers {
         drawParameters.vertexOffset = vertexOffset;
 
         this.updateIndex |= renderType.bitMask(); //Helps avoid sync hazards for some reason: (per-ChunkArea Blocksing.Barriers i.e. Selction./+Graular Barriers...)
+
+
+//        this.drawCnts.get(renderType).add(drawParameters);
 
         buffer.release();
 
@@ -129,34 +128,33 @@ public class DrawBuffers {
 
             vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
-    public void buildDrawBatchesIndirect(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesIndirect(TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            if((updateIndex & terrainRenderType.bitMask()) !=0 || drawCnts.get(terrainRenderType)!=queue.size())
+            if((updateIndex & terrainRenderType.bitMask()) !=0)
             {
-                updateIndirectCmds(queue, terrainRenderType, stack);
+                updateIndirectCmds(terrainRenderType, stack);
 
                 updateIndex ^= terrainRenderType.bitMask();
-
-                drawCnts.put(terrainRenderType, queue.size());
             }
 
             ArenaBuffer arenaBuffer = indirectBuffers2.get(terrainRenderType);
 
-            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), queue.size(), 20);
+            vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), arenaBuffer.getId(), arenaBuffer.getBaseOffset(this.index), this.drawCnts.get(terrainRenderType).size(), 20);
         }
 
 
     }
 
-    private void updateIndirectCmds(StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, MemoryStack stack) {
-        int size = queue.size() * 20;
+    private void updateIndirectCmds(TerrainRenderType terrainRenderType, MemoryStack stack) {
+        final StaticQueue<DrawParameters> drawParameters1 = this.drawCnts.get(terrainRenderType);
+        int size = drawParameters1.size() * 20;
         long bufferPtr = stack.nmalloc(size);
 
 
         int drawCount = 0;
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
-        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); drawCount++) {
+        for (var iterator = drawParameters1.iterator(isTranslucent); iterator.hasNext(); drawCount++) {
 
             DrawParameters drawParameters = iterator.next();
 
@@ -174,13 +172,13 @@ public class DrawBuffers {
         indirectBuffers2.get(terrainRenderType).uploadSubAlloc(bufferPtr, this.index, size);
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType renderType) {
+    public void buildDrawBatchesDirect(TerrainRenderType renderType) {
 
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
-        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
+        for (var iterator = this.drawCnts.get(renderType).iterator(isTranslucent); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
 
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.instanceCount, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
@@ -216,7 +214,7 @@ public class DrawBuffers {
             a.rem(this.index);
         }
 
-        drawCnts.replaceAll((t, v) -> 0);
+        this.resetQueues();
 
         this.indexBuffer = null;
         this.allocated = false;
@@ -225,14 +223,32 @@ public class DrawBuffers {
     public boolean isAllocated() {
         return allocated;
     }
+
+    public void resetQueues() {
+        this.drawCnts.forEach((key, value) -> {
+            updateIndex |= key.bitMask();
+            value.clear();
+        });
+    }
+
+    public void addSections(RenderSection section) {
+        for(var t : section.getCompiledSection().renderTypes) {
+            updateIndex |= t.bitMask();
+            this.drawCnts.get(t).add(section.getDrawParameters(t));
+        }
+    }
+
     //instanceCount was added to encourage memcpy optimisations _(JIT doesn't need to insert a 1, which generates better ASM + helps JIT)_
     public static class DrawParameters {
         int indexCount, instanceCount = 1, firstIndex, vertexOffset, baseInstance;
+        final int index; //Unique per Section, not per renderType
+        //At +32 Struct offset to avoid preventing memcpy optimisations
         final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
         final AreaBuffer.Segment indexBufferSegment;
 
-        DrawParameters(boolean translucent) {
+        DrawParameters(boolean translucent, int index) {
             indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
+            this.index = index;
         }
 
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {
