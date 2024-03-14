@@ -19,7 +19,7 @@ import java.nio.FloatBuffer;
 import java.util.function.IntConsumer;
 
 public class TerrainBufferBuilder implements VertexConsumer {
-	protected static final float POS_CONV = 1900.0f;
+	protected static final float POS_CONV = 1024.0f;
 	protected static final float UV_CONV = 65536.0f;
 
 	private static final int GROWTH_SIZE = 2097152;
@@ -612,8 +612,9 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			int temp = VertexUtil.packColor(red, green, blue, alpha);
 			MemoryUtil.memPutInt(ptr + 8, temp);
 
-			MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
-			MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
+			final int u1 = ((int) (u * UV_CONV));
+			final int v1 = ((int) (v * UV_CONV));
+			MemoryUtil.memPutInt(ptr + 12, u1 | v1 << 16);
 
 			MemoryUtil.memPutInt(ptr + 16, light);
 
