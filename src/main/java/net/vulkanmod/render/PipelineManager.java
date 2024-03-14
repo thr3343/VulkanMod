@@ -36,9 +36,9 @@ public abstract class PipelineManager {
 
     public static void setDefaultShader() {
         setShaderGetter(renderType -> switch (renderType) {
-            case TRANSLUCENT -> terrainShaderEarlyZ;
+            default -> terrainShaderEarlyZ;
             case CUTOUT_MIPPED -> Options.getGraphicsState() ? terrainShader : terrainShaderEarlyZ;
-            default -> terrainShader;
+            case CUTOUT -> terrainShader;
         });
     }
 

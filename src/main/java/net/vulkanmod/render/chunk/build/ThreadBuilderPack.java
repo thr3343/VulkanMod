@@ -1,13 +1,11 @@
 package net.vulkanmod.render.chunk.build;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ThreadBuilderPack {
     private static Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
@@ -23,7 +21,7 @@ public class ThreadBuilderPack {
     private final Map<TerrainRenderType, TerrainBufferBuilder> builders= new EnumMap<>(TerrainRenderType.class);
 
     public ThreadBuilderPack() {
-        for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
+        for (TerrainRenderType renderType : TerrainRenderType.ALL_RENDER_TYPES) {
             builders.put(renderType, terrainBuilderConstructor.apply(renderType));
         }
     }

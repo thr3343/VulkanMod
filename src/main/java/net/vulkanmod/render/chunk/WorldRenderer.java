@@ -554,7 +554,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((isFancy ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if((ALL_RENDER_TYPES).contains(terrainRenderType)) {
 
             if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS); //Fast Grass
             VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
@@ -725,17 +725,6 @@ public class WorldRenderer {
         for (ArenaBuffer entry : DrawBuffers.indirectBuffers2.values()) {
             entry.defaultState(4);
         }
-        final boolean uniqueOpaqueLayer = Options.getGraphicsState();
-        if(uniqueOpaqueLayer == DrawBuffers.indirectBuffers2.containsKey(CUTOUT))
-        {
-            if (uniqueOpaqueLayer) {
-                DrawBuffers.indirectBuffers2.remove(CUTOUT).freeBuffer();
-            }
-            else {
-                DrawBuffers.indirectBuffers2.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
-            }
-        }
-
 
     }
 

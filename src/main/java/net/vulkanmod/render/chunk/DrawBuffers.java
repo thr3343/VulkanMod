@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -36,7 +35,7 @@ public class DrawBuffers {
 
     static {
 
-        for (TerrainRenderType renderType : getActiveLayers()) {
+        for (TerrainRenderType renderType : ALL_RENDER_TYPES) {
             indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
         }
     }
@@ -50,7 +49,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, 0));
+        ALL_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
 
         this.allocated = true;
     }
