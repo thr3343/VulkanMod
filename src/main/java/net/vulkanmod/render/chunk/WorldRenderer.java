@@ -710,14 +710,7 @@ public class WorldRenderer {
         for (ArenaBuffer entry : DrawBuffers.indirectBuffers2.values()) {
             entry.defaultState(4);
         }
-
-    }
-
-    public void cleanUp() {
-
-        DrawBuffers.indirectBuffers2.forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
-//        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
-        final boolean uniqueOpaqueLayer = Options.getGraphicsState();
+        final boolean uniqueOpaqueLayer = !Initializer.CONFIG.useCutouts;
         if(uniqueOpaqueLayer == DrawBuffers.indirectBuffers2.containsKey(CUTOUT))
         {
             if (uniqueOpaqueLayer) {
@@ -727,6 +720,13 @@ public class WorldRenderer {
                 DrawBuffers.indirectBuffers2.put(CUTOUT, new ArenaBuffer(VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
             }
         }
+
+    }
+
+    public void cleanUp() {
+
+        DrawBuffers.indirectBuffers2.forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
+//        DrawBuffers.indirectBuffers2[1].forEach((terrainRenderType, arenaBuffer) -> arenaBuffer.freeBuffer());
 
     }
 
