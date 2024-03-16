@@ -21,7 +21,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public abstract class DeviceManager {
     public static List<DeviceInfo> suitableDevices;
@@ -147,10 +147,10 @@ public abstract class DeviceManager {
             }
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
             VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
+            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack).sType$Default();
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
             deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
             deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
             deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
@@ -158,11 +158,13 @@ public abstract class DeviceManager {
 
 
             deviceVulkan11Features.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
+            deviceVulkan13Features.dynamicRendering(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(deviceFeatures);
+            createInfo.pEnabledFeatures(deviceFeatures.features());
+//            createInfo.pNext(deviceVulkan13Features);
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
@@ -172,7 +174,7 @@ public abstract class DeviceManager {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_3);
 
 //            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 //
