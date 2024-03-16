@@ -335,7 +335,7 @@ public class SectionGrid {
     }
 
     private void setChunkArea(RenderSection section, int x, int y, int z) {
-        ChunkArea chunkArea = this.chunkAreaManager.getChunkArea(x, y, z);
+        ChunkArea chunkArea = this.chunkAreaManager.getChunkArea(section, x, y, z);
 
         section.setChunkArea(chunkArea);
     }

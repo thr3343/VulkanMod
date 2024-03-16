@@ -216,7 +216,7 @@ public class WorldRenderer {
 //            this.needsUpdate = false;
 
             if (this.needsUpdate) {
-
+                this.needsUpdate = false;
 
                 this.frustum = (((FrustumMixed)(frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
                 this.sectionGrid.updateFrustumVisibility(this.frustum);
@@ -237,7 +237,7 @@ public class WorldRenderer {
                 this.renderRegionCache = new RenderRegionCache();
 
                 if(flag) this.updateRenderChunks();
-                this.needsUpdate = false;
+
                 this.minecraft.getProfiler().pop();
 
             }
@@ -320,9 +320,9 @@ public class WorldRenderer {
 
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-        if(!needsUpdate) return;
-//        if(taskDispatcher.getIdleThreadsCount() == 0)
-//            /*return;*/this.needsUpdate = true;
+
+        if(taskDispatcher.getIdleThreadsCount() == 0)
+            /*return;*/this.needsUpdate = true;
         //TODO maybe decouple Segments from DrawIndirectCmds: execute ChunkTask then asign a specific section/ via Morton codes, indexes or some other decoupled assignment/indexing implementation.
         // Concerned with the culling. not the drawCallIndirectCommand Contents; at least for Basic Frustum Culling tbh, (i.e. this isn't occlusion Culling, and/or Lods e.g.)_ teselation eg..
         while(this.chunkQueue.hasNext()) {
@@ -355,17 +355,6 @@ public class WorldRenderer {
             }
             //Push/Insert into updateIndexQueue
         }
-
-
-
-        //BFS has atcually finished: no new updates will occut
-
-        //Progresive Sca shouldbe OK as BFS updates from tot botton i
-
-
-        //TODO: move uploads into BFS Queue/Thread instead of Main render thread
-        taskDispatcher.uploadAllPendingUploads();
-        needsUpdate=false;
 
     }
 
@@ -424,12 +413,8 @@ public class WorldRenderer {
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
-
-        //TOOD: DrawCmdArray listener/Update pump pergapes...
-
-        if(this.taskDispatcher.hasUploads())
+        if(this.taskDispatcher.uploadAllPendingUploads())
             this.needsUpdate = true;
-        this.chunkAreaQueue.add(getSectionGrid().chunkAreaManager.getChunkArea(1));
         profiler.pop();
         this.minecraft.getProfiler().popPush("schedule_async_compile");
 
