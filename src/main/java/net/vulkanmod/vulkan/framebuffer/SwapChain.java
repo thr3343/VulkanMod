@@ -348,7 +348,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? Initializer.CONFIG.vsyncMode : Initializer.CONFIG.uncappedMode;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : Initializer.CONFIG.uncappedMode;
 
         //Some Drivers change the supported modes in FullScreen: can't assume any consistency
 

@@ -23,7 +23,7 @@ public class Options {
     public static boolean fancy = Minecraft.useFancyGraphics();
 
     private static final Integer[] uncappedModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-    private static final Integer[] vsyncModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+//    private static final Integer[] vsyncModes = SwapChain.checkPresentModes(VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_FIFO_RELAXED_KHR);
 
     static {
         minecraftOptions.darkMojangStudiosBackground().set(true);
@@ -67,23 +67,6 @@ public class Options {
                             Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
-                new CyclingOption<>("VSync Mode",
-                        vsyncModes,
-                        value -> Component.nullToEmpty(value == VK_PRESENT_MODE_FIFO_KHR ? "Default (Fifo)" : "Adaptive (Relaxed Fifo)"),
-                        value -> {
-                            config.vsyncMode =value;
-                            if(minecraftOptions.enableVsync().get()) {
-                                Renderer.scheduleSwapChainUpdate();
-                            }
-                        },
-                        () -> config.vsyncMode).setTooltip(Component.nullToEmpty("""
-                        Specifies the default VSync Mode:
-                        (Some Drivers don't support Adaptive VSync)
-                        
-                        Default: Stutter, Avoids tearing
-                        Adaptive: Less stutter, Allows tearing
-                            
-                        Available Modes vary on GPU Driver + Platform""")),
                 new CyclingOption<>("Permit Screen Tearing",
                         uncappedModes,
                         value -> Component.nullToEmpty(value == VK_PRESENT_MODE_IMMEDIATE_KHR ? "Yes (Immediate)" : "No (FastSync)"),
