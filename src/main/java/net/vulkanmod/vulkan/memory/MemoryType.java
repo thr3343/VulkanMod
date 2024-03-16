@@ -44,15 +44,13 @@ public enum MemoryType {
                 VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
 
-                final int queriedMemFlags = memoryType.propertyFlags();
-                final int queriedFlagCount = Integer.bitCount(queriedMemFlags);
-
-                //Not all drivers have DEVICE_LOCAL only memType, == checks will cause false negatives
-                final boolean hasRequiredFlags = (queriedFlagCount >= currentFlagCount) & VUtil.checkUsage(optimalFlagMask, queriedMemFlags);
+                final int extractedFlags = optimalFlagMask & memoryType.propertyFlags();
+                final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
                 final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
+
                 if (hasRequiredFlags & hasRequiredHeapType) {
                     this.maxSize = memoryHeap.size();
-                    this.flags = queriedMemFlags;
+                    this.flags = extractedFlags;
 
                     return;
                 }
