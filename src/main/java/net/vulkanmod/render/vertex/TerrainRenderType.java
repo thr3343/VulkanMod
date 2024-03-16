@@ -1,6 +1,7 @@
 package net.vulkanmod.render.vertex;
 
 import net.minecraft.client.renderer.RenderType;
+import net.vulkanmod.Initializer;
 
 import java.util.EnumSet;
 
@@ -13,6 +14,7 @@ public enum TerrainRenderType {
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
+    public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
     public static final EnumSet<TerrainRenderType> ALL_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
     public final int bufferSize;
@@ -23,14 +25,21 @@ public enum TerrainRenderType {
         this.initialSize = initialSize;
     }
     public static EnumSet<TerrainRenderType> getActiveLayers() {
-        return ALL_RENDER_TYPES;
+        return Initializer.CONFIG.useCutouts ? ALL_RENDER_TYPES : COMPACT_RENDER_TYPES;
     }
 
     public static TerrainRenderType getCompact(String renderType) {
+        if (Initializer.CONFIG.useCutouts) {
+            return switch (renderType)
+            {
+                case "solid", "cutout_mipped" -> CUTOUT_MIPPED;
+                case "cutout" -> CUTOUT;
+                default -> TRANSLUCENT;
+            };
+        }
         return switch (renderType)
         {
-            case "solid", "cutout_mipped" -> CUTOUT_MIPPED;
-            case "cutout" -> CUTOUT;
+            case "solid", "cutout", "cutout_mipped" -> CUTOUT_MIPPED;
             default -> TRANSLUCENT;
         };
 

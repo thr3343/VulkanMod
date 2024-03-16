@@ -35,7 +35,7 @@ public class DrawBuffers {
 
     static {
 
-        for (TerrainRenderType renderType : ALL_RENDER_TYPES) {
+        for (TerrainRenderType renderType : getActiveLayers()) {
             indirectBuffers2.put(renderType, new ArenaBuffer(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 4));
         }
     }
@@ -49,7 +49,7 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        ALL_RENDER_TYPES.forEach(renderType -> this.drawCnts.put(renderType, 0));
+        getActiveLayers().forEach(renderType -> this.drawCnts.put(renderType, 0));
 
         this.allocated = true;
     }

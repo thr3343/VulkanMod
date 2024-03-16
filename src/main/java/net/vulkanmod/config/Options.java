@@ -156,6 +156,13 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
+                new SwitchOption("use Cutouts",
+                        value -> {
+                            config.useCutouts = value;
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> config.useCutouts)
+                        .setTooltip(Component.nullToEmpty("Disable if it causes performance issues")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                     int v = value * 2 + 1;
