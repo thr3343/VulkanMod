@@ -59,7 +59,7 @@ public class DeviceInfo {
             var properties = this.properties.properties();
 
             //Much More Robust VK1.2 Check, uses the actual/real driver version instead of the Instance ver
-            if((properties.apiVersion() >>> 12 & 0x3FF) < 3) throw new RuntimeException("Vulkan 1.3 not available");
+            if((properties.apiVersion() >>> 12 & 0x3FF) < 2) throw new RuntimeException("Vulkan 1.2 not available");
 
             this.vendorId = properties.vendorID();
             this.vendorIdString = decodeVendor(properties.vendorID());
