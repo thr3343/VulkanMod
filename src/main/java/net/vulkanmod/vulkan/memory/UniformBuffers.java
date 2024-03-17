@@ -25,7 +25,7 @@ public class UniformBuffers {
     CommandPool.CommandBuffer commandBuffer;
 
     public UniformBuffers(int size) {
-        createUniformBuffers(size, MemoryTypes.HOST_MEM);
+        createUniformBuffers(size, MemoryType.BAR_MEM);
     }
 
     public UniformBuffers(int size, MemoryType memoryType) {
@@ -134,7 +134,7 @@ public class UniformBuffers {
         }
 
         private void resizeBuffer(int newSize) {
-            MemoryManager.getInstance().addToFreeable(this);
+            this.type.freeBuffer(this);
             createBuffer(newSize);
         }
     }
