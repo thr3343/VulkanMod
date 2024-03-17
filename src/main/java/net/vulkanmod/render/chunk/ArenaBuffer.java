@@ -8,7 +8,8 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 
 import java.nio.ByteBuffer;
 
-import static net.vulkanmod.vulkan.memory.MemoryType.GPU_MEM;
+
+import static net.vulkanmod.vulkan.memory.MemoryTypes.GPU_MEM;
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.libc.LibCString.nmemcpy;

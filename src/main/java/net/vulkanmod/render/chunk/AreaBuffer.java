@@ -29,7 +29,7 @@ public class AreaBuffer {
 
         this.usage = usage;
         this.elementSize = elementSize;
-        this.memoryType = MemoryType.GPU_MEM;
+        this.memoryType = MemoryTypes.GPU_MEM;
 
         this.buffer = this.allocateBuffer(size);
         this.size = size;

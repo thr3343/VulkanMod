@@ -2,11 +2,13 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import jdk.jfr.StackTrace;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
@@ -26,13 +28,12 @@ public class MemoryManager {
     private static final Long2ReferenceOpenHashMap<Buffer> buffers = new Long2ReferenceOpenHashMap<>();
     private static final Long2ReferenceOpenHashMap<VulkanImage> images = new Long2ReferenceOpenHashMap<>();
 
+    private static final VkDevice device = Vulkan.getDevice();
     private static final long allocator = Vulkan.getAllocator();
     static int Frames;
 
-//    private static long deviceMemory = 0;
-//    private static long nativeMemory = 0;
-//    private static final long nativeMemoryMax = MemoryType.BAR_MEM.maxSize;
-//    private static final long deviceMemoryMax = MemoryType.GPU_MEM.maxSize;
+    private static long deviceMemory = 0;
+    private static long nativeMemory = 0;
 
     private int currentFrame = 0;
 
@@ -130,6 +131,12 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
 
+            if((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0) {
+                deviceMemory += size;
+            } else {
+                nativeMemory += size;
+            }
+
             buffers.putIfAbsent(buffer.getId(), buffer);
         }
     }
@@ -181,9 +188,12 @@ public class MemoryManager {
 
     }
 
-    public void Map(long allocation, PointerBuffer data) {
+    public PointerBuffer Map(long allocation) {
+        PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
         vmaMapMemory(allocator, allocation, data);
+
+        return data;
     }
 
     public static void freeBuffer(long buffer, long allocation) {
@@ -194,6 +204,12 @@ public class MemoryManager {
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(allocator, bufferInfo.id(), bufferInfo.allocation());
+
+        if(bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
+            deviceMemory -= bufferInfo.bufferSize();
+        } else {
+            nativeMemory -= bufferInfo.bufferSize();
+        }
 
         buffers.remove(bufferInfo.id());
     }
@@ -279,11 +295,7 @@ public class MemoryManager {
         throw new RuntimeException("Failed to find suitable memory type");
     }
 
-//    public static int getNativeMemoryMB() { return (int) (nativeMemory >> 20); }
-//
-//    public static int getDeviceMemoryMB() { return (int) (deviceMemory >> 20); }
-//
-//    public static int getNativeMemoryMax() { return (int) (nativeMemoryMax >> 20); }
-//
-//    public static int getDeviceMemoryMax() { return (int) (deviceMemoryMax >> 20); }
+    public int getNativeMemoryMB() { return (int) (nativeMemory / 1048576L); }
+
+    public int getDeviceMemoryMB() { return (int) (deviceMemory / 1048576L); }
 }

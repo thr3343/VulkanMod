@@ -48,8 +48,8 @@ public abstract class DebugScreenOverlayM {
         strings.add(String.format("Mem: % 2d%% %03d/%03dMB", o * 100L / l, bytesToMegabytes(o), bytesToMegabytes(l)));
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
-        strings.add("BARMemory: " + MemoryType.BAR_MEM.usedBytes()+"/" + MemoryType.BAR_MEM.getMaxSize() + "MB");
-        strings.add("DeviceMemory: " + MemoryType.GPU_MEM.usedBytes()+"/" + MemoryType.GPU_MEM.getMaxSize() + "MB");
+        strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
+        strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
         strings.add("");
 //        strings.add("PCIe Transfers");
 //        strings.add("GPU Transfers");

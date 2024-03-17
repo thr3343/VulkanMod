@@ -41,7 +41,7 @@ public class IndirectBuffer extends Buffer {
     }
 
     private void resizeBuffer() {
-        this.type.freeBuffer(this);
+        MemoryManager.getInstance().addToFreeable(this);
         int newSize = this.bufferSize + (this.bufferSize >> 1);
         this.createBuffer(newSize);
         this.usedBytes = 0;

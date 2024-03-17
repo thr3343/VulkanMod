@@ -4,6 +4,7 @@ import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -142,7 +143,7 @@ public class Vulkan {
         DeviceManager.createLogicalDevice();
 
         createVma();
-//        MemoryTypes.createMemoryTypes();
+        MemoryTypes.createMemoryTypes();
 
         createCommandPool();
         allocateImmediateCmdBuffer();
