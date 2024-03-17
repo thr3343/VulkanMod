@@ -29,7 +29,7 @@ public class VertexBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
 //        System.out.println("resized vertexBuffer to: " + newSize);
