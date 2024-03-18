@@ -14,6 +14,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
 import org.lwjgl.vulkan.VkViewport;
 
+import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class LegacyMainPass implements MainPass {
@@ -31,7 +32,7 @@ public class LegacyMainPass implements MainPass {
         RenderPass.Builder builder = RenderPass.builder(swapChain);
         builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_STORE);
         builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_STORE);
-        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR); //According to Sync Validation must match Renderpass layout to Fix sync hazards
 
         this.renderPass = builder.build();
     }
@@ -45,7 +46,7 @@ public class LegacyMainPass implements MainPass {
         else
             Renderer.getInstance().endRenderPass();
 
-        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
+//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 
         swapChain.beginRenderPass(commandBuffer, stack);
         Renderer.getInstance().setBoundFramebuffer(swapChain);
