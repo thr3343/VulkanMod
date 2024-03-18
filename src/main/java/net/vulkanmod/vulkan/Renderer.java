@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.PipelineManager;
@@ -331,6 +332,8 @@ public class Renderer {
 
         this.boundRenderPass = null;
         this.boundFramebuffer = null;
+
+        GlFramebuffer.resetBoundFramebuffer();
     }
 
     public boolean beginRendering(RenderPass renderPass, Framebuffer framebuffer) {
@@ -446,6 +449,10 @@ public class Renderer {
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
     }
+
+//    public void setBoundFramebuffer(Framebuffer framebuffer) {
+//        this.boundFramebuffer = framebuffer;
+//    }
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {
         this.boundRenderPass = boundRenderPass;

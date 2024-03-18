@@ -12,4 +12,8 @@ public interface MainPass {
     default void mainTargetBindWrite() {}
 
     default void mainTargetUnbindWrite() {}
+
+    default void rebindMainTarget() {}
+
+    default void bindAsTexture() {}
 }
