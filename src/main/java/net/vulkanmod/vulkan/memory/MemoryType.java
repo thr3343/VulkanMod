@@ -18,9 +18,9 @@ public enum MemoryType {
     BAR_MEM(true, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 //    HOST_MEM(Type.HOST_LOCAL, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
-    final long maxSize;
-    private final int flags;
+    private final long maxSize;
     private long usedBytes;
+    private final int flags;
 
     //requiredFlags: MemType MUST have this flag(s) to be used
     //optimalFlags: MemType IDEALLY has these flags for Optimal performance, but are not strictly required to have these flags to be used
@@ -56,6 +56,7 @@ public enum MemoryType {
                 if (hasRequiredFlags & hasRequiredHeapType) {
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
+//                    this.mappable = ((this.flags = optimalFlagMask) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 
                     return;
                 }
@@ -103,7 +104,7 @@ public enum MemoryType {
 //    }
     void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer)
     {
-         if(this.equals(GPU_MEM)){
+         if(!this.mappable()){
              StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
              stagingBuffer.copyBuffer(bufferSize, byteBuffer);
              DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
@@ -127,7 +128,7 @@ public enum MemoryType {
      */
     public void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer, int dstOffset)
     {
-      if(this.equals(GPU_MEM))
+      if(!this.mappable())
       {
           int bufferSize = byteBuffer.remaining();
           StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
@@ -139,7 +140,7 @@ public enum MemoryType {
       else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), byteBuffer.remaining(), dstOffset);
     }
 
-    final boolean mappable() { return !this.equals(GPU_MEM); }
+    final boolean mappable() { return (this.flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0; }
 
     public int usedBytes() { return (int) (this.usedBytes >> 20); }
 
