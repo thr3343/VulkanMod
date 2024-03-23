@@ -331,6 +331,8 @@ public class Renderer {
 
         this.boundRenderPass = null;
         this.boundFramebuffer = null;
+
+        GlFramebuffer.resetBoundFramebuffer();
     }
 
     public boolean beginRendering(RenderPass renderPass, Framebuffer framebuffer) {
@@ -445,6 +447,10 @@ public class Renderer {
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
+    }
+
+    public void setBoundFramebuffer(Framebuffer framebuffer) {
+        this.boundFramebuffer = framebuffer;
     }
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {

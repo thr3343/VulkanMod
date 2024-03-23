@@ -54,6 +54,8 @@ public class VulkanImage {
         this.format = format;
         this.usage = usage;
         this.aspect = getAspect(this.format);
+
+        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
     }
 
     private VulkanImage(Builder builder) {
@@ -297,7 +299,9 @@ public class VulkanImage {
                 destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
-                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+//                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                //TODO
+                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
                 destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
