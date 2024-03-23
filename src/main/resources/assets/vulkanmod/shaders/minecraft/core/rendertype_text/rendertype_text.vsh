@@ -21,7 +21,7 @@ void main() {
 
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
-    vertexColor = Color;
+    //vertexColor = Color;
     texCoord0 = UV0;
 }
 /*
