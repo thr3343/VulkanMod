@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.PipelineManager;
@@ -350,10 +351,6 @@ public class Renderer {
             this.boundFramebuffer = framebuffer;
         }
         return true;
-    }
-
-    public void setBoundFramebuffer(Framebuffer framebuffer) {
-        this.boundFramebuffer = framebuffer;
     }
 
     public void resetBuffers() {
