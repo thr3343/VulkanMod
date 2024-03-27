@@ -21,5 +21,5 @@ vec4 sample_lightmap(sampler2D lightMap, ivec2 uv) {
 }
 
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    return (vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, min(smoothstep(fogStart, fogEnd, vertexDistance), 1.0) * fogColor.a);
+    return mix(inColor, fogColor, smoothstep(fogStart, fogEnd, vertexDistance));
 }

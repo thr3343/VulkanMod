@@ -21,5 +21,5 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     const vec4 color = texture(Sampler0, texCoord0);
-    fragColor = USE_FOG ? linear_fog(color*vertexColor, vertexDistance, FogStart, FogEnd, FogColor) : color*vertexColor; //Optimised out by Driver
+    fragColor = USE_FOG ? linear_fog(color*vertexColor, gl_FragCoord.z/gl_FragCoord.w, FogStart, FogEnd, FogColor) : color*vertexColor; //Optimised out by Driver
 }
