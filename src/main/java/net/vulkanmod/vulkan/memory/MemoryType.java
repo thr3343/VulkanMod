@@ -34,9 +34,12 @@ public enum MemoryType {
         //VK_MEMORY_HEAP_DEVICE_LOCAL_BIT is gurenteed by the spec afaict
         //Not bothering with RAM Mem, as
 
-        final boolean useVRAM = Arrays.stream(optimalFlags).anyMatch(value -> (value&VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)!=0);
+        final boolean useVRAM = getVRAMHeaps(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
 
         final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
+
+        if(!useVRAM) Initializer.LOGGER.error("Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
+
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
