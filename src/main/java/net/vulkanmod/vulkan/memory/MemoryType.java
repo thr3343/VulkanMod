@@ -14,9 +14,10 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
     GPU_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
 
-    BAR_MEM(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    BAR_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 //    RAM_MEM(false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
@@ -34,11 +35,11 @@ public enum MemoryType {
         //VK_MEMORY_HEAP_DEVICE_LOCAL_BIT is gurenteed by the spec afaict
         //Not bothering with RAM Mem, as
 
-        final boolean useVRAM = getVRAMHeaps(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
+        //final boolean useVRAM = getVRAMHeaps(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
 
-        final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
+//        final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
 
-        if(!useVRAM) Initializer.LOGGER.error("Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
+        //if(!useVRAM) Initializer.LOGGER.error("Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
 
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
@@ -47,9 +48,11 @@ public enum MemoryType {
                 final int availableFlags = memoryType.propertyFlags();
                 final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
-                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
+//                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
 
-                if (hasRequiredFlags & hasRequiredHeapType) {
+                if (hasRequiredFlags) {
+                    if(memoryHeap.flags()!=VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
@@ -57,7 +60,8 @@ public enum MemoryType {
                             + "     Memory Heap Index/Bank: "
                             + "     "+ memoryType.heapIndex() +"\n"
                             + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
-                            + "     MemoryTypes:" + getMemoryTypeFlags(availableFlags));
+                            + "     AvailableFlags:" + getMemoryTypeFlags(availableFlags) + "\n"
+                            + "     EnabledFlags:" + getMemoryTypeFlags(optimalFlagMask));
 //                    this.mappable = ((this.flags = optimalFlagMask) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 
                     return;
