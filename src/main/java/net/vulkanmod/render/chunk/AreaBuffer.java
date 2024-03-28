@@ -118,9 +118,9 @@ public class AreaBuffer {
 
         AreaUploadManager.INSTANCE.swapBuffers(this.buffer.getId(), buffer.getId());
         AreaUploadManager.INSTANCE.waitAllUploads();
-
+        //Graphics Queue is lower latency than Transfer Queue apparently
         //Sync upload
-        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        GraphicsQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

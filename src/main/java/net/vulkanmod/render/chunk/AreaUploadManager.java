@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.ByteBuffer;
@@ -49,29 +49,29 @@ public class AreaUploadManager {
         }
         if(commandBuffers[currentFrame] == null)
         {
-            this.commandBuffers[currentFrame] = GraphicsQueue.beginCommands();
-//            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+//            TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
-        //Using Graphics Queue as uploads are used immediately + is recommended by AMD: https://gpuopen.com/learn/rdna-performance-guide/#copying
-        GraphicsQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
+
+        TransferQueue.MultiBufferBarriers(this.commandBuffers[currentFrame].getHandle(),
                 dstBuffers.keySet(),
-                VK_ACCESS_INDEX_READ_BIT,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
                 0,
-                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
                 VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 
            
 
-        GraphicsQueue.uploadBufferCmds(this.commandBuffers[currentFrame], Vulkan.getStagingBuffer().getId(), dstBuffers.long2ObjectEntrySet());
+        TransferQueue.uploadBufferCmds(this.commandBuffers[currentFrame], Vulkan.getStagingBuffer().getId(), dstBuffers.long2ObjectEntrySet());
             
         
 
 
         dstBuffers.clear();
         
-//        GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
-        GraphicsQueue.submitCommands(this.commandBuffers[currentFrame]);
+//        TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle());
+        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, int dstOffset, int bufferSize, ByteBuffer src) {
