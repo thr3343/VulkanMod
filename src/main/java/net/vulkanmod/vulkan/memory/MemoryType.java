@@ -1,62 +1,66 @@
 package net.vulkanmod.vulkan.memory;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.vulkan.AMDDeviceCoherentMemory;
 import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
-    GPU_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    GPU_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
 
-    BAR_MEM(true, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-//    HOST_MEM(Type.HOST_LOCAL, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
+    BAR_MEM(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+//    RAM_MEM(false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
-    final long maxSize;
-    private final int flags;
+    private final long maxSize;
     private long usedBytes;
+    private final int flags;
 
     //requiredFlags: MemType MUST have this flag(s) to be used
     //optimalFlags: MemType IDEALLY has these flags for Optimal performance, but are not strictly required to have these flags to be used
 
-    MemoryType(boolean useVRAM, int... optimalFlags) {
+    MemoryType(int... optimalFlags) {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
+        //VK_MEMORY_HEAP_DEVICE_LOCAL_BIT is gurenteed by the spec afaict
+        //Not bothering with RAM Mem, as
 
-        /*requiredFlags | */
-        int optimalFlagMask = 0;
-        for (int optimalFlag : optimalFlags) {
-            optimalFlagMask |= optimalFlag;
-        }
+        final boolean useVRAM = Arrays.stream(optimalFlags).anyMatch(value -> (value&VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)!=0);
 
         final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
-
-
-        for (int currentFlagCount = optimalFlags.length- 1; currentFlagCount >= 0; currentFlagCount--) {
-
+        for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
                 VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
-
-
-                final int extractedFlags = optimalFlagMask & memoryType.propertyFlags();
+                final int availableFlags = memoryType.propertyFlags();
+                final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
                 final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
 
                 if (hasRequiredFlags & hasRequiredHeapType) {
                     this.maxSize = memoryHeap.size();
-                    this.flags = extractedFlags;
+                    this.flags = optimalFlagMask;
+
+                    Initializer.LOGGER.info(this.name()+"\n"
+                            + "     Memory Heap Index/Bank: "
+                            + "     "+ memoryType.heapIndex() +"\n"
+                            + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
+                            + "     MemoryTypes:" + getMemoryTypeFlags(availableFlags));
+//                    this.mappable = ((this.flags = optimalFlagMask) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 
                     return;
                 }
             }
-            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
+//            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }
 
         throw new RuntimeException("Unsupported MemoryType: "+this.name() + ": Try updating your driver and/or Vulkan version");
@@ -71,9 +75,32 @@ public enum MemoryType {
 
     }
 
-//    private static boolean getVRAMHeaps(int heapFlag) {
-//        return DeviceManager.memoryProperties.memoryHeaps().stream().anyMatch(vkMemoryHeap -> vkMemoryHeap.flags() == heapFlag);
-//    }
+    private String getMemoryTypeFlags(int memFlags)
+    {
+        final int[] x = new int[]{1,2,4,8,16};
+        StringBuilder memTypeFlags = new StringBuilder();
+        for (int memFlag : x) {
+            boolean hasMemFlag = (memFlag & memFlags)!=0;
+            if(hasMemFlag)
+            {
+                switch (memFlag){
+                    case VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT -> memTypeFlags.append(" | DEVICE_LOCAL");
+                    case VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT -> memTypeFlags.append(" | HOST_VISIBLE");
+                    case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT -> memTypeFlags.append(" | HOST_COHERENT");
+                    case VK_MEMORY_PROPERTY_HOST_CACHED_BIT -> memTypeFlags.append(" | HOST_CACHED");
+                    case VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT -> memTypeFlags.append(" | LAZILY_ALLOCATED");
+                }
+            }
+        }
+        return memTypeFlags.toString();
+    }
+
+    private static boolean getVRAMHeaps(int heapFlag) {
+        for(VkMemoryHeap memoryHeap : DeviceManager.memoryProperties.memoryHeaps()) {
+            if(memoryHeap.flags()==heapFlag) return true;
+        }
+        return false;
+    }
 
     void createBuffer(Buffer buffer, int size)
     {
@@ -99,7 +126,7 @@ public enum MemoryType {
 //    }
     void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer)
     {
-         if(this.equals(GPU_MEM)){
+         if(!this.mappable()){
              StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
              stagingBuffer.copyBuffer(bufferSize, byteBuffer);
              DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
@@ -123,7 +150,7 @@ public enum MemoryType {
      */
     public void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer, int dstOffset)
     {
-      if(this.equals(GPU_MEM))
+      if(!this.mappable())
       {
           int bufferSize = byteBuffer.remaining();
           StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
@@ -135,11 +162,11 @@ public enum MemoryType {
       else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), byteBuffer.remaining(), dstOffset);
     }
 
-    final boolean mappable() { return !this.equals(GPU_MEM); }
+    final boolean mappable() { return (this.flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0; }
 
     public int usedBytes() { return (int) (this.usedBytes >> 20); }
 
-    public int getMaxSize() { return (int) (maxSize >> 20); }
+    public int maxSize() { return (int) (this.maxSize >> 20); }
 
 //    public int checkUsage(int usage) {
 //        return (usage & this.flags) !=0 ? usage : this.flags;

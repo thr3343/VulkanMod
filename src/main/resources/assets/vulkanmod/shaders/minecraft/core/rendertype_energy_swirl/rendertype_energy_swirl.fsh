@@ -1,6 +1,6 @@
 #version 450
 
-#include "light.glsl"
+#include "fog.glsl"
 
 layout(binding = 2) uniform sampler2D Sampler0;
 
