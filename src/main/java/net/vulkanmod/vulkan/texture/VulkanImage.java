@@ -17,7 +17,6 @@ import java.util.Arrays;
 
 import static net.vulkanmod.vulkan.texture.SamplerManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
@@ -55,8 +54,6 @@ public class VulkanImage {
         this.format = format;
         this.usage = usage;
         this.aspect = getAspect(this.format);
-
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
     }
 
     private VulkanImage(Builder builder) {
@@ -261,7 +258,7 @@ public class VulkanImage {
         switch (image.currentLayout) {
             case VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
                 srcAccessMask = 0;
-                sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             }
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
                 srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
