@@ -8,6 +8,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import org.lwjgl.vulkan.KHRSurface;
 
 import java.util.stream.IntStream;
 
@@ -16,6 +18,8 @@ public class Options {
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    private static final Integer[] uncappedModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -55,6 +59,23 @@ public class Options {
                             Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
+                new CyclingOption<>("Screen Tearing",
+                        uncappedModes,
+                        value -> Component.nullToEmpty(value==KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR?  "Yes (Immediate)" : "No (FastSync)"),
+                        value -> {
+                            config.uncappedMode =value;
+                            if(!minecraftOptions.enableVsync().get()) {
+                                Renderer.scheduleSwapChainUpdate();
+                            }
+                        },
+                        () -> config.uncappedMode).setTooltip(Component.nullToEmpty("""
+                        Configures screen tearing if supported by the GPU driver:
+                        
+                        Yes: Immediate (Lowest latency, screen tearing)
+                        No: FastSync (Higher latency, no screen tearing)
+
+                        Available modes vary on GPU driver + platform
+                        """)),
                 new CyclingOption<>("Gui Scale",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString()),
