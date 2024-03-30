@@ -24,6 +24,8 @@ public class Config {
     public boolean perRenderTypeAreaBuffers = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
+    public boolean animations = false;
+    public boolean renderSky = false;
     public int device = -1;
 
     public int ambientOcclusion = 1;

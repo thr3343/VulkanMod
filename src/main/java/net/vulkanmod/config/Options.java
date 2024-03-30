@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
     public static Option<?>[] getVideoOpts() {

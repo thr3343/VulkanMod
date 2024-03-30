@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.texture;
 
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -22,7 +23,7 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if(Renderer.skipRendering)
+        if(Renderer.skipRendering || !Initializer.CONFIG.animations)
             return;
 
         //Debug D
