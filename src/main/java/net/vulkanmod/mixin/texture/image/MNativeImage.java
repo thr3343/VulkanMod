@@ -81,7 +81,7 @@ public abstract class MNativeImage {
     public void downloadTexture(int level, boolean removeAlpha) {
         RenderSystem.assertOnRenderThread();
 
-        ImageUtil.downloadTexture(Renderer.useMode ? VTextureSelector.getBoundTexture(0) : Vulkan.getSwapChain().getColorAttachment(), this.pixels);
+        ImageUtil.downloadTexture(VTextureSelector.getBoundTexture(0), this.pixels);
 
         if (removeAlpha && this.format.hasAlpha()) {
             if (this.format != NativeImage.Format.RGBA) {

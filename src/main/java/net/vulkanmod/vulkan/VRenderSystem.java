@@ -65,6 +65,22 @@ public abstract class VRenderSystem {
         Vulkan.initVulkan(window);
     }
 
+    public static MappedBuffer getScreenSize() {
+        updateScreenSize();
+        return screenSize;
+    }
+
+    public static void updateScreenSize() {
+        Window window = Minecraft.getInstance().getWindow();
+
+        screenSize.putFloat(0, (float)window.getWidth());
+        screenSize.putFloat(4, (float)window.getHeight());
+    }
+
+    public static void setWindow(long window) {
+        VRenderSystem.window = window;
+    }
+
     public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
 
     public static int maxSupportedTextureSize() {

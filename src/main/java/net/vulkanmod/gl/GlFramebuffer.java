@@ -158,10 +158,10 @@ public class GlFramebuffer {
 
         switch (attachment) {
             case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(glTexture, Renderer.effectActive);
+                    this.setColorAttachment(glTexture, false);
 
             case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(glTexture, Renderer.effectActive);
+                    this.setDepthAttachment(glTexture, false);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
@@ -178,10 +178,10 @@ public class GlFramebuffer {
 
         switch (attachment) {
             case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(renderbuffer, Renderer.effectActive);
+                    this.setColorAttachment(renderbuffer, false);
 
             case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(renderbuffer, Renderer.effectActive);
+                    this.setDepthAttachment(renderbuffer, false);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }

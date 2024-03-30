@@ -99,16 +99,18 @@ public class RenderPass {
                     .pSubpasses(subpass);
 
             //Layout transition subpass depency
-            if(colorAttachmentInfo.finalLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-                VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(1, stack);
-                subpassDependencies.get(0)
-                        .srcSubpass(VK_SUBPASS_EXTERNAL)
-                        .dstSubpass(0)
-                        .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                        .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                        .srcAccessMask(0)
-                        .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                        .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+            switch(colorAttachmentInfo.finalLayout) {
+
+               case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
+                    VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(1, stack);
+                    subpassDependencies.get(0)
+                            .srcSubpass(VK_SUBPASS_EXTERNAL)
+                            .dstSubpass(0)
+                            .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                            .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                            .srcAccessMask(0)
+                            .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                            .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
                     renderPassInfo.pDependencies(subpassDependencies);
                 }
