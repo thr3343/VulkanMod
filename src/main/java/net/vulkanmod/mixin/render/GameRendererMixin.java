@@ -368,7 +368,7 @@ public abstract class GameRendererMixin {
             positionColorTexShader = positionColorTex;
             positionTexShader = this.preloadShader(resourceProvider, "position_tex", DefaultVertexFormat.POSITION_TEX);
             positionTexColorShader = this.preloadShader(resourceProvider, "position_tex_color", DefaultVertexFormat.POSITION_TEX_COLOR);
-            rendertypeTextShader = this.preloadShader(resourceProvider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+            rendertypeTextShader = positionColorTex;
 
             rendertypeGuiShader = positionColorShader;
             rendertypeGuiOverlayShader = positionColorShader;
