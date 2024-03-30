@@ -438,9 +438,9 @@ public class TerrainBufferBuilder {
         private static final int VERTEX_SIZE = 20;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV);
-            final short sY = (short) (y * POS_CONV);
-            final short sZ = (short) (z * POS_CONV);
+            final short sX = (short) Math.fma(x, POS_CONV, 1);
+            final short sY = (short) Math.fma(y, POS_CONV, 1);
+            final short sZ = (short) Math.fma(z, POS_CONV, 1);
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);
