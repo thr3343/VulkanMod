@@ -2,7 +2,6 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.Initializer;
 import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -17,13 +16,12 @@ import static org.lwjgl.glfw.GLFW.*;
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
     private static final int activePlat = getSupportedPlat();
-    private static final String activeDE=determineDE();
 
     int width;
     int height;
     int refreshRate;
 
-    private final List<VideoMode> videoModes;
+    private List<VideoMode> videoModes;
 
     public VideoResolution(int width, int height) {
         this.width = width;
@@ -59,10 +57,8 @@ public class VideoResolution {
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
-        boolean useXwaylandOverride = Initializer.CONFIG.xWayland && isWayLand();
-        int overriddenPlat = useXwaylandOverride ? GLFW_PLATFORM_X11 : activePlat;
-        GLFW.glfwInitHint(GLFW_PLATFORM, overriddenPlat);
-        LOGGER.info("Selecting Platform: " + (useXwaylandOverride ? getStringFromPlat(overriddenPlat) + " (Xwayland Override)" : getStringFromPlat(overriddenPlat) ));
+        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
+        LOGGER.info("Selecting Platform: "+getStringFromPlat(activePlat));
         LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
@@ -80,13 +76,6 @@ public class VideoResolution {
             default -> GLFW_ANY_PLATFORM; //Either unknown Platform or Display Server
         };
     }
-
-
-    private static String determineDE() {
-        String xdgSessionDesktop = System.getenv("XDG_SESSION_DESKTOP");
-        return (xdgSessionDesktop != null ? xdgSessionDesktop : "N/A").toLowerCase();
-    }
-
 
     private static int getSupportedPlat() {
         //Switch statement would be ideal, but couldn't find a good way of implementing it, so fell back to basic if statements/branches
@@ -117,12 +106,6 @@ public class VideoResolution {
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
     public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
-
-    //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
-    public static boolean isGnome(){return activeDE.contains("gnome");}
-    public static boolean isKWin(){return activeDE.contains("kde");}
-
-
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
