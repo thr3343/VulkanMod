@@ -106,7 +106,7 @@ public class WorldRenderer {
 
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.BAR_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryType.BAR_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
         }
 
@@ -293,7 +293,7 @@ public class WorldRenderer {
     }
 
     public void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
+        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType.name);
         renderType.setupRenderState();
 
         this.sortTranslucentSections(camX, camY, camZ);

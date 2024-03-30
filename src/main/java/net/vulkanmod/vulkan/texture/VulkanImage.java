@@ -75,7 +75,7 @@ public class VulkanImage {
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
 
-        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
+        image.sampler = VUtil.checkUsage(builder.usage, VK_IMAGE_USAGE_SAMPLED_BIT) ? SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags) : VK_NULL_HANDLE;
 
         if(builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
