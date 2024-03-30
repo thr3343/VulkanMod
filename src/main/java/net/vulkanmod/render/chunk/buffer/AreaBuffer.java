@@ -138,6 +138,8 @@ public class AreaBuffer {
 
         UploadManager.INSTANCE.copyBuffer(this.buffer, dst);
 
+        UploadManager.INSTANCE.swapBuffers(this.buffer.getId(), dst.getId());
+
         // TODO
 //        defrag(dst);
 
