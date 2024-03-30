@@ -37,6 +37,8 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
+    public boolean renderFog = true;
+
 
     public static Config load(Path path) {
         Config config;

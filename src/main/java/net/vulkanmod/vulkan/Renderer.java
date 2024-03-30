@@ -4,11 +4,10 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
-import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -46,6 +45,8 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    public static boolean recomp;
+
     private long boundPipeline;
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -60,7 +61,7 @@ public class Renderer {
 
     public static int getCurrentImage() { return imageIndex; }
 
-    private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
 
     private Drawer drawer;
 
@@ -172,6 +173,14 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
+        }
+
+
         if(swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
@@ -255,7 +264,6 @@ public class Renderer {
         recordingCmds = false;
 
         p.pop();
-        p.push("Post_rendering");
     }
 
     private void submitFrame() {
@@ -324,8 +332,6 @@ public class Renderer {
 
         this.boundRenderPass = null;
         this.boundFramebuffer = null;
-
-        GlFramebuffer.resetBoundFramebuffer();
     }
 
     public boolean beginRendering(RenderPass renderPass, Framebuffer framebuffer) {
@@ -359,7 +365,7 @@ public class Renderer {
         UploadManager.INSTANCE.waitUploads();
     }
 
-    public void addUsedPipeline(Pipeline pipeline) {
+    public void addUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.add(pipeline);
     }
 

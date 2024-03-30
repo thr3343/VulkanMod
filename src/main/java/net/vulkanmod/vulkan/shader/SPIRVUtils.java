@@ -59,7 +59,7 @@ public class SPIRVUtils {
         }
 
         if(OPTIMIZATIONS)
-            shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero);
+            shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
         if(DEBUG)
             shaderc_compile_options_set_generate_debug_info(options);
@@ -120,7 +120,6 @@ public class SPIRVUtils {
         throw new RuntimeException("unable to read inputStream");
     }
 
-/*
 
 
     public enum SpecConstant
@@ -147,7 +146,6 @@ public class SPIRVUtils {
         }
     }
 
-*/
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
