@@ -4,11 +4,12 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.vulkan.AMDDeviceCoherentMemory;
+import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -42,21 +43,24 @@ public enum MemoryType {
         //if(!useVRAM) Initializer.LOGGER.error("Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
 
         for (int optimalFlagMask : optimalFlags) {
+            Initializer.LOGGER.info(this.name()+": Checking for "+ getMemoryTypeFlags(optimalFlagMask));
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
-
                 VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
                 final int availableFlags = memoryType.propertyFlags();
                 final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
-//                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
-
+//                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;;
+                Initializer.LOGGER.info(this.name()
+                        +": Checking Heap: "+memoryType.heapIndex()
+                        +" Type: "+ getFlags(memoryHeap.flags())
+                        +": Flags: "+getMemoryTypeFlags(availableFlags));
                 if (hasRequiredFlags) {
                     if(memoryHeap.flags()!=VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
                         Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
-                    Initializer.LOGGER.info(this.name()+"\n"
+                    Initializer.LOGGER.info("Selecting Flags for "+this.name()+"\n"
                             + "     Memory Heap Index/Bank: "
                             + "     "+ memoryType.heapIndex() +"\n"
                             + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
@@ -67,6 +71,7 @@ public enum MemoryType {
                     return;
                 }
             }
+            Initializer.LOGGER.warn(this.name()+": Failed Checks for "+ getMemoryTypeFlags(optimalFlagMask)+": using next Fallback");
 //            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }
 
@@ -82,20 +87,29 @@ public enum MemoryType {
 
     }
 
+    private static String getFlags(int flags1) {
+        return flags1==VK_MEMORY_HEAP_DEVICE_LOCAL_BIT ? "VRAM" : " RAM";
+    }
+
     private String getMemoryTypeFlags(int memFlags)
     {
-        final int[] x = new int[]{1,2,4,8,16};
-        StringBuilder memTypeFlags = new StringBuilder();
-        for (int memFlag : x) {
-            boolean hasMemFlag = (memFlag & memFlags)!=0;
-            if(hasMemFlag)
-            {
-                switch (memFlag){
+        if(memFlags==0) return "SKIPPING";
+        StringBuilder memTypeFlags = new StringBuilder(Integer.bitCount(memFlags));
+
+        for (int i = 0; i < 8; i++) {
+            int memFlag = 1 << i;
+            boolean hasMemFlag = (memFlag & memFlags) != 0;
+            if (hasMemFlag) {
+                switch (memFlag) {
                     case VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT -> memTypeFlags.append(" | DEVICE_LOCAL");
                     case VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT -> memTypeFlags.append(" | HOST_VISIBLE");
                     case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT -> memTypeFlags.append(" | HOST_COHERENT");
                     case VK_MEMORY_PROPERTY_HOST_CACHED_BIT -> memTypeFlags.append(" | HOST_CACHED");
                     case VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT -> memTypeFlags.append(" | LAZILY_ALLOCATED");
+                    case AMDDeviceCoherentMemory.VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD -> memTypeFlags.append(" | DEVICE_COHERENT_AMD");
+                    case AMDDeviceCoherentMemory.VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD -> memTypeFlags.append(" | DEVICE_UNCACHED_AMD");
+                    case VK11.VK_MEMORY_PROPERTY_PROTECTED_BIT -> memTypeFlags.append(" | PROTECTED");
+                    default -> memTypeFlags.append("UNKNOWN");
                 }
             }
         }
