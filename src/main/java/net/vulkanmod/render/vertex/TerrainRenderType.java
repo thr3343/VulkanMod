@@ -3,7 +3,6 @@ package net.vulkanmod.render.vertex;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ExtendedRenderType;
-import net.vulkanmod.vulkan.VRenderSystem;
 
 import java.util.EnumSet;
 
@@ -17,7 +16,7 @@ public enum TerrainRenderType {
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
-    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
+    public static final EnumSet<TerrainRenderType> ALL_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
     public final float alphaCutout;
     public final int initialSize;
@@ -27,7 +26,7 @@ public enum TerrainRenderType {
         this.initialSize = initialSize;
     }
     public static EnumSet<TerrainRenderType> getActiveLayers() {
-        return Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
+        return Initializer.CONFIG.useUniqueCutouts ? ALL_RENDER_TYPES : COMPACT_RENDER_TYPES;
     }
 
     public static TerrainRenderType get(RenderType renderType) {

@@ -23,6 +23,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.BlockRenderer;
@@ -36,12 +37,10 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
@@ -306,6 +305,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
+        final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
@@ -315,9 +315,9 @@ public class WorldRenderer {
 
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         int currentFrame = Renderer.getCurrentFrame();
-        Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
+        Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.useUniqueCutouts ? TerrainRenderType.ALL_RENDER_TYPES : TerrainRenderType.COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
-
+            if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);
             VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
 
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
@@ -459,7 +459,7 @@ public class WorldRenderer {
         for (ArenaBuffer entry : DrawBuffers.indirectBuffers2.values()) {
             entry.defaultState(4);
         }
-        final boolean uniqueOpaqueLayer = Initializer.CONFIG.uniqueOpaqueLayer;
+        final boolean uniqueOpaqueLayer = !Initializer.CONFIG.useUniqueCutouts;
         if(uniqueOpaqueLayer == DrawBuffers.indirectBuffers2.containsKey(CUTOUT))
         {
             if (uniqueOpaqueLayer) {

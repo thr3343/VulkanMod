@@ -143,7 +143,7 @@ public class ChunkArea {
 
     public void addDrawCmds(DrawBuffers.DrawParameters[] renderSection) {
 
-        for(TerrainRenderType terrainRenderType : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES)
+        for(TerrainRenderType terrainRenderType : TerrainRenderType.ALL_RENDER_TYPES)
         {
             DrawBuffers.DrawParameters drawParameters = renderSection[terrainRenderType.ordinal()];
             if(drawParameters.indexCount!=0)

@@ -19,6 +19,7 @@ public class Options {
     public static boolean fullscreenDirty = false;
 
     private static final Integer[] uncappedModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
+    private static boolean fancy = Minecraft.useFancyGraphics();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[]{
@@ -101,10 +102,7 @@ public class Options {
                             default -> Component.literal("Unk");
                         },
                         (value) -> {
-                            if (value > LightMode.FLAT)
-                                minecraftOptions.ambientOcclusion().set(true);
-                            else
-                                minecraftOptions.ambientOcclusion().set(false);
+                            minecraftOptions.ambientOcclusion().set(value > LightMode.FLAT);
 
                             Initializer.CONFIG.ambientOcclusion = value;
 
@@ -140,8 +138,12 @@ public class Options {
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
-                        value -> minecraftOptions.graphicsMode().set(value),
-                        () -> minecraftOptions.graphicsMode().get()
+                        value -> {
+                            fancy=value==GraphicsStatus.FANCY;
+                            minecraftOptions.graphicsMode().set(value);
+                        },
+                        () -> minecraftOptions.graphicsMode().get())
+                        .setTooltip(Component.nullToEmpty("Doesn't work if Use Unique Cutouts is Disabled")
                 ),
                 new CyclingOption<>("Particles",
                         new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
@@ -153,15 +155,16 @@ public class Options {
                         value -> Component.translatable(value.getKey()),
                         value -> minecraftOptions.cloudStatus().set(value),
                         () -> minecraftOptions.cloudStatus().get()),
-                new SwitchOption("Unique opaque layer",
+                new SwitchOption("Use Unique Cutouts",
                         value -> {
-                            config.uniqueOpaqueLayer = value;
+                            config.useUniqueCutouts = value;
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
-                        () -> config.uniqueOpaqueLayer)
+                        () -> config.useUniqueCutouts)
                         .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
+                        Renders Cutout blocks separately from Solid and Translucent Blocks (E.g. Tall grass)
+                        Disable this if it causes performance issues
+                        Must be enabled to use Fast Graphics""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
                             int v = value * 2 + 1;
@@ -283,5 +286,9 @@ public class Options {
         }
 
         config.write();
+    }
+
+    public static boolean getGraphicsState() {
+        return fancy;
     }
 }
