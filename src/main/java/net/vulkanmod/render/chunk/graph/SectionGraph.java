@@ -26,15 +26,15 @@ import java.util.List;
 
 public class SectionGraph {
     Minecraft minecraft;
-    private Level level;
+    private final Level level;
 
-    private SectionGrid sectionGrid;
+    private final SectionGrid sectionGrid;
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    private final AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
-    private ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
+    private final ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
 
     private VFrustum frustum;
 
@@ -74,10 +74,7 @@ public class SectionGraph {
         this.initUpdate();
         this.initializeQueueForFullUpdate(camera);
 
-        if (flag)
-            this.updateRenderChunks();
-        else
-            this.updateRenderChunksSpectator();
+        if (flag) this.updateRenderChunks();
 
         this.scheduleRebuilds();
 
@@ -235,29 +232,6 @@ public class SectionGraph {
     private void checkToAdd(RenderSection renderSection, RenderSection relativeSection, byte dir, byte opposite, byte dirs) {
         if ((dirs & (1 << dir)) != 0) {
             addNode(renderSection, relativeSection, dir, opposite);
-        }
-    }
-
-    private void updateRenderChunksSpectator() {
-        while (this.sectionQueue.hasNext()) {
-            RenderSection renderSection = this.sectionQueue.poll();
-
-            if (notInFrustum(renderSection)) continue;
-
-            if (!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().addDrawCmds(renderSection.getDrawParametersArray());
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
-                this.nonEmptyChunks++;
-            }
-
-            if (renderSection.isDirty()) {
-                this.rebuildQueue.ensureCapacity(1);
-                this.rebuildQueue.add(renderSection);
-            }
-
-            byte dirs = (byte) (renderSection.adjDirs & renderSection.getDirections());
-
-            visitAdjacentNodes(renderSection, dirs);
         }
     }
 
