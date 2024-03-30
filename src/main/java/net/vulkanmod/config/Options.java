@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
     private static final Integer[] uncappedModes = SwapChain.checkPresentModes(KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR, KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR);
