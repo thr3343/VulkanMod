@@ -1,5 +1,6 @@
 #version 450
 layout(early_fragment_tests) in;
+layout (constant_id = 0) const bool USE_FOG = true;
 #include "light.glsl"
 
 layout(binding = 2) uniform sampler2D Sampler0;
@@ -20,5 +21,5 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     const vec4 color = texture(Sampler0, texCoord0);
-    fragColor = linear_fog(color * vertexColor, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = USE_FOG ? linear_fog(color * vertexColor, vertexDistance, FogStart, FogEnd, FogColor) : color; //Optimised out by Driver
 }
