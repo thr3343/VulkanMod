@@ -84,11 +84,11 @@ public class Options {
                         },
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
-                        value -> {
-                            if (value == 0) return Component.translatable("options.gamma.min").getString();
-                            else if (value == 50) return Component.translatable("options.gamma.default").getString();
-                            else if (value == 100) return Component.translatable("options.gamma.max").getString();
-                            return value.toString();
+                        value -> switch (value) {
+                            case 0 -> Component.translatable("options.gamma.min").getString();
+                            case 50 -> Component.translatable("options.gamma.default").getString();
+                            case 100 -> Component.translatable("options.gamma.max").getString();
+                            default -> value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -247,32 +247,14 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = value,
-                        () -> config.indirectDraw)
+                        value -> config.drawIndirect = value,
+                        () -> config.drawIndirect)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new SwitchOption("Low VRAM Mode",
-                        value -> {
-                            config.perRenderTypeAreaBuffers = value;
-                            Minecraft.getInstance().levelRenderer.allChanged();
-                        },
-                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
-                        Reduces VRAM usage by approx 20%
-                        May Increase/Decrease FPS: Depends on GPU architecture
-                        (Can boost performance on Old Nvidia cards)""")),
                 new CyclingOption<>("Device selector",
                         IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
-                        value -> {
-                            String t;
-
-                            if (value == -1)
-                                t = "Auto";
-                            else
-                                t = DeviceManager.suitableDevices.get(value).deviceName;
-
-                            return Component.nullToEmpty(t);
-                        },
+                        value -> Component.nullToEmpty(value == -1 ? "Auto" : DeviceManager.suitableDevices.get(value).deviceName),
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(

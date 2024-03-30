@@ -19,6 +19,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.Collection;
 import java.util.EnumMap;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -32,7 +33,7 @@ public class DrawBuffers {
     private final int minHeight;
 
     private boolean allocated = false;
-    AreaBuffer vertexBuffer, indexBuffer;
+    AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
@@ -43,8 +44,6 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        if (!Initializer.CONFIG.perRenderTypeAreaBuffers)
-            vertexBuffer = new AreaBuffer(AreaBuffer.Usage.VERTEX, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
     }
@@ -54,16 +53,14 @@ public class DrawBuffers {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
 
-        final boolean b = !buffer.indexOnly;
-        final boolean b1 = !buffer.autoIndices;
-        if (b) {
+        if (!buffer.indexOnly) {
             AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), vertexOffset, drawParameters);
             vertexOffset = segment.offset / VERTEX_SIZE;
 
             drawParameters.baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
         }
 
-        if (b1) {
+        if (!buffer.autoIndices) {
             if (this.indexBuffer == null)
                 this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 786432 /*RenderType.SMALL_BUFFER_SIZE*/, INDEX_SIZE);
 
@@ -82,7 +79,7 @@ public class DrawBuffers {
     //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType r) {
         return this.vertexBuffers.computeIfAbsent(
-                r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(AreaBuffer.Usage.VERTEX, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
+                r, t -> new AreaBuffer(AreaBuffer.Usage.VERTEX, r.initialSize, VERTEX_SIZE));
     }
 
     public AreaBuffer getAreaBuffer(TerrainRenderType r) {
@@ -178,26 +175,18 @@ public class DrawBuffers {
         if (!this.allocated)
             return;
 
-        if (this.vertexBuffer == null) {
-            this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
-        } else
-            this.vertexBuffer.freeBuffer();
+        this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
 
         this.vertexBuffers.clear();
         if (this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
 
-        this.vertexBuffer = null;
         this.indexBuffer = null;
         this.allocated = false;
     }
 
     public boolean isAllocated() {
         return allocated;
-    }
-
-    public AreaBuffer getVertexBuffer() {
-        return vertexBuffer;
     }
 
     public EnumMap<TerrainRenderType, AreaBuffer> getVertexBuffers() {
