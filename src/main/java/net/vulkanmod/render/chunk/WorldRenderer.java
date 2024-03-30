@@ -70,8 +70,6 @@ public class WorldRenderer {
     private SectionGraph sectionGraph;
     private boolean graphNeedsUpdate;
 
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-
     private final TaskDispatcher taskDispatcher;
 
     private double xTransparentOld;
@@ -245,9 +243,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);
@@ -326,7 +321,7 @@ public class WorldRenderer {
             renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
-                var queue = chunkArea.sectionQueue;
+                var queue = chunkArea.sectionQueue.get(terrainRenderType);
                 DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {

@@ -301,6 +301,10 @@ public class RenderSection {
         return drawParametersArray[renderType.ordinal()];
     }
 
+    public DrawBuffers.DrawParameters[] getDrawParametersArray() {
+        return drawParametersArray;
+    }
+
     public void setChunkArea(ChunkArea chunkArea) {
         this.chunkArea = chunkArea;
 
