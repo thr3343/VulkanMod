@@ -9,6 +9,7 @@ import org.joml.Vector3i;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.Map;
 
 public class ChunkArea {
     public final int index;
@@ -141,16 +142,9 @@ public class ChunkArea {
         this.drawBuffers.releaseBuffers();
     }
 
-    public void addDrawCmds(DrawBuffers.DrawParameters[] renderSection) {
+    public void addDrawCmds(EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> renderSection) {
 
-        for(TerrainRenderType terrainRenderType : TerrainRenderType.ALL_RENDER_TYPES)
-        {
-            DrawBuffers.DrawParameters drawParameters = renderSection[terrainRenderType.ordinal()];
-            if(drawParameters.indexCount!=0)
-            {
-                this.sectionQueue.get(terrainRenderType).add(drawParameters);
-            }
-        }
+        renderSection.forEach((key, value) -> this.sectionQueue.get(key).add(value));
 
     }
 }
