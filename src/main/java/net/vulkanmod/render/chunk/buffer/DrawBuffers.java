@@ -83,6 +83,8 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
+        this.updateIndex |= renderType.bitMask();
+
         buffer.release();
     }
 
