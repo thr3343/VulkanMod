@@ -315,6 +315,11 @@ public class WorldRenderer {
 
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         int currentFrame = Renderer.getCurrentFrame();
+
+        //TODO; background streaming w. DMA Queue:
+        // so upload Sections, then only render them next frame once the DMA aSync Transfers have finished
+        // + only WHEN rendering is occurring: to take max advantage of async+concurrent uploads
+
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.useUniqueCutouts ? TerrainRenderType.ALL_RENDER_TYPES : TerrainRenderType.COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
             if(!isFancy) VRenderSystem.depthFunc(GL11C.GL_LESS);

@@ -8,7 +8,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 
-import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 
 import org.lwjgl.vulkan.VkCommandBuffer;
 
@@ -42,27 +42,27 @@ public class UploadManager {
 
         if(commandBuffer == null)
         {
-            this.commandBuffer = TransferQueue.beginCommands();
-//            TransferQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+            this.commandBuffer = GraphicsQueue.beginCommands();
+//            GraphicsQueue.GigaBarrier(this.commandBuffers[currentFrame].getHandle(), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
 
-        TransferQueue.MultiBufferBarriers(this.commandBuffer.getHandle(),
+        GraphicsQueue.MultiBufferBarriers(this.commandBuffer.getHandle(),
                 dstBuffers.keySet(),
-                VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_ACCESS_INDEX_READ_BIT,
                 0,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
                 VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 
 
 
-        TransferQueue.uploadBufferCmds(this.commandBuffer, Vulkan.getStagingBuffer().getId(), dstBuffers.long2ObjectEntrySet());
+        GraphicsQueue.uploadBufferCmds(this.commandBuffer, Vulkan.getStagingBuffer().getId(), dstBuffers.long2ObjectEntrySet());
 
 
         dstBuffers.clear();
 
-//        TransferQueue.GigaBarrier(this.commandBuffer.getHandle());
-        TransferQueue.submitCommands(this.commandBuffer);
+//        GraphicsQueue.GigaBarrier(this.commandBuffer.getHandle());
+        GraphicsQueue.submitCommands(this.commandBuffer);
     }
 
     public void recordUpload(long bufferId, int dstOffset, int bufferSize, ByteBuffer src) {
@@ -85,23 +85,20 @@ public class UploadManager {
     }
 
     public void copyBuffer(Buffer src, int srcOffset, Buffer dst, int dstOffset, int size) {
-        if (this.commandBuffer == null)
-            this.commandBuffer = TransferQueue.beginCommands();
+//        if (this.commandBuffer == null)
+//            this.commandBuffer = GraphicsQueue.beginCommands();
+//
+//        VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
+//
+//        GraphicsQueue.BufferBarrier(commandBuffer,
+//                src.getId(),
+//                ~0,
+//                VK_ACCESS_TRANSFER_WRITE_BIT,
+//                VK_ACCESS_TRANSFER_WRITE_BIT,
+//                VK_PIPELINE_STAGE_TRANSFER_BIT,
+//                VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-        VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
-        
-        TransferQueue.BufferBarrier(commandBuffer,
-                src.getId(),
-                ~0,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-//        this.dstBuffers.clear();
-//        this.dstBuffers.add(dst.getId());
-
-        TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
+        GraphicsQueue.uploadBufferImmediate(src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
 
     public void waitUploads() {
