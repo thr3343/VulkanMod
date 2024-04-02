@@ -50,6 +50,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void upload(BufferBuilder.RenderedBuffer buffer) {
+        if(Initializer.CONFIG.renderSky)
             vbo.upload(buffer);
     }
 

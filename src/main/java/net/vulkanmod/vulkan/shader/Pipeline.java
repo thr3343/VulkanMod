@@ -216,7 +216,7 @@ public abstract class Pipeline {
     }
 
     protected class DescriptorSets {
-        private int poolSize;
+        private int poolSize = 10;
         private long descriptorPool;
         private LongBuffer sets;
         private long uniformBufferId;
@@ -232,7 +232,6 @@ public abstract class Pipeline {
 
             Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
 
-            poolSize = buffers.size()+imageDescriptors.size();
             try(MemoryStack stack = stackPush()) {
                 this.createDescriptorPool(stack);
                 this.createDescriptorSets(stack);
@@ -301,7 +300,7 @@ public abstract class Pipeline {
 
             this.currentSet = this.sets.get(this.currentIdx);
 
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(this.poolSize, stack);
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(buffers.size() + imageDescriptors.size(), stack);
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[buffers.size()];
 
             //TODO maybe ubo update is not needed everytime
@@ -385,7 +384,6 @@ public abstract class Pipeline {
         }
 
         private void createDescriptorSets(MemoryStack stack) {
-
             LongBuffer layout = stack.mallocLong(this.poolSize);
 //            layout.put(0, descriptorSetLayout);
 
@@ -407,25 +405,22 @@ public abstract class Pipeline {
         }
 
         private void createDescriptorPool(MemoryStack stack) {
-            final int size1 = buffers.isEmpty() ? 0 : 1;
-            final int size2 = imageDescriptors.isEmpty() ? 0 : 1;
-            int size =  size1 + size2;
+            int size =  buffers.size() + imageDescriptors.size();
 
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(size, stack);
 
-            int i=0;
-            if(!buffers.isEmpty()){
+            int i;
+            for(i = 0; i < buffers.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-                uniformBufferPoolSize.descriptorCount(buffers.size());
-                i++;
+                uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
 
-            if(!imageDescriptors.isEmpty()){
+            for(; i < buffers.size() + imageDescriptors.size(); ++i) {
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(i);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                textureSamplerPoolSize.descriptorCount(imageDescriptors.size());
+                textureSamplerPoolSize.descriptorCount(this.poolSize);
             }
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);

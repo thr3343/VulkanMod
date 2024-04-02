@@ -20,7 +20,7 @@ public class Config {
     public boolean windowedFullscreen = false;
 
     public boolean guiOptimizations = false;
-    public int advCulling = 3;
+    public int advCulling = 2;
     public boolean drawIndirect = true;
     public boolean useUniqueCutouts = true;
     public boolean entityCulling = true;
