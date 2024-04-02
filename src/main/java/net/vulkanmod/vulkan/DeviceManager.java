@@ -146,36 +146,65 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
-            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
-            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
-            deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
 
+            //TODO indirect draw option disabled in case it is not supported
+            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
+                deviceFeatures.features().samplerAnisotropy(true);
+            if(deviceInfo.availableFeatures.features().logicOp())
+                deviceFeatures.features().logicOp(true);
 
+            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
+            deviceVulkan11Features.sType$Default();
 
-            deviceVulkan11Features.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
-            deviceVulkan12Features.descriptorIndexing(true);
-            deviceVulkan12Features.runtimeDescriptorArray(true);
-            deviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind(true);
-            deviceVulkan12Features.descriptorBindingPartiallyBound(true);
+            if(deviceInfo.isDrawIndirectSupported()) {
+                deviceFeatures.features().multiDrawIndirect(true);
+                deviceVulkan11Features.shaderDrawParameters(true);
+            }
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
+
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(deviceVulkan12Features).pNext(deviceVulkan11Features);
+            // queueCreateInfoCount is automatically set
+
             createInfo.pEnabledFeatures(deviceFeatures.features());
+
+            createInfo.pNext(deviceVulkan11Features);
+
+            if(Vulkan.DYNAMIC_RENDERING) {
+                VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
+                dynamicRenderingFeaturesKHR.sType$Default();
+                dynamicRenderingFeaturesKHR.dynamicRendering(true);
+
+                deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+
+//                //Vulkan 1.3 dynamic rendering
+//                VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
+//                deviceVulkan13Features.sType$Default();
+//                if(!deviceInfo.availableFeatures13.dynamicRendering())
+//                    throw new RuntimeException("Device does not support dynamic rendering feature.");
+//
+//                deviceVulkan13Features.dynamicRendering(true);
+//                createInfo.pNext(deviceVulkan13Features);
+//                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+            }
+
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
-            createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
+
+//            Configuration.DEBUG_FUNCTIONS.set(true);
+
+            if(Vulkan.ENABLE_VALIDATION_LAYERS) {
+                createInfo.ppEnabledLayerNames(asPointerBuffer(Vulkan.VALIDATION_LAYERS));
+            }
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
-            if(vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create logical device");
+            int res;
+            if((res = vkCreateDevice(physicalDevice, createInfo, null, pDevice)) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create logical device " + res);
             }
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);

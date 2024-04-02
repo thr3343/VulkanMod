@@ -88,8 +88,6 @@ public abstract class Pipeline {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
-            IntBuffer bindingFlags = stack.callocInt(bindingsSize);
-
             int i = 0;
             for(UBO ubo : this.buffers) {
                 VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(i);
@@ -98,9 +96,6 @@ public abstract class Pipeline {
                 uboLayoutBinding.descriptorType(ubo.getType());
                 uboLayoutBinding.pImmutableSamplers(null);
                 uboLayoutBinding.stageFlags(ubo.getStages());
-
-                bindingFlags.put(VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
-
                 i++;
             }
 
@@ -111,29 +106,11 @@ public abstract class Pipeline {
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
                 samplerLayoutBinding.pImmutableSamplers(null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
-                bindingFlags.put(VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
                 i++;
             }
 
-            VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingsFlags = VkDescriptorSetLayoutBindingFlagsCreateInfo.calloc(stack)
-                    .sType$Default()
-                    .bindingCount(bindingsSize)
-                    .pBindingFlags(bindingFlags.position(0));
-
-//            if(!this.imageDescriptors.isEmpty())
-//            {
-//
-//
-//                setLayoutBindingsFlags.get(x)
-//                        .bindingCount(bindingsSize)
-//                        .pBindingFlags(stack.ints(VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT));
-//                x++;
-//            }
-
             VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack);
             layoutInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-            layoutInfo.pNext(setLayoutBindingsFlags);
-            layoutInfo.flags(imageDescriptors.isEmpty() ? 0 : VK12.VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
             layoutInfo.pBindings(bindings);
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
@@ -264,22 +241,17 @@ public abstract class Pipeline {
         protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean pipelineUpdate) {
             try(MemoryStack stack = stackPush()) {
 
-                if(pipelineUpdate)
-                    this.updateUniforms(uniformBuffers);
+                if(pipelineUpdate) this.updateUniforms(uniformBuffers);
 
                 final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
-                //TODO: Global DescriptorSet layout to allow Sampler Update without bind
-                final boolean b = textureUpdate || pipelineUpdate;
-                if(b) {
-                    //Minor Cpu regression due to increased update freq w/ static Uniform Buffers
-                    this.updateDescriptorSet(stack, uniformBuffers, textureUpdate, pipelineUpdate);
+
+                if(textureUpdate) {
+                    this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
-                if (b) {
-                    final int i = pipelineUpdate ? 0 : buffers.isEmpty() ? 0 : buffers.size()-1;
+                if (textureUpdate || pipelineUpdate)
                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                            0, stack.longs(currentSet), null);
-                }
+                        0, stack.longs(currentSet), dynamicOffsets);
 
             }
         }
@@ -307,9 +279,9 @@ public abstract class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers, boolean textureUpdate, boolean pipelineUpdate) {
+        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
 
-            if(!textureUpdate && !pipelineUpdate) return;
+
             this.uniformBufferId = uniformBuffers.getId(frame);
             this.currentIdx++;
             if(this.currentIdx >= this.poolSize) {
@@ -322,71 +294,65 @@ public abstract class Pipeline {
 //                System.out.println("resized descriptor pool to: " + this.poolSize);
 
                 this.resetIdx();
-                this.updateDescriptorSet(stack, uniformBuffers, true, true);
+                this.updateDescriptorSet(stack, uniformBuffers);
                 return;
             }
 
             this.currentSet = this.sets.get(this.currentIdx);
 
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc((pipelineUpdate ? buffers.size() : 0) + (textureUpdate ? imageDescriptors.size() : 0), stack);
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(buffers.size() + imageDescriptors.size(), stack);
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[buffers.size()];
 
             //TODO maybe ubo update is not needed everytime
             int i = 0;
-            if(pipelineUpdate)
-            {
-              for(UBO ubo : buffers) {
+            for(UBO ubo : buffers) {
 
-                  bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
-                  bufferInfos[i].buffer(this.uniformBufferId);
-                  bufferInfos[i].offset(this.dynamicOffsets.get(i));
-                  bufferInfos[i].range(ubo.getSize());
+                bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
+                bufferInfos[i].buffer(this.uniformBufferId);
+                bufferInfos[i].range(ubo.getSize());
 
-                  VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
-                  uboDescriptorWrite.sType$Default();
-                  uboDescriptorWrite.dstBinding(ubo.getBinding());
-                  uboDescriptorWrite.dstArrayElement(0);
-                  uboDescriptorWrite.descriptorType(ubo.getType());
-                  uboDescriptorWrite.descriptorCount(1);
-                  uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
-                  uboDescriptorWrite.dstSet(currentSet);
+                VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
+                uboDescriptorWrite.sType$Default();
+                uboDescriptorWrite.dstBinding(ubo.getBinding());
+                uboDescriptorWrite.dstArrayElement(0);
+                uboDescriptorWrite.descriptorType(ubo.getType());
+                uboDescriptorWrite.descriptorCount(1);
+                uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
+                uboDescriptorWrite.dstSet(currentSet);
 
-                  ++i;
-              }
-          }
+                ++i;
+            }
 
-            if(textureUpdate) {
-                VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[imageDescriptors.size()];
+            VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[imageDescriptors.size()];
 
-                for (int j = 0; j < imageDescriptors.size(); ++j) {
-                    ImageDescriptor imageDescriptor = imageDescriptors.get(j);
-                    VulkanImage image = imageDescriptor.getImage();
-                    long view = imageDescriptor.getImageView(image);
-                    long sampler = image.getSampler();
-                    int layout = imageDescriptor.getLayout();
+            for(int j = 0; j < imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
+                int layout = imageDescriptor.getLayout();
 
-                    if (imageDescriptor.isReadOnlyLayout)
-                        image.readOnlyLayout();
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
 
-                    imageInfo[j] = VkDescriptorImageInfo.calloc(1, stack);
-                    imageInfo[j].imageLayout(layout);
-                    imageInfo[j].imageView(view);
+                imageInfo[j] = VkDescriptorImageInfo.calloc(1, stack);
+                imageInfo[j].imageLayout(layout);
+                imageInfo[j].imageView(view);
 
-                    if (imageDescriptor.useSampler)
-                        imageInfo[j].sampler(sampler);
+                if(imageDescriptor.useSampler)
+                    imageInfo[j].sampler(sampler);
 
-                    VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
-                    samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                    samplerDescriptorWrite.dstBinding(imageDescriptor.getBinding());
-                    samplerDescriptorWrite.dstArrayElement(0);
-                    samplerDescriptorWrite.descriptorType(imageDescriptor.getType());
-                    samplerDescriptorWrite.descriptorCount(1);
-                    samplerDescriptorWrite.pImageInfo(imageInfo[j]);
-                    samplerDescriptorWrite.dstSet(currentSet);
+                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
+                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                samplerDescriptorWrite.dstBinding(imageDescriptor.getBinding());
+                samplerDescriptorWrite.dstArrayElement(0);
+                samplerDescriptorWrite.descriptorType(imageDescriptor.getType());
+                samplerDescriptorWrite.descriptorCount(1);
+                samplerDescriptorWrite.pImageInfo(imageInfo[j]);
+                samplerDescriptorWrite.dstSet(currentSet);
 
-                    this.boundTextures[j].set(view, sampler);
-                    ++i;
-                }
+                this.boundTextures[j].set(view, sampler);
+                ++i;
             }
 
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
@@ -447,7 +413,7 @@ public abstract class Pipeline {
             for(i = 0; i < buffers.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
 
@@ -459,7 +425,6 @@ public abstract class Pipeline {
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-            poolInfo.flags(imageDescriptors.isEmpty() ? 0 : VK12.VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT);
             poolInfo.pPoolSizes(poolSizes);
             poolInfo.maxSets(this.poolSize);
 
