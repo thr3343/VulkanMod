@@ -239,10 +239,9 @@ public class Options {
                         Might break mod compatibility
                         Restart is needed to take effect""")),
                 new CyclingOption<>("Advanced Chunk Culling",
-                        new Integer[]{2, 3, 4, 10},
+                        new Integer[]{3, 4, 10},
                         value -> {
                             String t = switch (value) {
-                                case 2 -> "Aggressive";
                                 case 3 -> "Normal";
                                 case 4 -> "Conservative";
                                 case 10 -> "Off";
