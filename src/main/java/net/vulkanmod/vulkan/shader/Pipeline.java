@@ -40,6 +40,7 @@ public abstract class Pipeline {
     private static final VkDevice DEVICE = Vulkan.getDevice();
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
+    public static long prevLayout;
 
     private static long createPipelineCache() {
         try(MemoryStack stack = stackPush()) {
@@ -245,13 +246,14 @@ public abstract class Pipeline {
 
                 final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-                if(textureUpdate) {
+                if(textureUpdate || pipelineUpdate) {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
-
+                if(prevLayout==descriptorSetLayout && !textureUpdate) return;
+                if(prevLayout!=descriptorSetLayout) prevLayout=descriptorSetLayout;
                 if (textureUpdate || pipelineUpdate)
                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), dynamicOffsets);
+                        0, stack.longs(currentSet), null);
 
             }
         }
@@ -309,6 +311,7 @@ public abstract class Pipeline {
 
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                 bufferInfos[i].buffer(this.uniformBufferId);
+                bufferInfos[i].offset(this.dynamicOffsets.get(i));
                 bufferInfos[i].range(ubo.getSize());
 
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
@@ -413,7 +416,7 @@ public abstract class Pipeline {
             for(i = 0; i < buffers.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
 

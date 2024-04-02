@@ -47,17 +47,24 @@ public abstract class VTextureSelector {
 
         texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
     }
-
+    //todo: DescriptorIndexing + Sampler Array
+    // group by res to in case it/  reduce potential overhead + allow additional optimisations e.g.
+    // Also group by vertex + frag access flags to permit additional optimisations e.g.
     public static int getTextureIdx(String name) {
         return switch (name) {
-            case "Sampler0", "DiffuseSampler" -> 0;
-            case "Sampler1", "SamplerProj" -> 1;
-            case "Sampler2" -> 2;
-            case "Sampler3" -> 3;
-            case "Sampler4" -> 4;
-            case "Sampler5" -> 5;
-            case "Sampler6" -> 6;
-            case "Sampler7" -> 7;
+            case "Sampler0" -> 0; //Reserve for Terrain Atlas + Onion Texture
+            case "DiffuseSampler" -> 0; //PostEffect Shaders
+            case "Sampler1" -> 1; //Hurt/Damage (tint) overlay
+            case "SamplerProj" -> 1; //End portal Effect
+            case "Sampler2" -> 2; //Reserve for lightmaps
+            case "Sampler3" -> 3; //Small 64x64  Mob Textures
+            case "Sampler4" -> 4; // Large 256x256 mob textures + Maybe GUI textures
+            case "Sampler5" -> 5; //TileEntities
+            case "Sampler6" -> 6; //Armor Trim + misc Overlay textures like Players e.g.
+            case "Sampler7" -> 7; //Font/ Atlas
+            //case "Sampler8" -> 7; // Non-Uniform textures
+            //... /Misc./Aux textures e.g.
+            // + Maybe Mod textures can use 16+ indices
             default -> throw new IllegalStateException("Unknown sampler name: " + name);
         };
     }

@@ -243,6 +243,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
             boundPipeline=0;
+            Pipeline.prevLayout=0;
             mainPass.begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
