@@ -246,8 +246,6 @@ public class SectionGraph {
             final byte steps = (byte) (renderSection.steps + 1);
             relativeSection.directionChanges = (byte) (steps < 10 ? 0 : 127);
             relativeSection.steps = steps;
-//            relativeSection.directionChanges = 127;
-//            relativeSection.directionChanges = 0;
 
             relativeSection.directions = (byte) (renderSection.directions & ~(1 << opposite));
             this.sectionQueue.add(relativeSection);
