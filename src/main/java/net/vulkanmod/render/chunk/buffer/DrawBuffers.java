@@ -103,11 +103,8 @@ public class DrawBuffers {
         float y = (float) (camY - (this.origin.y));
         float z = (float) (camZ - (this.origin.z));
 
-        Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
-        Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
 
-        MVP.translate(-x, -y, -z).get(mPtr);
-        MV.translate(-x, -y, -z).get(16, mPtr);
+        mPtr.put(0, -x).put(1, -y).put(2, -z);
 
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
@@ -163,7 +160,7 @@ public class DrawBuffers {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack.mallocFloat(32));
+            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack.mallocFloat(3));
         }
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
