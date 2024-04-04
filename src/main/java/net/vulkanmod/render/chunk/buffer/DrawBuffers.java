@@ -32,7 +32,7 @@ public class DrawBuffers {
     private final int minHeight;
 
     private boolean allocated = false;
-    AreaBuffer vertexBuffer, indexBuffer;
+    AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
@@ -43,8 +43,6 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        if (!Initializer.CONFIG.perRenderTypeAreaBuffers)
-            vertexBuffer = new AreaBuffer(AreaBuffer.Usage.VERTEX, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
     }
@@ -82,7 +80,7 @@ public class DrawBuffers {
     //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType r) {
         return this.vertexBuffers.computeIfAbsent(
-                r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(AreaBuffer.Usage.VERTEX, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
+                r, t -> new AreaBuffer(AreaBuffer.Usage.VERTEX, r.initialSize, VERTEX_SIZE));
     }
 
     public AreaBuffer getAreaBuffer(TerrainRenderType r) {
@@ -178,26 +176,19 @@ public class DrawBuffers {
         if (!this.allocated)
             return;
 
-        if (this.vertexBuffer == null) {
-            this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
-        } else
-            this.vertexBuffer.freeBuffer();
 
+        this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
         this.vertexBuffers.clear();
         if (this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
 
-        this.vertexBuffer = null;
+
         this.indexBuffer = null;
         this.allocated = false;
     }
 
     public boolean isAllocated() {
         return allocated;
-    }
-
-    public AreaBuffer getVertexBuffer() {
-        return vertexBuffer;
     }
 
     public EnumMap<TerrainRenderType, AreaBuffer> getVertexBuffers() {
