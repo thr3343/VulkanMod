@@ -45,25 +45,32 @@ public abstract class DeviceManager {
 
             vkEnumeratePhysicalDevices(instance, deviceCount, null);
 
-            if(deviceCount.get(0) == 0) {
+            final int DeviceCnt = deviceCount.get(0);
+            if(DeviceCnt == 0) {
                 throw new RuntimeException("Failed to find GPUs with Vulkan support");
             }
 
-            PointerBuffer ppPhysicalDevices = stack.mallocPointer(deviceCount.get(0));
+            Initializer.LOGGER.info("Detected "+ DeviceCnt + " Devices");
+
+            PointerBuffer ppPhysicalDevices = stack.mallocPointer(DeviceCnt);
             vkEnumeratePhysicalDevices(instance, deviceCount, ppPhysicalDevices);
 
-            VkPhysicalDevice currentDevice;
-
             for(int i = 0; i < ppPhysicalDevices.capacity(); i++) {
+                VkPhysicalDevice currentDevice = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
 
-                currentDevice = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
+                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
+                vkGetPhysicalDeviceProperties(currentDevice, deviceProperties);
+                Initializer.LOGGER.info(i + ": "+ deviceProperties.deviceNameString());
+
+            }
+            for(int i = 0; i < ppPhysicalDevices.capacity(); i++) {
+                VkPhysicalDevice currentDevice = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
 
                 VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
                 vkGetPhysicalDeviceProperties(currentDevice, deviceProperties);
 
-                if(isDeviceSuitable(currentDevice)) {
-                    DeviceInfo device = new DeviceInfo(currentDevice);
-                    suitableDevices.add(device);
+                if(isDeviceSuitable(i, currentDevice, deviceProperties)) {
+                    suitableDevices.add(new DeviceInfo(currentDevice));
 
                 }
             }
@@ -84,6 +91,8 @@ public abstract class DeviceManager {
                 Initializer.CONFIG.device = -1;
             }
 
+            QueueFamilyIndices.findQueueFamilies(deviceInfo.physicalDevice);
+            Initializer.LOGGER.info("Selected Device: "+deviceInfo.deviceName);
             physicalDevice = deviceInfo.physicalDevice;
 
             //Get device properties
@@ -208,8 +217,12 @@ public abstract class DeviceManager {
         return glfwExtensions;
     }
 
-    private static boolean isDeviceSuitable(VkPhysicalDevice device) {
+    private static boolean isDeviceSuitable(int i, VkPhysicalDevice device, VkPhysicalDeviceProperties deviceProperties) {
 
+
+        String name =  deviceProperties.deviceNameString();
+
+        Initializer.LOGGER.info("Checking Device "+i+": "+name);
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
 
@@ -220,12 +233,18 @@ public abstract class DeviceManager {
             }
         }
 
-        boolean anisotropicFilterSupported = false;
-        try(MemoryStack stack = stackPush()) {
-            VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.malloc(stack);
-            vkGetPhysicalDeviceFeatures(device, supportedFeatures);
-            anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
-        }
+//        boolean anisotropicFilterSupported = false;
+//        try(MemoryStack stack = stackPush()) {
+//            VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.malloc(stack);
+//            vkGetPhysicalDeviceFeatures(device, supportedFeatures);
+//            anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
+//        }
+        Initializer.LOGGER.info("Has required features");
+        Initializer.LOGGER.info("   Supports swapChain: "+extensionsSupported);
+        Initializer.LOGGER.info("   Can output to screen: "+swapChainAdequate);
+        Initializer.LOGGER.info("Device Suitable: "+(extensionsSupported && swapChainAdequate));
+
+
 
         return extensionsSupported && swapChainAdequate;
     }
