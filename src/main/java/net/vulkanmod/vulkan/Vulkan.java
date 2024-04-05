@@ -245,7 +245,11 @@ public class Vulkan {
             // We need to retrieve the pointer of the created instance
             PointerBuffer instancePtr = stack.mallocPointer(1);
 
-            if(vkCreateInstance(createInfo, null, instancePtr) != VK_SUCCESS) {
+            final int i = vkCreateInstance(createInfo, null, instancePtr);
+            if(i == VK_ERROR_INCOMPATIBLE_DRIVER) {
+                throw new RuntimeException("Incompatible Driver: try updating your driver and/or Vulkan version");
+            }
+            if (i != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create instance");
             }
 
