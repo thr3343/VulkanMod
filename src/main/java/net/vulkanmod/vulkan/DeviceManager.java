@@ -147,11 +147,10 @@ public abstract class DeviceManager {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
+
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
             deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
             deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
             deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
@@ -161,8 +160,9 @@ public abstract class DeviceManager {
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+            createInfo.pNext(deviceVulkan11Features);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(deviceFeatures);
+            createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
@@ -227,7 +227,7 @@ public abstract class DeviceManager {
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
         }
 
-        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported && swapChainAdequate;
+        return extensionsSupported && swapChainAdequate;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
