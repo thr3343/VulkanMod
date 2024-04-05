@@ -106,10 +106,9 @@ public class WorldRenderer {
 
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
-
-        for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryType.BAR_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
+        for (int i = 0; i < this.indirectBuffers.length; ++i) {
+            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
 //        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
@@ -185,7 +184,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         cameraMoved |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        cameraMoved |= Math.abs(cameraY - this.lastCameraY)>2.0f;
+        cameraMoved |= cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ;
         this.graphNeedsUpdate |= cameraMoved;
 
         if (!isCapturedFrustum) {
@@ -295,7 +294,7 @@ public class WorldRenderer {
     }
 
     public void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType.name);
+        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
         renderType.setupRenderState();
 
         this.sortTranslucentSections(camX, camY, camZ);
@@ -318,7 +317,7 @@ public class WorldRenderer {
             VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
 
             Renderer renderer = Renderer.getInstance();
-            
+
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             renderer.bindGraphicsPipeline(pipeline);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);

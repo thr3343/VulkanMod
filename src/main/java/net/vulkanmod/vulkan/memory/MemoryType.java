@@ -25,21 +25,10 @@ public enum MemoryType {
     private long usedBytes;
     private final int flags;
 
-    //requiredFlags: MemType MUST have this flag(s) to be used
-    //optimalFlags: MemType IDEALLY has these flags for Optimal performance, but are not strictly required to have these flags to be used
-
     MemoryType(int... optimalFlags) {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
-        //VK_MEMORY_HEAP_DEVICE_LOCAL_BIT is gurenteed by the spec afaict
-        //Not bothering with RAM Mem, as
-
-        //final boolean useVRAM = getVRAMHeaps(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
-
-//        final int heapFlag = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
-
-        //if(!useVRAM) Initializer.LOGGER.error("Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
 
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
@@ -52,13 +41,12 @@ public enum MemoryType {
 
                 if (hasRequiredFlags) {
                     if(memoryHeap.flags()!=VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: (0.3.9 Default): Performance may be degraded!");
+                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: Performance may be degraded!");
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
                     Initializer.LOGGER.info(this.name()+"\n"
-                            + "     Memory Heap Index/Bank: "
-                            + "     "+ memoryType.heapIndex() +"\n"
+                            + "     Memory Heap Index/Bank: "+ memoryType.heapIndex() +"\n"
                             + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
                             + "     AvailableFlags:" + getMemoryTypeFlags(availableFlags) + "\n"
                             + "     EnabledFlags:" + getMemoryTypeFlags(optimalFlagMask));

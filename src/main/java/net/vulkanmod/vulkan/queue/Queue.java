@@ -180,6 +180,26 @@ public enum Queue {
 
         }
     }
+
+    public void MemoryBarrier(VkCommandBuffer commandBuffer, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack)
+                    .sType$Default()
+                    .srcAccessMask(srcAccess)
+                    .dstAccessMask(dstAccess);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    srcStage, dstStage,
+                    0,
+                    memBarrier,
+                    null,
+                    null);
+
+        }
+    }
+
+
     //Using barrier batching to allow Driver optimisations
     public void MultiBufferBarriers(VkCommandBuffer commandBuffer, LongSet bufferhdles, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
