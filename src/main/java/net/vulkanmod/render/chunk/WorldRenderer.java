@@ -245,10 +245,7 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
-
+            
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);
 
