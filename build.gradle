@@ -10,12 +10,13 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-project.ext.lwjglVersion = "3.3.2"
-project.ext.jomlVersion = "1.10.4"
+project.ext.lwjglVersion = "3.3.4-SNAPSHOT"
+project.ext.jomlVersion = "1.10.5"
 project.ext.winNatives = "natives-windows"
 project.ext.linuxNatives = "natives-linux"
 project.ext.macosNatives = "natives-macos"
 project.ext.macosArmNatives = "natives-macos-arm64"
+project.ext.freebsdNatives = "natives-freebsd"
 
 dependencies {
 	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
@@ -25,12 +26,14 @@ dependencies {
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArmNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$freebsdNatives"))
 
 	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArmNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$freebsdNatives"))
 
 	//MoltenVK
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
@@ -43,6 +46,8 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	mavenCentral()
+	maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
 dependencies {
