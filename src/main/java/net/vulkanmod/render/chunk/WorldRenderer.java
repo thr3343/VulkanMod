@@ -93,6 +93,7 @@ public class WorldRenderer {
 
         BlockRenderer.setBlockColors(this.minecraft.getBlockColors());
 
+        Renderer.getInstance().addOnResizeCallback(Queue::trimCmdPools);
         Renderer.getInstance().addOnResizeCallback(() -> {
             if (this.indirectBuffers.length != Renderer.getFramesNum())
                 allocateIndirectBuffers();
@@ -110,7 +111,7 @@ public class WorldRenderer {
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
-//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
+//        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
