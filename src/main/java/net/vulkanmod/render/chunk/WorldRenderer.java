@@ -107,11 +107,11 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryType.BAR_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
 
-//        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
+//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
@@ -245,6 +245,9 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
+            synchronized (this.globalBlockEntities) {
+                this.globalBlockEntities.clear();
+            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);
