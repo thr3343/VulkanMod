@@ -47,7 +47,7 @@ public class GraphicsPipeline extends Pipeline {
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
+            graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
         createDescriptorSets(Renderer.getFramesNum());
@@ -143,9 +143,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc(stack);
             depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-            depthStencil.depthTestEnable(state.depthState.depthTest);
-            depthStencil.depthWriteEnable(state.depthState.depthMask);
-            depthStencil.depthCompareOp(state.depthState.function);
+            depthStencil.depthTestEnable(PipelineState.DepthState.depthTest(state.depthState_i));
+            depthStencil.depthWriteEnable(PipelineState.DepthState.depthMask(state.depthState_i));
+            depthStencil.depthCompareOp(PipelineState.DepthState.decodeDepthFun(state.depthState_i));
             depthStencil.depthBoundsTestEnable(false);
             depthStencil.minDepthBounds(0.0f); // Optional
             depthStencil.maxDepthBounds(1.0f); // Optional

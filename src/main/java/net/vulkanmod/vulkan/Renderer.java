@@ -369,7 +369,7 @@ public class Renderer {
         UploadManager.INSTANCE.waitUploads();
     }
 
-    public void addUsedPipeline(Pipeline pipeline) {
+    public void addUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.add(pipeline);
     }
 

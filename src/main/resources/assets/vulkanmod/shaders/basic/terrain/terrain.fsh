@@ -24,5 +24,5 @@ void main() {
     if (color.a < 0.5f) {
         discard;
     }
-    fragColor = USE_FOG ? linear_fog(color * vertexColor,, vertexDistance, FogStart, FogEnd, FogColor) : color; //Optimised out by Driver
+    fragColor = USE_FOG ? linear_fog(color * vertexColor, vertexDistance, FogStart, FogEnd, FogColor) : color * vertexColor; //Optimised out by Driver
 }
