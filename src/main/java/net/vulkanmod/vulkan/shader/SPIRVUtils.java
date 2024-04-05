@@ -120,7 +120,6 @@ public class SPIRVUtils {
         throw new RuntimeException("unable to read inputStream");
     }
 
-/*
 
 
     public enum SpecConstant
@@ -147,7 +146,6 @@ public class SPIRVUtils {
         }
     }
 
-*/
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),

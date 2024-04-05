@@ -47,6 +47,8 @@ public class Renderer {
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
     private long boundPipeline;
+    public static boolean recomp;
+
     public static void initRenderer() {
         INSTANCE = new Renderer();
         INSTANCE.init();
@@ -60,7 +62,7 @@ public class Renderer {
 
     public static int getCurrentImage() { return imageIndex; }
 
-    private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
 
     private Drawer drawer;
 
@@ -171,6 +173,14 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
+
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
+        }
+
 
         if(swapChainUpdate) {
             recreateSwapChain();

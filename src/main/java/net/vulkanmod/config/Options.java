@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 
@@ -143,8 +142,8 @@ public class Options {
                         It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
-                            int v = value * 2 + 1;
-                            return v + " x " + v;
+                    int v = value * 2 + 1;
+                    return v + " x " + v;
                         },
                         (value) -> {
                             minecraftOptions.biomeBlendRadius().set(value);
@@ -159,6 +158,7 @@ public class Options {
                 new RangeOption("Render Distance", 2, 32, 1,
                         (value) -> {
                             minecraftOptions.renderDistance().set(value);
+                            Minecraft.getInstance().levelRenderer.needsUpdate();
                         },
                         () -> minecraftOptions.renderDistance().get()),
                 new RangeOption("Simulation Distance", 5, 32, 1,
@@ -178,12 +178,17 @@ public class Options {
                 new SwitchOption("Render Sky",
                         value -> config.renderSky = value,
                         () -> config.renderSky),
+                new SwitchOption("RenderFog",
+                        value -> {
+                            config.renderFog = value;
+                            Renderer.recomp=true;
+                        },
+                        () -> config.renderFog),
                 new CyclingOption<>("Mipmap Levels",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> Component.nullToEmpty(value.toString()),
                         value -> {
                             minecraftOptions.mipmapLevels().set(value);
-                            Minecraft.getInstance().updateMaxMipLevel(value);
                             Minecraft.getInstance().delayTextureReload();
                         },
                         () -> minecraftOptions.mipmapLevels().get())
@@ -191,7 +196,7 @@ public class Options {
     }
 
     public static Option<?>[] getOtherOpts() {
-        return new Option[]{
+        return new Option[] {
                 new RangeOption("Render queue size", 2,
                         5, 1,
                         value -> {
@@ -235,7 +240,7 @@ public class Options {
                         value -> {
                             String t;
 
-                            if (value == -1)
+                            if(value == -1)
                                 t = "Auto";
                             else
                                 t = DeviceManager.suitableDevices.get(value).deviceName;

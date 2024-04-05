@@ -14,6 +14,9 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -22,12 +25,13 @@ import static org.lwjgl.vulkan.VK10.vkDestroyPipelineLayout;
 
 public class GraphicsPipeline extends Pipeline {
 
-    private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
-
+    private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private final VertexFormat vertexFormat;
+    private final EnumSet<SPIRVUtils.SpecConstant> specConstants;
 
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
+    private PipelineState state;
 
     GraphicsPipeline(Builder builder) {
         super(builder.shaderPath);
@@ -36,13 +40,14 @@ public class GraphicsPipeline extends Pipeline {
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
+        this.specConstants = builder.specConstants;
 
         createDescriptorSetLayout();
         createPipelineLayout();
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
+            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
                     this::createGraphicsPipeline);
 
         createDescriptorSets(Renderer.getFramesNum());
@@ -55,12 +60,22 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     private long createGraphicsPipeline(PipelineState state) {
-
+        this.state=state;
         try(MemoryStack stack = stackPush()) {
 
             ByteBuffer entryPoint = stack.UTF8("main");
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
+
+
+            VkSpecializationMapEntry.Buffer specEntrySet =  VkSpecializationMapEntry.malloc(specConstants.size(), stack);
+
+
+            boolean equals = !this.specConstants.isEmpty();
+            VkSpecializationInfo specInfo = equals ? VkSpecializationInfo.malloc(stack)
+                    .pMapEntries(specEntrySet)
+                    .pData(enumSpecConstants(stack, specEntrySet)) : null;
+
 
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
 
@@ -68,6 +83,7 @@ public class GraphicsPipeline extends Pipeline {
             vertShaderStageInfo.stage(VK_SHADER_STAGE_VERTEX_BIT);
             vertShaderStageInfo.module(vertShaderModule);
             vertShaderStageInfo.pName(entryPoint);
+            vertShaderStageInfo.pSpecializationInfo(specInfo);
 
             VkPipelineShaderStageCreateInfo fragShaderStageInfo = shaderStages.get(1);
 
@@ -75,6 +91,7 @@ public class GraphicsPipeline extends Pipeline {
             fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
             fragShaderStageInfo.module(fragShaderModule);
             fragShaderStageInfo.pName(entryPoint);
+            fragShaderStageInfo.pSpecializationInfo(specInfo);
 
             // ===> VERTEX STAGE <===
 
@@ -126,9 +143,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc(stack);
             depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-            depthStencil.depthTestEnable(PipelineState.DepthState.depthTest(state.depthState_i));
-            depthStencil.depthWriteEnable(PipelineState.DepthState.depthMask(state.depthState_i));
-            depthStencil.depthCompareOp(PipelineState.DepthState.decodeDepthFun(state.depthState_i));
+            depthStencil.depthTestEnable(state.depthState.depthTest);
+            depthStencil.depthWriteEnable(state.depthState.depthMask);
+            depthStencil.depthCompareOp(state.depthState.function);
             depthStencil.depthBoundsTestEnable(false);
             depthStencil.minDepthBounds(0.0f); // Optional
             depthStencil.maxDepthBounds(1.0f); // Optional
@@ -201,6 +218,30 @@ public class GraphicsPipeline extends Pipeline {
 
             return pGraphicsPipeline.get(0);
         }
+    }
+
+
+    private ByteBuffer enumSpecConstants(MemoryStack stack, VkSpecializationMapEntry.Buffer specEntrySet) {
+        int i = 0;
+        int x = 0;
+        ByteBuffer byteBuffer = stack.malloc(specConstants.size()*Integer.BYTES);
+
+        for(var specDef : specConstants)
+        {
+            specEntrySet.get(i)
+                    .constantID(specDef.ordinal())
+                    .offset(x)
+                    .size(4);
+
+            byteBuffer.putInt(i, specDef.getValue());
+            i++; x+=4;
+        }
+        return byteBuffer;
+    }
+
+    //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+    private static ByteBuffer alignedVkBool32(MemoryStack stack, int i) {
+        return stack.malloc(Integer.BYTES).putInt(0, i); //Malloc as Int is always Unaligned, so asIntBuffer doesn't help here afaik
     }
 
     private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
@@ -335,6 +376,28 @@ public class GraphicsPipeline extends Pipeline {
         }
 
         return attributeDescriptions.rewind();
+    }
+
+    // SpecConstants can be set to be unique per Pipeline
+    // but that would involve adding boilerplate to PipelineState
+    // So to simplify the code, SpecConstants are limited to "Static Global State" rn
+    public void updateSpecConstant(SPIRVUtils.SpecConstant specConstant)
+    {
+
+        if(this.specConstants.contains(specConstant))
+        {
+            if(graphicsPipelines.size()>1)
+            {
+                graphicsPipelines.values().forEach(pipeline -> vkDestroyPipeline(DeviceManager.device, pipeline, null));
+                graphicsPipelines.clear();
+            }
+            this.graphicsPipelines.put(this.state, this.createGraphicsPipeline(this.state));
+        }
+//        PIPELINES.remove(this);
+//        Renderer.getInstance().removeUsedPipeline(this);
+//        this.graphicsPipelines.remove(this.state);
+//        PIPELINES.add(this);
+//        Renderer.getInstance().addUsedPipeline(this);
     }
 
     public void cleanUp() {

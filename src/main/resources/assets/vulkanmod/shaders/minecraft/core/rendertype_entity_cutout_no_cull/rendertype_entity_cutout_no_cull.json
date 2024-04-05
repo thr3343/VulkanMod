@@ -44,5 +44,8 @@
             { "name": "Light0_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] },
             { "name": "Light1_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
 
+    ],
+    "SpecConstants": [
+        { "name":  "USE_FOG", "type": "bool" }
     ]
 }
