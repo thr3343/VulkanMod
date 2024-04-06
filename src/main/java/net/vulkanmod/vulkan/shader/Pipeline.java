@@ -88,23 +88,25 @@ public abstract class Pipeline {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
-
+            int i = 0;
             for(UBO ubo : this.buffers) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(i);
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(ubo.getType());
                 uboLayoutBinding.pImmutableSamplers(null);
                 uboLayoutBinding.stageFlags(ubo.getStages());
+                i++;
             }
 
             for(ImageDescriptor imageDescriptor : this.imageDescriptors) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(i);
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
                 samplerLayoutBinding.pImmutableSamplers(null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
+                i++;
             }
 
             VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack);
@@ -114,7 +116,7 @@ public abstract class Pipeline {
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
             if(vkCreateDescriptorSetLayout(DeviceManager.device, layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create descriptor set layout");
+                throw new RuntimeException("Failed to create descriptor set layout"+this.name);
             }
 
             this.descriptorSetLayout = pDescriptorSetLayout.get(0);
@@ -240,16 +242,23 @@ public abstract class Pipeline {
             try(MemoryStack stack = stackPush()) {
 
                 this.updateUniforms(uniformBuffers);
-                this.updateDescriptorSet(stack, uniformBuffers);
+
+                final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
+
+                if(textureUpdate) {
+                    this.updateDescriptorSet(stack, uniformBuffers);
+                }
+
 
                 vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), dynamicOffsets);
+                    0, stack.longs(currentSet), dynamicOffsets);
+
             }
         }
 
         private void updateUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
-
+            //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
             for(UBO ubo : buffers) {
 //                ubo.update();
@@ -272,27 +281,6 @@ public abstract class Pipeline {
 
         private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
 
-            boolean changed = false;
-            for(int j = 0; j < imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
-                VulkanImage image = imageDescriptor.getImage();
-                long view = imageDescriptor.getImageView(image);
-                long sampler = image.getSampler();
-
-                if(imageDescriptor.isReadOnlyLayout)
-                    image.readOnlyLayout();
-
-                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
-                    changed = true;
-                    break;
-                }
-            }
-
-            if(!changed && this.currentIdx != -1 &&
-                this.uniformBufferId == uniformBuffers.getId(frame)) {
-                this.currentSet = this.sets.get(this.currentIdx);
-                return;
-            }
 
             this.uniformBufferId = uniformBuffers.getId(frame);
             this.currentIdx++;
@@ -368,6 +356,31 @@ public abstract class Pipeline {
             }
 
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+        }
+
+        private boolean transitionSamplers(UniformBuffers uniformBuffers) {
+            boolean changed = false;
+            for(int j = 0; j < imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
+
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
+
+                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
+                    changed = true;
+                    break;
+                }
+            }
+
+            if(!changed && this.currentIdx != -1 &&
+                this.uniformBufferId == uniformBuffers.getId(frame)) {
+                this.currentSet = this.sets.get(this.currentIdx);
+                return false;
+            }
+            return true;
         }
 
         private void createDescriptorSets(MemoryStack stack) {
@@ -585,9 +598,10 @@ public abstract class Pipeline {
         private void parseSamplerNode(JsonElement jsonelement) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
             String name = GsonHelper.getAsString(jsonobject, "name");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
+            this.imageDescriptors.add(new ImageDescriptor(binding, "sampler2D", name, imageIdx));
             this.nextBinding++;
         }
 
@@ -611,7 +625,7 @@ public abstract class Pipeline {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");

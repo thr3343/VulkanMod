@@ -46,6 +46,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private long boundPipeline;
     public static void initRenderer() {
         INSTANCE = new Renderer();
         INSTANCE.init();
@@ -200,7 +201,7 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+
         recordingCmds = true;
 
         try(MemoryStack stack = stackPush()) {
@@ -276,12 +277,12 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, inFlightFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
             if((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+                vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
@@ -370,6 +371,7 @@ public class Renderer {
         }
 
         usedPipelines.clear();
+        boundPipeline=0;
     }
 
     void waitForSwapChain()
@@ -393,7 +395,7 @@ public class Renderer {
         Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+        vkResetCommandPool(Vulkan.getDevice(), Vulkan.getCommandPool(), 0);
 
         Vulkan.getSwapChain().recreate();
 
@@ -466,7 +468,17 @@ public class Renderer {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
+        final long handle = pipeline.getHandle(currentState);
+        if(boundPipeline==handle) {
+            return;
+        }
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
+        boundPipeline=handle;
+//        if(usedPipelines.contains(pipeline))
+//        {
+////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
+//            return true;
+//        }
 
         addUsedPipeline(pipeline);
     }
