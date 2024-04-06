@@ -40,6 +40,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    public static boolean recomp;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -60,7 +61,7 @@ public class Renderer {
 
     public static int getCurrentImage() { return imageIndex; }
 
-    private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
 
     private Drawer drawer;
 
@@ -171,7 +172,12 @@ public class Renderer {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
-
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
+        }
         if(swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
@@ -359,7 +365,7 @@ public class Renderer {
         UploadManager.INSTANCE.waitUploads();
     }
 
-    public void addUsedPipeline(Pipeline pipeline) {
+    public void addUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.add(pipeline);
     }
 

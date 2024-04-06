@@ -1,5 +1,5 @@
 #version 460
-
+layout (constant_id = 0) const bool USE_FOG = true;
 #include "light.glsl"
 
 layout (push_constant) uniform pushConstant {
@@ -34,7 +34,7 @@ void main() {
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, baseOffset)+chunkOffset, 1.0);
     gl_Position = MVP * pos;
 
-    vertexDistance = length((ModelViewMat * pos).xyz);
+    if(USE_FOG) vertexDistance = length((ModelViewMat * pos).xyz);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
     texCoord0 = UV0 * UV_INV;

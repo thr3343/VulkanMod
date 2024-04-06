@@ -186,7 +186,10 @@ public class Options {
                         () -> config.animations),
                 new SwitchOption("RenderSky",
                         (value) -> config.renderSky = value,
-                        () -> config.renderSky)
+                        () -> config.renderSky),
+                new SwitchOption("RenderFog",
+                        (value) -> config.renderFog = value,
+                        () -> config.renderFog),
         };
     }
 
