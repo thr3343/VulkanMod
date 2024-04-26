@@ -10,10 +10,13 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class VRenderSystem {
     private static long window;
@@ -28,6 +31,7 @@ public abstract class VRenderSystem {
 
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
+    public static boolean useLines = false;
 
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
@@ -236,4 +240,16 @@ public abstract class VRenderSystem {
         Renderer.setDepthBias(0.0F, 0.0F);
     }
 
+    public static void polygonMode(int i, int j) {
+        useLines = j == GL11.GL_LINES;
+        /*switch (j)
+        {
+            case GL11.GL_LINES -> true; *//*VK_PRIMITIVE_TOPOLOGY_LINE_LIST*//*
+            case GL11.GL_LINE_STRIP -> true; *//*VK_PRIMITIVE_TOPOLOGY_LINE_STRIP*//*
+            case GL11.GL_TRIANGLES, GL11.GL_QUADS -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST*//*
+            case GL11.GL_TRIANGLE_STRIP -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP*//*
+            case GL11.GL_TRIANGLE_FAN -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN*//*
+            default -> throw new IllegalStateException("Unexpected value: " + j);
+        };*/
+    }
 }

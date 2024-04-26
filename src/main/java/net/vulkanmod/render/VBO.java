@@ -11,7 +11,6 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -68,6 +67,10 @@ public class VBO {
                 case QUADS -> {
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
                 }
+                case DEBUG_LINES -> {
+                    autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
+                    this.indexCount = vertexCount * 3 / 2;
+                }
                 case TRIANGLES -> {
                     autoIndexBuffer = null;
                 }
@@ -111,6 +114,7 @@ public class VBO {
             RenderSystem.assertOnRenderThread();
 
             VRenderSystem.applyMVP(MV, P);
+            VRenderSystem.polygonMode(0, mode.asGLMode);
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
@@ -127,11 +131,11 @@ public class VBO {
     }
 
     public void drawChunkLayer() {
-        if (this.indexCount != 0) {
-
-            RenderSystem.assertOnRenderThread();
-            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
-        }
+//        if (this.indexCount != 0) {
+//
+//            RenderSystem.assertOnRenderThread();
+//            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+//        }
     }
 
     public void close() {
