@@ -15,7 +15,7 @@ layout (binding = 2) uniform sampler2D Sampler2;
 
 
 layout (location = 0) out vec4 vertexColor;
-layout (location = 1) out float texCoord0;
+layout (location = 1) out vec3 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
@@ -36,7 +36,31 @@ void main() {
 
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
-    texCoord0 = (UV0 * UV_INV).x;
+
+    vec2 baseTexCoord=vec2(0,0);
+    switch((gl_VertexIndex) % 6)
+    {
+        case 0:
+            baseTexCoord = vec2(0,0);
+            break;
+        case 1:
+            baseTexCoord = vec2(1,0);
+            break;
+        case 2:
+            baseTexCoord = vec2(0,1);
+            break;
+        case 3:
+            baseTexCoord = vec2(0,1);
+            break;
+        case 4:
+            baseTexCoord = vec2(1,1);
+            break;
+        case 5:
+            baseTexCoord = vec2(0,1);
+            break;
+    };
+
+    texCoord0 = vec3(baseTexCoord, 64);
 //    normal = MVP * vec4(Normal, 0.0);
 }
 
