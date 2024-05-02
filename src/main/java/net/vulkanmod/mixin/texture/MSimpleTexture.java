@@ -15,7 +15,7 @@ public class MSimpleTexture {
      */
     @Overwrite
     private void doLoad(NativeImage nativeImage, boolean blur, boolean clamp) {
-        VulkanImage image = new VulkanImage.Builder(nativeImage.getWidth(), nativeImage.getHeight())
+        VulkanImage image = new VulkanImage.Builder(nativeImage.getWidth(), nativeImage.getHeight(), 1)
                 .setLinearFiltering(blur)
                 .setClamp(clamp)
                 .createVulkanImage();

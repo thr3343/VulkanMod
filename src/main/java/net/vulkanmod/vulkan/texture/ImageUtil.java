@@ -15,7 +15,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class ImageUtil {
 
-    public static void copyBufferToImageCmd(VkCommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
+    public static void copyBufferToImageCmd(VkCommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -28,7 +28,39 @@ public abstract class ImageUtil {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
+
+            vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+        }
+    }
+    public static void copyBufferToArrayImageCmd(VkCommandBuffer commandBuffer,
+                                                 long buffer,
+                                                 long image,
+                                                 int mipLevel,
+                                                 int width,
+                                                 int height,
+                                                 int xOffset,
+                                                 int yOffset,
+                                                 int bufferOffset,
+                                                 int bufferRowLenght,
+                                                 int bufferImageHeight,
+                                                 int layers) {
+        //TODO: TexCopyOfsfet mucy be wrapped to 3D coords due to the Layer system + target the correct layer
+        // tetxures are always 16x16 if Vanilla,
+
+
+        try (MemoryStack stack = stackPush()) {
+
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+            region.bufferOffset(bufferOffset);
+            region.bufferRowLength(bufferRowLenght);   // Tightly packed
+            region.bufferImageHeight(bufferImageHeight);  // Tightly packed
+            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            region.imageSubresource().mipLevel(mipLevel);
+            region.imageSubresource().baseArrayLayer(((xOffset))+yOffset%16); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
+            region.imageSubresource().layerCount(width/16);
+            region.imageOffset().set(0, 0, 0);
+            region.imageExtent().set(16, 16, 1);
 
             vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
