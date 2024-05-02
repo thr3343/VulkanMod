@@ -9,6 +9,7 @@ import net.vulkanmod.render.chunk.util.BufferUtil;
 import net.vulkanmod.render.util.SortUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 
@@ -192,6 +193,7 @@ public class TerrainBufferBuilder {
     @Nullable
     public RenderedBuffer end() {
         this.ensureDrawing();
+//        CompressedVertexBuilder.vertex=0;
         if (this.isCurrentBatchEmpty()) {
             this.reset();
             return null;
@@ -435,18 +437,34 @@ public class TerrainBufferBuilder {
         private static final int VERTEX_SIZE = 20;
 
         public static final float POS_CONV_MUL = 1024.0f;
+        public static final float FP16_MAX_EXPONENT = 1024f;
         public static final float POS_OFFSET = 1.0f - (0.00006f * POS_CONV_MUL);
+        private static final float TRUNC_OFFSET = Float.intBitsToFloat(0x38800000);
 
         public static final float UV_CONV_MUL = 32768.0f;
+//        private static int vertex = 0;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET);
-            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET);
-            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET);
 
-            MemoryUtil.memPutShort(ptr + 0, sX);
-            MemoryUtil.memPutShort(ptr + 2, sY);
-            MemoryUtil.memPutShort(ptr + 4, sZ);
+/*
+            int vertexIdx = vertex%6;
+            vertex++;
+
+            Vector2f baseTexCoord;
+            switch (vertexIdx) {
+                default -> baseTexCoord = new Vector2f(0, 0);
+                case 1 -> baseTexCoord = new Vector2f(1, 0);
+                case 2 -> baseTexCoord = new Vector2f(1, 1);
+                case 3 -> baseTexCoord = new Vector2f(0, 0);
+                case 4 -> baseTexCoord = new Vector2f(1, 1);
+                case 5 -> baseTexCoord = new Vector2f(0, 1);
+            }
+*/
+            //TODO: Using FP16 instead of int16 for RenderDoc Debugging
+
+            MemoryUtil.memPutShort(ptr + 0, FP32to16(x * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 2, FP32to16(y * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 4, FP32to16(z * POS_CONV_MUL + POS_OFFSET));
 
             final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
             MemoryUtil.memPutShort(ptr + 6, l);
@@ -455,6 +473,32 @@ public class TerrainBufferBuilder {
 
             MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV_MUL));
             MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV_MUL));
+        }
+
+        //Convert Floats to IEEE-754 FP16 "Half" Format
+        //TODO: Fix precision issues w/ Fire+Waterlogged blocks on negative facing block sides
+        // (negative Axis only, specific to (-x, +z), (-x,-z), (+x,-z), doesn't effect +x and +z)
+        static short FP32to16(float v)
+        {
+            //IF facing Negative Z or X -> -TRUNC_OFFSET
+            //IF facing Positive Z or X -> +TRUNC_OFFSET
+
+            //Cheated and used Clang assembly output to optimise
+
+            //TRUNC_OFFSET used to Fix Zero conversions
+            //final int evens = i & 1 & truncateToNearest; //Nearest, Ties to Even (unused round mode)
+
+            return (short) ((Float.floatToRawIntBits(v + TRUNC_OFFSET) >> 13) & 32767 ^ 16384);
+
+        }
+        //This Rounds to Zero (RZ) which is not the IEEE-759 default (Nearest, Ties to Even)
+        static float FP16to32(short v) {
+//			int exp = v >>10;
+//			final int sig = v & 0x03ff;
+//
+//			final int FP32Exp = (exp + 112) << 23;
+//			final int FP32Sig = sig << 13;
+            return Float.intBitsToFloat((v << 13) + 0x38000000)*FP16_MAX_EXPONENT;
         }
 
         @Override

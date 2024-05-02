@@ -160,8 +160,20 @@ public class BlockRenderer {
 
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
-            final float u = quad.getU(idx);
-            final float v = quad.getV(idx);
+            final float u = switch (i)
+            {
+                default -> 1;
+                case 1 -> 1;
+                case 2 -> 0;
+                case 3 -> 0;
+            };
+            final float v= switch (i)
+            {
+                default -> 1;
+                case 1 -> 0;
+                case 2 -> 0;
+                case 3 -> 1;
+            };;
 
             bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
 

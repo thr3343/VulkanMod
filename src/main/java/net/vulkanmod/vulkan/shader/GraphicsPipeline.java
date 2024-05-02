@@ -245,7 +245,7 @@ public class GraphicsPipeline extends Pipeline {
                 case POSITION -> {
                     switch (type) {
                         case FLOAT -> posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                        case SHORT -> posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                        case SHORT -> posDescription.format(VK_FORMAT_R16G16B16A16_SFLOAT);
                         case BYTE -> posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
                     }
                 }
