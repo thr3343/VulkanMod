@@ -91,14 +91,14 @@ public class PipelineState {
             return false;
 
         PipelineState that = (PipelineState) o;
-        return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
+        return (blendState_i == that.blendState_i) && (useLines == that.useLines) && (depthState_i == that.depthState_i)
                 && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
                 && (cullState == that.cullState) && colorMask_i == that.colorMask_i;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState_i, depthState_i, logicOp_i, cullState, colorMask_i, renderPass);
+        return Objects.hash(blendState_i, useLines, depthState_i, logicOp_i, cullState, colorMask_i, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {
