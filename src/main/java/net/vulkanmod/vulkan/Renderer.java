@@ -104,6 +104,13 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
     }
 
+    public static void setLineWidth(float width) {
+        if (INSTANCE.boundFramebuffer == null)
+            return;
+        //Using Dynamic State to avoid adding more pipeline state permutations -> Pipeline counts exploding
+        vkCmdSetLineWidth(INSTANCE.currentCmdBuffer, width);
+    }
+
     private void init() {
         MemoryManager.createInstance(Renderer.getFramesNum());
         Vulkan.createStagingBuffers();
@@ -250,6 +257,8 @@ public class Renderer {
             mainPass.begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
+
+            vkCmdSetLineWidth(INSTANCE.currentCmdBuffer, 1.0f);
         }
 
         p.pop();

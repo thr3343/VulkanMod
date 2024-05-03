@@ -252,4 +252,8 @@ public abstract class VRenderSystem {
             default -> throw new IllegalStateException("Unexpected value: " + j);
         };*/
     }
+
+    public static void setLineWidth(float width) {
+        Renderer.setLineWidth(width);
+    }
 }
