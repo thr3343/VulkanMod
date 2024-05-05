@@ -25,7 +25,7 @@ import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class SPIRVUtils {
     private static final boolean DEBUG = true;
-    private static final boolean OPTIMIZATIONS = true;
+    private static final boolean OPTIMIZATIONS = false;
 
     private static long compiler;
     private static long options;

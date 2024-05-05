@@ -28,6 +28,7 @@ public class VulkanImage {
 
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private final int layers;
+    private final int divisor;
 
     private long id;
     private long allocation;
@@ -58,6 +59,7 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
         this.layers= layers;
+        this.divisor = 1;
 
     }
 
@@ -70,6 +72,7 @@ public class VulkanImage {
         this.usage = builder.usage;
         this.aspect = getAspect(this.format);
         this.layers=builder.layers;
+        this.divisor=builder.divisor;
     }
 
     public static VulkanImage createTextureImage(Builder builder) {
@@ -234,7 +237,7 @@ public class VulkanImage {
                   (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize),
                   unpackRowLength,
                   height,
-                  this.layers);
+                  this.layers, this.divisor);
       }
 
         long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
@@ -440,13 +443,14 @@ public class VulkanImage {
     public int getUsage() { return usage; }
 
     public static Builder builder(int width, int height) {
-        return new Builder(width, height, 1);
+        return new Builder(width, height, 1, 1);
     }
 
     public static class Builder {
         final int width;
         final int height;
         final int layers;
+        private final int divisor;
 
         int format = VulkanImage.DefaultFormat;
         int formatSize;
@@ -457,10 +461,11 @@ public class VulkanImage {
 
         boolean levelViews = false;
 
-        public Builder(int width, int height, int layers) {
+        public Builder(int width, int height, int layers, int i) {
             this.width = width;
             this.height = height;
             this.layers = layers;
+            this.divisor = i;
         }
 
         public Builder setFormat(int format) {

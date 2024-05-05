@@ -40,7 +40,7 @@ void main() {
 //    vec2 baseTexCoord=vec2(1,0);
 
 
-    texCoord0 = vec3(UV0*UV_INV, 64);
+    texCoord0 = vec3(UV0*UV_INV, 0);
 //    normal = MVP * vec4(Normal, 0.0);
 }
 

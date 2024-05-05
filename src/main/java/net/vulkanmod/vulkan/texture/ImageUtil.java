@@ -44,9 +44,14 @@ public abstract class ImageUtil {
                                                  int bufferOffset,
                                                  int bufferRowLenght,
                                                  int bufferImageHeight,
-                                                 int layers) {
+                                                 int layers, int divisor) {
         //TODO: TexCopyOfsfet mucy be wrapped to 3D coords due to the Layer system + target the correct layer
         // tetxures are always 16x16 if Vanilla,
+
+
+        int xTileArrayOffset = xOffset / 16;
+        int yTileArrayOffset = (yOffset / width) * 64;
+
 
 
         try (MemoryStack stack = stackPush()) {
@@ -57,8 +62,9 @@ public abstract class ImageUtil {
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
             region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
             region.imageSubresource().mipLevel(mipLevel);
-            region.imageSubresource().baseArrayLayer(((xOffset))+yOffset%16); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
-            region.imageSubresource().layerCount(width/16);
+            region.imageSubresource().baseArrayLayer((xTileArrayOffset+yTileArrayOffset)); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
+//            final int value = Math.max(1, width / 16);
+            region.imageSubresource().layerCount(width / 16);
             region.imageOffset().set(0, 0, 0);
             region.imageExtent().set(16, 16, 1);
 
