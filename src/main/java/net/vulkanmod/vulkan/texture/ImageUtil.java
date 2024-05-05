@@ -50,7 +50,7 @@ public abstract class ImageUtil {
 
 
         int xTileArrayOffset = xOffset / 16;
-        int yTileArrayOffset = (yOffset / width) * 64;
+        int yTileArrayOffset = yOffset / width * 64;
 
 
 

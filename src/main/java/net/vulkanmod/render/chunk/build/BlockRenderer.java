@@ -136,9 +136,23 @@ public class BlockRenderer {
         int[] lights = quadLightData.lm;
 
         // Rotate triangles if needed to fix AO anisotropy
-        int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
+
+        //TODO: Temp disable Rotation until UVs are Fixed (to avoid inverted/flipped textures)
+        int idx = 0;//QuadUtils.getIterationStartIdx(brightnessArr, lights);
 
         bufferBuilder.ensureCapacity();
+
+        float LayerX = 1;
+        float LayerY = 1;
+        for (byte i = 0; i < 4; ++i)
+
+        {
+            LayerX = Math.min(LayerX, quad.getU(i));
+            LayerY = Math.min(LayerY, quad.getV(i));
+        }
+        int xTileLayerOffset = (int) ((LayerX * 1024)/16);
+        int yTileLayerOffset = (int) ((LayerY )*32*64);
+        int baseArrayLayer =yTileLayerOffset+xTileLayerOffset;
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
@@ -173,9 +187,9 @@ public class BlockRenderer {
                 case 1 -> 0;
                 case 2 -> 0;
                 case 3 -> 1;
-            };;
+            };
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 
             idx = (idx + 1) & 0b11;
         }

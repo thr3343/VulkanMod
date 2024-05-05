@@ -462,17 +462,20 @@ public class TerrainBufferBuilder {
 */
             //TODO: Using FP16 instead of int16 for RenderDoc Debugging
 
-            MemoryUtil.memPutShort(ptr + 0, FP32to16(x * POS_CONV_MUL + POS_OFFSET));
-            MemoryUtil.memPutShort(ptr + 2, FP32to16(y * POS_CONV_MUL + POS_OFFSET));
-            MemoryUtil.memPutShort(ptr + 4, FP32to16(z * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 0, (short)(x * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 2, (short)(y * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 4, (short)(z * POS_CONV_MUL + POS_OFFSET));
+            MemoryUtil.memPutShort(ptr + 6, (short)(packedNormal));
 
-            final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
-            MemoryUtil.memPutShort(ptr + 6, l);
+//            final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
+//            MemoryUtil.memPutShort(ptr + 6, l);
 
             MemoryUtil.memPutInt(ptr + 8, color);
 
             MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV_MUL));
             MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV_MUL));
+
+            MemoryUtil.memPutInt(ptr + 16, light);
         }
 
         //Convert Floats to IEEE-754 FP16 "Half" Format

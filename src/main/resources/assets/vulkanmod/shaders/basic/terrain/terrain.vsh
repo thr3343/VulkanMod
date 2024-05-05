@@ -19,7 +19,7 @@ layout (location = 1) out vec3 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
-layout (location = 0) in vec4 Position;
+layout (location = 0) in ivec4 Position;
 layout (location = 1) in vec4 Color;
 layout (location = 2) in uvec2 UV0;
 layout (location = 3) in ivec2 UV2;
@@ -40,7 +40,7 @@ void main() {
 //    vec2 baseTexCoord=vec2(1,0);
 
 
-    texCoord0 = vec3(UV0*UV_INV, 0);
+    texCoord0 = vec3(UV0*UV_INV, Position.a);
 //    normal = MVP * vec4(Normal, 0.0);
 }
 
