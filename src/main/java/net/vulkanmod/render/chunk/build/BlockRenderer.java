@@ -142,17 +142,20 @@ public class BlockRenderer {
 
         bufferBuilder.ensureCapacity();
 
-        float LayerX = 1;
-        float LayerY = 1;
+        float LayerX = 16;
+        float LayerY = 16;
         for (byte i = 0; i < 4; ++i)
 
         {
             LayerX = Math.min(LayerX, quad.getU(i));
             LayerY = Math.min(LayerY, quad.getV(i));
         }
-        int xTileLayerOffset = (int) ((LayerX * 1024)/16);
-        int yTileLayerOffset = (int) ((LayerY )*32*64);
-        int baseArrayLayer =yTileLayerOffset+xTileLayerOffset;
+
+        
+
+        int xTileLayerOffset = (int) Math.floor((LayerX * 1024)/16);
+        int yTileLayerOffset = (int) Math.floor((LayerY )*32);
+        int baseArrayLayer =(yTileLayerOffset*64)+xTileLayerOffset;
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
