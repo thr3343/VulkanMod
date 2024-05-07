@@ -13,12 +13,10 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -51,7 +49,7 @@ public class DescriptorSetArray {
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
     private final LongBuffer descriptorSets;
-    private static final int value = 2;
+    private static final int MAX_SETS = 2;
 
     private static final int MISSING_TEX_ID = 24;
 
@@ -129,7 +127,7 @@ public class DescriptorSetArray {
 
             bindings.get(VERT_UBO_ID)
                     .binding(VERT_UBO_ID)
-                    .descriptorCount(1)
+                    .descriptorCount(MAX_SETS)
                     .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -138,7 +136,7 @@ public class DescriptorSetArray {
 
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
-                    .descriptorCount(INLINE_UNIFORM_SIZE)
+                    .descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS)
                     .descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -147,7 +145,7 @@ public class DescriptorSetArray {
 
             bindings.get(VERTEX_SAMPLER_ID)
                     .binding(VERTEX_SAMPLER_ID)
-                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT)
+                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT*MAX_SETS)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -157,7 +155,7 @@ public class DescriptorSetArray {
 
             bindings.get(FRAG_SAMPLER_ID)
                     .binding(FRAG_SAMPLER_ID)
-                    .descriptorCount(MAX_POOL_SAMPLERS)
+                    .descriptorCount(MAX_POOL_SAMPLERS / MAX_SETS) //Try to avoid Out of Pool errors on AMD
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -178,9 +176,7 @@ public class DescriptorSetArray {
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
-            if (vkCreateDescriptorSetLayout(DEVICE, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create descriptor set layout");
-            }
+            Vulkan.checkResult(vkCreateDescriptorSetLayout(DEVICE, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout), "Failed to create descriptor set layout");
 
             this.descriptorSetLayout=pDescriptorSetLayout.get(0);
 
@@ -203,9 +199,9 @@ public class DescriptorSetArray {
 
     private LongBuffer allocateDescriptorSets(MemoryStack stack) {
 
-        final LongBuffer pSetLayouts = stack.callocLong(value);
+        final LongBuffer pSetLayouts = stack.callocLong(MAX_SETS);
 
-        for(int i = 0 ; i < value; i++)
+        for(int i = 0; i < MAX_SETS; i++)
         {
             pSetLayouts.put(i, this.descriptorSetLayout);
         }
@@ -221,12 +217,9 @@ public class DescriptorSetArray {
         allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
         allocInfo.pSetLayouts(pSetLayouts);
 
-        LongBuffer dLongBuffer = MemoryUtil.memAllocLong(value);
+        LongBuffer dLongBuffer = MemoryUtil.memAllocLong(MAX_SETS);
 
-        int result = vkAllocateDescriptorSets(DEVICE, allocInfo, dLongBuffer);
-        if (result != VK_SUCCESS) {
-            throw new RuntimeException("Failed to allocate descriptor sets. Result:" + result);
-        }
+        Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, dLongBuffer), "Failed to allocate descriptor sets");
         return dLongBuffer;
     }
 
@@ -260,7 +253,7 @@ public class DescriptorSetArray {
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.pNext(inlineUniformBlockCreateInfo);
             poolInfo.pPoolSizes(poolSizes);
-            poolInfo.maxSets(value); //One DSet for each binding
+            poolInfo.maxSets(MAX_SETS);
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
 
@@ -324,7 +317,7 @@ public class DescriptorSetArray {
             if(b){
                 if(initialisedFragSamplers.checkCapacity())
                 {
-                    resizeSamplerArray(frame, this.currentSamplerSize = initialisedFragSamplers.resize());
+                    resizeSamplerArray(this.currentSamplerSize = initialisedFragSamplers.resize());
                 }
                 final long currentSet = descriptorSets.get(frame);
                 final int NUM_UBOs = 1;
@@ -518,8 +511,8 @@ public class DescriptorSetArray {
         Arrays.fill(this.isUpdated, false);
     }
 
-
-    private void resizeSamplerArray(int frame, int samplerLimit)
+    //TODO: Descriptor pool resizing if Texture count > or exceeds MAX_POOL_SAMPLERS
+    private void resizeSamplerArray(int samplerLimit)
     {
         Vulkan.waitIdle();
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
@@ -536,7 +529,7 @@ public class DescriptorSetArray {
             allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
             allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout,this.descriptorSetLayout));
 
-            Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, descriptorSets),"");
+            Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, descriptorSets),"Failed Texture Array Resize!");
 
             Initializer.LOGGER.info("Resized to "+ samplerLimit);
 
