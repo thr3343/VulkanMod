@@ -28,6 +28,7 @@ public class Config {
     public boolean renderSky = false;
 
     public int ambientOcclusion = 1;
+    public int af = 1;
 
     public void write() {
 

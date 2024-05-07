@@ -240,10 +240,21 @@ public abstract class Options {
                                     minecraftOptions.mipmapLevels().set(value);
                                     Minecraft.getInstance().updateMaxMipLevel(value);
                                     Minecraft.getInstance().delayTextureReload();
-                                    Renderer.getDescriptorSetArray().setSampler(value);
+                                    Renderer.getDescriptorSetArray().setSampler(value, config.af);
                                     Renderer.getDescriptorSetArray().forceDescriptorUpdate();
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
+                                .setTranslator(value -> Component.nullToEmpty(value.toString())),
+                        new CyclingOption<>(Component.translatable("Anisotropic Filtering"),
+                                new Integer[]{1, 2, 4, 8, 16},
+                                value -> {
+                                    config.af=(value);
+                                    Minecraft.getInstance().updateMaxMipLevel(minecraftOptions.mipmapLevels().get());
+                                    Minecraft.getInstance().delayTextureReload();
+                                    Renderer.getDescriptorSetArray().setSampler(value, value);
+                                    Renderer.getDescriptorSetArray().forceDescriptorUpdate();
+                                },
+                                () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value.toString()))
                 })
         };

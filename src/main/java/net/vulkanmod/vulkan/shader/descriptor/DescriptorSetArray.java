@@ -191,7 +191,12 @@ public class DescriptorSetArray {
 
         }
         final byte i = Options.getMipmaps();
-        defFragSampler = SamplerManager.getTextureSampler(i, i>1?SamplerManager.USE_MIPMAPS_BIT:0);
+        final byte i2 = (byte) Initializer.CONFIG.af;
+        byte flags = i > 1 ? SamplerManager.USE_MIPMAPS_BIT : 0;
+        flags |= i2>1 ? SamplerManager.USE_ANISOTROPIC_BIT : 0;
+
+
+        this.defFragSampler = SamplerManager.getTextureSampler(i, flags, i2);
     }
 
 
@@ -482,9 +487,13 @@ public class DescriptorSetArray {
         return image;
     }
 
-    public void setSampler(int miplevels)
+    public void setSampler(int miplevels, int anisotropicLevels)
     {
-        this.defFragSampler = SamplerManager.getTextureSampler((byte) miplevels, miplevels>1 ? SamplerManager.USE_MIPMAPS_BIT : 0);
+        byte flags = miplevels > 1 ? SamplerManager.USE_MIPMAPS_BIT : 0;
+        flags |= anisotropicLevels>1 ? SamplerManager.USE_ANISOTROPIC_BIT : 0;
+
+
+        this.defFragSampler = SamplerManager.getTextureSampler((byte) miplevels, flags, (byte) anisotropicLevels);
     }
     public void cleanup()
     {

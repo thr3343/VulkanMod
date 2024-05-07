@@ -21,19 +21,19 @@ public abstract class SamplerManager {
 
     static final Short2LongMap SAMPLERS = new Short2LongOpenHashMap();
 
-    public static long getTextureSampler(byte maxLod, byte flags) {
+    public static long getTextureSampler(byte maxLod, byte flags, byte anisotropy) {
         short key = (short) (flags | (maxLod << 8));
         long sampler = SAMPLERS.getOrDefault(key, 0L);
 
         if (sampler == 0L) {
-            sampler = createTextureSampler(maxLod, flags);
+            sampler = createTextureSampler(maxLod, anisotropy, flags);
             SAMPLERS.put(key, sampler);
         }
 
         return sampler;
     }
 
-    private static long createTextureSampler(byte maxLod, byte flags) {
+    private static long createTextureSampler(byte maxLod, byte anisotropy, byte flags) {
         Validate.isTrue(
                 (flags & (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)) != (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)
         );
@@ -61,16 +61,23 @@ public abstract class SamplerManager {
                 samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT);
             }
 
-            samplerInfo.anisotropyEnable(false);
-            //samplerInfo.maxAnisotropy(16.0f);
+            //TODO: AnisoTropic filtering only applies if MipMaps are also Enabled
+            if((flags & (USE_MIPMAPS_BIT|USE_ANISOTROPIC_BIT)) != 0) {
+                samplerInfo.anisotropyEnable(true);
+                samplerInfo.maxAnisotropy(anisotropy);
+            } else {
+                samplerInfo.anisotropyEnable(false);
+                samplerInfo.maxAnisotropy(0.0f);
+            }
+
             samplerInfo.borderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE);
             samplerInfo.unnormalizedCoordinates(false);
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
-
-            if ((flags & USE_MIPMAPS_BIT) != 0) {
+            //TODO: Check overriding MIPMAPS flag like this is correct _(Possible code typo: MIPMAPs not updated correctly atm)_
+            if (maxLod>1||(flags & USE_MIPMAPS_BIT) != 0) {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
-                samplerInfo.maxLod(maxLod);
+                samplerInfo.maxLod(VK_LOD_CLAMP_NONE);
                 samplerInfo.minLod(0.0F);
                 samplerInfo.mipLodBias(MIP_BIAS);
             } else {
@@ -108,4 +115,5 @@ public abstract class SamplerManager {
     public static final byte USE_MIPMAPS_BIT = 4;
     public static final byte REDUCTION_MIN_BIT = 8;
     public static final byte REDUCTION_MAX_BIT = 16;
+    public static final byte USE_ANISOTROPIC_BIT = 32;
 }
