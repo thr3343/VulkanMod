@@ -249,13 +249,11 @@ public abstract class Options {
                                 new Integer[]{1, 2, 4, 8, 16},
                                 value -> {
                                     config.af=(value);
-                                    Minecraft.getInstance().updateMaxMipLevel(minecraftOptions.mipmapLevels().get());
-                                    Minecraft.getInstance().delayTextureReload();
-                                    Renderer.getDescriptorSetArray().setSampler(value, value);
+                                    Renderer.getDescriptorSetArray().setSampler(getMipmaps(), value);
                                     Renderer.getDescriptorSetArray().forceDescriptorUpdate();
                                 },
                                 () -> config.af)
-                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))
                 })
         };
     }

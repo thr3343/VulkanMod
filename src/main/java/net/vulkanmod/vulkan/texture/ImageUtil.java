@@ -49,8 +49,8 @@ public abstract class ImageUtil {
         // tetxures are always 16x16 if Vanilla,
 
 
-        final int i = /*mipLevel == 0 ? 16 : */16 / (1<<mipLevel); //avoid Divide by Zero
-        int xTileArrayOffset = xOffset / i;
+        final int tileDim = /*mipLevel == 0 ? 16 : */16 / (1<<mipLevel); //avoid Divide by Zero
+        int xTileArrayOffset = xOffset / tileDim;
         int yTileArrayOffset = yOffset / width * 64;
 
 
@@ -65,9 +65,9 @@ public abstract class ImageUtil {
             region.imageSubresource().mipLevel(mipLevel);
             region.imageSubresource().baseArrayLayer((xTileArrayOffset+yTileArrayOffset)); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
 //            final int value = Math.max(1, width / 16);
-            region.imageSubresource().layerCount(width / i);
+            region.imageSubresource().layerCount(width / tileDim);
             region.imageOffset().set(0, 0, 0);
-            region.imageExtent().set(i, i, 1);
+            region.imageExtent().set(tileDim, tileDim, 1);
 
             vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
