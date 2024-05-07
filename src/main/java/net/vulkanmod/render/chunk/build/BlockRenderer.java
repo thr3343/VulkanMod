@@ -176,17 +176,17 @@ public class BlockRenderer {
             final int light = lights[idx];
             final float u = switch (i)
             {
-                default -> 1;
-                case 1 -> 1;
-                case 2 -> 0;
-                case 3 -> 0;
+                default -> 0;
+                case 1 -> 0;
+                case 2 -> 1;
+                case 3 -> 1;
             };
             final float v= switch (i)
             {
-                default -> 1;
-                case 1 -> 0;
-                case 2 -> 0;
-                case 3 -> 1;
+                default -> 0;
+                case 1 -> 1;
+                case 2 -> 1;
+                case 3 -> 0;
             };
 
             bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);

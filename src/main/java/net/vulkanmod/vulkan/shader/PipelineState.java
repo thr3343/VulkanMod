@@ -12,7 +12,7 @@ import static org.lwjgl.vulkan.VK10.VK_COMPARE_OP_EQUAL;
 public class PipelineState {
     private static final int DEFAULT_DEPTH_OP = 515;
 //    private static final int DEFAULT_DEPTH_OP = 518;
-public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampleState(false, 1, 0);
+//public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampleState(false, 1, 0);
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
     public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), false, null);
@@ -60,7 +60,7 @@ public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampl
 
     final boolean cullState, useLines;
     final RenderPass renderPass;
-    final MultiSampleState multiSampleState;
+//    final MultiSampleState multiSampleState;
     int blendState_i;
     int depthState_i;
     int colorMask_i;
@@ -75,11 +75,11 @@ public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampl
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
         this.useLines = useLines;
-        multiSampleState = VRenderSystem.getMultiSampleState();
+//        multiSampleState = VRenderSystem.getMultiSampleState();
     }
 
     private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, boolean useLines, RenderPass renderPass) {
-        return (blendState == this.blendState_i) && multiSampleState.equals(this.multiSampleState) && (useLines == this.useLines) && (depthState == this.depthState_i)
+        return (blendState == this.blendState_i) && (useLines == this.useLines) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
                 && (cullState == this.cullState) && (colorMask == this.colorMask_i);
     }
@@ -317,10 +317,10 @@ public static final MultiSampleState DEFAULT_MULTI_SAMPLE_STATE = new MultiSampl
         }
 
     }
-
-    //minSampleShading (i.e. SSAA Quality disabled (it's very difficult to set an Integer Quality with a float TBH))
-    public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
-    }
+//
+//    //minSampleShading (i.e. SSAA Quality disabled (it's very difficult to set an Integer Quality with a float TBH))
+//    public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
+//    }
 
     public static abstract class DepthState {
         public static final int DEPTH_TEST_BIT = 1;

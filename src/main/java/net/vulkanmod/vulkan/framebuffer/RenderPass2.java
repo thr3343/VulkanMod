@@ -30,7 +30,7 @@ public class RenderPass2 {
     {
         this.attachmentTypes = attachmentTypes;
         for (int i = 0; i < attachmentTypes.length; i++) {
-            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], VRenderSystem.isSampleShadingEnable() ? VRenderSystem.getSampleCount() : 1));
+            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], /*VRenderSystem.isSampleShadingEnable() ? VRenderSystem.getSampleCount() : */1));
         }
         this.presentKey= Arrays.stream(attachmentTypes).filter(attachmentTypes1 -> attachmentTypes1.present).findFirst().orElse(null);
         this.renderPass=createRenderPass();

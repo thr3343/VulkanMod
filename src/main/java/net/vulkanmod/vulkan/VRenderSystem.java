@@ -48,9 +48,9 @@ public abstract class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
-    private static int sampleCount= 1 << Initializer.CONFIG.ssaaPreset;
-    private static float minSampleShading= 0.01f*Initializer.CONFIG.minSampleShading;
+//    private static boolean sampleShadingEnable= Initializer.CONFIG.ssaaPreset >0;
+//    private static int sampleCount= 1 << Initializer.CONFIG.ssaaPreset;
+//    private static float minSampleShading= 0.01f*Initializer.CONFIG.minSampleShading;
     static boolean renderPassUpdate =true;
 
     public static void initRenderer()
@@ -123,13 +123,13 @@ public abstract class VRenderSystem {
         VUtil.UNSAFE.putFloat(ptr + 8, f3);
     }
 
-    public static boolean isSampleShadingEnable() {
-        return sampleShadingEnable;
-    }
-
-    public static int getSampleCount() {
-        return sampleCount;
-    }
+//    public static boolean isSampleShadingEnable() {
+//        return sampleShadingEnable;
+//    }
+//
+//    public static int getSampleCount() {
+//        return sampleCount;
+//    }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
 
@@ -264,28 +264,28 @@ public abstract class VRenderSystem {
         ColorUtil.setRGBA_Buffer(UniformState.SkyColor.getMappedBufferPtr(), f, g, h, i);
     }
 
-    public static PipelineState.MultiSampleState getMultiSampleState() {
-        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
-    }
+//    public static PipelineState.MultiSampleState getMultiSampleState() {
+//        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
+//    }
 
-    public static void setSampleShadingEnable(boolean sampleShadingEnable1) {
-        sampleShadingEnable= sampleShadingEnable1;
-    }
-
-    public static void setMinSampleShading(float minSampleShading1) {
-        minSampleShading= minSampleShading1;
-    }
-
-    public static void setSampleCountFromPreset(int s) {
-        sampleCount= 1<<s;
-    }
-
-    static RenderPass2 getDefaultRenderPassState() {
-        return isSampleShadingEnable() ? new RenderPass2(
-                PRESENT_RESOLVE,
-                COLOR,
-                DEPTH) : new RenderPass2(PRESENT, DEPTH);
-    }
+//    public static void setSampleShadingEnable(boolean sampleShadingEnable1) {
+//        sampleShadingEnable= sampleShadingEnable1;
+//    }
+//
+//    public static void setMinSampleShading(float minSampleShading1) {
+//        minSampleShading= minSampleShading1;
+//    }
+//
+//    public static void setSampleCountFromPreset(int s) {
+//        sampleCount= 1<<s;
+//    }
+//
+//    static RenderPass2 getDefaultRenderPassState() {
+//        return isSampleShadingEnable() ? new RenderPass2(
+//                PRESENT_RESOLVE,
+//                COLOR,
+//                DEPTH) : new RenderPass2(PRESENT, DEPTH);
+//    }
 
     public static void reInit() {
         renderPassUpdate =true;

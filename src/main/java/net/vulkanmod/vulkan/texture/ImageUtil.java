@@ -65,7 +65,7 @@ public abstract class ImageUtil {
             region.imageSubresource().mipLevel(mipLevel);
             region.imageSubresource().baseArrayLayer((xTileArrayOffset+yTileArrayOffset)); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
 //            final int value = Math.max(1, width / 16);
-            region.imageSubresource().layerCount(width / tileDim);
+            region.imageSubresource().layerCount(1);
             region.imageOffset().set(0, 0, 0);
             region.imageExtent().set(tileDim, tileDim, 1);
 
