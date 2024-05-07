@@ -173,7 +173,7 @@ public abstract class DeviceManager {
             shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
 
             final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();
-            VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
+            VkPhysicalDeviceVulkan12Features descriptorIndexingFeatures = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors)
 //                    .descriptorBindingPartiallyBound(false)
@@ -181,7 +181,9 @@ public abstract class DeviceManager {
 //                    .descriptorBindingSampledImageUpdateAfterBind(false)
 //                    .descriptorBindingUniformBufferUpdateAfterBind(false)
 //
-                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
+
+                    .imagelessFramebuffer(true);
 //                    .descriptorBindingUpdateUnusedWhilePending(false)
 //
 //                    .shaderSampledImageArrayNonUniformIndexing(false);

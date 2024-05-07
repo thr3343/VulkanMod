@@ -9,7 +9,6 @@ import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
@@ -131,7 +130,7 @@ public class MemoryManager {
     }
 
     public static void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int samples) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -147,7 +146,7 @@ public class MemoryManager {
             imageInfo.tiling(tiling);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
-            imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+            imageInfo.samples(samples);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
             //TODO
             imageInfo.pQueueFamilyIndices(stack.ints(0));
