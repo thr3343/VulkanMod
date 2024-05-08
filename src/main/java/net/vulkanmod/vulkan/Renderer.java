@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
@@ -23,6 +24,7 @@ import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.texture.VTextureAtlas;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -56,6 +58,8 @@ public class Renderer {
 
     private final DescriptorSetArray descriptorSetArray;
     private long boundPipeline;
+    private VTextureAtlas vTextureAtlas;
+
     public static void initRenderer() {
         INSTANCE = new Renderer();
         INSTANCE.init();
@@ -122,6 +126,8 @@ public class Renderer {
 
         allocateCommandBuffers();
         createSyncObjects();
+
+        vTextureAtlas = new VTextureAtlas(1024,512, 16, InventoryMenu.BLOCK_ATLAS, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT, 32);
     }
 
     private void allocateCommandBuffers() {
@@ -455,6 +461,8 @@ public class Renderer {
         VTextureSelector.getWhiteTexture().free();
 
         this.descriptorSetArray.cleanup();
+
+        this.vTextureAtlas.cleanupAndFree();
     }
 
     private void destroySyncObjects() {

@@ -9,7 +9,9 @@ import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.vma.Vma;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
+import org.lwjgl.util.vma.VmaAllocationInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -156,6 +158,62 @@ public class MemoryManager {
             allocationInfo.requiredFlags(memProperties);
 
             vmaCreateImage(ALLOCATOR, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+
+        }
+    }
+
+    public static void bindSuballocatedImage(long image, long l, int offset)
+    {
+        try(MemoryStack stack = stackPush()) {
+
+/*
+            VkBindImageMemoryInfo.Buffer vkBindImageMemoryInfo = VkBindImageMemoryInfo.calloc(1, stack)
+                    .sType$Default()
+                    .image(image)
+                    .memory(l)
+                    .memoryOffset(offset);
+*/
+
+
+            vmaBindImageMemory2(ALLOCATOR, l, offset, image,0);
+
+        }
+
+    }
+
+    public static PointerBuffer allocMem(int size, long image)
+    {
+        try(MemoryStack stack = stackPush()) {
+
+////            VkImageMemoryRequirementsInfo2 vkMemoryRequirementsInfos2 = VkImageMemoryRequirementsInfo2.malloc(stack);
+////
+////            VkMemoryRequirements2 vkMemoryRequirements2 = VkMemoryRequirements2.calloc(stack);
+////
+////            VK11.vkGetImageMemoryRequirements2(Vulkan.getVkDevice(), vkMemoryRequirementsInfos2, vkMemoryRequirements2);
+            VkMemoryRequirements x =VkMemoryRequirements.calloc(stack);
+
+            vkGetImageMemoryRequirements(Vulkan.getVkDevice(), image, x);
+
+//
+//            VkMemoryAllocateInfo vkMemoryAllocateInfo = VkMemoryAllocateInfo.calloc(stack)
+//                    .sType$Default()
+//                    .memoryTypeIndex(0)
+//                    .allocationSize(size);
+//            VmaAllocationInfo x3 = VmaAllocationInfo.calloc(stack)
+//                    .
+
+            VmaAllocationCreateInfo x2 = VmaAllocationCreateInfo.calloc(stack)
+                    .requiredFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+
+
+
+            PointerBuffer longBuffer = stack.mallocPointer(1);
+            Vma.vmaAllocateMemory(ALLOCATOR, x, x2, longBuffer, null);
+//            VK10.vkAllocateMemory(Vulkan.getVkDevice(), vkMemoryAllocateInfo, null, longBuffer);
+
+            return longBuffer;
+
 
         }
     }

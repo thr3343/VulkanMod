@@ -72,7 +72,7 @@ public abstract class SamplerManager {
                 samplerInfo.maxAnisotropy(0.0f);
             }
 
-            samplerInfo.borderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE);
+            samplerInfo.borderColor(VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK);
             samplerInfo.unnormalizedCoordinates(false);
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);

@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.texture.VTextureAtlas;
 import net.vulkanmod.vulkan.util.VUtil;
 
 public class DescriptorAbstractionArray {
@@ -16,23 +17,26 @@ public class DescriptorAbstractionArray {
     private final int descriptorBinding;
 
     private int samplerRange;
+    private final Int2IntOpenHashMap tetxureRegionMap; //alignedIDs
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
     private final IntArrayFIFOQueue FreeIDs=new IntArrayFIFOQueue(32);
 
     /*Abstracts between OpenGl texture Bindings and and Initialised descrtior indicies for this particualr dEscriptir Binding*/
-    public DescriptorAbstractionArray(int reserveTextureRange, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
+    public DescriptorAbstractionArray(int baseSamplerIndex, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
         this.maxSize = maxSize;
         this.shaderStage = shaderStage;
         this.descriptorType = descriptorType;
         this.descriptorBinding = descriptorBinding;
 
-        samplerRange = reserveTextureRange; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
+        samplerRange = baseSamplerIndex; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
         this.texID2DescIdx = new Int2IntOpenHashMap(maxSize);
 
 
 /*        Arrays.fill(texIds, -1);
         Arrays.fill(descriptorIndices, -1);
         Arrays.fill(textureSamplerHndls, -1);*/
+        tetxureRegionMap = new Int2IntOpenHashMap(8);
+        tetxureRegionMap.put(0, maxSize);
     }
 
     //Initialise a specific descriptor handle
@@ -84,6 +88,12 @@ public class DescriptorAbstractionArray {
         texID2DescIdx.put(texID, v);
         return true;
 
+    }
+
+    //TODO; may ned to use a regon like like Vanil/aMojnag to manged resreved.Atla/tetxure blocks
+    public void registerIndexedAtlasArray(VTextureAtlas vTextureAtlas)
+    {
+        //VTextureAtlas sharea asingle textureID,
     }
 
     //Convert textureIDs to SamplerIndices
