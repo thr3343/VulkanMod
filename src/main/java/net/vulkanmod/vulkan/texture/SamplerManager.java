@@ -1,5 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.Short2LongMap;
 import it.unimi.dsi.fastutil.shorts.Short2LongOpenHashMap;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -19,10 +21,10 @@ import static org.lwjgl.vulkan.VK12.VK_SAMPLER_REDUCTION_MODE_MIN;
 public abstract class SamplerManager {
     static final float MIP_BIAS = -0.5f;
 
-    static final Short2LongMap SAMPLERS = new Short2LongOpenHashMap();
+    static final Int2LongMap SAMPLERS = new Int2LongOpenHashMap();
 
     public static long getTextureSampler(byte maxLod, byte flags, byte anisotropy) {
-        short key = (short) (flags | (maxLod << 8));
+        int key = (flags | (maxLod << 8) | anisotropy << 16);
         long sampler = SAMPLERS.getOrDefault(key, 0L);
 
         if (sampler == 0L) {
