@@ -81,7 +81,6 @@ public class VBO {
                 indexBuffer.freeBuffer();
 
             if(autoIndexBuffer != null) {
-                autoIndexBuffer.checkCapacity(vertexCount);
                 indexBuffer = autoIndexBuffer.getIndexBuffer();
             }
 

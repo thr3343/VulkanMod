@@ -20,7 +20,6 @@ public class Drawer {
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
     private static final long pOffsets = MemoryUtil.memAddress0(offsets);
-    private static final int UINT16_INDEX_MAX = 98304;
 
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
@@ -33,9 +32,9 @@ public class Drawer {
 
     public Drawer() {
         //Index buffers
-        quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
-        triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
-        triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.QUADS);
+        triangleFanIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_FAN);
+        triangleStripIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
     }
 
     public void setCurrentFrame(int currentFrame) {
@@ -93,8 +92,6 @@ public class Drawer {
             }
             default -> throw new RuntimeException(String.format("unknown drawMode: %s", mode));
         }
-
-        autoIndexBuffer.checkCapacity(vertexCount);
 
         drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
     }
