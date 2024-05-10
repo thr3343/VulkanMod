@@ -43,7 +43,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
-    private static final int VERT_SAMPLER_MAX_LIMIT = 8;
+    private static final int VERT_SAMPLER_MAX_LIMIT = 2;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
     private static final int MAX_POOL_SAMPLERS = 4096;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
@@ -125,18 +125,19 @@ public class DescriptorSetArray {
 
     public DescriptorSetArray() {
 
-
+        final byte i = Options.getMipmaps();
+        defFragSampler = SamplerManager.getTextureSampler(i, i>1? SamplerManager.USE_MIPMAPS_BIT:0);
         try (MemoryStack stack = stackPush()) {
 
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
             IntBuffer bindingFlags = stack.callocInt(bindingsSize);
 
-
+            //TODO: Make reserved/hardcoded texture Slots Immutable samplers as an Optimization
 
             bindings.get(VERT_UBO_ID)
                     .binding(VERT_UBO_ID)
-                    .descriptorCount(MAX_SETS)
+                    .descriptorCount(1)
                     .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -145,7 +146,7 @@ public class DescriptorSetArray {
 
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
-                    .descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS)
+                    .descriptorCount(INLINE_UNIFORM_SIZE)
                     .descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -154,9 +155,9 @@ public class DescriptorSetArray {
 
             bindings.get(VERTEX_SAMPLER_ID)
                     .binding(VERTEX_SAMPLER_ID)
-                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT*MAX_SETS)
+                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                    .pImmutableSamplers(null)
+                    .pImmutableSamplers(stack.longs(defFragSampler, defFragSampler))
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
             bindingFlags.put(VERTEX_SAMPLER_ID, 0);
@@ -195,8 +196,6 @@ public class DescriptorSetArray {
             this.descriptorSets = allocateDescriptorSets(stack);
 
         }
-        final byte i = Options.getMipmaps();
-        defFragSampler = SamplerManager.getTextureSampler(i, i>1? SamplerManager.USE_MIPMAPS_BIT:0);
     }
 
 
