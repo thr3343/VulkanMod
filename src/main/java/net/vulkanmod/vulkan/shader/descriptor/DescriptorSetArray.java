@@ -237,12 +237,12 @@ public class DescriptorSetArray {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.descriptorCount(1);
+                uniformBufferPoolSize.descriptorCount(MAX_SETS);
 
                 VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE); //Byte Count/Size For Inline Uniform block
+                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS); //Byte Count/Size For Inline Uniform block
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(2);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -250,7 +250,7 @@ public class DescriptorSetArray {
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(4);
+                    .maxInlineUniformBlockBindings(2);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
