@@ -169,10 +169,10 @@ public class GlRenderbuffer {
 
         if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
             ByteBuffer RGBA_buffer = GlUtil.RGBtoRGBA_buffer(pixels);
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
+            this.vulkanImage.uploadSubTextureAsync(boundId, 0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
             MemoryUtil.memFree(RGBA_buffer);
         } else
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
+            this.vulkanImage.uploadSubTextureAsync(boundId, 0, width, height, 0, 0, 0, 0, 0, pixels);
 
     }
 

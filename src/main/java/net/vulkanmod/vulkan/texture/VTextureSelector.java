@@ -64,7 +64,8 @@ public abstract class VTextureSelector {
         VulkanImage texture = boundTextures[activeTexture];
 
         if(texture == null) {
-            throw new NullPointerException("Texture is null at index: " + activeTexture);
+            texture=GlTexture.getTexture(boundIDs[activeTexture]).getVulkanImage();
+            if(texture == null) throw new NullPointerException("Texture is null at index: " + activeTexture);
         }
 //        if(width+xOffset >= texture.width || height+yOffset >= texture.height)
 //        {
@@ -73,7 +74,7 @@ public abstract class VTextureSelector {
 //            return;
 //        }
 
-        texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
+        texture.uploadSubTextureAsync(boundIDs[activeTexture], mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
     }
 
     //Allow Shaders to obtain a samplerDescriptorArray index w/ the current OpenGL activeTexture offset

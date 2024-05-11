@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -17,6 +18,7 @@ public class DescriptorAbstractionArray {
 
     private int samplerRange;
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
+    private final Int2LongOpenHashMap DescriptorArray; //alignedIDs
     private final IntArrayFIFOQueue FreeIDs=new IntArrayFIFOQueue(32);
 
     /*Abstracts between OpenGl texture Bindings and and Initialised descrtior indicies for this particualr dEscriptir Binding*/
@@ -28,6 +30,7 @@ public class DescriptorAbstractionArray {
 
         samplerRange = reserveTextureRange; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
         this.texID2DescIdx = new Int2IntOpenHashMap(maxSize);
+        this.DescriptorArray = new Int2LongOpenHashMap(maxSize);
 
 
 /*        Arrays.fill(texIds, -1);
@@ -73,15 +76,18 @@ public class DescriptorAbstractionArray {
     }
 
     //Add a new textureID registation/index to the Descripotr Array
-    public boolean registerTexture(int texID) {
+    public boolean registerTexture(int texID, long imageView) {
         if (texID2DescIdx.containsKey(texID)) return false;
 //        if (texIds[texID] != 0 && texIds[texID] != imageView)
 //            throw new RuntimeException(texIds[texID] + " != " + imageView);
 //        texIds[texID] = ++samplerRange;
 //        textureSamplerHndls[samplerRange] = imageView;
 
-        final int v = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
-        texID2DescIdx.put(texID, v);
+        final int samplerIndex = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
+        texID2DescIdx.put(texID, samplerIndex);
+//        final int samplerIndex = texID2DescIdx.get(texID);
+
+        DescriptorArray.put(samplerIndex, imageView);
         return true;
 
     }
@@ -108,6 +114,10 @@ public class DescriptorAbstractionArray {
         return texID2DescIdx;
     }
 
+    public Int2LongOpenHashMap getAlignedDescriptors() {
+        return DescriptorArray;
+    }
+
     public int currentSize() {
         return this.texID2DescIdx.size();//this.samplerRange;
     }
@@ -123,10 +133,26 @@ public class DescriptorAbstractionArray {
         return this.descriptorBinding;
     }
 
+/*    public int getTexIDFromDesIdx(int DescIdx)
+    {
+        return this.texID2DescIdx
+    }  */
+    public int getDescIdxFromTexID(int texID)
+    {
+        return this.texID2DescIdx.get(texID);
+    }
+    public long getImageViewfromDescID(int DescID)
+    {
+        return this.DescriptorArray.get(DescID);
+    }
+
     public boolean removeTexture(int id) {
 
         if(!this.texID2DescIdx.containsKey(id)) return false;
        int freedDescIdx = this.texID2DescIdx.remove(id);
+
+       this.DescriptorArray.remove(freedDescIdx);
+
         Initializer.LOGGER.info("Freeing: "+freedDescIdx);
         this.FreeIDs.enqueue(freedDescIdx);
 //

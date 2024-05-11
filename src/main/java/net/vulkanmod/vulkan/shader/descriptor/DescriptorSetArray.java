@@ -15,21 +15,17 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -105,8 +101,8 @@ public class DescriptorSetArray {
     {
         //TODO:maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
         boolean needsUpdate = switch (binding) {
-            case 0 -> this.initialisedFragSamplers.registerTexture(TextureID);
-            default -> initialisedVertSamplers.registerTexture(TextureID);
+            case 0 -> this.initialisedFragSamplers.registerTexture(TextureID, vulkanImage.getImageView());
+            default -> initialisedVertSamplers.registerTexture(TextureID, vulkanImage.getImageView());
         };
 
         if(needsUpdate)
@@ -301,16 +297,16 @@ public class DescriptorSetArray {
 
 //            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId());
-            this.initialisedVertSamplers.registerTexture(6);
-            this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
+            this.initialisedFragSamplers.registerTexture(this.MissingTexID, GlTexture.getTexture(this.MissingTexID).getVulkanImage().getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), transitionImage(textureManager.getTexture(Sheets.BANNER_SHEET).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), transitionImage(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), transitionImage(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), transitionImage(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), transitionImage(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), transitionImage(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId()).getImageView());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId(), transitionImage(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId()).getImageView());
+            this.initialisedVertSamplers.registerTexture(6, GlTexture.getTexture(6).getVulkanImage().getImageView());
+            this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1), VTextureSelector.getBoundTexture(1).getImageView());
         }
         try(MemoryStack stack = stackPush()) {
             final boolean b = !this.isUpdated[frame];
@@ -441,18 +437,18 @@ public class DescriptorSetArray {
 
         for (Int2IntMap.Entry texId : descriptorArray.getAlignedIDs().int2IntEntrySet()) {
 
-
             final int texId1 = texId.getIntKey();
             final int samplerIndex = texId.getIntValue();
+            final long ImageView = descriptorArray.getImageViewfromDescID(samplerIndex);
 
-            final VulkanImage image = getSamplerImage(texId1);
+            final VulkanImage image = transitionImage(texId1);
             image.readOnlyLayout();
 
 
             //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
                     .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-                    .imageView(image.getImageView())
+                    .imageView(ImageView)
                     .sampler(image.getSampler());
 
             final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
@@ -472,9 +468,10 @@ public class DescriptorSetArray {
 
 
 
+    //TODO: replace textureIDs w/ dstArrayElements to simplify ImageView loading
+    // (As textureID is only needed for Registering + the Dynamic Tetzure Sletcion Phase in Pipeline.updateImageState())
 
-
-    private VulkanImage getSamplerImage(int texId1) {
+    private VulkanImage transitionImage(int texId1) {
         final GlTexture vulkanImage = GlTexture.getTexture(texId1);
         VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
         if (image == null) {

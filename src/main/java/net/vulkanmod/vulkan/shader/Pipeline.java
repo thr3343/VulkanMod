@@ -163,7 +163,7 @@ public abstract class Pipeline {
               {
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
-                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
+                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, VTextureSelector.getBoundTexture(state.imageIdx));
                   currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
                   isNewTexture = descriptorSetArray.isTexUnInitialised(shaderTexture);
               }

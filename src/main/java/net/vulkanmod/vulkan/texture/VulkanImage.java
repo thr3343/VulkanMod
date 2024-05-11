@@ -1,12 +1,15 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.framebuffer.Attachment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.shader.descriptor.TextureArray;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -45,6 +48,7 @@ public class VulkanImage {
     private final int usage;
 
     private int currentLayout;
+    private final boolean subImage;
 
     //Used for swap chain images
     public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
@@ -59,7 +63,10 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
 
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) this.mipLevels>1 ? USE_MIPMAPS_BIT : 0);
+        this.sampler = getTextureSampler((byte) this.mipLevels, (byte) this.mipLevels>1 ? USE_MIPMAPS_BIT : 0, (byte) 0);
+
+
+        subImage = false;
     }
 
     private VulkanImage(Builder builder) {
@@ -70,15 +77,35 @@ public class VulkanImage {
         this.format = builder.format;
         this.usage = builder.usage;
         this.aspect = getAspect(this.format);
+        subImage = builder.subImage;
     }
+    public static VulkanImage createAttachmentImage(Attachment attachment, int width1, int height1) {
 
+        int format = attachment.type.format;
+        int usage = attachment.type.usage;
+
+        //TODO: might need separating into separate dedicated AttachmentImage Class Instantiation
+
+        VulkanImage image = new Builder(width1, height1)
+                .setMipLevels(1)
+                .setFormat(format)
+                .addUsage(usage)
+                .createVulkanImage();
+
+//        VulkanImage image = new VulkanImage(format, 1, 1, width1, height1, usage, 0);
+        //TODO: Broken Aspect
+//        image.createAttachmentImage(width1, height1, attachment);
+//        image.mainImageView = createImageView(image.id, format, attachment.type.usage, attachment.type.aspect, 1);
+
+        return image;
+    }
     public static VulkanImage createTextureImage(Builder builder) {
         VulkanImage image = new VulkanImage(builder);
 
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
 
-        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
+        image.sampler = getTextureSampler(builder.mipLevels, builder.samplerFlags, (byte) 0);
 
         if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -114,7 +141,7 @@ public class VulkanImage {
                     .setLinearFiltering(false)
                     .setClamp(false)
                     .createVulkanImage();
-            image.uploadSubTextureAsync(0, image.width, image.height, 0, 0, 0, 0, 0, buffer);
+            image.uploadSubTextureAsync(boundIDs[activeTexture], 0, image.width, image.height, 0, 0, 0, 0, 0, buffer);
             return image;
 //            return createTextureImage(1, 1, 4, false, false, buffer);
         }
@@ -190,8 +217,8 @@ public class VulkanImage {
             return pImageView.get(0);
         }
     }
-
-    public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
+    //TODO: Check tetxureID is correct
+    public void uploadSubTextureAsync(int boundID, int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
@@ -204,8 +231,38 @@ public class VulkanImage {
 
         stagingBuffer.copyBuffer((int) imageSize, buffer);
 
-        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+        if(this.subImage)
+        {
+            //TODO: Check Buffer Offset
+            TextureArray.addSubRegion(xOffset,yOffset, boundID, buffer);
+        }
+
+        else {
+            ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
+                    (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+        }
+
+        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+        if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+    }
+
+    public void uploadWholeImage(int mipLevel, int width, int height, ByteBuffer buffer) {
+        long imageSize = buffer.limit();
+
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        try (MemoryStack stack = stackPush()) {
+            transferDstLayout(stack, commandBuffer.getHandle());
+        }
+
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+        stagingBuffer.align(this.formatSize);
+
+        stagingBuffer.copyBuffer((int) imageSize, buffer);
+
+        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, 0, 0,
+                (int) (stagingBuffer.getOffset() /*+ (unpackRowLength * unpackSkipRows + unpackSkipPixels) */* this.formatSize), 0, height);
 
         long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -217,12 +274,14 @@ public class VulkanImage {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     }
 
+
+    //TODO: Batch Image Transitions.texture Uploads/Animations e.g.
     public void readOnlyLayout() {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
         DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
@@ -246,6 +305,7 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(int maxLod, byte flags) {
+        this.sampler = getTextureSampler((byte) maxLod, flags, (byte) 0);
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
@@ -427,6 +487,8 @@ public class VulkanImage {
         byte samplerFlags = 0;
 
         boolean levelViews = false;
+        
+        boolean subImage = false;
 
         public Builder(int width, int height) {
             this.width = width;
@@ -506,6 +568,11 @@ public class VulkanImage {
 //                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
                 default -> 0;
             };
+        }
+
+        public Builder isSubImage(boolean b) {
+            subImage=b;
+            return this;
         }
     }
 }
