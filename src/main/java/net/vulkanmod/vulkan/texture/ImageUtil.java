@@ -51,25 +51,33 @@ public abstract class ImageUtil {
 
         final int tileDim = /*mipLevel == 0 ? 16 : */16 / (1<<mipLevel); //avoid Divide by Zero
         int xTileArrayOffset = xOffset / tileDim;
-        int yTileArrayOffset = yOffset / width * 64;
-
-
+        int yTileArrayOffset = yOffset / tileDim;
 
         try (MemoryStack stack = stackPush()) {
+        int rows = width/tileDim;
+        int cols = height/tileDim;
+        for (int x = 0; x < rows; x++) {
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
-            region.bufferOffset(bufferOffset);
-            region.bufferRowLength(bufferRowLenght);   // Tightly packed
-            region.bufferImageHeight(bufferImageHeight);  // Tightly packed
-            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            region.imageSubresource().mipLevel(mipLevel);
-            region.imageSubresource().baseArrayLayer((xTileArrayOffset+yTileArrayOffset)); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
+            for (int y = 0; y < cols; y++) {
+                final int i1 = x * tileDim * tileDim * 4;
+                VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+                region.bufferOffset(bufferOffset);
+                region.bufferRowLength(bufferRowLenght);   // Tightly packed
+                region.bufferImageHeight(bufferImageHeight);  // Tightly packed
+                region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                region.imageSubresource().mipLevel(mipLevel);
+                region.imageSubresource().baseArrayLayer(((yTileArrayOffset+y)*64) + xTileArrayOffset+x); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
 //            final int value = Math.max(1, width / 16);
-            region.imageSubresource().layerCount(1);
-            region.imageOffset().set(0, 0, 0);
-            region.imageExtent().set(tileDim, tileDim, 1);
+                region.imageSubresource().layerCount(1);
+                region.imageOffset().set(0, 0, 0);
+                region.imageExtent().set(tileDim, tileDim, 1);
 
-            vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+                vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+            }
+            }
+
+
+
         }
     }
 
