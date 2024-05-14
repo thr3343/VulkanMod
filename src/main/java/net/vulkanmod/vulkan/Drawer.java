@@ -74,7 +74,7 @@ public class Drawer {
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
         switch (mode) {
-            case QUADS, LINES, DEBUG_LINES -> {
+            case QUADS, LINES -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
                 indexCount = vertexCount * 3 / 2;
             }
@@ -86,7 +86,7 @@ public class Drawer {
                 autoIndexBuffer = this.triangleStripIndexBuffer;
                 indexCount = (vertexCount - 2) * 3;
             }
-            case TRIANGLES -> {
+            case DEBUG_LINES, TRIANGLES -> {
                 draw(vertexBuffer, vertexCount);
                 return;
             }

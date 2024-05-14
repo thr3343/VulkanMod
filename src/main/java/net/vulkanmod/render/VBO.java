@@ -68,8 +68,8 @@ public class VBO {
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
                 }
                 case DEBUG_LINES -> {
-                    autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
-                    this.indexCount = vertexCount * 3 / 2;
+                    autoIndexBuffer = null;//Renderer.getDrawer().getQuadsIndexBuffer();
+                    this.indexCount = vertexCount;
                 }
                 case TRIANGLES -> {
                     autoIndexBuffer = null;
