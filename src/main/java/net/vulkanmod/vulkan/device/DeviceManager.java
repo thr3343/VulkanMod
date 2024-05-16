@@ -183,15 +183,15 @@ public abstract class DeviceManager {
 //
                     .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
 
-                    .imagelessFramebuffer(true);
+                    .imagelessFramebuffer(true)
 //                    .descriptorBindingUpdateUnusedWhilePending(false)
 //
-//                    .shaderSampledImageArrayNonUniformIndexing(false);
+                    .shaderSampledImageArrayNonUniformIndexing(true);
 
             VkPhysicalDeviceInlineUniformBlockFeatures inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeatures.calloc(stack)
                     .sType$Default()
                     .inlineUniformBlock(true)
-                    .descriptorBindingInlineUniformBlockUpdateAfterBind(true); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
+                    .descriptorBindingInlineUniformBlockUpdateAfterBind(false); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
 
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);

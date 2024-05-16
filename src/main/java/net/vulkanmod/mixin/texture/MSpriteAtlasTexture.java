@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.interfaces.VAbstractTextureI;
+import net.vulkanmod.vulkan.shader.descriptor.SubTexManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,9 +22,18 @@ public class MSpriteAtlasTexture {
     @Redirect(method = "upload", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/TextureUtil;prepareImage(IIII)V"))
     private void redirect(int id, int maxLevel, int width, int height) {
         boolean ArrayTexture = this.location.getPath().equals("textures/atlas/blocks.png");
-        VulkanImage image = new VulkanImage.Builder(ArrayTexture ? 16 : width, ArrayTexture ? 16 : height, ArrayTexture? 2048 : 1, 16).setMipLevels(maxLevel + 1).createVulkanImage();
-        ((VAbstractTextureI)(this)).setVulkanImage(image);
-        ((VAbstractTextureI)(this)).bindTexture();
+
+        if(ArrayTexture)
+        {
+            SubTexManager.AddSuBTExregion(this.location);
+        }
+
+       else
+        {
+            VulkanImage image = new VulkanImage.Builder(width, height, 1, 1).setMipLevels(maxLevel + 1).createVulkanImage();
+            ((VAbstractTextureI)(this)).setVulkanImage(image);
+            ((VAbstractTextureI)(this)).bindTexture();
+        }
     }
 
     //TODO: redirect to VTextureAtlas Unstitcher

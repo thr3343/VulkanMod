@@ -1,33 +1,32 @@
 package net.vulkanmod.vulkan.texture;
 
-import net.minecraft.client.renderer.texture.atlas.sources.Unstitcher;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Vulkan;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VkImageCreateInfo;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorAbstractionArray;
+import net.vulkanmod.vulkan.shader.descriptor.TexureRegionManager;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
-
-import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_SAMPLE_COUNT_1_BIT;
 
 public class VTextureAtlas {
-    private final int maxLength, rowPitch;
+    public final int maxLength;
+    private final int rowPitch;
     private final int divisor;
-    private final ResourceLocation resourceLocation;
-    private final int baseTextureIndex;
+    public final ResourceLocation subResource;
+    private int baseTextureIndex;
 
     private final VulkanImage[] vulkanImageSubtexArray;
+    public static final int SUBALLOCIMG_BITMASK = 0xFFFF;
+
+    final TexureRegionManager texureRegionManager;
+    private static short currentSubTexOffset;
     //TODO: Can ignore/bypass Unstitcher for this due to exploiting VulkanImage.uploadSubTextureAsync: as only one block at a time is co[ied (Excluding special exceptions such as Fluids+Bell e.g.)
 
 
-    public VTextureAtlas(int width, int height, int divisor, ResourceLocation resourceLocation, int format, int usage, int baseTextureIndex) {
+    public VTextureAtlas(int width, int height, int divisor, ResourceLocation subResource, int format, int baseTextureIndex) {
         this.divisor = divisor;
-        this.resourceLocation = resourceLocation;
-        this.baseTextureIndex = baseTextureIndex;
+        this.subResource = subResource;
+
+//        this.baseTextureIndex = baseTextureIndex; //Not harcoding this Rn for simplity purposes ATM
 
         this.maxLength = width*height/(divisor*divisor);
 
@@ -35,52 +34,47 @@ public class VTextureAtlas {
 
         vulkanImageSubtexArray = new VulkanImage[this.maxLength];
 
+
+
 //        Unstitcher unstitcher = new Unstitcher(resourceLocation, null, 16, 16);
 
-        Initializer.LOGGER.info("SubTex: "+resourceLocation+"--->" +maxLength);
+        Initializer.LOGGER.info("SubTex: "+ subResource +"--->" +maxLength);
 
         //TODO: Might need to suballocate images due to max Allocation limits;
         // Edit; nor atcually the case; perhaes VM I suballcoated images...
         //TODO: suballcoate images from same
 
-
+        //Preallocate textures
         for (int i = 0; i < vulkanImageSubtexArray.length; i++) {
             vulkanImageSubtexArray[i] = new VulkanImage.Builder(divisor, divisor, 1, 1)
-                    .setMipLevels(1)
-                    .setFormat(format)
-                    .addUsage(usage)
                     .createVulkanImage();
 
         }
 
 
-
+        texureRegionManager = new TexureRegionManager(this.maxLength, SUBALLOCIMG_BITMASK, this.subResource);
     }
-    //TODO: Handle Multi-Tile Copies
-    public void addOrUpdateImage(int x, int y, long srcBuffer, ByteBuffer buffer)
+
+
+
+    public void registerTextures(DescriptorAbstractionArray descriptorSetArray)
     {
-        vulkanImageSubtexArray[x*rowPitch+y].uploadSubTextureAsync(1, divisor, divisor, 0, 0,0,0, 0, buffer);
+        this.baseTextureIndex = descriptorSetArray.getCurrentDescriptorIndex();
+        for (VulkanImage vulkanImage : vulkanImageSubtexArray) {
+            int subTexID = this.texureRegionManager.regsiterSubTex(vulkanImage, this.subResource);
+            descriptorSetArray.registerArrayTexture(subTexID /*(currentSubTexOffset++) << 16 | SUBALLOCIMG_BITMASK*/);
+
+        }
     }
 
-    private static LongBuffer getLongBuffer(int divisor, int format, int usage, MemoryStack stack) {
-        VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
-        imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-        imageInfo.imageType(VK_IMAGE_TYPE_2D);
-        imageInfo.extent().width(divisor);
-        imageInfo.extent().height(divisor);
-        imageInfo.extent().depth(1);
-        imageInfo.mipLevels(1);
-        imageInfo.arrayLayers(1);
-        imageInfo.format(format);
-        imageInfo.tiling(VK_IMAGE_TILING_OPTIMAL);
-        imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-        imageInfo.usage(usage);
-        imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-        LongBuffer longBuffer = stack.mallocLong(1);
+    //TODO: Handle Multi-Tile Copies
+    public void addOrUpdateImage(int mipmap, int x, int y, long srcBuffer, ByteBuffer buffer)
+    {
 
-
-        VK10.vkCreateImage(Vulkan.getVkDevice(), imageInfo, null, longBuffer);
-        return longBuffer;
+        int tiletexX = x / divisor;
+        int tiletexY = y / divisor;
+        final int i = tiletexX * rowPitch + tiletexY;
+        vulkanImageSubtexArray[i].uploadSubTextureAsync(0, divisor, divisor, 0, 0,0,0, divisor, buffer);
     }
 
 
@@ -90,8 +84,8 @@ public class VTextureAtlas {
     }
 
 
-    //used for applying Tetxureindex offsets into babseuVs so the tetxureIDs and DescritporIndicies are correct/alige
-    int getBaseDescriptorIndex()
+    //Used to Apply Uv offsets when Descriptor indexing
+    public int getBaseDescriptorIndex()
     {
         return this.baseTextureIndex;
     }
@@ -103,9 +97,15 @@ public class VTextureAtlas {
         }
     }
 
+    public VulkanImage getImageFromID(int subTexID) {
+        return this.vulkanImageSubtexArray[subTexID-this.baseTextureIndex];
+    }
+
 
     enum Mode{
         UV,
-        INDEXED;
+        NONUNIFORM_INDEXED, //for > 2048 tetxures
+
+        ARRayTEx; //for < 2048 Layers
     }
 }

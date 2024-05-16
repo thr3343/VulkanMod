@@ -17,6 +17,8 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GlTexture {
+
+    //TODO: maybe convert this into a texture Array Instead: + unify textureIDs and DescriptorIndices
     private static int ID_COUNTER = 1;
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
     private static int boundTextureId = 0;
@@ -27,16 +29,15 @@ public class GlTexture {
         GlTexture texture = map.get(id);
         texture.vulkanImage = vulkanImage;
     }
-    //TODO: Maybe bypass TextureIDs for Reserved slots + (e.g. Atlases)
-    // + May alos be optimal as a tmep workaround for Async Texture Atlas loader
+
+    //TODO: convert textureIDs to SuBTexIDs: to allow a TextureId to represent Multiple Textures: i.e. a Given Onion Texture / Texture Array
     public static int genTextureId() {
         int id = ID_COUNTER;
         map.put(id, new GlTexture(id));
         ID_COUNTER++;
         return id;
     }
-    //TODO: Remove Bindfull Boilerplate+OpenGl handling and make this a selctor-based system instead
-    // + use GL_TEZXURE_UNIT IDS Directly Maybe a
+
     public static void bindTexture(int id) {
 
         boundTexture = map.get(id);

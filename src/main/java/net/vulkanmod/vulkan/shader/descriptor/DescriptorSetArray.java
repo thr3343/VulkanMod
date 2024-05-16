@@ -39,7 +39,7 @@ public class DescriptorSetArray {
     private static final int UNIFORM_POOLS = 1;
     private static final int VERT_SAMPLER_MAX_LIMIT = 8;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
-    private static final int MAX_POOL_SAMPLERS = 4096;
+    private static final int MAX_POOL_SAMPLERS = 65536;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
@@ -100,8 +100,8 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
     {
         //TODO:maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
         boolean needsUpdate = switch (binding) {
-            case 0 -> this.initialisedFragSamplers.registerTexture(TextureID);
-            default -> initialisedVertSamplers.registerTexture(TextureID);
+            case 0 -> this.initialisedFragSamplers.registerArrayTexture(TextureID);
+            default -> initialisedVertSamplers.registerArrayTexture(TextureID);
         };
 
         if(needsUpdate)
@@ -306,7 +306,7 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
             this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), 1);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), 2);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
+//            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), 4);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), 5);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), 6);
@@ -383,6 +383,7 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
         //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
         VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
         uboDescriptorWrite.sType$Default();
+        uboDescriptorWrite.pNext(VK_NULL_HANDLE);
         uboDescriptorWrite.dstBinding(VERT_UBO_ID);
         uboDescriptorWrite.dstArrayElement(0);
         uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -419,6 +420,7 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
             //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
             VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
             uboDescriptorWrite.sType$Default();
+            uboDescriptorWrite.pNext(VK_NULL_HANDLE);
             uboDescriptorWrite.pNext(bufferInfos);
             uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
             uboDescriptorWrite.dstArrayElement(offset);
@@ -457,6 +459,7 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
 
             final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
             vkWriteDescriptorSet.sType$Default()
+                    .pNext(VK_NULL_HANDLE)
                     .dstBinding(descriptorArray.getBinding())
                     .dstArrayElement(samplerIndex)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -475,6 +478,14 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
 
 
     private VulkanImage getSamplerImage(int texId1) {
+
+        if(DescriptorAbstractionArray.isArrayTex(texId1))
+        {
+            Initializer.LOGGER.error("isSuBTEX!: "+ texId1);
+            return SubTexManager.getSubTexture(texId1);
+        }
+
+
         final GlTexture vulkanImage = GlTexture.getTexture(texId1);
         VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
         if (image == null) {
@@ -554,6 +565,6 @@ private final DescriptorAbstractionArray initialisedFragSamplers = new Descripto
     //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
     public String getDebugInfo()
     {
-        return"textures[Loaded="+this.initialisedFragSamplers.currentSize()+"Frag="+this.initialisedFragSamplers.currentLim()+"PoolRange="+ this.currentSamplerSize +"]";
+        return"textures[Loaded="+this.initialisedFragSamplers.currentSize()+"Frag="+this.initialisedFragSamplers.getCurrentDescriptorIndex()+"PoolRange="+ this.currentSamplerSize +"]";
     }
 }

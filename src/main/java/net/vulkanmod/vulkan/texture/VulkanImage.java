@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -254,6 +255,12 @@ public class VulkanImage {
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
 
+
+        if(xOffset>=this.width || yOffset >= this.height)
+        {
+            Initializer.LOGGER.error("BAd Copy!: "+ xOffset + ">=" + this.width  + "||" +  yOffset + ">=" + this.height);
+            return;
+        }
         long imageSize = buffer.limit();
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();

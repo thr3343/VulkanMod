@@ -3,7 +3,9 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -23,6 +25,7 @@ import net.vulkanmod.render.model.quad.QuadUtils;
 import net.vulkanmod.render.model.quad.QuadView;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.shader.descriptor.SubTexManager;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Vector3f;
 
@@ -32,6 +35,8 @@ public class BlockRenderer {
 
     static final Direction[] DIRECTIONS = Direction.values();
     private static BlockColors blockColors;
+    //TODO: Make sure loading order/precedent is correct so this dosen't throw an invalid Index
+    private static final int baseArrayTex = 0;//SubTexManager.getBaseOffset(TextureAtlas.LOCATION_PARTICLES);
 
     RandomSource randomSource = RandomSource.createNewThreadLocalInstance();
 
@@ -151,7 +156,7 @@ public class BlockRenderer {
 
         int xTileLayerOffset = (int) (v1 /16);
         int yTileLayerOffset = (int) (v2 /16);
-        int baseArrayLayer =(yTileLayerOffset*64)+xTileLayerOffset;
+        int baseArrayLayer = baseArrayTex +  (yTileLayerOffset*64)+xTileLayerOffset;
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);

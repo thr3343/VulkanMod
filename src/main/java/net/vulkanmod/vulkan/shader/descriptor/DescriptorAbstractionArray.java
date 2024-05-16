@@ -16,7 +16,7 @@ public class DescriptorAbstractionArray {
     private final int descriptorType;
     private final int descriptorBinding;
 
-    private int samplerRange;
+    private int currentDescIndex;
     private final Int2IntOpenHashMap tetxureRegionMap; //alignedIDs
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
     private final IntArrayFIFOQueue FreeIDs=new IntArrayFIFOQueue(32);
@@ -28,7 +28,7 @@ public class DescriptorAbstractionArray {
         this.descriptorType = descriptorType;
         this.descriptorBinding = descriptorBinding;
 
-        samplerRange = baseSamplerIndex; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
+        currentDescIndex = baseSamplerIndex; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
         this.texID2DescIdx = new Int2IntOpenHashMap(maxSize);
 
 
@@ -61,7 +61,7 @@ public class DescriptorAbstractionArray {
 
 //        alignedIDs.put(texID, idx);
 
-        samplerRange = Math.max(idx, samplerRange);
+        currentDescIndex = Math.max(idx, currentDescIndex);
 
     }
 
@@ -84,7 +84,7 @@ public class DescriptorAbstractionArray {
 //        texIds[texID] = ++samplerRange;
 //        textureSamplerHndls[samplerRange] = imageView;
 
-        final int samplerIndex = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
+        final int samplerIndex = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : currentDescIndex++;
         texID2DescIdx.put(texID, samplerIndex);
         return true;
 
@@ -93,7 +93,7 @@ public class DescriptorAbstractionArray {
     //Hardcode a texture to a fixed Sampler Index: Avoids the need to fallback to Non-Uniform Indexing
     public boolean registerImmutableTexture(int texID, int SamplerIndex) {
 
-        if (samplerRange <= SamplerIndex) throw new RuntimeException();
+        if (currentDescIndex <= SamplerIndex) throw new RuntimeException();
         if (texID2DescIdx.containsKey(texID)) return false;
 //        if (texIds[texID] != 0 && texIds[texID] != imageView)
 //            throw new RuntimeException(texIds[texID] + " != " + imageView);
@@ -104,6 +104,27 @@ public class DescriptorAbstractionArray {
         texID2DescIdx.put(texID, SamplerIndex);
         return true;
 
+    }    //Add a new textureID registation/index to the Descripotr Array
+    public boolean registerArrayTexture(int arrayTexID) {
+        if (texID2DescIdx.containsKey(arrayTexID)) return false;
+//        if (texIds[texID] != 0 && texIds[texID] != imageView)
+//            throw new RuntimeException(texIds[texID] + " != " + imageView);
+//        texIds[texID] = ++samplerRange;
+//        textureSamplerHndls[samplerRange] = imageView;
+
+        final int v = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : currentDescIndex++;
+        texID2DescIdx.put(arrayTexID, v);
+        return true;
+
+    }
+
+    //Exploits Base Instancetexture Dynamic Base tex Params being likietd to 65535 textures Max
+    //(Dynamically Uniform texture Indicies)
+    // Also allow Arraytex to be terates speratly from GLtetxure for ease of simplity/ texture Management e.g.
+    public static boolean isArrayTex(int texID)
+    {
+//        final int i = VTextureAtlas.SUBALLOCIMG_BITMASK ^ VTextureAtlas.SUBALLOCIMG_BITMASK;
+        return texID >= VTextureAtlas.SUBALLOCIMG_BITMASK;
     }
 
     //TODO; may ned to use a regon like like Vanil/aMojnag to manged resreved.Atla/tetxure blocks
@@ -137,8 +158,8 @@ public class DescriptorAbstractionArray {
     public int currentSize() {
         return this.texID2DescIdx.size();//this.samplerRange;
     }
-    public int currentLim() {
-        return this.samplerRange;
+    public int getCurrentDescriptorIndex() {
+        return this.currentDescIndex;
     }
 
     public int getStage() {
@@ -167,13 +188,19 @@ public class DescriptorAbstractionArray {
     }
 
     public boolean checkCapacity() {
-        final boolean b = this.samplerRange >= maxSize;
+        final boolean b = this.currentDescIndex >= maxSize;
         if(b && !this.FreeIDs.isEmpty()) Initializer.LOGGER.error("Descriptor Fragmentation/Holes: "+this.FreeIDs.size());
         return b;
     }
 
     public int resize() {
-        final int align = VUtil.align(this.samplerRange, 64);
+        final int align = VUtil.align(this.currentDescIndex, 64);
         return this.maxSize = align==maxSize ? align+64 : align;
     }
+
+    public void queryCapacity(int maxLength) {
+
+    }
+
+    public int getCurrentOffset() { return  this.currentDescIndex; }
 }

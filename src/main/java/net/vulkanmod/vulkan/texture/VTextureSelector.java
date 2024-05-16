@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
+import net.vulkanmod.vulkan.shader.descriptor.SubTexManager;
 
 import java.nio.ByteBuffer;
 
