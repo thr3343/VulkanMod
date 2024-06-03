@@ -22,7 +22,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public abstract class DeviceManager {
     public static List<Device> availableDevices;
@@ -112,7 +112,7 @@ public abstract class DeviceManager {
             physicalDevice = DeviceManager.device.physicalDevice;
 
             // Get device properties
-            deviceProperties = device.properties;
+            deviceProperties = device.properties.properties();
 
             memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
@@ -131,7 +131,7 @@ public abstract class DeviceManager {
         for (Device device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties.properties().deviceType();
             if (deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
@@ -169,53 +169,38 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
-
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
-            deviceVulkan11Features.sType$Default();
-            deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
+            VkPhysicalDeviceShaderDrawParameterFeatures shaderDrawParameterFeatures = VkPhysicalDeviceShaderDrawParameterFeatures.calloc(stack).sType$Default();
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
-            deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
-            // TODO: Disable indirect draw option if unsupported.
+            deviceFeatures.features().samplerAnisotropy(device.hasSamplerAnisotropy());
+            deviceFeatures.features().logicOp(device.hasLogicOp());
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+            deviceFeatures.features().wideLines(device.hasWideLines());
+            shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
+
+            final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();
+            VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
+                    .sType$Default()
+                    .runtimeDescriptorArray(hasIndexedDescriptors)
+                    .descriptorBindingPartiallyBound(hasIndexedDescriptors)
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
+
+            //TODO: replace with Extension version to allow Vk12 support
+            VkPhysicalDeviceInlineUniformBlockFeatures inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeatures.calloc(stack)
+                    .sType$Default()
+                    .inlineUniformBlock(true)
+                    .descriptorBindingInlineUniformBlockUpdateAfterBind(false); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
 
             // Must not set line width to anything other than 1.0 if this is not supported
-            if (device.availableFeatures.features().wideLines()) {
-                deviceFeatures.features().wideLines(true);
-                VRenderSystem.canSetLineWidth = true;
-            }
+            VRenderSystem.canSetLineWidth = device.hasWideLines();
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
-            createInfo.sType$Default();
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
+            createInfo.pNext(descriptorIndexingFeatures).pNext(inlineUniformBlockFeatures).pNext(shaderDrawParameterFeatures);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
-
-            if (Vulkan.DYNAMIC_RENDERING) {
-                VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-                dynamicRenderingFeaturesKHR.sType$Default();
-                dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
-                deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
-
-//                //Vulkan 1.3 dynamic rendering
-//                VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-//                deviceVulkan13Features.sType$Default();
-//                if(!deviceInfo.availableFeatures13.dynamicRendering())
-//                    throw new RuntimeException("Device does not support dynamic rendering feature.");
-//
-//                deviceVulkan13Features.dynamicRendering(true);
-//                createInfo.pNext(deviceVulkan13Features);
-//                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
-            }
-
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
-
-//            Configuration.DEBUG_FUNCTIONS.set(true);
-
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
@@ -223,7 +208,7 @@ public abstract class DeviceManager {
             int res = vkCreateDevice(physicalDevice, createInfo, null, pDevice);
             Vulkan.checkResult(res, "Failed to create logical device");
 
-            vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_3);
 
             graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
             transferQueue = new TransferQueue(stack, indices.transferFamily);

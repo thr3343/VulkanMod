@@ -15,12 +15,11 @@ import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK11.*;
 
 public class Device {
     final VkPhysicalDevice physicalDevice;
-    final VkPhysicalDeviceProperties properties;
+    final VkPhysicalDeviceProperties2 properties;
 
     private final int vendorId;
     public final String vendorIdString;
@@ -28,44 +27,59 @@ public class Device {
     public final String driverVersion;
     public final String vkVersion;
 
-    public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
-
-//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+    //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp, hasWideLines;
 
     public Device(VkPhysicalDevice device) {
-        this.physicalDevice = device;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            this.physicalDevice = device;
 
-        properties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, properties);
+            VkPhysicalDeviceSubgroupProperties subgroupProperties = VkPhysicalDeviceSubgroupProperties.calloc(stack).sType$Default();
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+            properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(subgroupProperties);
+            VK11.vkGetPhysicalDeviceProperties2(physicalDevice, properties);
 
-        this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-        this.availableFeatures.sType$Default();
+            this.vendorId = properties.properties().vendorID();
+            this.vendorIdString = decodeVendor(properties.properties().vendorID());
+            this.deviceName = properties.properties().deviceNameString();
+            this.driverVersion = decodeDvrVersion(properties.properties().driverVersion(), properties.properties().vendorID());
+            this.vkVersion = decDefVersion(getVkVer());
 
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+            VkPhysicalDeviceFeatures2 availableFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            availableFeatures.sType$Default();
 
-        //Vulkan 1.3
+            VkPhysicalDeviceVulkan12Features availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc(stack).sType$Default();
+
+            VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc(stack).sType$Default();
+            availableFeatures.pNext(availableFeatures12);
+            availableFeatures.pNext(availableFeatures11);
+
+            //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
 //        this.availableFeatures13.sType$Default();
 //        this.availableFeatures11.pNext(this.availableFeatures13.address());
 //
 //        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
-        vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+            vkGetPhysicalDeviceFeatures2(this.physicalDevice, availableFeatures);
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+
+            this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
+            this.hasIndexedDescriptors = availableFeatures12.runtimeDescriptorArray() && availableFeatures12.descriptorBindingVariableDescriptorCount() && availableFeatures12.descriptorBindingPartiallyBound();
+            this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
+            this.hasLogicOp = availableFeatures.features().logicOp();
+            this.hasWideLines = availableFeatures.features().wideLines();
+            //TODO: Handle specific Mac drivers not supporting Subgroup Ballot
+            //E.g. Macros/Spec Constant workarounds
+            final int subGroupStages = subgroupProperties.supportedStages();
+            final int subGroupOps = subgroupProperties.supportedOperations();
+            if((subGroupStages&VK_SHADER_STAGE_FRAGMENT_BIT)==0 ||(subGroupOps&VK_SUBGROUP_FEATURE_BALLOT_BIT)==0)
+                throw new RuntimeException("Uniform texture broadcast optimization not available!");
+
+
+        }
 
     }
 
@@ -146,6 +160,10 @@ public class Device {
         return drawIndirectSupported;
     }
 
+    public boolean isHasIndexedDescriptors() {
+        return hasIndexedDescriptors;
+    }
+
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
     // (e.g. such as in case we encounter a vendor specific driver bug)
     public boolean isAMD() {
@@ -158,5 +176,17 @@ public class Device {
 
     public boolean isIntel() {
         return vendorId == 0x8086;
+    }
+
+    public boolean hasSamplerAnisotropy() {
+        return this.hasSamplerAnisotropy;
+    }
+
+    public boolean hasWideLines() {
+        return this.hasWideLines;
+    }
+
+    public boolean hasLogicOp() {
+        return this.hasLogicOp;
     }
 }
