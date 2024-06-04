@@ -1,5 +1,6 @@
 package net.vulkanmod.mixin.texture;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
@@ -23,6 +24,7 @@ public class MOverlayTexture {
 
         VTextureSelector.setOverlayTexture(((VAbstractTextureI)this.texture).getVulkanImage());
         VTextureSelector.setActiveTexture(1);
+        RenderSystem.setShaderTexture(1, this.texture.getId());
     }
 
 //    @Inject(method = "<init>", at = @At(value = "RETURN", target = "Lnet/minecraft/client/texture/NativeImageBackedTexture;bindTexture()V"))

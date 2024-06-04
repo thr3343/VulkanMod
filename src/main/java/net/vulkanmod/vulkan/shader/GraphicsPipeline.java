@@ -24,27 +24,30 @@ public class GraphicsPipeline extends Pipeline {
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
+    private static final long defaultDescriptorSetLayout = Renderer.getDescriptorSetArray().getDescriptorSetLayout(0);
+    private static final long defaultLayout = Renderer.getLayout();
 
-    private long vertShaderModule = 0;
-    private long fragShaderModule = 0;
+    private final long vertShaderModule;
+    private final long fragShaderModule;
 
-    GraphicsPipeline(Builder builder) {
-        super(builder.shaderPath);
+    GraphicsPipeline(Builder builder, boolean bindless) {
+        super(builder.shaderPath, bindless);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
         this.imageDescriptors = builder.imageDescriptors;
-        this.pushConstants = builder.pushConstants;
+//        this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        createDescriptorSetLayout();
-        createPipelineLayout();
-        createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
+        descriptorSetLayout = bindless ? defaultDescriptorSetLayout : createDescriptorSetLayout();
+        pipelineLayout = bindless ? defaultLayout : createPipelineLayout();
+        this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
+        this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 
         if (builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
-        createDescriptorSets(Renderer.getFramesNum());
+        if(!bindless) createDescriptorSets(Renderer.getFramesNum());
 
         PIPELINES.add(this);
     }
@@ -204,11 +207,6 @@ public class GraphicsPipeline extends Pipeline {
         }
     }
 
-    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
-    }
-
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
 
         VkVertexInputBindingDescription.Buffer bindingDescription =
@@ -246,87 +244,37 @@ public class GraphicsPipeline extends Pipeline {
             int elementCount = formatElement.getCount();
 
             switch (usage) {
-                case POSITION:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 12;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.BYTE) {
-                        posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
+                case POSITION -> {
+                    switch (type) {
+                        case FLOAT -> posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+                        case SHORT -> posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                        case BYTE -> posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
                     }
-
-                    break;
-
-                case COLOR:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                    posDescription.offset(offset);
-
-//                offset += 16;
-                    offset += 4;
-                    break;
-
-                case UV:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    } else if (type == VertexFormatElement.Type.USHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_UINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
+                }
+                case COLOR -> posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                case UV -> {
+                    switch (type) {
+                        case FLOAT -> posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                        case SHORT -> posDescription.format(VK_FORMAT_R16G16_SINT);
+                        case USHORT -> posDescription.format(VK_FORMAT_R16G16_UINT);
                     }
-                    break;
-
-                case NORMAL:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
-                    posDescription.offset(offset);
-
-                    offset += 4;
-                    break;
-
-                case PADDING:
+                }
+                case NORMAL -> posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                case PADDING -> {
                     //Do nothing as padding format (VK_FORMAT_R8) is not supported everywhere
-                    break;
-
-                case GENERIC:
+                }
+                case GENERIC -> {
                     if (type == VertexFormatElement.Type.SHORT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 2;
-                        break;
                     } else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R32_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                        break;
-                    } else {
-                        throw new RuntimeException(String.format("Unknown format: %s", usage));
                     }
-
-
-                default:
-                    throw new RuntimeException(String.format("Unknown format: %s", usage));
+                }
+                default -> throw new RuntimeException(String.format("Unknown format: %s", usage));
             }
 
-            posDescription.offset(((VertexFormatMixed) (vertexFormat)).getOffset(i));
+            posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
+            offset += formatElement.getByteSize();
         }
 
         return attributeDescriptions.rewind();
@@ -336,15 +284,17 @@ public class GraphicsPipeline extends Pipeline {
         vkDestroyShaderModule(DeviceManager.vkDevice, vertShaderModule, null);
         vkDestroyShaderModule(DeviceManager.vkDevice, fragShaderModule, null);
 
-        destroyDescriptorSets();
+        if(!isBindless()) destroyDescriptorSets();
 
         graphicsPipelines.forEach((state, pipeline) -> {
             vkDestroyPipeline(DeviceManager.vkDevice, pipeline, null);
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        if(!isBindless()) {
+            vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        }
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);

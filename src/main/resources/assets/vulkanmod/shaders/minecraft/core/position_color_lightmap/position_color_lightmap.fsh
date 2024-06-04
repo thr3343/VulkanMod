@@ -3,8 +3,8 @@
 layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec2 texCoord2;
 
-layout(binding = 1) uniform UBO {
-    vec4 ColorModulator;
+layout(binding = 1) readonly uniform UBO {
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;

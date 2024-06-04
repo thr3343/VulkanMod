@@ -103,7 +103,7 @@ public abstract class GameRendererMixin {
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
-        List<Program> list = Lists.newArrayList();
+//        List<Program> list = Lists.newArrayList();
 //        list.addAll(Program.Type.FRAGMENT.getPrograms().values());
 //        list.addAll(Program.Type.VERTEX.getPrograms().values());
 //        list.forEach(Program::close);
@@ -122,7 +122,8 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_color_lightmap", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
 //               positionColorLightmapShader = shaderInstance;
 //            }));
-            list1.add(Pair.of(new ShaderInstance(provider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX), (shaderInstance) -> {
+            final ShaderInstance positionColorTex = new ShaderInstance(provider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX);
+            list1.add(Pair.of(positionColorTex, (shaderInstance) -> {
                 positionColorTexShader = shaderInstance;
             }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_color_tex_lightmap", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
@@ -140,19 +141,21 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (shaderInstance) -> {
 //               positionTexLightmapColorShader = shaderInstance;
 //            }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            //TODO: only used for Falling Blocks,
+            final ShaderInstance rendertypeSolid = new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK);
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeSolidShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutMippedShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
@@ -204,7 +207,8 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_shadow", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEntityShadowShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_alpha", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            //Only used for EnderDragon death (//TODO: may crash)
+            list1.add(Pair.of(positionColorTex, (shaderInstance) -> {
                 rendertypeEntityAlphaShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
@@ -267,7 +271,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
                 rendertypeLightningShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTripwireShader = shaderInstance;
             }));
             ShaderInstance endPortalShader = new ShaderInstance(provider, "rendertype_end_portal", DefaultVertexFormat.POSITION);

@@ -10,12 +10,16 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     return smoothstep(fogEnd, fogStart, vertexDistance);
 }
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
-layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
+layout(binding = 1) uniform UBO {
+    vec4 FogColor;
     float FogStart;
     float FogEnd;
+};
+
+layout(push_constant) readonly uniform pushConstant{
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(location = 0) in float vertexDistance;
@@ -24,12 +28,13 @@ layout(location = 1) in vec2 texCoord0;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * ColorModulator;
+    vec4 color = texture(Sampler0[7], texCoord0) * ColorModulator;
     if (color.a < 0.1) {
         discard;
     }
+    //TODO:
     float fade = linear_fog_fade(vertexDistance, FogStart, FogEnd);
-    fragColor = vec4(color.rgb * fade, color.a);
+    fragColor = vec4(color.rgb, color.a);
 }
 
 /*

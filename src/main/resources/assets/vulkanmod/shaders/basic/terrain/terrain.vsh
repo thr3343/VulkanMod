@@ -3,16 +3,15 @@
 #include "light.glsl"
 
 layout (binding = 0) uniform UniformBufferObject {
-    mat4 MVP;
-    mat4 ModelViewMat;
+    layout(offset = 0) mat4 MVP;
+    layout(offset = 512) mat4 ModelViewMat;
 };
 
-layout (push_constant) uniform pushConstant {
+layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 3) uniform sampler2D Sampler2;
-
+layout (binding = 2) uniform sampler2D Sampler2;
 
 layout (location = 0) out float vertexDistance;
 layout (location = 1) out vec4 vertexColor;
@@ -31,7 +30,7 @@ const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
-    const vec4 pos = vec4(fma(Position.xyz, vec3(POSITION_INV), ChunkOffset + baseOffset), 1.0);
+    const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
     gl_Position = MVP * pos;
 
     vertexDistance = length((ModelViewMat * pos).xyz);

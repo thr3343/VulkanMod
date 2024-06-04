@@ -9,13 +9,15 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
     return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
 }
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
     vec4 FogColor;
     float FogStart;
     float FogEnd;
+};
+layout(push_constant) readonly uniform pushConstant{
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(location = 0) in vec4 vertexColor;

@@ -1,5 +1,6 @@
 #version 450
-
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
 float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     if (vertexDistance <= fogStart) {
         return 1.0;
@@ -10,7 +11,7 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     return smoothstep(fogEnd, fogStart, vertexDistance);
 }
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 layout(binding = 1) uniform UBO{
     vec4 ColorModulator;
@@ -18,13 +19,15 @@ layout(binding = 1) uniform UBO{
     float FogEnd;
 };
 
-layout(location = 0) in float vertexDistance;
-layout(location = 1) in vec2 texCoord0;
+layout(location = 0) in flat uint baseInstance;
+layout(location = 1) in float vertexDistance;
+layout(location = 2) in vec2 texCoord0;
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * ColorModulator;
+    const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
+    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * ColorModulator;
     if (color.a < 0.1) {
         discard;
     }

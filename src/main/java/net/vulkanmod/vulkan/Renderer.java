@@ -19,13 +19,12 @@ import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.ScalarUniforms;
-import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.shader.*;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -51,6 +50,10 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+
+    private final DescriptorSetArray descriptorSetArray;
+    private final long pipelineLayout;
+    private long currentLayout;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -102,6 +105,53 @@ public class Renderer {
         device = Vulkan.getVkDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+
+        descriptorSetArray = new DescriptorSetArray();
+        pipelineLayout = createPipelineLayout();
+        currentLayout = pipelineLayout;
+
+    }
+
+    public static long getLayout() {
+        return INSTANCE.pipelineLayout;
+    }
+
+    //Default Pipeline Layo
+    private long createPipelineLayout() {
+        try (MemoryStack stack = stackPush()) {
+            // ===> PIPELINE LAYOUT CREATION <===
+
+            final long x = descriptorSetArray.getDescriptorSetLayout(0);
+
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
+            pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+            pipelineLayoutInfo.pSetLayouts(stack.longs(x));
+
+
+            {
+                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
+                VkPushConstantRange pushConstantVertRange = pushConstantRange.get(0);
+                pushConstantVertRange.size(32);
+                pushConstantVertRange.offset(0);
+                pushConstantVertRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+
+                VkPushConstantRange pushConstantFragRange = pushConstantRange.get(1);
+                pushConstantFragRange.size(16);
+                pushConstantFragRange.offset(32);
+                pushConstantFragRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
+            }
+
+            LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
+
+            if (vkCreatePipelineLayout(DeviceManager.vkDevice, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create pipeline layout");
+            }
+
+            return pPipelineLayout.get(0);
+        }
     }
 
     public static void setLineWidth(float width) {
@@ -221,8 +271,10 @@ public class Renderer {
 
         resetDescriptors();
 
+        //TODO: Move Descriptor binds to outside renderPass: not sure if it enables specific optimisations
+
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+//        vkResetCommandBuffer(currentCmdBuffer, 0);
         recordingCmds = true;
 
         try (MemoryStack stack = stackPush()) {
@@ -253,6 +305,8 @@ public class Renderer {
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
+
+            this.descriptorSetArray.updateAndBind(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -403,6 +457,7 @@ public class Renderer {
 
         usedPipelines.clear();
         boundPipeline=0;
+        UniformState.resetAll();
     }
 
     void waitForSwapChain() {
@@ -464,6 +519,8 @@ public class Renderer {
 
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
+
+        this.descriptorSetArray.cleanup();
     }
 
     private void destroySyncObjects() {
@@ -516,11 +573,18 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        if (pipeline.isBindless()) {
+            pipeline.pushUniforms(drawer.getUniformBuffer());
+            if(currentLayout!=pipelineLayout)  descriptorSetArray.bindOnly(currentFrame, commandBuffer);
+        } else {
+            pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        }
+        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout : pipeline.getLayout();
+
     }
 
     public void pushConstants(Pipeline pipeline) {
-        VkCommandBuffer commandBuffer = currentCmdBuffer;
+       /* VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PushConstants pushConstants = pipeline.getPushConstants();
 
@@ -530,7 +594,7 @@ public class Renderer {
             pushConstants.update(ptr);
 
             nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
-        }
+        }*/
 
     }
 
@@ -701,6 +765,8 @@ public class Renderer {
     public static int getFramesNum() {
         return INSTANCE.framesNum;
     }
+
+    public static DescriptorSetArray getDescriptorSetArray() { return INSTANCE.descriptorSetArray; }
 
     public static VkCommandBuffer getCommandBuffer() {
         return INSTANCE.currentCmdBuffer;

@@ -38,7 +38,6 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -122,7 +121,7 @@ public class EffectInstanceM {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline();
+            this.pipeline = builder.createGraphicsPipeline(false);
 
         } catch (IOException e) {
             throw new RuntimeException(e);

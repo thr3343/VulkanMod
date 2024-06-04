@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
@@ -39,8 +40,8 @@ import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     //    public static final boolean DYNAMIC_RENDERING = true;
     public static final boolean DYNAMIC_RENDERING = false;
@@ -201,6 +202,7 @@ public class Vulkan {
 
         vmaDestroyAllocator(allocator);
 
+        SamplerManager.cleanUp();
         DeviceManager.destroy();
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         KHRSurface.vkDestroySurfaceKHR(instance, surface, null);

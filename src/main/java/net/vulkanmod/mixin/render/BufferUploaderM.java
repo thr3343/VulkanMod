@@ -46,7 +46,9 @@ public class BufferUploaderM {
         VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
         renderer.bindGraphicsPipeline(pipeline);
         renderer.uploadAndBindUBOs(pipeline);
-        Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
+
+        final int textureID = pipeline.updateImageState();
+        if(textureID!=-1) Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount(), textureID);
     }
 
 }

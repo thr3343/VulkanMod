@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.lwjgl.system.MemoryUtil;
@@ -14,12 +13,12 @@ public enum UniformState {
     ProjMat("mat4",4, 16, 0, 0),
     MVP("mat4",4, 16, 0, 512),
     TextureMat("mat4",4, 16, 768, 256),
-//    EndPortalLayers("int",1,1, 0, 0),
-//    FogStart("float",1,1, 0, 0),
-//    FogEnd("float",1,1, 0, 0),
-//    LineWidth("float",1,1, 0, 0),
-//    GameTime("float",1,1, 0, 0),
-//    AlphaCutout("float",1,1, 0, 0),
+    EndPortalLayers("int",1,1, 0, 0),
+    FogStart("float",1,1, 0, 0),
+    FogEnd("float",1,1, 0, 0),
+    LineWidth("float",1,1, 0, 0),
+    GameTime("float",1,1, 0, 0),
+    AlphaCutout("float",1,1, 0, 0),
     ScreenSize("vec2",2,2, 0, 0),
 
     //    InSize("vec2",2,2),
@@ -69,8 +68,9 @@ public enum UniformState {
     }
 
 
-    public int updateBank(UniformBuffer uniformBuffer)
+    public int updateBank(UniformBuffer uniformBuffer, String name)
     {
+        if(maxLimit==0) throw new RuntimeException(this+"->"+ name);
         boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(this.newHash);
         if(isUniqueHash) {
             this.usedSize = usedSize % maxLimit;

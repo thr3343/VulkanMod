@@ -6,11 +6,11 @@ layout(location = 2) in vec2 UV0;
 layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP;
 };
 
-layout(binding = 3) uniform sampler2D Sampler2;
+layout(binding = 2) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec3 normal;

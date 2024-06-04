@@ -177,6 +177,25 @@ public class GlTexture {
         this.id = id;
     }
 
+    public static boolean hasImage(int textureID) {
+        return map.get(textureID).getVulkanImage()!=null;
+    }
+    public static boolean hasImageResource(int textureID) {
+        return map.containsKey(textureID);
+    }
+
+    /*    public static void removeImageResource(int TextureID)
+    {
+//        if(TextureID!=-1)
+//        {
+//            var a =  TexIDtoResourceName.remove(TextureID);
+//           if(a!=null) Initializer.LOGGER.info("UnRegistered texture: " + TextureID + " <-> " + "! -> "+a);
+//        }
+    }*/
+    public int getId() {
+        return id;
+    }
+
     void allocateIfNeeded(int width, int height, int format, int type) {
         int vkFormat = GlUtil.vulkanFormat(format, type);
 

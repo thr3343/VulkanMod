@@ -32,7 +32,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -82,7 +81,7 @@ public class ShaderInstanceM implements ShaderMixed {
             Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
             pipelineBuilder.parseBindingsJSON();
             pipelineBuilder.compileShaders();
-            this.pipeline = pipelineBuilder.createGraphicsPipeline();
+            this.pipeline = pipelineBuilder.createGraphicsPipeline(true);
         } catch (Exception e) {
             System.out.printf("Error on shader %s creation\n", name);
             throw e;
@@ -239,7 +238,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline();
+            this.pipeline = builder.createGraphicsPipeline(true);
             this.isLegacy = true;
 
         } catch (Exception e) {
