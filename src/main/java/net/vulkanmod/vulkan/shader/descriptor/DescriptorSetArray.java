@@ -20,10 +20,8 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -48,8 +46,8 @@ public class DescriptorSetArray {
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
 //    private final Int2LongArrayMap perBindingSlowLayouts = new Int2LongArrayMap(bindingsSize);
-    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(16, SAMPLER_MAX_LIMIT_DEFAULT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
-    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(2, VERT_SAMPLER_MAX_LIMIT, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(SAMPLER_MAX_LIMIT_DEFAULT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(VERT_SAMPLER_MAX_LIMIT, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
 //    private final Int2ObjectLinkedOpenHashMap<ImageDescriptor> initialisedVertSamplers = new Int2ObjectLinkedOpenHashMap<>(SAMPLER_MAX_LIMIT);
 
     private final long descriptorSetLayout;
@@ -564,8 +562,7 @@ public class DescriptorSetArray {
     {
         return new String[]{"-=TextureArrayStats=-",
                 "Loaded     :  "+this.initialisedFragSamplers.currentSize(),
-                "Frag       :  "+this.initialisedFragSamplers.currentLim(),
-                "Allocated  :  "+this.currentSamplerSize ,
+                "Reserved   :  "+this.currentSamplerSize,
                 "SetLimit   :  "+MAX_POOL_SAMPLERS/MAX_SETS,
                 "TexturePool:  "+this.texturePool+"/"+MAX_POOL_SAMPLERS};
     }
