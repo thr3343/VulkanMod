@@ -1,7 +1,6 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -129,7 +128,6 @@ public class GlRenderbuffer {
 
         if(needsUpdate) {
             allocateImage(width, height, vkFormat);
-            updateSampler();
 
             needsUpdate = false;
         }
@@ -152,15 +150,6 @@ public class GlRenderbuffer {
                     .createVulkanImage();
 
         VTextureSelector.bindTexture(this.vulkanImage);
-    }
-
-    void updateSampler() {
-        if(vulkanImage == null)
-            return;
-
-        byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
-        vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
     private void uploadImage(ByteBuffer pixels) {
@@ -197,7 +186,6 @@ public class GlRenderbuffer {
 
         if(maxLod != l) {
             maxLod = l;
-            updateSampler();
         }
     }
 
@@ -210,7 +198,7 @@ public class GlRenderbuffer {
         }
 
         this.magFilter = v;
-        updateSampler();
+//        updateSampler();
     }
 
     void setMinFilter(int v) {
@@ -224,7 +212,7 @@ public class GlRenderbuffer {
         }
 
         this.magFilter = v;
-        updateSampler();
+//        updateSampler();
     }
 
     public VulkanImage getVulkanImage() {

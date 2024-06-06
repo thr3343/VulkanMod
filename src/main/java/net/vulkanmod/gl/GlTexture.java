@@ -3,7 +3,6 @@ package net.vulkanmod.gl;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -109,24 +108,8 @@ public class GlTexture {
     }
 
     public static void texParameteri(int target, int pName, int param) {
-        if(target != GL11.GL_TEXTURE_2D)
-            throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
-        switch (pName) {
-            case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
-            case GL30.GL_TEXTURE_MAX_LOD -> boundTexture.setMaxLod(param);
-            case GL30.GL_TEXTURE_MIN_LOD -> {}
-            case GL30.GL_TEXTURE_LOD_BIAS -> {}
-
-            case GL11.GL_TEXTURE_MAG_FILTER -> boundTexture.setMagFilter(param);
-            case GL11.GL_TEXTURE_MIN_FILTER -> boundTexture.setMinFilter(param);
-
-            case GL11.GL_TEXTURE_WRAP_S, GL11.GL_TEXTURE_WRAP_T -> boundTexture.setClamp(param);
-
-            default -> {}
-        }
-
-        //TODO
+        //TODO check thsi dosen;t break mod comapt when chanign smaplers
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
@@ -171,7 +154,7 @@ public class GlTexture {
     VulkanImage vulkanImage;
     int internalFormat;
 
-    boolean needsUpdate = false;
+//    boolean needsUpdate = false;
     int maxLevel = 0;
     int maxLod = 0;
     int minFilter, magFilter = GL11.GL_LINEAR;
@@ -204,15 +187,13 @@ public class GlTexture {
     void allocateIfNeeded(int width, int height, int format, int type) {
         int vkFormat = GlUtil.vulkanFormat(format, type);
 
-        needsUpdate |= vulkanImage == null ||
+        final boolean needsUpdate = vulkanImage == null ||
                 vulkanImage.width != width || vulkanImage.height != height ||
                 vkFormat != vulkanImage.format;
 
         if(needsUpdate) {
             allocateImage(width, height, vkFormat);
-            updateSampler();
 
-            needsUpdate = false;
         }
     }
 
@@ -233,17 +214,6 @@ public class GlTexture {
                     .createVulkanImage();
     }
 
-    void updateSampler() {
-        if(vulkanImage == null)
-            return;
-
-        byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
-        samplerFlags |= clamp ? SamplerManager.CLAMP_BIT : 0;
-        vulkanImage.updateTextureSampler(maxLod, samplerFlags);
-    }
-
     private void uploadImage(ByteBuffer pixels) {
         int width = this.vulkanImage.width;
         int height = this.vulkanImage.height;
@@ -260,62 +230,6 @@ public class GlTexture {
     void generateMipmaps() {
         //TODO test
         ImageUtil.generateMipmaps(vulkanImage);
-    }
-
-    void setMaxLevel(int l) {
-        if(l < 0)
-            throw new IllegalStateException("max level cannot be < 0.");
-
-        if(maxLevel != l) {
-            maxLevel = l;
-            needsUpdate = true;
-        }
-    }
-
-    void setMaxLod(int l) {
-        if(l < 0)
-            throw new IllegalStateException("max level cannot be < 0.");
-
-        if(maxLod != l) {
-            maxLod = l;
-            updateSampler();
-        }
-    }
-
-    void setMagFilter(int v) {
-        switch (v) {
-            case GL11.GL_LINEAR, GL11.GL_NEAREST
-                    -> {}
-
-            default -> throw new IllegalArgumentException("illegal mag filter value: " + v);
-        }
-
-        this.magFilter = v;
-        updateSampler();
-    }
-
-    void setMinFilter(int v) {
-        switch (v) {
-            case GL11.GL_LINEAR, GL11.GL_NEAREST,
-                 GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
-                 GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
-                    -> {}
-
-            default -> throw new IllegalArgumentException("illegal min filter value: " + v);
-        }
-
-        this.magFilter = v;
-        updateSampler();
-    }
-
-    void setClamp(int v) {
-        if (v == GL30.GL_CLAMP_TO_EDGE) {
-            this.clamp = true;
-        } else {
-            this.clamp = false;
-        }
-
-        updateSampler();
     }
 
     public VulkanImage getVulkanImage() {
