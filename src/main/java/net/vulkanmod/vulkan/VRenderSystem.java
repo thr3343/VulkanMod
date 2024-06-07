@@ -16,13 +16,12 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-import static net.vulkanmod.vulkan.shader.UniformState.MVP;
-import static net.vulkanmod.vulkan.shader.UniformState.TextureMat;
 import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.vkCmdPushConstants;
@@ -83,6 +82,12 @@ public abstract class VRenderSystem {
         calculateMVP();
     }
 
+    public static void applyMVP0(Matrix4f MV, Matrix4f P) {
+        MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
+        P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        calculateMVP0();
+    }
+
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.get(UniformState.ModelViewMat.buffer().asFloatBuffer());
 
@@ -100,6 +105,15 @@ public abstract class VRenderSystem {
         final Matrix4f mul = P.mul(MV);
         mul.get(MVP.buffer());
         MVP.needsUpdate(mul.hashCode());
+    }
+
+    public static void calculateMVP0() {
+        Matrix4f MV = new Matrix4f(UniformState.ModelViewMat.buffer().asFloatBuffer());
+        Matrix4f P = new Matrix4f(UniformState.ProjMat.buffer().asFloatBuffer());
+
+        final Matrix4f mul = P.mul(MV);
+        mul.get(MVP0.buffer());
+        MVP0.needsUpdate(mul.hashCode());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {

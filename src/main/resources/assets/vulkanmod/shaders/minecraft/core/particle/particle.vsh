@@ -6,7 +6,7 @@ layout(location = 2) in vec4 Color;
 layout(location = 3) in ivec2 UV2;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 MVP[8];
+   mat4 MVP0; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
 
    layout(offset = 512) mat4 ModelViewMat;
 };
@@ -19,7 +19,7 @@ layout(location = 2) out vec4 vertexColor;
 layout(location = 3) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0)
+    gl_Position = MVP0 * vec4(Position, 1.0)
 ;
     baseInstance = gl_BaseInstance >> 16;
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);

@@ -271,7 +271,7 @@ public abstract class Pipeline {
 
         int msk = 0;
         for (Uniform a : this.buffers.get(0).getUniforms()) {
-            msk |= UniformState.valueOf(a.getName()).updateBank(uniformBuffers, this.name);
+            msk |= UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
         }
 
         Renderer.getDrawer().updateUniformOffset2(msk);

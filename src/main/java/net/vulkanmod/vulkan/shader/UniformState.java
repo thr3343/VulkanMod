@@ -11,7 +11,8 @@ import java.util.EnumSet;
 public enum UniformState {
     ModelViewMat("mat4",4, 16, 512, 256),
     ProjMat("mat4",4, 16, 0, 0),
-    MVP("mat4",4, 16, 0, 512),
+    MVP0("mat4",4, 16, 0, 64), //Used exclusively for Terrain and Particle Shaders
+    MVP("mat4",4, 16, 64, 512),
     TextureMat("mat4",4, 16, 768, 256),
     EndPortalLayers("int",1,1, 0, 0),
     FogStart("float",1,1, 0, 0),
@@ -68,22 +69,23 @@ public enum UniformState {
     }
 
 
-    public int updateBank(UniformBuffer uniformBuffer, String name)
+    public int updateBank(UniformBuffer uniformBuffer)
     {
-        if(maxLimit==0) throw new RuntimeException(this+"->"+ name);
+
         boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(this.newHash);
         if(isUniqueHash) {
-            this.usedSize = usedSize % maxLimit;
+            this.usedSize =  this.maxLimit==0 ? 0 :usedSize % maxLimit;
+
             this.hashedUniformOffsetMap.put(this.newHash, this.usedSize);
             MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getBasePointer() + this.usedSize + this.bankOffset, getByteSize());
-            this.usedSize+= getByteSize();
+            this.usedSize+= this.maxLimit==0  ? 0 : getByteSize();
 
             this.needsUpdate=true;
         }
         this.currentHash=this.newHash;
 
-
-        return this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize() << STATE_MSK;
+        final int subBankOffset = bankOffset / getByteSize();
+        return (this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize()+subBankOffset) << STATE_MSK;
     }
 
     public int getByteSize() {
@@ -112,7 +114,7 @@ public enum UniformState {
 
     public static void resetAll()
     {
-        for (UniformState uniformState : EnumSet.of(MVP, ProjMat, ModelViewMat, TextureMat)) {
+        for (UniformState uniformState : EnumSet.of(MVP0, MVP, ProjMat, ModelViewMat, TextureMat)) {
             uniformState.currentHash = 0;
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;

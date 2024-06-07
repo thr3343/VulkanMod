@@ -304,7 +304,7 @@ public class WorldRenderer {
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+        VRenderSystem.applyMVP0(poseStack.last().pose(), projection);
 
 
         int currentFrame = Renderer.getCurrentFrame();
@@ -316,6 +316,8 @@ public class WorldRenderer {
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             renderer.bindGraphicsPipeline(pipeline);
+
+            renderer.uploadAndBindUBOs(pipeline);
 
             IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
