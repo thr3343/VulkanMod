@@ -238,7 +238,6 @@ public abstract class Pipeline {
         if(!bindless) return 0;
         //TODO: move Texture registration to VTextureSelector to allow Async texture updates + reduced CPu overhead during rendering
         //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
-        int currentTexture = 0;
         boolean isNewTexture = false;
 
         for (ImageDescriptor state : imageDescriptors) {
@@ -254,14 +253,14 @@ public abstract class Pipeline {
 
                 //Convert TextureID to Sampler Index
 
-                currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
-                isNewTexture = descriptorSetArray.isTexUnInitialised(shaderTexture);
+                VTextureSelector.setSamplerIndex(state.imageIdx, descriptorSetArray.getTexture(state.imageIdx, shaderTexture));
+                isNewTexture |= descriptorSetArray.isTexUnInitialised(shaderTexture);
             }
 
 
         }
         //Skip rendering if the texture is new/updated (Can be fixed with Update after bind)
-        return isNewTexture ? -1 : currentTexture;
+        return isNewTexture ? -1 : VTextureSelector.getSamplerIndex(0);
 
     }
 

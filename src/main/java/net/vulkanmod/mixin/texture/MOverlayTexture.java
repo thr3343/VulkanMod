@@ -24,7 +24,6 @@ public class MOverlayTexture {
 
         VTextureSelector.setOverlayTexture(((VAbstractTextureI)this.texture).getVulkanImage());
         VTextureSelector.setActiveTexture(1);
-        RenderSystem.setShaderTexture(1, this.texture.getId());
     }
 
 //    @Inject(method = "<init>", at = @At(value = "RETURN", target = "Lnet/minecraft/client/texture/NativeImageBackedTexture;bindTexture()V"))

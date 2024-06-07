@@ -38,8 +38,10 @@ public class GlTexture {
         boundTextureId = id;
         boundTexture = map.get(id);
 
-        if(id <= 0)
+        if(id <= 0 || boundTextureId==id)
             return;
+
+        boundTextureId = id;
 
         if(boundTexture == null)
             throw new NullPointerException("bound texture is null");
@@ -61,7 +63,7 @@ public class GlTexture {
     }
 
     public static GlTexture getTexture(int id) {
-        if (id == 0)
+        if (id == 0 || id == -1)
             return null;
 
         return map.get(id);
