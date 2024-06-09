@@ -34,17 +34,17 @@ public class VulkanImage {
 
     private long[] levelImageViews;
 
-    private long sampler;
-
     public final int format;
     public final int aspect;
-    public final int mipLevels;
+    public int mipLevels;
     public final int width;
     public final int height;
     public final int formatSize;
     private final int usage;
 
     private int currentLayout;
+    private byte samplerFlags;
+//    private byte anisotropy;
 
     //Used for swap chain images
     public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
@@ -58,8 +58,6 @@ public class VulkanImage {
         this.format = format;
         this.usage = usage;
         this.aspect = getAspect(this.format);
-
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
     }
 
     private VulkanImage(Builder builder) {
@@ -78,7 +76,7 @@ public class VulkanImage {
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
 
-        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
+        image.samplerFlags = builder.samplerFlags;
 
         if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -231,6 +229,24 @@ public class VulkanImage {
 
     public void readOnlyLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+
+    public void updateTextureSamplerParameters(boolean blur, boolean clamp, boolean mipmaps) {
+        byte flags = blur ? LINEAR_FILTERING_BIT : 0;
+        flags |= clamp ? CLAMP_BIT : 0;
+        flags |= mipmaps ? USE_MIPMAPS_BIT : 0;
+//        final boolean b = Initializer.CONFIG.af > 1 && this.layers > 1;
+//        flags |= b ? USE_ANISOTROPIC_BIT : 0;
+
+        final int maxLod = mipmaps ?  this.mipLevels : 1;
+        updateTextureSamplerParameters(maxLod, flags);
+    }
+
+    public void updateTextureSamplerParameters(int maxLod, byte flags) {
+        this.mipLevels=maxLod;
+        this.samplerFlags=flags;
+//        this.anisotropy=anisotropy;
+//        sampler = SamplerManager.getTextureSampler((byte) maxLod, flags, anisotropy);
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
@@ -392,8 +408,9 @@ public class VulkanImage {
         return levelImageViews;
     }
 
+    //  More closely mimic OpenGls system for TexParameters for samplers _(i.e. Samplers and textures are decoupled)_
     public long getSampler() {
-        return sampler;
+        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags);
     }
 
     public static Builder builder(int width, int height) {
