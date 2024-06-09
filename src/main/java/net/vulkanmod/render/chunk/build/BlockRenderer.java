@@ -3,7 +3,9 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,6 +34,8 @@ public class BlockRenderer {
 
     static final Direction[] DIRECTIONS = Direction.values();
     private static BlockColors blockColors;
+    //TODO: Make sure loading order/precedent is correct so this dosen't throw an invalid Index
+    private static final int baseArrayTex = 0;//SubTexManager.getBaseOffset(TextureAtlas.LOCATION_PARTICLES);
 
     RandomSource randomSource = RandomSource.createNewThreadLocalInstance();
 
@@ -136,9 +140,22 @@ public class BlockRenderer {
         int[] lights = quadLightData.lm;
 
         // Rotate triangles if needed to fix AO anisotropy
-        int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
+
+        //TODO: Temp disable Rotation until UVs are Fixed (to avoid inverted/flipped textures)
+        int idx = 0;//QuadUtils.getIterationStartIdx(brightnessArr, lights);
 
         bufferBuilder.ensureCapacity();
+
+        float LayerX = quad.getU(idx);
+        float LayerY = quad.getV(idx);
+
+
+        final float v1 = LayerX * 1024;
+        final float v2 = LayerY * 512;
+
+        int xTileLayerOffset = (int) (v1 /16);
+        int yTileLayerOffset = (int) (v2 /16);
+        int baseArrayLayer = baseArrayTex +  (yTileLayerOffset*64)+xTileLayerOffset;
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
@@ -160,10 +177,22 @@ public class BlockRenderer {
 
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
-            final float u = quad.getU(idx);
-            final float v = quad.getV(idx);
+            final float u = switch (i)
+            {
+                default -> 0;
+                case 1 -> 0;
+                case 2 -> 1;
+                case 3 -> 1;
+            };
+            final float v= switch (i)
+            {
+                default -> 0;
+                case 1 -> 1;
+                case 2 -> 1;
+                case 3 -> 0;
+            };
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 
             idx = (idx + 1) & 0b11;
         }

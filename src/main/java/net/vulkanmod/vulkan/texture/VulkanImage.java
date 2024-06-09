@@ -77,8 +77,8 @@ public class VulkanImage {
     public static VulkanImage createTextureImage(Builder builder) {
         VulkanImage image = new VulkanImage(builder);
 
-        image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
-        image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
+        image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage, builder.layers);
+        image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels, builder.layers);
 
         image.samplerFlags = builder.samplerFlags;
 
@@ -122,19 +122,31 @@ public class VulkanImage {
         }
     }
 
-    private void createImage(int mipLevels, int width, int height, int format, int usage) {
+    private void createImage(int mipLevels, int width, int height, int format, int usage, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(0L);
 
-            MemoryManager.createImage(width, height, mipLevels,
-                    format, VK_IMAGE_TILING_OPTIMAL,
-                    usage,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                    pTextureImage,
-                    pAllocation);
+         if(layers==1)
+         {
+             MemoryManager.createImage(width, height, mipLevels,
+                     format, VK_IMAGE_TILING_OPTIMAL,
+                     usage,
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                     pTextureImage,
+                     pAllocation, 1);
+         }
+
+         else {
+             MemoryManager.createArrayImage(width, height, mipLevels,
+                        format, VK_IMAGE_TILING_OPTIMAL,
+                        usage,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        pTextureImage,
+                        pAllocation);
+            }
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -164,24 +176,24 @@ public class VulkanImage {
         };
     }
 
-    public static long createImageView(long image, int format, int aspectFlags, int mipLevels) {
-        return createImageView(image, format, aspectFlags, 0, mipLevels);
+    public static long createImageView(long image, int format, int aspectFlags, int mipLevels, int layers) {
+        return createImageView(image, format, aspectFlags, 0, mipLevels, layers);
     }
 
-    public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels) {
+    public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
             viewInfo.sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
             viewInfo.image(image);
-            viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
+            viewInfo.viewType(layers != 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
             viewInfo.format(format);
             viewInfo.subresourceRange().aspectMask(aspectFlags);
             viewInfo.subresourceRange().baseMipLevel(baseMipLevel);
             viewInfo.subresourceRange().levelCount(mipLevels);
             viewInfo.subresourceRange().baseArrayLayer(0);
-            viewInfo.subresourceRange().layerCount(1);
+            viewInfo.subresourceRange().layerCount(layers);
 
             LongBuffer pImageView = stack.mallocLong(1);
 
@@ -205,9 +217,25 @@ public class VulkanImage {
         stagingBuffer.align(this.formatSize);
 
         stagingBuffer.copyBuffer((int) imageSize, buffer);
-
-        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+      if(layers==1)  {
+            ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
+                    (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height, 1);
+        }
+      else
+      {
+          ImageUtil.copyBufferToArrayImageCmd(commandBuffer.getHandle(),
+                  stagingBuffer.getId(),
+                  id,
+                  mipLevel,
+                  width,
+                  height,
+                  xOffset,
+                  yOffset,
+                  (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize),
+                  unpackRowLength,
+                  height,
+                  this.layers, 16);
+      }
 
         long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -414,7 +442,7 @@ public class VulkanImage {
 
     //  More closely mimic OpenGls system for TexParameters for samplers _(i.e. Samplers and textures are decoupled)_
     public long getSampler() {
-        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags, (byte) 0);
+        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags, (byte) Initializer.CONFIG.af);
     }
 
     public static Builder builder(int width, int height) {

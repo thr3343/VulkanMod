@@ -13,9 +13,9 @@ layout (push_constant) readonly uniform  PushConstant {
 
 layout (binding = 2) uniform sampler2D Sampler2;
 
-layout (location = 0) out float vertexDistance;
-layout (location = 1) out vec4 vertexColor;
-layout (location = 2) out vec2 texCoord0;
+
+layout (location = 0) out vec4 vertexColor;
+layout (location = 1) out vec3 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
@@ -30,13 +30,17 @@ const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
-    const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
+    const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset+baseOffset), 1.0);
     gl_Position = MVP0 * pos;
 
-    vertexDistance = length((ModelViewMat * pos).xyz);
-//    vertexColor = Color * sample_lightmap(Sampler2, UV2);
-    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
-    texCoord0 = UV0 * UV_INV;
+
+    vertexColor = Color * sample_lightmap(Sampler2, UV2);
+//    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
+
+//    vec2 baseTexCoord=vec2(1,0);
+
+
+    texCoord0 = vec3(UV0*UV_INV, Position.a);
 //    normal = MVP * vec4(Normal, 0.0);
 }
 

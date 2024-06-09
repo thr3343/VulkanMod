@@ -140,10 +140,10 @@ public class MemoryManager {
         }
     }
 
-    public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+    public static void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
+                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int samples) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
             imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -157,9 +157,40 @@ public class MemoryManager {
             imageInfo.tiling(tiling);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
+            imageInfo.samples(samples);
+//            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
+            //TODO
+            imageInfo.pQueueFamilyIndices(stack.ints(0));
+
+            VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.callocStack(stack);
+            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
+            allocationInfo.requiredFlags(memProperties);
+
+            vmaCreateImage(ALLOCATOR, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+
+        }
+    }
+
+    public static void createArrayImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
+                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
+            imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+            imageInfo.imageType(VK_IMAGE_TYPE_2D);
+            imageInfo.extent().width(width);
+            imageInfo.extent().height(height);
+            imageInfo.extent().depth(1);
+            imageInfo.mipLevels(mipLevels);
+            imageInfo.arrayLayers(2048);
+            imageInfo.format(format);
+            imageInfo.tiling(tiling);
+            imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            //Forcing Queue family to 0: which is always the Graphics Queue
+//            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
+            //TODO
             imageInfo.pQueueFamilyIndices(stack.ints(0));
 
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
