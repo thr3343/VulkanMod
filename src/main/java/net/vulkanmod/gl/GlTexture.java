@@ -226,6 +226,7 @@ public class GlTexture {
         samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
         samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
         samplerFlags |= clamp ? SamplerManager.CLAMP_BIT : 0;
+        samplerFlags |= vulkanImage.layers>1 ? SamplerManager.USE_ANISOTROPIC_BIT : 0;
 
         vulkanImage.updateTextureSamplerParameters(maxLod, samplerFlags);
     }

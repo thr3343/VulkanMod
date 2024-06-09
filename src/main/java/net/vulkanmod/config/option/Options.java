@@ -15,9 +15,9 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import java.util.stream.IntStream;
 
 public abstract class Options {
-    static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
+    private static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
     public static OptionBlock[] getVideoOpts() {
@@ -236,7 +236,15 @@ public abstract class Options {
                                     Minecraft.getInstance().delayTextureReload();
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
-                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(value.toString())),
+                        new CyclingOption<>(Component.translatable("Anisotropic Filtering"),
+                                new Integer[]{1, 2, 4, 8, 16},
+                                value -> {
+                                    config.af=(value);
+                                    Renderer.getDescriptorSetArray().forceDescriptorUpdate();
+                                },
+                                () -> config.af)
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))
                 })
         };
     }

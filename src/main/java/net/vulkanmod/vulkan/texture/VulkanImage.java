@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -40,6 +41,7 @@ public class VulkanImage {
     public final int width;
     public final int height;
     public final int formatSize;
+    public final int layers;
     private final int usage;
 
     private int currentLayout;
@@ -47,7 +49,7 @@ public class VulkanImage {
 //    private byte anisotropy;
 
     //Used for swap chain images
-    public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
+    public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView, int layers) {
         this.id = id;
         this.mainImageView = imageView;
 
@@ -57,6 +59,7 @@ public class VulkanImage {
         this.formatSize = formatSize;
         this.format = format;
         this.usage = usage;
+        this.layers = layers;
         this.aspect = getAspect(this.format);
     }
 
@@ -67,6 +70,7 @@ public class VulkanImage {
         this.formatSize = builder.formatSize;
         this.format = builder.format;
         this.usage = builder.usage;
+        this.layers = builder.layers;
         this.aspect = getAspect(this.format);
     }
 
@@ -235,8 +239,8 @@ public class VulkanImage {
         byte flags = blur ? LINEAR_FILTERING_BIT : 0;
         flags |= clamp ? CLAMP_BIT : 0;
         flags |= mipmaps ? USE_MIPMAPS_BIT : 0;
-//        final boolean b = Initializer.CONFIG.af > 1 && this.layers > 1;
-//        flags |= b ? USE_ANISOTROPIC_BIT : 0;
+        final boolean b = Initializer.CONFIG.af > 1 && this.layers > 1;
+        flags |= b ? USE_ANISOTROPIC_BIT : 0;
 
         final int maxLod = mipmaps ?  this.mipLevels : 1;
         updateTextureSamplerParameters(maxLod, flags);
@@ -410,7 +414,7 @@ public class VulkanImage {
 
     //  More closely mimic OpenGls system for TexParameters for samplers _(i.e. Samplers and textures are decoupled)_
     public long getSampler() {
-        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags);
+        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags, (byte) 0);
     }
 
     public static Builder builder(int width, int height) {
@@ -420,6 +424,8 @@ public class VulkanImage {
     public static class Builder {
         final int width;
         final int height;
+        int layers;
+        int divisor;
 
         int format = VulkanImage.DefaultFormat;
         int formatSize;
@@ -433,6 +439,17 @@ public class VulkanImage {
         public Builder(int width, int height) {
             this.width = width;
             this.height = height;
+            this.layers = 1;
+        }
+
+        public Builder setLayers(int layers) {
+            this.layers = layers;
+            return this;
+        }
+
+        public Builder setDivisor(int divisor) {
+            this.divisor = divisor;
+            return this;
         }
 
         public Builder setFormat(int format) {
@@ -471,6 +488,11 @@ public class VulkanImage {
 
         public Builder setClamp(boolean b) {
             this.samplerFlags |= b ? CLAMP_BIT : 0;
+            return this;
+        }
+
+        public Builder setAnisotropy(boolean b) {
+            this.samplerFlags |= b ? USE_ANISOTROPIC_BIT : 0;
             return this;
         }
 
