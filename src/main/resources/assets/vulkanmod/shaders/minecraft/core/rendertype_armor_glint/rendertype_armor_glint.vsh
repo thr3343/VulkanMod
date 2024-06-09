@@ -6,7 +6,7 @@ layout(location = 1) in vec2 UV0;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[8];
 
-   mat4 ModelViewMat;
+ layout(offset = 512)  mat4 ModelViewMat;
    mat4 TextureMat;
 };
 

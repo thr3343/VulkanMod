@@ -12,6 +12,11 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
+layout(binding = 1) uniform UBO{
+    vec4 FogColor;
+    float FogStart;
+    float FogEnd;
+};
 
 layout(location = 0) flat in uint baseInstance;
 layout(location = 1) in vec4 vertexColor;
@@ -26,5 +31,5 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = color;
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }

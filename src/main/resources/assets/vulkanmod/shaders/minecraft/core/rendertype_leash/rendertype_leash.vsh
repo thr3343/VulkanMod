@@ -7,7 +7,7 @@ layout(location = 2) in ivec2 UV2;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[8];
 
-   mat4 ModelViewMat;
+ layout(offset = 512)  mat4 ModelViewMat;
 //   vec4 ColorModulator;
 };
 

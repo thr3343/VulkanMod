@@ -9,11 +9,6 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
     return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
 }
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[8];
-
-   mat4 ProjMat;
-};
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 

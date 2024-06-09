@@ -11,7 +11,7 @@ layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
     mat4 MVP[8];
-    mat4 ModelViewMat;
+  layout(offset = 512)  mat4 ModelViewMat;
 };
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
 layout(push_constant) readonly uniform  PushConstant

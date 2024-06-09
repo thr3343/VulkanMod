@@ -19,8 +19,8 @@ layout(location = 2) out vec4 vertexColor;
 layout(location = 3) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP0 * vec4(Position, 1.0)
-;
+    //TODO: Particles can share the same mat as terrain: Uniform indexing can be optimised out
+    gl_Position = MVP0 * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     texCoord0 = UV0;

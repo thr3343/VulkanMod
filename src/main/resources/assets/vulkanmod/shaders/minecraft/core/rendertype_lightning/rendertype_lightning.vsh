@@ -6,7 +6,7 @@ layout(location = 1) in vec4 Color;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[8];
 
-   mat4 ModelViewMat;
+ layout(offset = 512)  mat4 ModelViewMat;
 };
 
 layout(location = 0) out vec4 vertexColor;

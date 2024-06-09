@@ -11,7 +11,7 @@ layout(location = 4) in vec3 Normal;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[8];
 
-   mat4 ModelViewMat;
+ layout(offset = 512)  mat4 ModelViewMat;
 };
 
 
