@@ -138,11 +138,12 @@ public class BlockRenderer {
 
         float[] brightnessArr = quadLightData.br;
         int[] lights = quadLightData.lm;
-
+        final float yy = 0.0009765625f;
+        final float xx = 0.001953125f;
         // Rotate triangles if needed to fix AO anisotropy
 
-        //TODO: Temp disable Rotation until UVs are Fixed (to avoid inverted/flipped textures)
-        int idx = 0;//QuadUtils.getIterationStartIdx(brightnessArr, lights);
+
+        int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
 
         bufferBuilder.ensureCapacity();
 
@@ -155,7 +156,7 @@ public class BlockRenderer {
 
         int xTileLayerOffset = (int) (v1 /16);
         int yTileLayerOffset = (int) (v2 /16);
-        int baseArrayLayer = baseArrayTex +  (yTileLayerOffset*64)+xTileLayerOffset;
+        int blockTileIndex = baseArrayTex +  (yTileLayerOffset*64)+xTileLayerOffset;
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
@@ -177,22 +178,11 @@ public class BlockRenderer {
 
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
-            final float u = switch (i)
-            {
-                default -> 0;
-                case 1 -> 0;
-                case 2 -> 1;
-                case 3 -> 1;
-            };
-            final float v= switch (i)
-            {
-                default -> 0;
-                case 1 -> 1;
-                case 2 -> 1;
-                case 3 -> 0;
-            };
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
+            float u = ((quad.getU(idx)/16)*1024);
+            float v = ((quad.getV(idx)/16)*512);
+
+            bufferBuilder.vertex(x, y, z, color, u, v, light, blockTileIndex);
 
             idx = (idx + 1) & 0b11;
         }
