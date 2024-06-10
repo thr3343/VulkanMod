@@ -34,11 +34,9 @@ public interface VertexConsumerM {
 
 //        final float yy = 0.0009765625f;
 //        final float xx = 0.001953125f;
-        final float v1 = LayerX * 1024;
-        final float v2 = LayerY * 512;
 
-        int xTileLayerOffset = (int) (v1 /16);
-        int yTileLayerOffset = (int) (v2 /16);
+        int xTileLayerOffset = (int) (LayerX * 64);
+        int yTileLayerOffset = (int) (LayerY * 32);
         int baseArrayLayer = (yTileLayerOffset * 64) + xTileLayerOffset;
 
         int j = js.length / 8;
@@ -67,19 +65,8 @@ public interface VertexConsumerM {
             }
 
             int light = lights[k];
-//            float u = (Float.intBitsToFloat(js[i + 4])%xx)/xx;
-//            float v = (Float.intBitsToFloat(js[i + 5])%yy)/yy;
-
-            final float u = switch (k)
-            {
-                default -> 0;
-                case 2, 3 -> 1;
-            };
-            final float v= switch (k)
-            {
-                default -> 0;
-                case 1, 2 -> 1;
-            };
+            float u = (Float.intBitsToFloat(js[i + 4])*64);
+            float v = (Float.intBitsToFloat(js[i + 5])*32);
 
 
             Vector4f vector4f = new Vector4f(x, y, z, 1.0f);

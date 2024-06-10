@@ -25,7 +25,7 @@ layout(location = 0) out invariant flat uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out vec4 lightMapColor;
 layout(location = 3) out vec4 overlayColor;
-layout(location = 4) out vec2 texCoord0;
+layout(location = 4) out vec3 texCoord0;
 
 
 void main() {
@@ -34,7 +34,7 @@ void main() {
 
 
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) *  texelFetch(Sampler2, UV2 / 16, 0);
-    texCoord0 = UV0;
+    texCoord0 = vec3(UV0, UV1.x);
     //texCoord1 = UV1;
     //texCoord2 = UV2;
     //normal = (MVP * vec4(Normal, 0.0)).xyz;
