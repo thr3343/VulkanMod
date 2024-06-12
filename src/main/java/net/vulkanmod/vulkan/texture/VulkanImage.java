@@ -9,10 +9,7 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkImageMemoryBarrier;
-import org.lwjgl.vulkan.VkImageViewCreateInfo;
+import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
@@ -187,6 +184,36 @@ public class VulkanImage {
 
             return pImageView.get(0);
         }
+    }
+
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage)
+    {
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        try (MemoryStack stack = stackPush()) {
+            dstTileImage.transferDstLayout(stack, commandBuffer.getHandle());
+//            this.transferSrcLayout(stack, commandBuffer.getHandle());
+        }
+
+        //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
+        try (MemoryStack stack = stackPush())
+        {
+            VkImageCopy.Buffer vkImageCopy = VkImageCopy.calloc(1, stack);
+            vkImageCopy.srcOffset().set(targetTileX, targetTileY,0);
+            vkImageCopy.srcSubresource();
+            vkImageCopy.dstOffset().set(0,0,0);
+            vkImageCopy.dstSubresource();
+            vkImageCopy.extent().set(tileSize, tileSize, 1);
+
+            vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopy);
+
+
+        }
+        //todo: too many fences: need to merge/batch
+        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+        if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {

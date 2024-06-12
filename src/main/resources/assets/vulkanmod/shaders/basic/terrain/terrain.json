@@ -13,6 +13,9 @@
         "UV2",
         "Normal"
     ],
+    "DescriptorSets": [
+        {"binding": 1 }
+    ],
     "samplers": [
         { "name": "Sampler0" },
         { "name": "Sampler2" }

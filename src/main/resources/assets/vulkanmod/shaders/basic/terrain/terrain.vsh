@@ -2,7 +2,7 @@
 
 #include "light.glsl"
 
-layout (binding = 0) uniform UniformBufferObject {
+layout (binding = 0, set = 1) uniform UniformBufferObject {
     layout(offset = 0) mat4 MVP0; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
     layout(offset = 512) mat4 ModelViewMat;
 };
@@ -11,7 +11,7 @@ layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 2) uniform sampler2D Sampler2;
+layout (binding = 2, set = 1) uniform sampler2D Sampler2;
 
 layout (location = 0) out float vertexDistance;
 layout (location = 1) out vec4 vertexColor;

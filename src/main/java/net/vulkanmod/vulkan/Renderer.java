@@ -20,7 +20,8 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.*;
-import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
+import net.vulkanmod.vulkan.shader.descriptor.BindlessDescriptorSet;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -51,7 +52,7 @@ public class Renderer {
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
 
-    private final DescriptorSetArray descriptorSetArray;
+
     private final long pipelineLayout;
     private long currentLayout;
 
@@ -106,7 +107,11 @@ public class Renderer {
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
 
-        descriptorSetArray = new DescriptorSetArray();
+
+        //Can accept duplicate/Same DescriptorSets
+        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 32));
+        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1));
+
         pipelineLayout = createPipelineLayout();
         currentLayout = pipelineLayout;
 
@@ -121,12 +126,12 @@ public class Renderer {
         try (MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
-            final long x = descriptorSetArray.getDescriptorSetLayout(0);
+            final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(x));
+            pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout, descriptorSetLayout));
 
 
             {
@@ -306,7 +311,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            this.descriptorSetArray.updateAndBind(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
+            DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -520,7 +525,7 @@ public class Renderer {
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
 
-        this.descriptorSetArray.cleanup();
+        DescriptorManager.cleanup();
     }
 
     private void destroySyncObjects() {
@@ -575,7 +580,7 @@ public class Renderer {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
         if (pipeline.isBindless()) {
             pipeline.pushUniforms(drawer.getUniformBuffer());
-            if(currentLayout!=pipelineLayout)  descriptorSetArray.bindOnly(currentFrame, commandBuffer);
+            if(currentLayout!=pipelineLayout)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);
         }
@@ -765,8 +770,6 @@ public class Renderer {
     public static int getFramesNum() {
         return INSTANCE.framesNum;
     }
-
-    public static DescriptorSetArray getDescriptorSetArray() { return INSTANCE.descriptorSetArray; }
 
     public static VkCommandBuffer getCommandBuffer() {
         return INSTANCE.currentCmdBuffer;

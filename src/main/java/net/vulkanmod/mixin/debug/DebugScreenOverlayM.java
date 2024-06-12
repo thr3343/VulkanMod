@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ public abstract class DebugScreenOverlayM {
         strings.add("");
 
         Collections.addAll(strings, WorldRenderer.getInstance().getChunkAreaManager().getStats());
-        Collections.addAll(strings, Renderer.getDescriptorSetArray().getDebugInfo());
+        Collections.addAll(strings, DescriptorManager.getDebugInfo());
 
         return strings;
     }

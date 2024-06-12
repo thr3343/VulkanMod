@@ -14,7 +14,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
@@ -49,6 +49,7 @@ public abstract class Pipeline {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
+    private final int setID;
 
     private static long createPipelineCache() {
         try (MemoryStack stack = stackPush()) {
@@ -96,6 +97,7 @@ public abstract class Pipeline {
     public Pipeline(String name, boolean bindless) {
         this.name = name;
         this.bindless = bindless;
+        setID = this.name!=null && this.name.contains("terrain") ? 1 : 0;
     }
 
     protected long createDescriptorSetLayout() {
@@ -142,7 +144,7 @@ public abstract class Pipeline {
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
+            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout, this.descriptorSetLayout));
             //TODO: may reuse PsuhConstant Unfiorm list instead of gloal Push
            /* if (this.pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
@@ -246,15 +248,15 @@ public abstract class Pipeline {
             final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
             if(shaderTexture != 0) {
-                final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
+
                 //TODO: maybe map >0 ShaderTextre indicies/slots diertcly (w. no Tetxure IDs needed)_ to VretOnlySMapler Slots (i.e. more Immutable fiendly)
                 //Add texture to the DescriptorSet if its new.unique
-                descriptorSetArray.registerTexture(state.imageIdx, shaderTexture);
+                DescriptorManager.registerTexture(state.imageIdx, setID, shaderTexture);
 
                 //Convert TextureID to Sampler Index
 
-                VTextureSelector.setSamplerIndex(state.imageIdx, descriptorSetArray.getTexture(state.imageIdx, shaderTexture));
-                isNewTexture |= descriptorSetArray.isTexUnInitialised(shaderTexture);
+                VTextureSelector.setSamplerIndex(state.imageIdx, DescriptorManager.getDescriptorSet(setID).getTexture(state.imageIdx, shaderTexture));
+                isNewTexture |= DescriptorManager.getDescriptorSet(setID).isTexUnInitialised(shaderTexture);
             }
 
 
