@@ -151,12 +151,7 @@ public class BlockRenderer {
         float LayerY = quad.getV(idx);
 
 
-        final float v1 = LayerX * 1024;
-        final float v2 = LayerY * 512;
-
-        int xTileLayerOffset = (int) (v1 /16);
-        int yTileLayerOffset = (int) (v2 /16);
-        int blockTileIndex = baseArrayTex +  (yTileLayerOffset*64)+xTileLayerOffset;
+        int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
@@ -182,7 +177,7 @@ public class BlockRenderer {
             float u = ((quad.getU(idx)/16)*1024);
             float v = ((quad.getV(idx)/16)*512);
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, blockTileIndex);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 
             idx = (idx + 1) & 0b11;
         }

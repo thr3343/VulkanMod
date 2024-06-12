@@ -11,6 +11,7 @@ import net.vulkanmod.config.gui.OptionBlock;
 import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 
 import java.util.stream.IntStream;
 
@@ -241,7 +242,7 @@ public abstract class Options {
                                 new Integer[]{1, 2, 4, 8, 16},
                                 value -> {
                                     config.af=(value);
-                                    Renderer.getDescriptorSetArray().forceDescriptorUpdate();
+                                    DescriptorManager.updateAllSets();
                                 },
                                 () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))

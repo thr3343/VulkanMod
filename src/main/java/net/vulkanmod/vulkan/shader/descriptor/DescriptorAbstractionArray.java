@@ -7,7 +7,7 @@ import java.util.BitSet;
 
 public class DescriptorAbstractionArray {
 
-
+    private static final int maxLimit = 16; //absoluteMaxBoundSamplerLimit
     private final BitSet descriptorIndices; //Only need max of 65536 textures
     int maxSize;
     private final int shaderStage;
@@ -104,7 +104,7 @@ public class DescriptorAbstractionArray {
 
     public boolean checkCapacity() {
 
-        return this.descriptorIndices.length() >= maxSize;
+        return this.descriptorIndices.length() > maxSize; //avoid dedicated Sets from resizing incorrectly
     }
 
     public int resize() {

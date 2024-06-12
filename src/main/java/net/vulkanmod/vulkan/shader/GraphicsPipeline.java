@@ -9,6 +9,7 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -24,7 +25,7 @@ public class GraphicsPipeline extends Pipeline {
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
-    private static final long defaultDescriptorSetLayout = Renderer.getDescriptorSetArray().getDescriptorSetLayout(0);
+    private static final long defaultDescriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
     private static final long defaultLayout = Renderer.getLayout();
 
     private final long vertShaderModule;

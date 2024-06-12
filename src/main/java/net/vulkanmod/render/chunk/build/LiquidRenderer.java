@@ -436,12 +436,7 @@ public class LiquidRenderer {
 
 
 
-        final float v1 = LayerX * 1024;
-        final float v2 = LayerY * 512;
-
-        int xTileLayerOffset = (int) (v1 /16);
-        int yTileLayerOffset = (int) (v2 /16);
-        int baseArrayLayer =(yTileLayerOffset*64)+xTileLayerOffset;
+        int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
 
         int i;
         for (int j = 0; j < 4; j++) {

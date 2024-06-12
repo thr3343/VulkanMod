@@ -2,7 +2,7 @@
 layout(early_fragment_tests) in;
 #include "light.glsl"
 
-layout(binding = 3) uniform sampler2DArray Sampler0[];
+layout(binding = 3, set = 1) uniform sampler2DArray Sampler0;
 
 
 
@@ -15,6 +15,6 @@ layout(location = 0) out vec4 fragColor;
 void main() {
 
     vec3 texCoordIndex = vec3(texCoord0);
-    vec4 color = texture(Sampler0[3], texCoordIndex);
+    vec4 color = texture(Sampler0, texCoordIndex);
     fragColor = color * vertexColor;
 }

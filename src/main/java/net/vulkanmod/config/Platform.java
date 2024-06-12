@@ -6,7 +6,7 @@ import org.lwjgl.glfw.GLFW;
 import static net.vulkanmod.Initializer.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
-public abstract class Platform {
+public class Platform {
     private static final int activePlat = getSupportedPlat();
     private static final String activeDE = determineDE();
 
