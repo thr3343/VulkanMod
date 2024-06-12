@@ -404,4 +404,8 @@ public class BindlessDescriptorSet {
     public boolean isTexUnInitialised(int shaderTexture) {
         return this.newTex.contains(shaderTexture);
     }
+
+    public int getSetID() {
+        return this.setID;
+    }
 }
