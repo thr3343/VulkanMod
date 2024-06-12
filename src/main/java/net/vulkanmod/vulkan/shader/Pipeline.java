@@ -81,9 +81,8 @@ public abstract class Pipeline {
     public final String name;
     private final boolean bindless;
 
-    protected long descriptorSetLayout;
-    protected long pipelineLayout;
-
+    protected final long descriptorSetLayout;
+    protected final long pipelineLayout;
     protected BindfulDescriptorSets[] bindfulDescriptorSets;
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
@@ -97,6 +96,8 @@ public abstract class Pipeline {
     public Pipeline(String name, boolean bindless) {
         this.name = name;
         this.bindless = bindless;
+        descriptorSetLayout = bindless ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
+        pipelineLayout = bindless ? Renderer.getLayout() : createPipelineLayout();
         setID = this.name!=null && this.name.contains("terrain") ? 1 : 0;
     }
 
@@ -251,12 +252,12 @@ public abstract class Pipeline {
 
                 //TODO: maybe map >0 ShaderTextre indicies/slots diertcly (w. no Tetxure IDs needed)_ to VretOnlySMapler Slots (i.e. more Immutable fiendly)
                 //Add texture to the DescriptorSet if its new.unique
-                DescriptorManager.registerTexture(state.imageIdx, setID, shaderTexture);
+                DescriptorManager.registerTexture(setID, state.imageIdx, shaderTexture);
 
                 //Convert TextureID to Sampler Index
 
-                VTextureSelector.setSamplerIndex(state.imageIdx, DescriptorManager.getDescriptorSet(setID).getTexture(state.imageIdx, shaderTexture));
-                isNewTexture |= DescriptorManager.getDescriptorSet(setID).isTexUnInitialised(shaderTexture);
+                VTextureSelector.setSamplerIndex(state.imageIdx, DescriptorManager.getTexture(setID, state.imageIdx, shaderTexture));
+                isNewTexture |= DescriptorManager.isTexUnInitialised(setID, shaderTexture);
             }
 
 

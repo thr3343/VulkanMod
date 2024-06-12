@@ -11,6 +11,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.Map;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -205,7 +206,7 @@ public class DescriptorManager {
 
     }
 
-    public static void registerTexture(int imageIdx, int setID, int shaderTexture) {
+    public static void registerTexture(int setID, int imageIdx, int shaderTexture) {
         sets.get(setID).registerTexture(imageIdx, shaderTexture);
 
 
@@ -252,14 +253,9 @@ public class DescriptorManager {
 
 
     public static void addDescriptorSet(int SetID, BindlessDescriptorSet bindlessDescriptorSet) {
-//        final int i = MAX_SETS - 1;
-        if(/*SetID> i ||*/ sets.size()> MAX_SETS/PER_SET_ALLOCS) throw new RuntimeException("Too Many DescriptorSets!: "+SetID +">"+MAX_SETS/PER_SET_ALLOCS+"-1");
-        sets.put(SetID, bindlessDescriptorSet);
-    }
+        if(sets.size()> MAX_SETS/PER_SET_ALLOCS) throw new RuntimeException("Too Many DescriptorSets!: "+SetID +">"+MAX_SETS/PER_SET_ALLOCS+"-1");
 
-    public static BindlessDescriptorSet getDescriptorSet(int SetID)
-    {
-        return sets.get(SetID);
+        sets.put(bindlessDescriptorSet.getSetID(), bindlessDescriptorSet);
     }
 
     public static void updateAndBindAllSets(int frame, long uniformId, VkCommandBuffer commandBuffer) {
@@ -333,4 +329,11 @@ public class DescriptorManager {
     }
 
 
+    public static int getTexture(int setID, int imageIdx, int shaderTexture) {
+        return sets.get(setID).getTexture(imageIdx, shaderTexture);
+    }
+
+    public static boolean isTexUnInitialised(int setID, int shaderTexture) {
+        return sets.get(setID).isTexUnInitialised(shaderTexture);
+    }
 }

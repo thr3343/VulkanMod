@@ -25,8 +25,6 @@ public class GraphicsPipeline extends Pipeline {
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
-    private static final long defaultDescriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
-    private static final long defaultLayout = Renderer.getLayout();
 
     private final long vertShaderModule;
     private final long fragShaderModule;
@@ -39,8 +37,7 @@ public class GraphicsPipeline extends Pipeline {
 //        this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        descriptorSetLayout = bindless ? defaultDescriptorSetLayout : createDescriptorSetLayout();
-        pipelineLayout = bindless ? defaultLayout : createPipelineLayout();
+
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 
