@@ -126,24 +126,12 @@ public class VulkanImage {
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(0L);
 
-         if(layers==1)
-         {
-             MemoryManager.createImage(width, height, mipLevels,
-                     format, VK_IMAGE_TILING_OPTIMAL,
-                     usage,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                     pTextureImage,
-                     pAllocation, 1);
-         }
-
-         else {
-             MemoryManager.createArrayImage(width, height, mipLevels,
-                        format, VK_IMAGE_TILING_OPTIMAL,
-                        usage,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        pTextureImage,
-                        pAllocation);
-            }
+            MemoryManager.createImage(width, height, mipLevels,
+                    format, VK_IMAGE_TILING_OPTIMAL,
+                    usage,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    pTextureImage,
+                    pAllocation, 1);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -202,22 +190,25 @@ public class VulkanImage {
         }
     }
 
-    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage)
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int miplevel)
     {
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
             dstTileImage.transferDstLayout(stack, commandBuffer.getHandle());
-//            this.transferSrcLayout(stack, commandBuffer.getHandle());
-        }
 
         //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
-        try (MemoryStack stack = stackPush())
-        {
+
             VkImageCopy.Buffer vkImageCopy = VkImageCopy.calloc(1, stack);
-            vkImageCopy.srcOffset().set(targetTileX, targetTileY,0);
-            vkImageCopy.srcSubresource();
+            vkImageCopy.srcOffset().set(targetTileX*tileSize, targetTileY*tileSize,0);
+            vkImageCopy.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .mipLevel(0)
+                    .baseArrayLayer(0)
+                    .layerCount(1);
             vkImageCopy.dstOffset().set(0,0,0);
-            vkImageCopy.dstSubresource();
+            vkImageCopy.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .mipLevel(miplevel)
+                    .baseArrayLayer(0)
+                    .layerCount(1);
             vkImageCopy.extent().set(tileSize, tileSize, 1);
 
             vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopy);
@@ -244,30 +235,17 @@ public class VulkanImage {
         stagingBuffer.align(this.formatSize);
 
         stagingBuffer.copyBuffer((int) imageSize, buffer);
-      if(layers==1)  {
-            ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                    (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height, 1);
-        }
-      else
-      {
-          ImageUtil.copyBufferToArrayImageCmd(commandBuffer.getHandle(),
-                  stagingBuffer.getId(),
-                  id,
-                  mipLevel,
-                  width,
-                  height,
-                  xOffset,
-                  yOffset,
-                  (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize),
-                  unpackRowLength,
-                  height,
-                  this.layers, 16);
-      }
+        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height, 1);
 
         long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+    }
+
+    void transferSrcLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
+        transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {

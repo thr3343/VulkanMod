@@ -11,7 +11,6 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.Map;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -202,6 +201,7 @@ public class DescriptorManager {
         vkDestroyDescriptorSetLayout(DEVICE, descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, globalDescriptorPoolArrayPool, null);
         sets.clear();
+        BindlessDescriptorSet.vSubTextureAtlas.cleanup();
 
 
     }
@@ -335,5 +335,13 @@ public class DescriptorManager {
 
     public static boolean isTexUnInitialised(int setID, int shaderTexture) {
         return sets.get(setID).isTexUnInitialised(shaderTexture);
+    }
+
+    public static int getMaxPoolSamplers() {
+        return MAX_POOL_SAMPLERS;
+    }
+
+    public static void registerTextureArray(int i) {
+        sets.get(i).registerTextureArray();
     }
 }

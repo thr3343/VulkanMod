@@ -14,8 +14,9 @@ layout (push_constant) readonly uniform  PushConstant {
 layout (binding = 2, set = 1) uniform sampler2D Sampler2;
 
 
-layout (location = 0) out vec4 vertexColor;
-layout (location = 1) out vec3 texCoord0;
+layout (location = 0) out flat uint textureIndex;
+layout (location = 1) out vec4 vertexColor;
+layout (location = 2) out vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex
@@ -33,14 +34,14 @@ void main() {
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset+baseOffset), 1.0);
     gl_Position = MVP0 * pos;
 
-
+    textureIndex = Position.a;
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
 //    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
 
 //    vec2 baseTexCoord=vec2(1,0);
 
 
-    texCoord0 = vec3(UV0*UV_INV, Position.a);
+    texCoord0 = UV0*UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
 }
 

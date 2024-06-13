@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -50,8 +52,9 @@ public class BindlessDescriptorSet {
     private int MissingTexID = -1;
     private final long[] descriptorSets = new long[MAX_SETS];
 
+    static VSubTextureAtlas vSubTextureAtlas;
 
-    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit) {
+    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit, boolean StaticallyBound) {
         this.setID = setID;
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -77,7 +80,7 @@ public class BindlessDescriptorSet {
 
 
         final boolean needsUpdate = (binding == 0 ? this.initialisedFragSamplers : initialisedVertSamplers)
-                .registerTexture(TextureID, 0);
+                .registerTexture(TextureID);
 
 
         if(needsUpdate)
@@ -119,7 +122,7 @@ public class BindlessDescriptorSet {
             this.initialisedVertSamplers.registerImmutableTexture(8, 1);
         }
         else {
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 0);
+//            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 0);
             this.initialisedVertSamplers.registerImmutableTexture(6, 0);
         }
     }
@@ -130,6 +133,14 @@ public class BindlessDescriptorSet {
         if (this.MissingTexID == -1) {
             setupHardcodedTextures();
         }
+        if(vSubTextureAtlas == null)
+        {
+            final VulkanImage vulkanImage = GlTexture.getTexture(Minecraft.getInstance().getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).getId()).getVulkanImage();
+            if(vulkanImage!=null) {
+                vSubTextureAtlas = new VSubTextureAtlas(vulkanImage, 16);
+                vSubTextureAtlas.unStitch();
+            }
+        }
         try(MemoryStack stack = stackPush()) {
             checkInlineUniformState(frame, stack, uniformStates);
             if(!this.isUpdated[frame]){
@@ -137,7 +148,7 @@ public class BindlessDescriptorSet {
                 final int NUM_UBOs = 1;
                 final int NUM_INLINE_UBOs = uniformStates.uniformState().length;
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
-                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
+                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity);
                 final long currentSet = descriptorSets[frame];
 
 
@@ -157,7 +168,7 @@ public class BindlessDescriptorSet {
                 this.newTex.clear();
 
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites.rewind(), null);
-
+                descriptorWrites.free();
 
             }
 //            if(this.initialisedFragSamplers.currentSize()==0)
@@ -263,9 +274,7 @@ public class BindlessDescriptorSet {
             final int texId1 = texId.getIntKey();
             final int samplerIndex = texId.getIntValue();
 
-            boolean b = !GlTexture.hasImageResource(texId1);
-            if(!b) b =  !GlTexture.hasImage(texId1);
-            VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
+            final VulkanImage image = texId1 >= 65536 ? getSubTexImage(samplerIndex) : getSamplerTexture(texId1);
 
             image.readOnlyLayout();
 
@@ -290,6 +299,18 @@ public class BindlessDescriptorSet {
 
         }
     }
+    //TIODO:  ned to ovehault his if > 1 SubTexture Array is needed
+    private VulkanImage getSubTexImage(int texId1) {
+        return vSubTextureAtlas.TextureArray[texId1];
+    }
+
+    private VulkanImage getSamplerTexture(int texId1) {
+        boolean b = !GlTexture.hasImageResource(texId1);
+        if(!b) b =  !GlTexture.hasImage(texId1);
+        VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
+        return image;
+    }
+
     private VulkanImage getSamplerImage(int texId1, int samplerIndex) {
 
         if (!GlTexture.hasImage(texId1))
@@ -380,7 +401,7 @@ public class BindlessDescriptorSet {
 
     void resizeSamplerArrays()
     {
-        int newLimit = checkCapacity() ?  initialisedFragSamplers.resize() : initialisedFragSamplers.currentSize();
+        int newLimit = setID == 1 ? 2048 : checkCapacity() ?  initialisedFragSamplers.resize() : initialisedFragSamplers.currentSize();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
             this.descriptorSets[0]= DescriptorManager.allocateDescriptorSet(stack, newLimit);
@@ -408,4 +429,19 @@ public class BindlessDescriptorSet {
     public int getSetID() {
         return this.setID;
     }
+
+    //TODO:make Descriptor Arrays use vkImageView Handles instead
+    // + Check Row-Major order
+    public void registerTextureArray()
+    {
+        int i = DescriptorManager.getMaxPoolSamplers();
+        int ix =0;
+        for(Int2ObjectMap.Entry<VulkanImage> subTexture : VSubTextureAtlas.registeredSubImages.int2ObjectEntrySet())
+        {
+            this.initialisedFragSamplers.registerImmutableTexture(subTexture.getIntKey(), ix);
+            ix++;
+        }
+    }
+
+
 }

@@ -184,7 +184,8 @@ public abstract class DeviceManager {
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors)
                     .descriptorBindingPartiallyBound(hasIndexedDescriptors)
-                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
+                    .shaderSampledImageArrayNonUniformIndexing(true);
 
             //TODO: replace with Extension version to allow Vk12 support
             VkPhysicalDeviceInlineUniformBlockFeatures inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeatures.calloc(stack)

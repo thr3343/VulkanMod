@@ -20,18 +20,9 @@ public class MSpriteAtlasTexture {
 
     @Redirect(method = "upload", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/TextureUtil;prepareImage(IIII)V"))
     private void redirect(int id, int maxLevel, int width, int height) {
-        boolean ArrayTexture = this.location.getPath().equals("textures/atlas/blocks.png");
+//        boolean ArrayTexture = this.location.getPath().equals("textures/atlas/blocks.png");
 
-        VulkanImage image;
-        if(ArrayTexture)
-        {
-            image = new VulkanImage.Builder(16, 16).setMipLevels(maxLevel + 1).setLayers(2048).setDivisor(16).setAnisotropy(true).createVulkanImage();
-        }
-
-       else
-        {
-            image = new VulkanImage.Builder(width, height).setMipLevels(maxLevel + 1).createVulkanImage();
-        }
+        VulkanImage image = new VulkanImage.Builder(width, height).setMipLevels(maxLevel + 1).createVulkanImage();
         ((VAbstractTextureI)(this)).setVulkanImage(image);
         ((VAbstractTextureI)(this)).bindTexture();
     }

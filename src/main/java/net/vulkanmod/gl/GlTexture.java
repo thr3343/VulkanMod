@@ -110,8 +110,24 @@ public class GlTexture {
     }
 
     public static void texParameteri(int target, int pName, int param) {
+        if(target != GL11.GL_TEXTURE_2D)
+            throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
+        if(boundTexture==null) return;
+        switch (pName) {
+            case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
+            case GL30.GL_TEXTURE_MAX_LOD -> boundTexture.setMaxLod(param);
+            case GL30.GL_TEXTURE_MIN_LOD -> {}
+            case GL30.GL_TEXTURE_LOD_BIAS -> {}
 
-        //TODO check thsi dosen;t break mod comapt when chanign smaplers
+            case GL11.GL_TEXTURE_MAG_FILTER -> boundTexture.setMagFilter(param);
+            case GL11.GL_TEXTURE_MIN_FILTER -> boundTexture.setMinFilter(param);
+
+            case GL11.GL_TEXTURE_WRAP_S, GL11.GL_TEXTURE_WRAP_T -> boundTexture.setClamp(param);
+
+            default -> {}
+        }
+
+        //TODO
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
@@ -226,7 +242,6 @@ public class GlTexture {
         samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
         samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
         samplerFlags |= clamp ? SamplerManager.CLAMP_BIT : 0;
-        samplerFlags |= vulkanImage.layers>1 ? SamplerManager.USE_ANISOTROPIC_BIT : 0;
 
         vulkanImage.updateTextureSamplerParameters(maxLod, samplerFlags);
     }

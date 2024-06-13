@@ -41,8 +41,8 @@ public class DescriptorAbstractionArray {
     }
 
     //Add a new textureID registation/index to the Descripotr Array
-    public boolean registerTexture(int texID, int binding) {
-        if (binding == 0 && texID2DescIdx.containsKey(texID)) return false;
+    public boolean registerTexture(int texID) {
+        if ( texID2DescIdx.containsKey(texID)) return false;
 
         final int samplerIndex = descriptorIndices.nextClearBit(0);
         texID2DescIdx.put(texID, samplerIndex);
