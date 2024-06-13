@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -314,7 +315,7 @@ public class DescriptorManager {
     }*/
 
     //TODO: Descriptor pool resizing if Texture count > or exceeds MAX_POOL_SAMPLERS
-    private static void resizeAllSamplerArrays()
+    public static void resizeAllSamplerArrays()
     {
         Vulkan.waitIdle();
         //Reset pool to avoid Fragmentation:
@@ -341,7 +342,11 @@ public class DescriptorManager {
         return MAX_POOL_SAMPLERS;
     }
 
-    public static void registerTextureArray(int i) {
-        sets.get(i).registerTextureArray();
+    public static void registerTextureArray(int i, VSubTextureAtlas vSubTextureAtlas) {
+        sets.get(i).registerTextureArray(vSubTextureAtlas);
     }
+
+//    public static void unregisterTextureArray(int i) {
+//        sets.get(i).unregisterTextureArray();
+//    }
 }

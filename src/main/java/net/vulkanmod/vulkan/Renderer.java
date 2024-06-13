@@ -110,7 +110,7 @@ public class Renderer {
 
         //Can accept duplicate/Same DescriptorSets
         DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 32, false));
-        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 2048, true)); //may make hardcoded w/ Fully Bound later
+        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1, true)); //may make hardcoded w/ Fully Bound later
 
         pipelineLayout = createPipelineLayout();
         currentLayout = pipelineLayout;

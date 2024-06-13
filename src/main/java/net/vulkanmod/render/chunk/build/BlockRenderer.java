@@ -174,8 +174,8 @@ public class BlockRenderer {
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
 
-            float u = ((quad.getU(idx)/16)*1024);
-            float v = ((quad.getV(idx)/16)*512);
+            float u = quad.getU(idx)*64;
+            float v = quad.getV(idx)*32;
 
             bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 

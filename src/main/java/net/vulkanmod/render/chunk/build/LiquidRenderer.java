@@ -427,7 +427,7 @@ public class LiquidRenderer {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
-        int k = 0;//QuadUtils.getIterationStartIdx(quadLightData.br);
+        int k = QuadUtils.getIterationStartIdx(quadLightData.br);
 
         bufferBuilder.ensureCapacity();
 
@@ -446,20 +446,8 @@ public class LiquidRenderer {
             final float y = yOffset + quad.getY(i);
             final float z = zOffset + quad.getZ(i);
 
-            final float u = switch (i)
-            {
-                default -> 0;
-                case 1 -> 0;
-                case 2 -> 1;
-                case 3 -> 1;
-            };
-            final float v= switch (i)
-            {
-                default -> 0;
-                case 1 -> 1;
-                case 2 -> 1;
-                case 3 -> 0;
-            };
+            float u = quad.getU(k)*64;
+            float v = quad.getV(k)*32;
 
             bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], baseArrayLayer);
 

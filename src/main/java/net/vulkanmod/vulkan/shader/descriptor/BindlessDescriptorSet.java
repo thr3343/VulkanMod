@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -401,7 +400,7 @@ public class BindlessDescriptorSet {
 
     void resizeSamplerArrays()
     {
-        int newLimit = setID == 1 ? 2048 : checkCapacity() ?  initialisedFragSamplers.resize() : initialisedFragSamplers.currentSize();
+        int newLimit = initialisedFragSamplers.resize();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
             this.descriptorSets[0]= DescriptorManager.allocateDescriptorSet(stack, newLimit);
@@ -432,13 +431,13 @@ public class BindlessDescriptorSet {
 
     //TODO:make Descriptor Arrays use vkImageView Handles instead
     // + Check Row-Major order
-    public void registerTextureArray()
+    public void registerTextureArray(VSubTextureAtlas vSubTextureAtlas)
     {
         int i = DescriptorManager.getMaxPoolSamplers();
         int ix =0;
-        for(Int2ObjectMap.Entry<VulkanImage> subTexture : VSubTextureAtlas.registeredSubImages.int2ObjectEntrySet())
+        for(VulkanImage ignored : vSubTextureAtlas.TextureArray)
         {
-            this.initialisedFragSamplers.registerImmutableTexture(subTexture.getIntKey(), ix);
+            this.initialisedFragSamplers.registerImmutableTexture(ix+65536, ix);
             ix++;
         }
     }

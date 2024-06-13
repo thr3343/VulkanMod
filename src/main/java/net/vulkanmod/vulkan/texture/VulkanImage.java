@@ -197,11 +197,12 @@ public class VulkanImage {
             dstTileImage.transferDstLayout(stack, commandBuffer.getHandle());
 
         //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
+            final int StileSize= tileSize/(1<<miplevel);
 
             VkImageCopy.Buffer vkImageCopy = VkImageCopy.calloc(1, stack);
-            vkImageCopy.srcOffset().set(targetTileX*tileSize, targetTileY*tileSize,0);
+            vkImageCopy.srcOffset().set(targetTileX*StileSize, targetTileY*StileSize,0);
             vkImageCopy.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .mipLevel(0)
+                    .mipLevel(miplevel)
                     .baseArrayLayer(0)
                     .layerCount(1);
             vkImageCopy.dstOffset().set(0,0,0);
@@ -209,7 +210,7 @@ public class VulkanImage {
                     .mipLevel(miplevel)
                     .baseArrayLayer(0)
                     .layerCount(1);
-            vkImageCopy.extent().set(tileSize, tileSize, 1);
+            vkImageCopy.extent().set(StileSize, StileSize, 1);
 
             vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopy);
 
