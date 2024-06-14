@@ -69,7 +69,7 @@ public class DescriptorManager {
 
             bindingFlags.put(VERT_UBO_ID, 0);
 
-            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0);
+            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0, (byte) 0);
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
                     .descriptorCount(INLINE_UNIFORM_SIZE)
