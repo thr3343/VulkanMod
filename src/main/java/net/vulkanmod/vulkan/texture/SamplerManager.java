@@ -2,8 +2,6 @@ package net.vulkanmod.vulkan.texture;
 
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
-import it.unimi.dsi.fastutil.shorts.Short2LongMap;
-import it.unimi.dsi.fastutil.shorts.Short2LongOpenHashMap;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -23,19 +21,19 @@ public abstract class SamplerManager {
 
     static final Int2LongMap SAMPLERS = new Int2LongOpenHashMap();
 
-    public static long getTextureSampler(byte maxLod, byte flags, byte anisotropy) {
-        int key = (flags | (maxLod << 8) | anisotropy << 16);
+    public static long getTextureSampler(byte flags, byte anisotropy) {
+        int key = (flags | anisotropy << 16);
         long sampler = SAMPLERS.getOrDefault(key, 0L);
 
         if (sampler == 0L) {
-            sampler = createTextureSampler(maxLod, anisotropy, flags);
+            sampler = createTextureSampler(anisotropy, flags);
             SAMPLERS.put(key, sampler);
         }
 
         return sampler;
     }
 
-    private static long createTextureSampler(byte maxLod, byte anisotropy, byte flags) {
+    private static long createTextureSampler(byte anisotropy, byte flags) {
         Validate.isTrue(
                 (flags & (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)) != (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)
         );
@@ -79,7 +77,7 @@ public abstract class SamplerManager {
 
             if ((flags & USE_MIPMAPS_BIT) != 0) {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
-                samplerInfo.maxLod(maxLod);
+                samplerInfo.maxLod(VK_LOD_CLAMP_NONE);
                 samplerInfo.minLod(0.0F);
                 samplerInfo.mipLodBias(MIP_BIAS);
             } else {

@@ -448,7 +448,7 @@ public class VulkanImage {
 
     //  More closely mimic OpenGls system for TexParameters for samplers _(i.e. Samplers and textures are decoupled)_
     public long getSampler() {
-        return SamplerManager.getTextureSampler((byte) (this.mipLevels-1), this.samplerFlags, (byte) Initializer.CONFIG.af);
+        return SamplerManager.getTextureSampler(this.samplerFlags, (byte) Initializer.CONFIG.af);
     }
 
     public static Builder builder(int width, int height) {
