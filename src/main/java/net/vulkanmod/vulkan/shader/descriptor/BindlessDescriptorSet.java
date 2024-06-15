@@ -108,7 +108,6 @@ public class BindlessDescriptorSet {
             this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), 1);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), 2);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), 4);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), 5);
             this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), 6);
@@ -290,83 +289,12 @@ public class BindlessDescriptorSet {
 
         }
     }
-    private VulkanImage getSamplerImage(int texId1, int samplerIndex) {
-
-        if (!GlTexture.hasImage(texId1))
-        {
-            Initializer.LOGGER.error("UnInitialised Image!: "+texId1 +"+"+samplerIndex+" Skipping...");
-
-            return GlTexture.getTexture(MissingTexID).getVulkanImage();
-        }
-        return GlTexture.getTexture(texId1).getVulkanImage();
-    }
-
-
 
 
     public void removeImage(int id) {
         this.initialisedFragSamplers.removeTexture(id);
 
     }
-
-
-   /* //TODO:
-    // Designed to mimic PushConstants by pushing a new stack, but for Descriptor sets instead
-    // A new DescriptorSet is allocated, allowing capacity to be expanded like PushConstants
-    // Intended to handle Postprocess renderPasses + if UBO slots exceed capacity
-    public void pushDescriptorSet(int frame, VkCommandBuffer commandBuffer)
-    {
-
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-
-            long allocateDescriptorSet = DescriptorManager.allocateDescriptorSet(stack, SAMPLER_MAX_LIMIT_DEFAULT);
-
-            final long descriptorSet = this.descriptorSets[frame];
-
-            VkCopyDescriptorSet.Buffer vkCopyDescriptorSet = VkCopyDescriptorSet.calloc(4, stack);
-
-            VkCopyDescriptorSet uboCopy = vkCopyDescriptorSet.get(VERT_UBO_ID);
-            uboCopy.sType$Default();
-            uboCopy.srcSet(descriptorSet);
-            uboCopy.srcBinding(VERT_UBO_ID);
-            uboCopy.dstBinding(VERT_UBO_ID);
-            uboCopy.dstSet(allocateDescriptorSet);
-            uboCopy.descriptorCount(1);
-
-            VkCopyDescriptorSet uboCopy2 = vkCopyDescriptorSet.get(FRAG_UBO_ID);
-            uboCopy2.sType$Default();
-            uboCopy2.srcSet(descriptorSet);
-            uboCopy2.srcBinding(FRAG_UBO_ID);
-            uboCopy2.dstBinding(FRAG_UBO_ID);
-            uboCopy2.dstSet(allocateDescriptorSet);
-            uboCopy2.descriptorCount(INLINE_UNIFORM_SIZE);
-
-            VkCopyDescriptorSet vertSmplrCopy = vkCopyDescriptorSet.get(VERTEX_SAMPLER_ID);
-            vertSmplrCopy.sType$Default();
-            vertSmplrCopy.srcSet(descriptorSet);
-            vertSmplrCopy.srcBinding(VERTEX_SAMPLER_ID);
-            vertSmplrCopy.dstBinding(VERTEX_SAMPLER_ID);
-            vertSmplrCopy.dstSet(allocateDescriptorSet);
-            vertSmplrCopy.descriptorCount(VERT_SAMPLER_MAX_LIMIT);
-
-            VkCopyDescriptorSet fragSmplrCopy = vkCopyDescriptorSet.get(FRAG_SAMPLER_ID);
-            fragSmplrCopy.sType$Default();
-            fragSmplrCopy.srcSet(descriptorSet);
-            fragSmplrCopy.srcBinding(FRAG_SAMPLER_ID);
-            fragSmplrCopy.dstBinding(FRAG_SAMPLER_ID); //Make this store Framebuffers instead when using PostProcess passes
-            fragSmplrCopy.dstSet(allocateDescriptorSet);
-            fragSmplrCopy.descriptorCount(currentSamplerSize);
-
-
-            vkUpdateDescriptorSets(DEVICE, null, vkCopyDescriptorSet);
-
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(), 0, stack.longs(allocateDescriptorSet), null);
-
-
-        }
-
-    }*/
 
     public void forceDescriptorUpdate() {
         Arrays.fill(this.isUpdated, false);

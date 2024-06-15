@@ -81,8 +81,8 @@ public abstract class Pipeline {
     public final String name;
     private final boolean bindless;
 
-    protected final long descriptorSetLayout;
-    protected final long pipelineLayout;
+    protected long descriptorSetLayout;
+    protected long pipelineLayout;
     protected BindfulDescriptorSets[] bindfulDescriptorSets;
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
@@ -96,8 +96,8 @@ public abstract class Pipeline {
     public Pipeline(String name, boolean bindless) {
         this.name = name;
         this.bindless = bindless;
-        descriptorSetLayout = bindless ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
-        pipelineLayout = bindless ? Renderer.getLayout() : createPipelineLayout();
+
+
         setID = this.name!=null && this.name.contains("terrain") ? 1 : 0;
     }
 
