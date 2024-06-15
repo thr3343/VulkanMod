@@ -36,7 +36,8 @@ public class GraphicsPipeline extends Pipeline {
         this.imageDescriptors = builder.imageDescriptors;
 //        this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
-
+        pipelineLayout = bindless ? Renderer.getLayout() : createPipelineLayout();
+        descriptorSetLayout = bindless ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
 
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
