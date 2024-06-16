@@ -31,7 +31,7 @@ void main() {
     gl_Position = MVP[gl_BaseInstance& 7] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance>>16;
 
-
+    //TODO: vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
     lightMapColor = texelFetch(Sampler2[0], UV2 / 16, 0);
     overlayColor = texelFetch(Sampler2[1], UV1, 0);

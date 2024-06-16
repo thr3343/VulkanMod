@@ -11,12 +11,12 @@ layout(binding = 1) uniform UBO{
     float FogEnd;
 };
 
-layout(location = 0) in vec4 vertexColor;
-layout(location = 1) in vec4 lightMapColor;
-layout(location = 2) in vec4 overlayColor;
-layout(location = 3) in vec2 texCoord0;
-layout(location = 4) in vec3 normal;
-layout(location = 5) in float vertexDistance;
+
+layout(location = 0) in flat uint baseInstance;
+layout(location = 1) in vec4 vertexColor;
+layout(location = 2) in vec4 lightMapColor;
+layout(location = 3) in vec4 overlayColor;
+layout(location = 4) in vec2 texCoord0;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -25,7 +25,7 @@ void main() {
     vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color; //TODO: linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
 
 /*
