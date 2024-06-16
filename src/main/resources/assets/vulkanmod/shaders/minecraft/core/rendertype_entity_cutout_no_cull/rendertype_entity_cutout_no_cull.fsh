@@ -2,14 +2,7 @@
 layout (constant_id = 0) const bool USE_FOG = true;
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
-vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    if (vertexDistance <= fogStart) {
-        return inColor;
-    }
-
-    float fogValue = vertexDistance < fogEnd ? smoothstep(fogStart, fogEnd, vertexDistance) : 1.0;
-    return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
-}
+#include "fog.glsl"
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
@@ -41,5 +34,5 @@ void main() {
     color *= vertexColor * ColorModulator;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = color;
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }

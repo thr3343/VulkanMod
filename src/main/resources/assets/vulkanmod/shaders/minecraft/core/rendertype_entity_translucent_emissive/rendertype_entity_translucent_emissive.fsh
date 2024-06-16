@@ -1,15 +1,7 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
-float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
-    if (vertexDistance <= fogStart) {
-        return 1.0;
-    } else if (vertexDistance >= fogEnd) {
-        return 0.0;
-    }
-
-    return smoothstep(fogEnd, fogStart, vertexDistance);
-}
+#include "fog.glsl"
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
@@ -19,9 +11,8 @@ layout(push_constant) readonly uniform  PushConstant{
 
 layout(binding = 1) uniform InlineUniforms
 {
-    layout(offset=0) float FogStart;
-    layout(offset=4) float FogEnd;
-    layout(offset=16) vec4 FogColor;
+    layout(offset=16) float FogStart;
+    layout(offset=20) float FogEnd;
 };
 
 
@@ -30,7 +21,6 @@ layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in vec4 overlayColor;
 layout(location = 3) in vec2 texCoord0;
 layout(location = 4) in float vertexDistance;
-
 
 layout(location = 0) out vec4 fragColor;
 

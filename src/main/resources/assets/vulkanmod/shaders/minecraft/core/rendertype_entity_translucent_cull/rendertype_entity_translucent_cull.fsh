@@ -1,17 +1,15 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
-vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    if (vertexDistance <= fogStart) {
-        return inColor;
-    }
-
-    float fogValue = vertexDistance < fogEnd ? smoothstep(fogStart, fogEnd, vertexDistance) : 1.0;
-    return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
-}
+#include "fog.glsl"
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
+layout(binding = 1) uniform UBO{
+    vec4 FogColor;
+    float FogStart;
+    float FogEnd;
+};
 
 
 layout(location = 0) in flat uint baseInstance;
@@ -28,7 +26,7 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = color;
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
 
 /*
