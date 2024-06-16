@@ -45,11 +45,10 @@ public class UploadManager {
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if (!this.dstBuffers.add(bufferId)) {
-            TransferQueue.MemoryBarrier(commandBuffer,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT);
+            TransferQueue.GigaBarrier(commandBuffer,
+                    VK_SHADER_STAGE_ALL_GRAPHICS,
+                    VK_SHADER_STAGE_ALL_GRAPHICS,
+                    true);
 
             this.dstBuffers.clear();
         }
@@ -67,11 +66,9 @@ public class UploadManager {
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
-        TransferQueue.MemoryBarrier(commandBuffer,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT);
+        TransferQueue.GigaBarrier(commandBuffer,
+                VK_SHADER_STAGE_ALL_GRAPHICS,
+                VK_SHADER_STAGE_ALL_GRAPHICS, true);
 
         this.dstBuffers.clear();
         this.dstBuffers.add(dst.getId());
