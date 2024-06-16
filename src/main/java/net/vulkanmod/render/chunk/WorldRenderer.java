@@ -46,6 +46,7 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.*;
 
@@ -188,7 +189,7 @@ public class WorldRenderer {
         float d_yRot = Math.abs(camera.getYRot() - this.lastCamRotY);
         cameraMoved |= d_xRot > 2.0f || d_yRot > 2.0f;
 
-        cameraMoved |= cameraX != this.lastCameraX || cameraY != this.lastCameraY || cameraZ != this.lastCameraZ;
+        cameraMoved |= Math.abs(cameraY - this.lastCameraY) > 2.0f; //has glitches when moving backwards, but reduces BFS freq alot (FPS no longer drops when moving within a Section)
         this.graphNeedsUpdate |= cameraMoved;
 
         if (!isCapturedFrustum) {
@@ -315,28 +316,27 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
-        Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-        renderer.bindGraphicsPipeline(pipeline);
-
-        IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
-        Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer);
 
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(terrainRenderType)) {
-            terrainRenderType.setCutoutUniform();
+            Renderer renderer = Renderer.getInstance();
+            GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
+            renderer.bindGraphicsPipeline(pipeline);
+            renderer.uploadAndBindUBOs(pipeline);
+            IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
+            final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+            Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer);
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
                 DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
-                renderer.uploadAndBindUBOs(pipeline);
+
                 if (drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, terrainRenderType, camX, camY, camZ);
-                    renderer.uploadAndBindUBOs(pipeline);
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
                     if (indirectDraw)
                         drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
@@ -346,15 +346,9 @@ public class WorldRenderer {
             }
         }
 
-        if (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE) {
+        if (indirectDraw && (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE)) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        //Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         this.minecraft.getProfiler().pop();
