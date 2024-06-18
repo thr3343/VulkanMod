@@ -1,5 +1,5 @@
 #version 450
-layout (constant_id = 0) const bool USE_FOG = true;
+
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #include "fog.glsl"
@@ -12,8 +12,8 @@ layout(binding = 1) uniform UBO{
     float FogEnd;
 };
 
-layout(push_constant) readonly uniform pushConstant{
-    layout(offset = 32) vec4 ColorModulator;
+layout(push_constant) readonly uniform PushConstant{
+    layout(offset = 32) int USE_FOG;
 };
 
 layout(location = 0) flat in uint baseInstance;
@@ -31,8 +31,8 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    color *= vertexColor * ColorModulator;
+    color *= vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = USE_FOG != 0 ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }

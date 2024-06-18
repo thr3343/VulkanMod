@@ -580,6 +580,7 @@ public class Renderer {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
         if (pipeline.isBindless()) {
             pipeline.pushUniforms(drawer.getUniformBuffer());
+            pipeline.pushConstants();
             if(currentLayout!=pipelineLayout)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);

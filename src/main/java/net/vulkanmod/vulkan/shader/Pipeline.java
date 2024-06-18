@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -277,6 +278,26 @@ public abstract class Pipeline {
         }
 
         Renderer.getDrawer().updateUniformOffset2(msk);
+
+
+
+
+    }
+
+    public void pushConstants() {
+
+
+       if(this.name.contains("entity_cutout_no_cull"))
+       {
+//           Initializer.LOGGER.error("NO FOG: {}", this.name);
+//           try(MemoryStack stack = MemoryStack.stackPush())
+           {
+               final int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
+
+//               nvkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 32, 4, stack.nint(b));
+               RenderSystem.setShaderColor(b, b, b, b);
+           }
+       }
 
 
 
