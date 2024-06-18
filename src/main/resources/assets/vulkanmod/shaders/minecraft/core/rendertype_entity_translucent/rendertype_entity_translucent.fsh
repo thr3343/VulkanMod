@@ -12,7 +12,7 @@ layout(binding = 1) uniform UBO{
 };
 
 layout(push_constant) uniform PushConstant{
-    vec4 ColorModulator;
+   layout(offset = 32) vec4 ColorModulator;
 };
 
 

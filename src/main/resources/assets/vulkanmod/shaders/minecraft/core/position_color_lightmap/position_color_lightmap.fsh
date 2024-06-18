@@ -7,11 +7,11 @@ layout(binding = 1) readonly uniform UBO {
     layout(offset = 32) vec4 ColorModulator;
 };
 
-layout(binding = 2) uniform sampler2D Sampler2;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler2, texCoord2) * vertexColor;
+    vec4 color = texture(Sampler0[0], texCoord2) * vertexColor;
     fragColor = color * ColorModulator;
 }
