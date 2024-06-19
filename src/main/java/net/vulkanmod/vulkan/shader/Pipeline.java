@@ -50,7 +50,7 @@ public abstract class Pipeline {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
-    private final int setID;
+    final int setID;
 
     private static long createPipelineCache() {
         try (MemoryStack stack = stackPush()) {

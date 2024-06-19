@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
@@ -319,6 +318,7 @@ public class WorldRenderer {
             renderer.bindGraphicsPipeline(pipeline);
 
             renderer.uploadAndBindUBOs(pipeline);
+            final long layout = Renderer.getLayout();
 
             IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -333,7 +333,7 @@ public class WorldRenderer {
 
                 if (drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
+                    drawBuffers.bindBuffers(commandBuffer, terrainRenderType, camX, camY, camZ, layout);
 
 
                     if (indirectDraw)

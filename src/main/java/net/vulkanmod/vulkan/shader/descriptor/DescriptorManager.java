@@ -219,7 +219,7 @@ public class DescriptorManager {
             {
                 LongBuffer a = stack.mallocLong(sets.size());
                 sets.forEach((key, value) -> a.put(key, value.getSet(currentFrame)));
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(),0, a, null);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout2(0),0, a, null);
             }
 
     }
@@ -285,7 +285,7 @@ public class DescriptorManager {
 
 
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(), 0, updatedSets.rewind(), null);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout2(1), 0, updatedSets.rewind(), null);
 
 
             //Reset Frag PushConstant range to default state

@@ -53,7 +53,7 @@ public class Renderer {
     public static boolean skipRendering = false;
 
 
-    private final long pipelineLayout;
+    private final long pipelineLayout0, pipelineLayout1;
     private long currentLayout;
 
     public static void initRenderer() {
@@ -109,29 +109,43 @@ public class Renderer {
 
 
         //Can accept duplicate/Same DescriptorSets
-        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 32));
-        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1));
+        //w/ One Set for each dedicated Sampler Array
+        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 32)); //Default Set for all Core shaders
+        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
 
-        pipelineLayout = createPipelineLayout();
-        currentLayout = pipelineLayout;
+        final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
+
+        //TODO: move these to Descriptor manager so they can ge selected per SetID
+        pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout); //Only used for DescriptorBinding + terrain Shaders
+
+        pipelineLayout1 = createPipelineLayout(descriptorSetLayout); //Used for core shaders Pipelines
+        currentLayout = pipelineLayout0;
 
     }
 
     public static long getLayout() {
-        return INSTANCE.pipelineLayout;
+        return INSTANCE.pipelineLayout1;
     }
 
-    //Default Pipeline Layo
-    private long createPipelineLayout() {
+    public static long getLayout2(int setID) {
+        return setID == 1 ? INSTANCE.pipelineLayout0 : INSTANCE.pipelineLayout1;
+    }
+
+    private long createPipelineLayout(long... descriptorSetLayouts) {
         try (MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
-            final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
+            final LongBuffer longs = stack.mallocLong(descriptorSetLayouts.length);
+
+            for(long x : descriptorSetLayouts)
+            {
+                longs.put(x);
+            }
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout, descriptorSetLayout));
+            pipelineLayoutInfo.pSetLayouts(longs.rewind());
 
 
             {
@@ -522,7 +536,8 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-
+        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout1, null);
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
 
@@ -582,11 +597,11 @@ public class Renderer {
         if (pipeline.isBindless()) {
             pipeline.pushUniforms(drawer.getUniformBuffer());
             pipeline.pushConstants(commandBuffer);
-            if(currentLayout!=pipelineLayout)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+            if(currentLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);
         }
-        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout : pipeline.getLayout();
+        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
 
     }
 

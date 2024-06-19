@@ -8,7 +8,6 @@ import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -87,7 +86,7 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
+    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, double camX, double camY, double camZ, MemoryStack stack, long layout) {
         float xOffset = (float) (camX - (this.origin.x));
         float yOffset = (float) (camY - (this.origin.y));
         float zOffset = (float) (camZ - (this.origin.z));
@@ -98,7 +97,7 @@ public class DrawBuffers {
         byteBuffer.putFloat(4, -yOffset);
         byteBuffer.putFloat(8, -zOffset);
 
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
+        vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
@@ -156,12 +155,12 @@ public class DrawBuffers {
         }
     }
 
-    public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
+    public void bindBuffers(VkCommandBuffer commandBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
+            updateChunkAreaOrigin(commandBuffer, camX, camY, camZ, stack, layout);
         }
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
