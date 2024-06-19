@@ -11,6 +11,7 @@ layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[8];
+   layout(offset = 512) mat4 ModelViewMat;
 };
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
 layout(push_constant) readonly uniform  PushConstant
@@ -26,6 +27,7 @@ layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out vec4 lightMapColor;
 layout(location = 3) out vec4 overlayColor;
 layout(location = 4) out vec2 texCoord0;
+layout(location = 5) out float vertexDistance;
 
 void main() {
     gl_Position = MVP[gl_BaseInstance& 7] * vec4(Position, 1.0);
@@ -38,6 +40,7 @@ void main() {
 //     overlayColor = vec4(1.0f);
     texCoord0 = UV0;
     //normal = (MVP * vec4(Normal, 0.0)).xyz;
+    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
 }
 /*
 #version 150

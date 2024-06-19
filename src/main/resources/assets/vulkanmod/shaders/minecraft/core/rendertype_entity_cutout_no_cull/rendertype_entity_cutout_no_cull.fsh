@@ -13,7 +13,7 @@ layout(binding = 1) uniform UBO{
 };
 
 layout(push_constant) readonly uniform PushConstant{
-    layout(offset = 32) int USE_FOG;
+    layout(offset = 32) bool USE_FOG;
 };
 
 layout(location = 0) flat in uint baseInstance;
@@ -34,5 +34,5 @@ void main() {
     color *= vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = USE_FOG != 0 ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
+    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }

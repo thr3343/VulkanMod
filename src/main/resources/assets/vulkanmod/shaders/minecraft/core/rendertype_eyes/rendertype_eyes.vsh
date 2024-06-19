@@ -6,11 +6,13 @@ layout(location = 2) in vec2 UV0;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[8];
+   layout(offset = 512) mat4 ModelViewMat;
 };
 
 layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out vec2 texCoord0;
+layout(location = 3) out float vertexDistance;
 
 void main() {
     gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
@@ -18,6 +20,7 @@ void main() {
 
     vertexColor = Color;
     texCoord0 = UV0;
+    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
 }
 
 /*

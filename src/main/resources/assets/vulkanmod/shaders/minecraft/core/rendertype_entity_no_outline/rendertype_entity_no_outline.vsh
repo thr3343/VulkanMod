@@ -11,6 +11,7 @@ layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[8];
+   layout(offset = 512) mat4 ModelViewMat;
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -26,6 +27,7 @@ void main() {
 
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
     texCoord0 = UV0;
+    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }
 

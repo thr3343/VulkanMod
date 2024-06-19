@@ -28,9 +28,9 @@
 layout(binding = 3) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UBO{
+    vec4 FogColor;
     float FogStart;
     float FogEnd;
-    vec4 FogColor;
 };
 
 layout(location = 0) in float vertexDistance;

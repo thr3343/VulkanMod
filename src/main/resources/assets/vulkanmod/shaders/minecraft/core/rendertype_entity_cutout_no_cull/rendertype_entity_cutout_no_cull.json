@@ -28,7 +28,16 @@
         ] }
     ],
     "PushConstants": [
-        { "name": "Light0_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] },
-        { "name": "Light1_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
+        { "type":  "vertex", "fields": [
+            { "name": "Light0_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] },
+            { "name": "Light1_Direction", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
+        ]
+        },
+
+        { "type":  "fragment", "fields": [
+            { "name": "USE_FOG", "type": "int", "count": 1, "values": [0] }
+        ]
+        }
+
     ]
 }

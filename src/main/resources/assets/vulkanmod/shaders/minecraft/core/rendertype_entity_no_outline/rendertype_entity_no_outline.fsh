@@ -3,6 +3,15 @@
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
+layout(binding = 1) uniform UBO{
+    vec4 FogColor;
+    float FogStart;
+    float FogEnd;
+};
+
+layout(push_constant) readonly uniform PushConstant{
+    layout(offset = 32) bool USE_FOG;
+};
 
 
 layout(location = 0) in vec4 vertexColor;
@@ -14,7 +23,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = texture(Sampler0[1], texCoord0) * vertexColor;
-    fragColor = color;
+    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }
 
 /*

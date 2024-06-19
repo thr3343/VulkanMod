@@ -22,6 +22,9 @@ public enum UniformState {
     AlphaCutout("float",1,1, 0, 0),
     ScreenSize("vec2",2,2, 0, 0),
 
+    //Custom Uniforms
+    USE_FOG("int",1,1, 0, 0),
+
     //    InSize("vec2",2,2),
 //    OutSize("vec2",2,2),
 //    BlurDir("vec2",2,2),

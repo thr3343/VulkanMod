@@ -1,5 +1,5 @@
 #version 450
-layout (constant_id = 0) const bool USE_FOG = true;
+
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #include "fog.glsl"

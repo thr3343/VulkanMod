@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -81,6 +80,7 @@ public abstract class Pipeline {
 
     public final String name;
     private final boolean bindless;
+    private UniformState lastPushConstantState;
 
     protected long descriptorSetLayout;
     protected long pipelineLayout;
@@ -88,7 +88,7 @@ public abstract class Pipeline {
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
     protected List<ImageDescriptor> imageDescriptors;
-//    protected PushConstants pushConstants;
+    protected List<PushConstants> pushConstants;
 
     public boolean isBindless() {
         return bindless;
@@ -284,20 +284,33 @@ public abstract class Pipeline {
 
     }
 
-    public void pushConstants() {
+    public void pushConstants(VkCommandBuffer commandBuffer) {
 
+        if(this.pushConstants!=null)
+//        if(this.lastPushConstantState==UniformState.ColorModulator&&UniformState.ColorModulator.requiresUpdate())
+            try(MemoryStack stack = MemoryStack.stackPush()) {
+                for (PushConstants pushConstant : pushConstants) {
+                    int stage = pushConstant.getStage();
+                    int offset = stage == VK_SHADER_STAGE_VERTEX_BIT ? 0 : 32;
+                    //            if(this.name.endsWith("rendertype_entity_cutout_no_cull")||this.name.endsWith("rendertype_entity_no_outline")||this.name.endsWith("rendertype_entity_cutout")||this.name.endsWith("text"))
+                    for (Uniform uniform : pushConstant.getUniforms()) {
+                        //           Initializer.LOGGER.error("NO FOG: {}", this.name);
+                        UniformState uniformState = UniformState.valueOf(uniform.getName());
 
-       if(this.name.contains("entity_cutout_no_cull"))
-       {
-//           Initializer.LOGGER.error("NO FOG: {}", this.name);
-//           try(MemoryStack stack = MemoryStack.stackPush())
-           {
-               final int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
+//                        int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
+//                        UniformState.EndPortalLayers.getMappedBufferPtr().putInt(0, b);
+                        final long ptr = switch (uniformState) {
+                            default -> uniformState.getMappedBufferPtr().ptr;
+                            case USE_FOG -> stack.nint(RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                            //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
+                        };
+                        uniformState.setUpdateState(false);
+                        nvkCmdPushConstants(commandBuffer, Renderer.getLayout(), stage, offset, uniformState.getByteSize(), ptr);
+                        offset+=uniformState.getByteSize();
+                    }
 
-//               nvkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 32, 4, stack.nint(b));
-               RenderSystem.setShaderColor(b, b, b, b);
-           }
-       }
+                }
+            }
 
 
 
@@ -572,7 +585,7 @@ public abstract class Pipeline {
         final String shaderPath;
         List<UBO> UBOs;
         ManualUBO manualUBO;
-        PushConstants pushConstants;
+        List<PushConstants> pushConstants;
         List<ImageDescriptor> imageDescriptors;
         int nextBinding;
 
@@ -628,6 +641,7 @@ public abstract class Pipeline {
 
             this.UBOs = new ArrayList<>();
             this.imageDescriptors = new ArrayList<>();
+            this.pushConstants = new ArrayList<>();
 
             JsonObject jsonObject;
 
@@ -661,7 +675,9 @@ public abstract class Pipeline {
             }
 
             if (jsonPushConstants != null) {
-                this.parsePushConstantNode(jsonPushConstants);
+                for (JsonElement jsonelement : jsonPushConstants) {
+                    this.parsePushConstantNode(jsonelement);
+                }
             }
         }
 
@@ -715,11 +731,14 @@ public abstract class Pipeline {
             this.nextBinding++;
         }
 
-        private void parsePushConstantNode(JsonArray jsonArray) {
+        private void parsePushConstantNode(JsonElement jsonelement) {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "PC");
+            int stage = getStageFromString(GsonHelper.getAsString(jsonobject, "type"));
+            JsonArray fields = GsonHelper.getAsJsonArray(jsonobject, "fields");
 
-            for (JsonElement jsonelement : jsonArray) {
-                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
+            for (JsonElement ConstantUniform : fields) {
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(ConstantUniform, "ConstantUniform");
 
                 String name = GsonHelper.getAsString(jsonobject2, "name");
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
@@ -728,7 +747,7 @@ public abstract class Pipeline {
                 builder.addUniformInfo(type2, name, j);
             }
 
-            this.pushConstants = builder.buildPushConstant();
+            this.pushConstants.add(builder.buildPushConstant(stage));
         }
 
         public static int getStageFromString(String s) {

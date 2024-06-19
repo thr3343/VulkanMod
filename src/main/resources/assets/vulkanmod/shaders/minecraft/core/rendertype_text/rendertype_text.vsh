@@ -7,9 +7,10 @@ layout(location = 3) in ivec2 UV2;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[8];
+   layout(offset = 512) mat4 ModelViewMat;
 };
 
-//layout(binding = 2) uniform sampler2D Sampler2;
+layout(binding = 2) uniform sampler2D Sampler2;
 
 layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
@@ -20,6 +21,7 @@ void main() {
     gl_Position = MVP[gl_BaseInstance& 7] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance>>16;
 
-    vertexColor = Color;// * texelFetch(Sampler2, UV2 / 16, 0);
+    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
     texCoord0 = UV0;
+    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
 }

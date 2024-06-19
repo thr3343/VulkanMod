@@ -379,15 +379,17 @@ public abstract class RenderSystemMixin {
             shaderLightDirections[0] = p_157174_;
             shaderLightDirections[1] = p_157175_;
 
-            try(MemoryStack stack = stackPush()) {
-                ByteBuffer byteBuffer = stack.malloc(32);
-
-                p_157174_.get(0, byteBuffer);
-                p_157175_.get(16, byteBuffer);
-
-                vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
-
-            }
+//            try(MemoryStack stack = stackPush()) {
+//                ByteBuffer byteBuffer = stack.malloc(32);
+//
+//                p_157174_.get(0, byteBuffer);
+//                p_157175_.get(16, byteBuffer);
+//
+//                vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
+//
+//            }
+            p_157174_.getToAddress(UniformState.Light0_Direction.ptr());
+            p_157175_.getToAddress(UniformState.Light1_Direction.ptr());
         }
 
     }
@@ -405,9 +407,6 @@ public abstract class RenderSystemMixin {
             shaderColor[3] = a;
 
             ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), r, g, b, a);
-            vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 32, UniformState.ColorModulator.buffer());
-
-            VRenderSystem.setShaderColor(r, g, b, a);
         }
 
     }

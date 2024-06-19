@@ -21,6 +21,7 @@ layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in vec4 lightMapColor;
 layout(location = 3) in vec4 overlayColor;
 layout(location = 4) in vec2 texCoord0;
+layout(location = 5) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -33,7 +34,7 @@ void main() {
     color *= vertexColor * ColorModulator;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = color; //linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
 
 /*

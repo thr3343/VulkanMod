@@ -13,7 +13,6 @@ layout(binding = 0) uniform UniformBufferObject {
     layout(offset = 0) mat4 MVP[8];
     layout(offset = 512) mat4 ModelViewMat;
     mat4 TextureMat;
-    int FogShape;
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -29,7 +28,7 @@ void main() {
 ;
 
     vec4 pos = ModelViewMat * (Position, 1.0);
-    vertexDistance = fog_distance(pos.xyz, FogShape);
+    //vertexDistance = fog_distance(pos.xyz, FogShape);
     lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
     vertexColor = Color * lightMapColor;
 
