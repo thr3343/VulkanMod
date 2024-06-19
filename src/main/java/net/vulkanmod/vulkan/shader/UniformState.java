@@ -117,7 +117,7 @@ public enum UniformState {
 
     public static void resetAll()
     {
-        for (UniformState uniformState : EnumSet.of(MVP0, MVP, ProjMat, ModelViewMat, TextureMat)) {
+        for (UniformState uniformState : EnumSet.of(MVP0, MVP, ProjMat, ModelViewMat, TextureMat, ColorModulator, Light0_Direction, Light1_Direction)) {
             uniformState.currentHash = 0;
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;
@@ -164,5 +164,9 @@ public enum UniformState {
 
     public long ptr() {
         return this.mappedBufferPtr.ptr;
+    }
+
+    public int getCurrentHash() {
+        return newHash;
     }
 }

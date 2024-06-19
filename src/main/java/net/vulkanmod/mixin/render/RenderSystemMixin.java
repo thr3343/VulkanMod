@@ -390,6 +390,8 @@ public abstract class RenderSystemMixin {
 //            }
             p_157174_.getToAddress(UniformState.Light0_Direction.ptr());
             p_157175_.getToAddress(UniformState.Light1_Direction.ptr());
+            UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
+            UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
         }
 
     }
@@ -406,7 +408,7 @@ public abstract class RenderSystemMixin {
             shaderColor[2] = b;
             shaderColor[3] = a;
 
-            ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), r, g, b, a);
+            VRenderSystem.setShaderColor(r, g, b, a);
         }
 
     }

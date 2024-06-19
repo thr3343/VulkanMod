@@ -80,7 +80,7 @@ public abstract class Pipeline {
 
     public final String name;
     private final boolean bindless;
-    private UniformState lastPushConstantState;
+    public static int lastPushConstantState;
 
     protected long descriptorSetLayout;
     protected long pipelineLayout;
@@ -288,7 +288,10 @@ public abstract class Pipeline {
 
         if(this.pushConstants!=null)
 //        if(this.lastPushConstantState==UniformState.ColorModulator&&UniformState.ColorModulator.requiresUpdate())
-            try(MemoryStack stack = MemoryStack.stackPush()) {
+        {
+            int currentAggregateHash = getCurrentAggregateHash();
+
+            if (lastPushConstantState!=currentAggregateHash) {
                 for (PushConstants pushConstant : pushConstants) {
                     int stage = pushConstant.getStage();
                     int offset = stage == VK_SHADER_STAGE_VERTEX_BIT ? 0 : 32;
@@ -299,23 +302,37 @@ public abstract class Pipeline {
 
 //                        int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
 //                        UniformState.EndPortalLayers.getMappedBufferPtr().putInt(0, b);
-                        final long ptr = switch (uniformState) {
-                            default -> uniformState.getMappedBufferPtr().ptr;
-                            case USE_FOG -> stack.nint(RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
-                            //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
-                        };
+
+                        if (uniformState == UniformState.USE_FOG) {
+                            UniformState.USE_FOG.getMappedBufferPtr().putInt(0, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                        }
+
+                        //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
+                        final long ptr = uniformState.getMappedBufferPtr().ptr;
                         uniformState.setUpdateState(false);
                         nvkCmdPushConstants(commandBuffer, Renderer.getLayout(), stage, offset, uniformState.getByteSize(), ptr);
-                        offset+=uniformState.getByteSize();
+                        offset += uniformState.getByteSize();
                     }
 
                 }
+                lastPushConstantState = currentAggregateHash;
             }
-
-
-
-
+        }
     }
+
+
+    private int getCurrentAggregateHash() {
+        int aggregatePushConstantHash=0;
+        for (PushConstants pushConstant : this.pushConstants) {
+            for (Uniform uniform : pushConstant.getUniforms()) {
+                aggregatePushConstantHash+=UniformState.valueOf(uniform.getName()).getCurrentHash();
+            }
+        }
+        return aggregatePushConstantHash;
+    }
+
+
+
 
     protected static class BindfulDescriptorSets {
         private final Pipeline pipeline;

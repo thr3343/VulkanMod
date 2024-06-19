@@ -462,6 +462,7 @@ public class Renderer {
 
         usedPipelines.clear();
         boundPipeline=0;
+        Pipeline.lastPushConstantState=0;
         UniformState.resetAll();
     }
 
