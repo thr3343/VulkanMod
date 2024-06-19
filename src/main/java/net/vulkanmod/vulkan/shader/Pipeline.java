@@ -7,6 +7,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -302,9 +303,13 @@ public abstract class Pipeline {
 
 //                        int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
 //                        UniformState.EndPortalLayers.getMappedBufferPtr().putInt(0, b);
-
-                        if (uniformState == UniformState.USE_FOG) {
-                            UniformState.USE_FOG.getMappedBufferPtr().putInt(0, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                        if(uniformState==UniformState.ScreenSize)
+                        {
+                            uniformState= VRenderSystem.getScreenSize();
+                        }
+                        switch (uniformState) {
+                            case USE_FOG -> UniformState.USE_FOG.getMappedBufferPtr().putInt(0, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                            case LineWidth -> UniformState.LineWidth.getMappedBufferPtr().putFloat(0, RenderSystem.getShaderLineWidth());
                         }
 
                         //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;

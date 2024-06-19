@@ -11,13 +11,13 @@ layout(push_constant) readonly uniform pushConstant{
 };
 
 layout(location = 0) in vec4 vertexColor;
-layout(location = 1) in float vertexDistance;
+//layout(location = 1) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = vertexColor * ColorModulator;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color;//linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
 
 

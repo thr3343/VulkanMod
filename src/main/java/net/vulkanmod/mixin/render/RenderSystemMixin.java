@@ -376,8 +376,6 @@ public abstract class RenderSystemMixin {
 
         if(shaderLightDirections[0].hashCode() != p_157174_.hashCode() && shaderLightDirections[1].hashCode() != p_157175_.hashCode())
         {
-            shaderLightDirections[0] = p_157174_;
-            shaderLightDirections[1] = p_157175_;
 
 //            try(MemoryStack stack = stackPush()) {
 //                ByteBuffer byteBuffer = stack.malloc(32);
@@ -388,8 +386,8 @@ public abstract class RenderSystemMixin {
 //                vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
 //
 //            }
-            p_157174_.getToAddress(UniformState.Light0_Direction.ptr());
-            p_157175_.getToAddress(UniformState.Light1_Direction.ptr());
+            (shaderLightDirections[0] = p_157174_).getToAddress(UniformState.Light0_Direction.ptr());
+            (shaderLightDirections[1] = p_157175_).getToAddress(UniformState.Light1_Direction.ptr());
             UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
             UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
         }

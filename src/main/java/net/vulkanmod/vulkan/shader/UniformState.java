@@ -9,8 +9,8 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 //Might need to replace this with a less rigid system fpr Postprocess uniforms
 public enum UniformState {
-    ModelViewMat("mat4",4, 16, 512, 256),
-    ProjMat("mat4",4, 16, 0, 0),
+    ModelViewMat("mat4",4, 16, 512, 128),
+    ProjMat("mat4",4, 16, 640, 128),
     MVP0("mat4",4, 16, 0, 64), //Used exclusively for Terrain and Particle Shaders
     MVP("mat4",4, 16, 64, 512),
     TextureMat("mat4",4, 16, 768, 256),
@@ -33,10 +33,8 @@ public enum UniformState {
 //    Radius("float",1,1, 0, 0),
     Light0_Direction("vec4",4,4, 0, 0),
     Light1_Direction("vec4",4,4, 0, 0),
-    ChunkOffset("vec3",4,3, 0, 0),
     ColorModulator("vec4",4,4, 0, 0),
-    FogColor("vec4",4,4, 0, 0),
-    SkyColor("vec4", 4, 4, 0, 0);
+    FogColor("vec4",4,4, 0, 0);
 
     public final String type;
     public final int align;
@@ -67,6 +65,7 @@ public enum UniformState {
         {
             default -> 0;
             case "TextureMat" -> 3;
+            case "ProjMat" -> 4;
             case "ModelViewMat" -> 5;
         };
     }
@@ -117,7 +116,7 @@ public enum UniformState {
 
     public static void resetAll()
     {
-        for (UniformState uniformState : EnumSet.of(MVP0, MVP, ProjMat, ModelViewMat, TextureMat, ColorModulator, Light0_Direction, Light1_Direction)) {
+        for (UniformState uniformState : EnumSet.of(MVP0, MVP, ProjMat, ModelViewMat, TextureMat, ColorModulator, Light0_Direction, Light1_Direction, ScreenSize)) {
             uniformState.currentHash = 0;
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;

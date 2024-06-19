@@ -65,7 +65,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void draw() {
-        vbo.drawChunkLayer();
+        vbo.drawPostEffect();
     }
 
     /**

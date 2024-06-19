@@ -3,14 +3,19 @@
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
-const vec2 ScreenSize = vec2(1920, 1080);
-const float LineWidth = 2.0f;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 ModelViewMat[16];
+ layout(offset = 640)  mat4 ProjMat;
 };
 
-layout(location = 1) out float vertexDistance;
+//Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
+layout(push_constant) readonly uniform  PushConstant
+{
+    vec2 ScreenSize;
+    float LineWidth;
+};
+
+//layout(location = 1) out float vertexDistance;
 layout(location = 0) out vec4 vertexColor;
 
 const float VIEW_SHRINK = 1.0 - (1.0 / 256.0);
@@ -22,8 +27,8 @@ const mat4 VIEW_SCALE = mat4(
 );
 
 void main() {
-    vec4 linePosStart = ModelViewMat[gl_BaseInstance & 7] * vec4(Position, 1.0);
-    vec4 linePosEnd = ModelViewMat[gl_BaseInstance & 7] * vec4(Position + Normal, 1.0);
+    vec4 linePosStart = ProjMat * VIEW_SCALE * vec4(Position, 1.0);
+    vec4 linePosEnd = ProjMat * VIEW_SCALE * vec4(Position + Normal, 1.0);
 
     vec3 ndc1 = linePosStart.xyz / linePosStart.w;
     vec3 ndc2 = linePosEnd.xyz / linePosEnd.w;
@@ -41,7 +46,7 @@ void main() {
         gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
     }
 
-
+    //vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     vertexColor = Color;
 }
 

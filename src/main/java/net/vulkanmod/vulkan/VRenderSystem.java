@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -11,7 +10,6 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
@@ -19,7 +17,6 @@ import org.lwjgl.system.MemoryUtil;
 import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
@@ -56,16 +53,19 @@ public abstract class VRenderSystem {
         Vulkan.initVulkan(window);
     }
 
-    public static MappedBuffer getScreenSize() {
+    public static UniformState getScreenSize() {
         updateScreenSize();
-        return UniformState.ScreenSize.getMappedBufferPtr();
+        return ScreenSize;
     }
 
     public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
 
-        UniformState.ScreenSize.getMappedBufferPtr().putFloat(0, window.getWidth());
-        UniformState.ScreenSize.getMappedBufferPtr().putFloat(4, window.getHeight());
+        final int width = window.getWidth();
+        final int height = window.getHeight();
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(0, width);
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(4, height);
+        UniformState.ScreenSize.needsUpdate(Float.floatToRawIntBits(width)+Float.floatToRawIntBits(height));
     }
 
     public static void setWindow(long window) {
@@ -79,12 +79,16 @@ public abstract class VRenderSystem {
     public static void applyMVP(Matrix4f MV, Matrix4f P) {
         MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
         P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        ModelViewMat.needsUpdate(MV.hashCode());
+        UniformState.ProjMat.needsUpdate(P.hashCode());
         calculateMVP();
     }
 
     public static void applyMVP0(Matrix4f MV, Matrix4f P) {
         MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
         P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        ModelViewMat.needsUpdate(MV.hashCode());
+        UniformState.ProjMat.needsUpdate(P.hashCode());
         calculateMVP0();
     }
 
@@ -126,12 +130,6 @@ public abstract class VRenderSystem {
 //        {
 //            UniformState.TextureMat.updateBank(Renderer.getDrawer().getUniformBuffer());
 //        }
-    }
-    public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = UniformState.ChunkOffset.getMappedBufferPtr().ptr;
-        VUtil.UNSAFE.putFloat(ptr, f1);
-        VUtil.UNSAFE.putFloat(ptr + 4, f2);
-        VUtil.UNSAFE.putFloat(ptr + 8, f3);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {

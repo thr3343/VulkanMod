@@ -28,5 +28,5 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;;
+    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }
