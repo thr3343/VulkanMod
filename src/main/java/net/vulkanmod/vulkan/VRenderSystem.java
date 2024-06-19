@@ -53,9 +53,8 @@ public abstract class VRenderSystem {
         Vulkan.initVulkan(window);
     }
 
-    public static UniformState getScreenSize() {
+    public static void getScreenSize() {
         updateScreenSize();
-        return ScreenSize;
     }
 
     public static void updateScreenSize() {

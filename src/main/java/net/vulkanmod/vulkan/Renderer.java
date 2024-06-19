@@ -511,7 +511,7 @@ public class Renderer {
         }
 
         createSyncObjects();
-
+        VRenderSystem.getScreenSize();
         this.onResizeCallbacks.forEach(Runnable::run);
         ((WindowAccessor) (Object) Minecraft.getInstance().getWindow()).getEventHandler().resizeDisplay();
 

@@ -303,19 +303,15 @@ public abstract class Pipeline {
 
 //                        int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
 //                        UniformState.EndPortalLayers.getMappedBufferPtr().putInt(0, b);
-                        if(uniformState==UniformState.ScreenSize)
-                        {
-                            uniformState= VRenderSystem.getScreenSize();
-                        }
+
                         switch (uniformState) {
                             case USE_FOG -> UniformState.USE_FOG.getMappedBufferPtr().putInt(0, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
                             case LineWidth -> UniformState.LineWidth.getMappedBufferPtr().putFloat(0, RenderSystem.getShaderLineWidth());
                         }
 
                         //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
-                        final long ptr = uniformState.getMappedBufferPtr().ptr;
-                        uniformState.setUpdateState(false);
-                        nvkCmdPushConstants(commandBuffer, Renderer.getLayout(), stage, offset, uniformState.getByteSize(), ptr);
+
+                        nvkCmdPushConstants(commandBuffer, Renderer.getLayout(), stage, offset, uniformState.getByteSize(), uniformState.getMappedBufferPtr().ptr);
                         offset += uniformState.getByteSize();
                     }
 
