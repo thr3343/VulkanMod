@@ -14,9 +14,10 @@ public class SubTextureAtlasManager {
     //using ResourceLocation instead of names for parity with vanilla
     public static VSubTextureAtlas registerSubTexAtlas(ResourceLocation s) {
         if(subTextureAtlasObjectArrayMap.containsKey(s)) return subTextureAtlasObjectArrayMap.get(s);
-        final VulkanImage vulkanImage = GlTexture.getTexture(Minecraft.getInstance().getTextureManager().getTexture(s).getId()).getVulkanImage();
+        final int id = Minecraft.getInstance().getTextureManager().getTexture(s).getId();
+        final VulkanImage vulkanImage = GlTexture.getTexture(id).getVulkanImage();
 
-        final VSubTextureAtlas v = new VSubTextureAtlas(s, vulkanImage, 16);
+        final VSubTextureAtlas v = new VSubTextureAtlas(s, vulkanImage, 16, id);
         subTextureAtlasObjectArrayMap.put(s, v);
         return v;
     }

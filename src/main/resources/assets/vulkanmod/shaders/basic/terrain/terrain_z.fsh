@@ -4,7 +4,7 @@ layout(early_fragment_tests) in;
 #extension GL_KHR_shader_subgroup_ballot : enable
 #include "light.glsl"
 
-layout(binding = 3, set = 1) uniform sampler2D Sampler0[];
+layout(binding = 3, set = 1) uniform sampler2DArray Sampler0[];
 
 
 
@@ -17,6 +17,6 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
 
-    vec4 color = texture(Sampler0[nonuniformEXT(textureIndex)], texCoord0.xy);
+    vec4 color = texture(Sampler0[nonuniformEXT(textureIndex>>10)], vec3(texCoord0, textureIndex&1023));
     fragColor = color * vertexColor;
 }

@@ -131,7 +131,7 @@ public class VulkanImage {
                     usage,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation, 1);
+                    pAllocation, 1, layers);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -190,11 +190,11 @@ public class VulkanImage {
         }
     }
 
-    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int miplevel)
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int miplevel, int baseArrayLayer)
     {
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            dstTileImage.transferDstLayout(stack, commandBuffer.getHandle());
+
 
         //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
             final int StileSize= tileSize/(1<<miplevel);
@@ -208,7 +208,7 @@ public class VulkanImage {
             vkImageCopy.dstOffset().set(0,0,0);
             vkImageCopy.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                     .mipLevel(miplevel)
-                    .baseArrayLayer(0)
+                    .baseArrayLayer(baseArrayLayer)
                     .layerCount(1);
             vkImageCopy.extent().set(StileSize, StileSize, 1);
 
@@ -249,7 +249,7 @@ public class VulkanImage {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     }
 
-    private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
+    void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     }
 
