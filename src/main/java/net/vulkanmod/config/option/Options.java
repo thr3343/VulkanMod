@@ -17,8 +17,8 @@ import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import java.util.stream.IntStream;
 
 public abstract class Options {
-    private static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
-    static Config config = Initializer.CONFIG;
+    private static final net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
+    private static Config config = Initializer.CONFIG;
     private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
@@ -325,5 +325,10 @@ public abstract class Options {
         }
 
         return values;
+    }
+
+    public static int getMiplevels()
+    {
+        return minecraftOptions.mipmapLevels().get();
     }
 }

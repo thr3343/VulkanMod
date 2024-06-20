@@ -1,5 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
+import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -9,7 +11,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 
 public class VSubTextureAtlas {
 
-    private final VulkanImage basetextureAtlas;
+    private final ResourceLocation basetextureAtlas;
     private final int baseTileSize;
     private final int tileWidth;
     private final int tileHeight;
@@ -20,19 +22,19 @@ public class VSubTextureAtlas {
     //TODO: Can't handle mismatched Block resolutions
     // + 
 
-    public VSubTextureAtlas(VulkanImage basetextureAtlas, int baseTileSize) {
+    public VSubTextureAtlas(ResourceLocation basetextureAtlas, VulkanImage vulkanImage, int baseTileSize) {
         this.basetextureAtlas = basetextureAtlas;
         this.baseTileSize = baseTileSize;
-        this.tileWidth = basetextureAtlas.width/baseTileSize;
-        this.tileHeight = basetextureAtlas.height/baseTileSize;
+        this.tileWidth = vulkanImage.width/baseTileSize;
+        this.tileHeight = vulkanImage.height/baseTileSize;
         this.TextureArray = new VulkanImage[tileHeight*tileWidth];
 
-        load(basetextureAtlas, baseTileSize);
+        load(baseTileSize, vulkanImage.mipLevels);
 
     }
 
-    private void load(VulkanImage basetextureAtlas, int baseTileSize) {
-        VulkanImage.Builder a =  VulkanImage.builder(baseTileSize, baseTileSize).setAnisotropy(true).setMipLevels(basetextureAtlas.mipLevels);
+    private void load(int baseTileSize, int mipLevels) {
+        VulkanImage.Builder a =  VulkanImage.builder(baseTileSize, baseTileSize).setAnisotropy(true).setMipLevels(mipLevels);
 
         for(int y = 0 ; y < this.TextureArray.length; y++)
         {
@@ -41,17 +43,18 @@ public class VSubTextureAtlas {
     }
 
     //local GPU2GPU copies
-    public void unStitch()
+    public void unStitch(int mipLevels)
     {
-        if(isLoaded) return;
+        VulkanImage basetextureAtlas = GlTexture.getTexture(this.basetextureAtlas).getVulkanImage();
+//        if(isLoaded) return;
         try (MemoryStack stack = stackPush()) {
             final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
             basetextureAtlas.transferSrcLayout(stack, handle.getHandle());
             Synchronization.waitFence(DeviceManager.getGraphicsQueue().submitCommands(handle));
 
         }
-        //TODO: update mipmaps when needed/changed
-        for (int i = 0; i < basetextureAtlas.mipLevels; i++) {
+
+        for (int i = 0; i < mipLevels+1; i++) {
             for(int y = 0 ; y < this.tileHeight; y++)
             {
                 for (int x = 0; x < this.tileWidth; x++) {
@@ -71,7 +74,7 @@ public class VSubTextureAtlas {
     {
         for(int y = 0 ; y < this.TextureArray.length; y++)
         {
-            TextureArray[y].free();
+            TextureArray[y].doFree();
         }
         isLoaded = false;
     }

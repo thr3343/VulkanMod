@@ -2,16 +2,15 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -52,7 +51,7 @@ public class DescriptorManager {
     private static int texturePool = 0;
     private static boolean textureState = true;
     private static boolean DynamicState = Initializer.CONFIG.isDynamicState();
-    private static boolean needsReload;
+    private static boolean needsReload = true;
 
 
     static {
@@ -280,16 +279,17 @@ public class DescriptorManager {
                 resizeAllSamplerArrays();
             }
 
-            if(needsReload || (!SubTextureAtlasManager.hasSubTextAtlas(InventoryMenu.BLOCK_ATLAS) && SubTextureAtlasManager.checkTextureState(InventoryMenu.BLOCK_ATLAS)))
+            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS))
             {
                 final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
                 if(DynamicState){
-                    vSubTextureAtlas.unStitch();
+                    vSubTextureAtlas.unStitch(Options.getMiplevels());
                     DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
                 }
                 else
                 {
                     DescriptorManager.unregisterTextureArray(1);
+                    SubTextureAtlasManager.unRegisterSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
                 }
                 DescriptorManager.updateAllSets();
                 DescriptorManager.resizeAllSamplerArrays();
@@ -323,7 +323,7 @@ public class DescriptorManager {
     public static void setTextureState(boolean textureState1, boolean DynamicState1)
     {
 //        textureState=DynamicState!=DynamicState1;
-        needsReload=DynamicState!=DynamicState1;
+        needsReload=textureState1;
         DynamicState=DynamicState1;
     }
 
