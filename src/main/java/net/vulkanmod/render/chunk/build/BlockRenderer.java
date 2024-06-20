@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
@@ -153,6 +154,8 @@ public class BlockRenderer {
 
         int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
 
+        boolean dynamicState = Initializer.CONFIG.isDynamicState();
+
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
             final float y = pos.y() + quad.getY(idx);
@@ -174,10 +177,10 @@ public class BlockRenderer {
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
 
-            float u = quad.getU(idx)*64;
-            float v = quad.getV(idx)*32;
+            float u = quad.getU(idx)* (dynamicState ? 64 : 1);
+            float v = quad.getV(idx)* (dynamicState ? 32 : 1);
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, dynamicState ? baseArrayLayer : 0);
 
             idx = (idx + 1) & 0b11;
         }

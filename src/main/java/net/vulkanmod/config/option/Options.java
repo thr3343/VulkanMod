@@ -8,6 +8,7 @@ import net.vulkanmod.config.Config;
 import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.config.video.VideoModeSet;
 import net.vulkanmod.config.gui.OptionBlock;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -242,7 +243,9 @@ public abstract class Options {
                                 new Integer[]{1, 2, 4, 8, 16},
                                 value -> {
                                     config.af=(value);
+                                    DescriptorManager.setTextureState(true, value>1);
                                     DescriptorManager.updateAllSets();
+                                    WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
                                 },
                                 () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))

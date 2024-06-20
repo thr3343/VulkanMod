@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.texture;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.system.MemoryStack;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -15,6 +14,7 @@ public class VSubTextureAtlas {
     private final int tileWidth;
     private final int tileHeight;
     public final VulkanImage[] TextureArray; //may make dierct handle to reduce GC overhead
+    private boolean isLoaded;
     //Allows Stitched and Unstitched Variants/Atlases to exist simultaneously at the same time
 
     //TODO: Can't handle mismatched Block resolutions
@@ -27,18 +27,23 @@ public class VSubTextureAtlas {
         this.tileHeight = basetextureAtlas.height/baseTileSize;
         this.TextureArray = new VulkanImage[tileHeight*tileWidth];
 
+        load(basetextureAtlas, baseTileSize);
+
+    }
+
+    private void load(VulkanImage basetextureAtlas, int baseTileSize) {
         VulkanImage.Builder a =  VulkanImage.builder(baseTileSize, baseTileSize).setAnisotropy(true).setMipLevels(basetextureAtlas.mipLevels);
 
         for(int y = 0 ; y < this.TextureArray.length; y++)
         {
             TextureArray[y]= VulkanImage.createTextureImage(a);
         }
-
     }
 
     //local GPU2GPU copies
     public void unStitch()
     {
+        if(isLoaded) return;
         try (MemoryStack stack = stackPush()) {
             final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
             basetextureAtlas.transferSrcLayout(stack, handle.getHandle());
@@ -55,21 +60,20 @@ public class VSubTextureAtlas {
             }
         }
         Synchronization.INSTANCE.waitFences();
-        DescriptorManager.registerTextureArray(1, this);
-        DescriptorManager.updateAllSets();
-        DescriptorManager.resizeAllSamplerArrays();
+        isLoaded = true;
     }
 
     private int getTileIndex(int y, int x) {
         return (y * tileWidth) + x;
     }
 
-    public void cleanup()
+    public void unload()
     {
         for(int y = 0 ; y < this.TextureArray.length; y++)
         {
             TextureArray[y].free();
         }
+        isLoaded = false;
     }
 
     private enum modes {

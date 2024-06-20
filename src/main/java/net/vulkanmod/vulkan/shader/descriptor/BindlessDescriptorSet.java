@@ -40,6 +40,8 @@ public class BindlessDescriptorSet {
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
 
     private static final int MAX_SETS = 2;
+    private final ResourceLocation blockAtlas;
+    private boolean isSubTexState = true;
 
     private final DescriptorAbstractionArray initialisedFragSamplers;
     private final DescriptorAbstractionArray initialisedVertSamplers;
@@ -47,14 +49,16 @@ public class BindlessDescriptorSet {
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private final int setID;
+    private final boolean isDedicated;
     private int currentSamplerSize = SAMPLER_MAX_LIMIT_DEFAULT;
     private int MissingTexID = -1;
     private final long[] descriptorSets = new long[MAX_SETS];
 
-    static VSubTextureAtlas vSubTextureAtlas;
 
-    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit, boolean StaticallyBound) {
+
+    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit, boolean isDedicated) {
         this.setID = setID;
+        this.isDedicated = isDedicated; //If using a dedicated SubTexAtlas
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -65,6 +69,7 @@ public class BindlessDescriptorSet {
             initialisedVertSamplers = new DescriptorAbstractionArray(vertTextureLimit, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
             initialisedFragSamplers = new DescriptorAbstractionArray(fragTextureLimit, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
         }
+        blockAtlas = isDedicated ? InventoryMenu.BLOCK_ATLAS : null; //TODO: allow this to be set dynamically
     }
 
 
@@ -132,14 +137,7 @@ public class BindlessDescriptorSet {
         if (this.MissingTexID == -1) {
             setupHardcodedTextures();
         }
-        if(vSubTextureAtlas == null)
-        {
-            final VulkanImage vulkanImage = GlTexture.getTexture(Minecraft.getInstance().getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).getId()).getVulkanImage();
-            if(vulkanImage!=null) {
-                vSubTextureAtlas = new VSubTextureAtlas(vulkanImage, 16);
-                vSubTextureAtlas.unStitch();
-            }
-        }
+
         try(MemoryStack stack = stackPush()) {
             checkInlineUniformState(frame, stack, uniformStates);
             if(!this.isUpdated[frame]){
@@ -178,6 +176,11 @@ public class BindlessDescriptorSet {
 
         }
     }
+//
+//    private boolean getSubTextState() {
+////        if(blockAtlas==null) return false;
+//        return isSubTexState ?  vSubTextureAtlas == null : vSubTextureAtlas != null;
+//    }
 
     private void checkInlineUniformState(int frame, MemoryStack stack, InlineUniformBlock uniformStates) {
         if (UniformState.FogColor.requiresUpdate()) {
@@ -300,7 +303,7 @@ public class BindlessDescriptorSet {
     }
     //TIODO:  ned to ovehault his if > 1 SubTexture Array is needed
     private VulkanImage getSubTexImage(int texId1) {
-        return vSubTextureAtlas.TextureArray[texId1];
+        return SubTextureAtlasManager.getSubTexAtlas(blockAtlas).TextureArray[texId1];
     }
 
     private VulkanImage getSamplerTexture(int texId1) {
@@ -403,8 +406,7 @@ public class BindlessDescriptorSet {
         int newLimit = initialisedFragSamplers.resize();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
-            this.descriptorSets[0]= DescriptorManager.allocateDescriptorSet(stack, newLimit);
-            this.descriptorSets[1]= DescriptorManager.allocateDescriptorSet(stack, newLimit);
+            Arrays.setAll(this.descriptorSets, i -> DescriptorManager.allocateDescriptorSet(stack, newLimit));
 
             Initializer.LOGGER.info("Resized {} to {}", this.setID, newLimit);
 
@@ -429,18 +431,43 @@ public class BindlessDescriptorSet {
         return this.setID;
     }
 
+    public long getSetHandle(int frame) {
+        return this.descriptorSets[frame];
+    }
+
     //TODO:make Descriptor Arrays use vkImageView Handles instead
     // + Check Row-Major order
     public void registerTextureArray(VSubTextureAtlas vSubTextureAtlas)
     {
+//        resetDescriptorState();
         int i = DescriptorManager.getMaxPoolSamplers();
         int ix =0;
+//        final VSubTextureAtlas vSubTextureAtlas1 = SubTextureAtlasManager.getSubTexAtlas(blockAtlas);
         for(VulkanImage ignored : vSubTextureAtlas.TextureArray)
         {
             this.initialisedFragSamplers.registerImmutableTexture(ix+65536, ix);
             ix++;
         }
+        isSubTexState = true;
+//
+//        DescriptorManager.updateAllSets();
+//        DescriptorManager.resizeAllSamplerArrays();
     }
 
+    //Flush all textures, resetting the DescriptorSet to its initial state
+    public void resetDescriptorState() {
 
+        this.initialisedVertSamplers.flushAll();
+        this.initialisedFragSamplers.flushAll();
+        DescriptorManager.resizeAllSamplerArrays(); //Flush all DescriptorSets + Signal update state to all initialized sets
+        setupHardcodedTextures();
+    }
+
+    public void unregisterTextureArray() {
+
+        resetDescriptorState();
+        this.initialisedFragSamplers.registerImmutableTexture(Minecraft.getInstance().getTextureManager().getTexture(blockAtlas).getId(), 0);
+
+        isSubTexState = false;
+    }
 }

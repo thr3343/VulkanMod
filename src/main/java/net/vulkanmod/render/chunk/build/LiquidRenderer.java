@@ -20,6 +20,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
@@ -435,7 +436,7 @@ public class LiquidRenderer {
         float LayerY = quad.getV(k);
 
 
-
+        boolean dynamicState = Initializer.CONFIG.isDynamicState();
         int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
 
         int i;
@@ -446,10 +447,10 @@ public class LiquidRenderer {
             final float y = yOffset + quad.getY(i);
             final float z = zOffset + quad.getZ(i);
 
-            float u = quad.getU(k)*64;
-            float v = quad.getV(k)*32;
+            float u = quad.getU(k)* (dynamicState ? 64 : 1);
+            float v = quad.getV(k)* (dynamicState ? 32 : 1);
 
-            bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], baseArrayLayer);
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], dynamicState ? baseArrayLayer : 0);
 
             k += (flip ? -1 : +1);
             k &= 0b11;

@@ -2,11 +2,16 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -45,8 +50,9 @@ public class DescriptorManager {
 
 
     private static int texturePool = 0;
-
-
+    private static boolean textureState = true;
+    private static boolean DynamicState = Initializer.CONFIG.isDynamicState();
+    private static boolean needsReload;
 
 
     static {
@@ -202,7 +208,7 @@ public class DescriptorManager {
         vkDestroyDescriptorSetLayout(DEVICE, descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, globalDescriptorPoolArrayPool, null);
         sets.clear();
-        BindlessDescriptorSet.vSubTextureAtlas.cleanup();
+        SubTextureAtlasManager.cleanupAll();
 
 
     }
@@ -274,19 +280,36 @@ public class DescriptorManager {
                 resizeAllSamplerArrays();
             }
 
+            if(needsReload || (!SubTextureAtlasManager.hasSubTextAtlas(InventoryMenu.BLOCK_ATLAS) && SubTextureAtlasManager.checkTextureState(InventoryMenu.BLOCK_ATLAS)))
+            {
+                final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                if(DynamicState){
+                    vSubTextureAtlas.unStitch();
+                    DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
+                }
+                else
+                {
+                    DescriptorManager.unregisterTextureArray(1);
+                }
+                DescriptorManager.updateAllSets();
+                DescriptorManager.resizeAllSamplerArrays();
+                textureState=false;
+                needsReload=false;
+            }
+
 //            final int capacity = getCapacity(frame);
 //            final boolean needsUpdate = checkUpdateState(frame);
             //TODO; Set 1 is not updated unless a Descriptor Array resize is used
-            LongBuffer updatedSets = stack.mallocLong(sets.size());
+//            LongBuffer updatedSets = stack.mallocLong(sets.size());
 
             for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
-                updatedSets.put(bindlessDescriptorSet.updateAndBind(frame, uniformId, uniformStates));
+                bindlessDescriptorSet.updateAndBind(frame, uniformId, uniformStates);
             }
 
 
 
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(), 0, updatedSets.rewind(), null);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(), 0, stack.longs(sets.get(0).getSetHandle(frame), sets.get(1).getSetHandle(frame)), null);
 
 
             //Reset Frag PushConstant range to default state
@@ -295,6 +318,13 @@ public class DescriptorManager {
         }
 
 
+    }
+
+    public static void setTextureState(boolean textureState1, boolean DynamicState1)
+    {
+//        textureState=DynamicState!=DynamicState1;
+        needsReload=DynamicState!=DynamicState1;
+        DynamicState=DynamicState1;
     }
 
 /*    private static boolean checkUpdateState(int frame) {
@@ -341,12 +371,18 @@ public class DescriptorManager {
     public static int getMaxPoolSamplers() {
         return MAX_POOL_SAMPLERS;
     }
+    //TODO; Allows VSubTextureAtlas to be hotswapped between DescriptorSets without the need to hardcode them
 
     public static void registerTextureArray(int i, VSubTextureAtlas vSubTextureAtlas) {
         sets.get(i).registerTextureArray(vSubTextureAtlas);
     }
 
-//    public static void unregisterTextureArray(int i) {
-//        sets.get(i).unregisterTextureArray();
-//    }
+    public static void resetSamplerState(int setID)
+    {
+        sets.get(setID).resetDescriptorState();
+    }
+
+    public static void unregisterTextureArray(int i) {
+        sets.get(i).unregisterTextureArray();
+    }
 }

@@ -9,6 +9,7 @@ public class DescriptorAbstractionArray {
 
     private static final int maxLimit = 16; //absoluteMaxBoundSamplerLimit
     private final BitSet descriptorIndices; //Only need max of 65536 textures
+    private final int defaultSize;
     int maxSize;
     private final int shaderStage;
     private final int descriptorType;
@@ -18,6 +19,7 @@ public class DescriptorAbstractionArray {
 
 
     public DescriptorAbstractionArray(int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
+        this.defaultSize = maxSize;
         this.maxSize = maxSize;
         this.shaderStage = shaderStage;
         this.descriptorType = descriptorType;
@@ -108,7 +110,15 @@ public class DescriptorAbstractionArray {
     }
 
     public int resize() {
+        if(!checkCapacity()) return this.maxSize;
+
         final int align = VUtil.align(this.descriptorIndices.size(), 64);
         return this.maxSize = align==maxSize ? align+64 : align;
+    }
+
+    public void flushAll() {
+        this.descriptorIndices.clear();
+        this.texID2DescIdx.clear();
+        maxSize= defaultSize;
     }
 }
