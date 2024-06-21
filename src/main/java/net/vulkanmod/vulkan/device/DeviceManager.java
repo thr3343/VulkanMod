@@ -180,12 +180,13 @@ public abstract class DeviceManager {
             shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
 
             final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();
-            VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
+            VkPhysicalDeviceVulkan12Features descriptorIndexingFeatures = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors)
                     .descriptorBindingPartiallyBound(hasIndexedDescriptors)
                     .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
-                    .shaderSampledImageArrayNonUniformIndexing(true);
+                    .shaderSampledImageArrayNonUniformIndexing(true)
+                    .imagelessFramebuffer(true);
 
             //TODO: replace with Extension version to allow Vk12 support
             VkPhysicalDeviceInlineUniformBlockFeatures inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeatures.calloc(stack)

@@ -5,6 +5,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.framebuffer.Attachment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -69,6 +70,50 @@ public class VulkanImage {
         this.usage = builder.usage;
         this.layers = builder.layers;
         this.aspect = getAspect(this.format);
+    }
+
+    public static VulkanImage createAttachmentImage(Attachment attachment, int width1, int height1) {
+
+        int format = attachment.type.format;
+        int usage = attachment.type.usage;
+
+        //TODO: might need separating into separate dedicated AttachmentImage Class Instantiation
+
+        VulkanImage image = new VulkanImage.Builder(width1, height1)
+                .setMipLevels(1)
+                .setFormat(format)
+                .addUsage(usage)
+                .createVulkanImage();
+
+//        VulkanImage image = new VulkanImage(format, 1, 1, width1, height1, usage, 0);
+        //TODO: Broken Aspect
+        image.createAttachmentImage(width1, height1, attachment);
+        image.mainImageView = createImageView(image.id, format, attachment.type.aspect, 1, 1);
+
+        return image;
+    }
+
+    private void createAttachmentImage(int width, int height, Attachment attachment) {
+
+        try(MemoryStack stack = stackPush()) {
+
+            LongBuffer pTextureImage = stack.mallocLong(1);
+            PointerBuffer pAllocation = stack.mallocPointer(1);
+
+            MemoryManager.createImage(width, height, 1,
+                    attachment.type.format, VK_IMAGE_TILING_OPTIMAL,
+                    attachment.type.usage,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    pTextureImage,
+                    pAllocation, attachment.samples, 1);
+
+
+            id = pTextureImage.get(0);
+            allocation = pAllocation.get(0);
+
+            MemoryManager.addImage(this);
+
+        }
     }
 
     public static VulkanImage createTextureImage(Builder builder) {
