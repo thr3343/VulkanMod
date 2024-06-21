@@ -6,9 +6,9 @@ import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum AttachmentTypes {
-        PRESENT             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        COLOR               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        DEPTH               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
+//        PRESENT             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        COLOR               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        DEPTH               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
         PRESENT_SAMPLED             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
         COLOR_SAMPLED               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
         DEPTH_SAMPLED               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
@@ -29,7 +29,7 @@ public enum AttachmentTypes {
         AttachmentTypes(int layout, int format, int usage, int aspect) {
             this.layout = layout;
             this.format = format;
-            this.usage = usage | (this.name().contains("SAMPLED") ? VK_IMAGE_USAGE_SAMPLED_BIT : 0);
+            this.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
             this.aspect = aspect;
             this.color = this.aspect==1;
             this.depth = this.aspect==2;

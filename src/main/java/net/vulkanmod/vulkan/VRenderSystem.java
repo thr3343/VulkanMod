@@ -3,10 +3,11 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
@@ -16,10 +17,10 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
 import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
@@ -49,6 +50,10 @@ public abstract class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
+    private static boolean sampleShadingEnable= Initializer.CONFIG.msaaPreset >0;
+    private static int sampleCount= 1 << Initializer.CONFIG.msaaPreset;
+    private static float minSampleShading= 0.01f*Initializer.CONFIG.minSampleShading;
+    static boolean renderPassUpdate =true;
 
     public static void initRenderer() {
         RenderSystem.assertInInitPhase();
@@ -132,6 +137,13 @@ public abstract class VRenderSystem {
         VUtil.UNSAFE.putFloat(ptr, f1);
         VUtil.UNSAFE.putFloat(ptr + 4, f2);
         VUtil.UNSAFE.putFloat(ptr + 8, f3);
+    }
+    public static boolean isSampleShadingEnable() {
+        return sampleCount>1;
+    }
+
+    public static int getSampleCount() {
+        return sampleCount;
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
@@ -275,4 +287,24 @@ public abstract class VRenderSystem {
         Renderer.setDepthBias(0.0F, 0.0F);
     }
 
+    public static void setSampleCountFromPreset(int s) {
+        sampleCount= 1<<s;
+    }
+
+    static RenderPass2 getDefaultRenderPassState() {
+        //TODO: Unsure if Sampled-Bit on Resolve MultiPass attachment has ratifications
+        // i.e. We aren't reading from the Resolve attachment w/ PostEffect passes
+        return isSampleShadingEnable() ? new RenderPass2(
+                PRESENT_RESOLVE,
+                COLOR_SAMPLED,
+                DEPTH_SAMPLED) : new RenderPass2(PRESENT_SAMPLED, DEPTH_SAMPLED);
+    }
+
+    public static void reInit() {
+        renderPassUpdate =true;
+    }
+//
+//    public static int getMultiSampleState() {
+//        return 0;
+//    }
 }

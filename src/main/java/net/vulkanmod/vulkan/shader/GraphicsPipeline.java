@@ -121,8 +121,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(false);
-            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
+            multisampling.sampleShadingEnable(state.multiSampleCount_i>1);
+            multisampling.rasterizationSamples(state.multiSampleCount_i); //Identical to VK_SAMPLE_COUNT_*_BIT
+            multisampling.minSampleShading(1);
 
             // ===> DEPTH TEST <===
 
@@ -185,17 +186,8 @@ public class GraphicsPipeline extends Pipeline {
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 
-            if (!Vulkan.DYNAMIC_RENDERING) {
-                pipelineInfo.renderPass(state.renderPass.renderPass);
-                pipelineInfo.subpass(0);
-            } else {
-                //dyn-rendering
-                VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
-                renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass.getFormat(AttachmentTypes.PRESENT)));
-                renderingInfo.depthAttachmentFormat(state.renderPass.getFormat(AttachmentTypes.DEPTH));
-                pipelineInfo.pNext(renderingInfo);
-            }
+            pipelineInfo.renderPass(state.renderPass.renderPass);
+            pipelineInfo.subpass(0);
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 

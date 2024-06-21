@@ -2,10 +2,8 @@ package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.RenderPass2;
-import net.vulkanmod.vulkan.pass.DefaultMainPass;
 
 import java.util.Objects;
 
@@ -18,7 +16,7 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass());
+    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), 1, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass());
 
     public static PipelineState currentState = DEFAULT;
 
@@ -28,11 +26,12 @@ public class PipelineState {
         int currentColorMask = VRenderSystem.getColorMask();
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
+        int multiSampleCount = VRenderSystem.getSampleCount();
 
-        if(currentState.checkEquals(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass))
+        if(currentState.checkEquals(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, renderPass))
             return currentState;
         else
-            return currentState = new PipelineState(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass);
+            return currentState = new PipelineState(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, renderPass);
     }
 
     public static int getBlendState() {
@@ -67,26 +66,28 @@ public class PipelineState {
     final RenderPass2 renderPass;
 
     int assemblyRasterState;
+    int multiSampleCount_i;
     int blendState_i;
     int depthState_i;
     int colorMask_i;
     int logicOp_i;
 
-    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
+    public PipelineState(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
         this.renderPass = renderPass;
 
         this.assemblyRasterState = assemblyRasterState;
+        this.multiSampleCount_i=multiSampleCount;
         this.blendState_i = blendState;
         this.depthState_i = depthState;
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
     }
 
-    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
+    private boolean checkEquals(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
                 && (assemblyRasterState == this.assemblyRasterState)
-                && colorMask == this.colorMask_i;
+                && colorMask == this.colorMask_i && this.multiSampleCount_i == multiSampleCount;
     }
 
     @Override
@@ -100,12 +101,12 @@ public class PipelineState {
         return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
                 && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
                 && this.assemblyRasterState == that.assemblyRasterState
-                && this.colorMask_i == that.colorMask_i;
+                && this.colorMask_i == that.colorMask_i && this.multiSampleCount_i == that.multiSampleCount_i;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, colorMask_i, renderPass);
+        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, multiSampleCount_i, colorMask_i, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {
@@ -348,6 +349,10 @@ public class PipelineState {
                     | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
         }
 
+    }
+
+    //minSampleShading (i.e. SSAA Quality disabled (it's very difficult to set an Integer Quality with a float TBH))
+    public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
     }
 
     public static abstract class DepthState {

@@ -267,7 +267,7 @@ public class Renderer {
             return;
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
-
+        if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
         p.pop();
         p.push("Begin_rendering");
 
@@ -779,8 +779,11 @@ public class Renderer {
     public static boolean isRecording() {
         return INSTANCE.recordingCmds;
     }
+    public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
 
-    public static void scheduleSwapChainUpdate() {
-        swapChainUpdate = true;
+    public void updateFrameBuffer() {
+        vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
+        mainPass.getMainFrameBuffer().bindRenderPass(VRenderSystem.getDefaultRenderPassState());
+        VRenderSystem.renderPassUpdate =false;
     }
 }

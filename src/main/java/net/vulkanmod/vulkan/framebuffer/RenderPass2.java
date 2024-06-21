@@ -30,7 +30,7 @@ public class RenderPass2 {
     {
         this.attachmentTypes = attachmentTypes;
         for (int i = 0; i < attachmentTypes.length; i++) {
-            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], /*VRenderSystem.isSampleShadingEnable() ? VRenderSystem.getSampleCount() : */1));
+            attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], VRenderSystem.isSampleShadingEnable() ? VRenderSystem.getSampleCount() : 1));
         }
         this.presentKey= Arrays.stream(attachmentTypes).filter(attachmentTypes1 -> attachmentTypes1.present).findFirst().orElse(null);
         this.renderPass=createRenderPass();
@@ -67,8 +67,8 @@ public class RenderPass2 {
                 attachmentRefs.get(attach.BindingID).set(attach.BindingID, attach.type.layout);
 
                 switch (attach.type) {
-                    case COLOR, COLOR_SAMPLED, PRESENT, PRESENT_SAMPLED -> subpass.pColorAttachments(getAtachBfr(attach, stack));
-                    case DEPTH, DEPTH_SAMPLED -> subpass.pDepthStencilAttachment(attachmentRefs.get(attach.BindingID));
+                    case COLOR_SAMPLED, PRESENT_SAMPLED -> subpass.pColorAttachments(getAtachBfr(attach, stack));
+                    case DEPTH_SAMPLED -> subpass.pDepthStencilAttachment(attachmentRefs.get(attach.BindingID));
                     case PRESENT_RESOLVE, RESOLVE_COLOR, RESOLVE_DEPTH -> subpass.pResolveAttachments(getAtachBfr(attach, stack));
                 }
 

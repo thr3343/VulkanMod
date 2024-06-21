@@ -18,7 +18,7 @@ public class DefaultMainPass implements MainPass {
 
     private final Framebuffer2 mainFramebuffer;
 
-    private RenderPass2 mainRenderPass;
+
 
 
     DefaultMainPass() {
@@ -29,7 +29,7 @@ public class DefaultMainPass implements MainPass {
 
     @Override
     public RenderPass2 getMainRenderPass() {
-        return mainRenderPass;
+        return mainFramebuffer.renderPass2;
     }
 
     @Override
@@ -40,7 +40,7 @@ public class DefaultMainPass implements MainPass {
     private void createRenderPasses() {
 //        RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
 //        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        this.mainRenderPass = new RenderPass2(AttachmentTypes.PRESENT_SAMPLED, AttachmentTypes.DEPTH_SAMPLED);
+        RenderPass2 mainRenderPass = new RenderPass2(AttachmentTypes.PRESENT_SAMPLED, AttachmentTypes.DEPTH_SAMPLED);
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
 

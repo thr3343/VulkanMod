@@ -11,6 +11,7 @@ import net.vulkanmod.config.gui.OptionBlock;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 
@@ -248,7 +249,26 @@ public abstract class Options {
                                     WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
                                 },
                                 () -> config.af)
-                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
+                        new RangeOption(Component.translatable("MSAA"), 0, 3, 1,
+
+
+                                value -> {
+
+                                    config.msaaPreset = value;
+
+//                            VRenderSystem.setMultiSampleState(value);
+
+                                    VRenderSystem.setSampleCountFromPreset(config.msaaPreset);
+                                    VRenderSystem.reInit();
+                                },
+                                () -> config.msaaPreset)
+                                .setTranslator(value -> Component.nullToEmpty(switch (value) {
+                                    case 1 -> "2x MSAA";
+                                    case 2 -> "4x MSAA";
+                                    case 3 -> "8x MSAA";
+                                    default -> "Off";
+                                }))
                 })
         };
     }
