@@ -112,8 +112,8 @@ public class DescriptorAbstractionArray {
     public int resize() {
         if(!checkCapacity()) return this.maxSize;
 
-        final int align = VUtil.align(this.descriptorIndices.size(), 64);
-        return this.maxSize = align==maxSize ? align+64 : align;
+        final int align = VUtil.align(this.descriptorIndices.length(), defaultSize);
+        return this.maxSize = align==maxSize ? align+defaultSize : align;
     }
 
     public void flushAll() {
