@@ -3,9 +3,7 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -65,7 +63,7 @@ public class BlockRenderer {
         BlockRenderer.blockColors = blockColors;
     }
 
-    public void renderBatched(BlockState blockState, BlockPos blockPos, Vector3f pos, TerrainBufferBuilder bufferBuilder) {
+    public void renderBatched(BlockState blockState, BlockPos blockPos, Vector3f pos, TerrainBufferBuilder bufferBuilder, int tilesWidth, int tilesHeight) {
         this.pos = pos;
         this.blockPos = blockPos;
         this.blockState = blockState;
@@ -73,10 +71,10 @@ public class BlockRenderer {
         long seed = blockState.getSeed(blockPos);
 
         BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(blockState);
-        tessellateBlock(model, bufferBuilder, seed);
+        tessellateBlock(model, bufferBuilder, seed, tilesWidth, tilesHeight);
     }
 
-    public void tessellateBlock(BakedModel bakedModel, TerrainBufferBuilder bufferBuilder, long seed) {
+    public void tessellateBlock(BakedModel bakedModel, TerrainBufferBuilder bufferBuilder, long seed, int tilesWidth, int tilesHeight) {
         Vec3 offset = blockState.getOffset(resources.region, blockPos);
 
         pos.add((float) offset.x, (float) offset.y, (float) offset.z);
@@ -94,7 +92,7 @@ public class BlockRenderer {
             if (!quads.isEmpty()) {
                 mutableBlockPos.setWithOffset(blockPos, direction);
                 if (shouldRenderFace(blockState, direction, mutableBlockPos)) {
-                    renderModelFace(bufferBuilder, quads, lightPipeline, direction);
+                    renderModelFace(bufferBuilder, quads, lightPipeline, direction, tilesWidth, tilesHeight);
                 }
             }
         }
@@ -102,22 +100,22 @@ public class BlockRenderer {
         randomSource.setSeed(seed);
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, randomSource);
         if (!quads.isEmpty()) {
-            renderModelFace(bufferBuilder, quads, lightPipeline, null);
+            renderModelFace(bufferBuilder, quads, lightPipeline, null, tilesWidth, tilesHeight);
         }
     }
 
-    private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace) {
+    private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace, int tilesWidth, int tilesHeight) {
         QuadLightData quadLightData = resources.quadLightData;
 
         for (int i = 0; i < quads.size(); ++i) {
             BakedQuad bakedQuad = quads.get(i);
             QuadView quadView = (QuadView) bakedQuad;
             lightPipeline.calculate(quadView, blockPos, quadLightData, cullFace, bakedQuad.getDirection(), bakedQuad.isShade());
-            putQuadData(bufferBuilder, quadView, quadLightData);
+            putQuadData(bufferBuilder, quadView, quadLightData, tilesWidth, tilesHeight);
         }
     }
 
-    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData) {
+    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData, int tilesWidth, int tilesHeight) {
         float r, g, b;
         if (quadView.isTinted()) {
             int color = blockColors.getColor(blockState, resources.region, blockPos, quadView.getColorIndex());
@@ -130,10 +128,10 @@ public class BlockRenderer {
             b = 1.0F;
         }
 
-        putQuadData(bufferBuilder, pos, quadView, quadLightData, r, g, b);
+        putQuadData(bufferBuilder, pos, quadView, quadLightData, r, g, b, tilesWidth, tilesHeight);
     }
 
-    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue) {
+    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue, int tilesWidth, int tilesHeight) {
         Vec3i normal = quad.getFacingDirection().getNormal();
         int packedNormal = VertexUtil.packNormal(normal.getX(), normal.getY(), normal.getZ());
 
@@ -148,13 +146,10 @@ public class BlockRenderer {
 
         bufferBuilder.ensureCapacity();
 
-        float LayerX = quad.getU(idx);
-        float LayerY = quad.getV(idx);
+
+        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(idx), quad.getV(idx), tilesWidth, tilesHeight);
 
 
-        int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
-
-        boolean dynamicState = Initializer.CONFIG.isDynamicState();
 
         for (byte i = 0; i < 4; ++i) {
             final float x = pos.x() + quad.getX(idx);
@@ -177,10 +172,10 @@ public class BlockRenderer {
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
 
-            float u = quad.getU(idx)* (dynamicState ? 64 : 1);
-            float v = quad.getV(idx)* (dynamicState ? 32 : 1);
+            float u = quad.getU(idx)* (tilesWidth);
+            float v = quad.getV(idx)* (tilesHeight);
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, dynamicState ? baseArrayLayer : 0);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 
             idx = (idx + 1) & 0b11;
         }

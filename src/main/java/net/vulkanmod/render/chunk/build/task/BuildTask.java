@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,17 +22,24 @@ import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.shader.descriptor.SubTextureAtlasManager;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 public class BuildTask extends ChunkTask {
+    public final int tileWidth;
+    public final int tileHeight;
     @Nullable
     protected RenderRegion region;
 
-    public BuildTask(RenderSection renderSection, RenderRegion renderRegion, boolean highPriority) {
+    public BuildTask(RenderSection renderSection, RenderRegion renderRegion, boolean highPriority, boolean dynamicState) {
         super(renderSection);
         this.region = renderRegion;
         this.highPriority = highPriority;
+        final VSubTextureAtlas subTexAtlas = SubTextureAtlasManager.getSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+        this.tileWidth= dynamicState ? subTexAtlas.getTileWidth() : 1;
+        this.tileHeight = dynamicState ? subTexAtlas.getTileHeight() : 1;
     }
 
     public String name() {
@@ -125,7 +133,7 @@ public class BuildTask extends ChunkTask {
                         bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
                         bufferBuilder.setBlockAttributes(blockState);
 
-                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder);
+                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder, this.tileWidth, this.tileHeight);
                     }
 
                     if (blockState.getRenderShape() == RenderShape.MODEL) {
@@ -135,7 +143,7 @@ public class BuildTask extends ChunkTask {
                         bufferBuilder.setBlockAttributes(blockState);
 
                         pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
-                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder);
+                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder, this.tileWidth, this.tileHeight);
                     }
                 }
             }

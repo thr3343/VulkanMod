@@ -51,8 +51,8 @@ public class LiquidRenderer {
         this.resources = resources;
     }
 
-    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
-        tessellate(blockState, fluidState, blockPos, vertexConsumer);
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
+        tessellate(blockState, fluidState, blockPos, vertexConsumer, tilesWidth, tilesHeight);
     }
 
     public void setupSprites() {
@@ -100,7 +100,7 @@ public class LiquidRenderer {
         return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
         BlockAndTintGetter region = this.resources.region;
 
         boolean bl = fluidState.is(FluidTags.LAVA);
@@ -227,10 +227,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.UP);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
             if (fluidState.shouldRenderBackwardUpFace(region, blockPos.above())) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
             }
 
         }
@@ -253,7 +253,7 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.DOWN);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
         }
 
@@ -359,10 +359,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, direction);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
             if (sprite2 != this.waterOverlay) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
             }
 
         }
@@ -424,7 +424,7 @@ public class LiquidRenderer {
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip, int tilesWidth, int tilesHeight) {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
@@ -432,12 +432,9 @@ public class LiquidRenderer {
 
         bufferBuilder.ensureCapacity();
 
-        float LayerX = quad.getU(k);
-        float LayerY = quad.getV(k);
 
 
-        boolean dynamicState = Initializer.CONFIG.isDynamicState();
-        int baseArrayLayer = QuadUtils.getBaseArrayLayer(LayerX, LayerY, 64, 32);
+        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(k), quad.getV(k), tilesWidth, tilesHeight);
 
         int i;
         for (int j = 0; j < 4; j++) {
@@ -447,10 +444,10 @@ public class LiquidRenderer {
             final float y = yOffset + quad.getY(i);
             final float z = zOffset + quad.getZ(i);
 
-            float u = quad.getU(k)* (dynamicState ? 64 : 1);
-            float v = quad.getV(k)* (dynamicState ? 32 : 1);
+            float u = quad.getU(k)* (tilesWidth);
+            float v = quad.getV(k)* (tilesHeight);
 
-            bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], dynamicState ? baseArrayLayer : 0);
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], baseArrayLayer);
 
             k += (flip ? -1 : +1);
             k &= 0b11;
