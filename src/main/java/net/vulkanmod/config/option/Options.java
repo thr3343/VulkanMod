@@ -254,8 +254,11 @@ public abstract class Options {
                                 value -> {
 
                                     config.msaaPreset = value;
+                                    DescriptorManager.setTextureState(true, value>0);
+                                    DescriptorManager.updateAllSets();
                                     VRenderSystem.setSampleCountFromPreset(config.msaaPreset);
                                     VRenderSystem.reInit();
+                                    WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
                                 },
                                 () -> config.msaaPreset)
                                 .setTranslator(value -> Component.nullToEmpty(switch (value) {
@@ -264,10 +267,15 @@ public abstract class Options {
                                     case 3 -> "8x MSAA";
                                     default -> "Off";
                                 })),
-                        new RangeOption(Component.translatable("minSampleShading"), 0, 100, 1,
+                        new RangeOption(Component.translatable("MSAA Quality"), 0, 3, 1,
                                 value -> config.minSampleShading = value,
                                 () -> config.minSampleShading)
-                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(switch (value) {
+                                    default -> "Low";
+                                    case 1 -> "Medium";
+                                    case 2 -> "High";
+                                    case 3 -> "Ultra";
+                                })).setTooltip(Component.translatable("vulkanmod.options.minSampleShading.tooltip")),
                 })
         };
     }

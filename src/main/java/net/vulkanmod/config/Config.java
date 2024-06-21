@@ -28,7 +28,7 @@ public class Config {
     public int ambientOcclusion = 1;
     public int af = 1;
     public int msaaPreset = 0;
-    public int minSampleShading = 100;
+    public int minSampleShading = 1;
 
     public void write() {
 
@@ -74,6 +74,6 @@ public class Config {
     }
 
     public boolean isDynamicState() {
-        return af>1;
+        return af>1||msaaPreset>0;
     }
 }

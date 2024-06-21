@@ -121,9 +121,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(state.minSampleShading_i!=0);
+            multisampling.sampleShadingEnable(state.minSampleShading_i>0);
             multisampling.rasterizationSamples(state.multiSampleCount_i); //Identical to VK_SAMPLE_COUNT_*_BIT
-            multisampling.minSampleShading(0.01f*state.minSampleShading_i);
+            multisampling.minSampleShading(getValue(state));
 
             // ===> DEPTH TEST <===
 
@@ -197,6 +197,15 @@ public class GraphicsPipeline extends Pipeline {
 
             return pGraphicsPipeline.get(0);
         }
+    }
+
+    private static float getValue(PipelineState state) {
+        return switch (state.minSampleShading_i){
+            default -> 0;
+            case 1 -> (1f/state.minSampleShading_i)+Float.MIN_VALUE;
+            case 2 -> 0.5f;
+            case 3 -> 1f;
+        };
     }
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
