@@ -237,6 +237,7 @@ public abstract class Options {
                                     minecraftOptions.mipmapLevels().set(value);
                                     Minecraft.getInstance().updateMaxMipLevel(value);
                                     Minecraft.getInstance().delayTextureReload();
+                                    DescriptorManager.setTextureState(true);
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
                                 .setTranslator(value -> Component.nullToEmpty(value.toString())),
@@ -244,17 +245,17 @@ public abstract class Options {
                                 new Integer[]{1, 2, 4, 8, 16},
                                 value -> {
                                     config.af=(value);
-                                    DescriptorManager.setTextureState(true, value>1);
+                                    DescriptorManager.setTextureState(true);
                                     DescriptorManager.updateAllSets();
                                     WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
                                 },
                                 () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
-                        new RangeOption(Component.translatable("MSAA"), 0, 3, 1,
+                        new CyclingOption<>(Component.translatable("Multisample Anti-aliasing"),  new Integer[]{1, 2, 4, 8},
                                 value -> {
 
                                     config.msaaPreset = value;
-                                    DescriptorManager.setTextureState(true, value>0);
+                                    DescriptorManager.setTextureState(true);
                                     DescriptorManager.updateAllSets();
                                     VRenderSystem.setSampleCountFromPreset(config.msaaPreset);
                                     VRenderSystem.reInit();
@@ -262,20 +263,15 @@ public abstract class Options {
                                 },
                                 () -> config.msaaPreset)
                                 .setTranslator(value -> Component.nullToEmpty(switch (value) {
-                                    case 1 -> "2x MSAA";
-                                    case 2 -> "4x MSAA";
-                                    case 3 -> "8x MSAA";
+                                    case 2 -> "2x";
+                                    case 4 -> "4x";
+                                    case 8 -> "8x";
                                     default -> "Off";
                                 })),
-                        new RangeOption(Component.translatable("MSAA Quality"), 0, 3, 1,
+                        new CyclingOption<>(Component.translatable("MSAA Mode"), new Boolean[]{false, true},
                                 value -> config.minSampleShading = value,
                                 () -> config.minSampleShading)
-                                .setTranslator(value -> Component.nullToEmpty(switch (value) {
-                                    default -> "Low";
-                                    case 1 -> "Medium";
-                                    case 2 -> "High";
-                                    case 3 -> "Ultra";
-                                })).setTooltip(Component.translatable("vulkanmod.options.minSampleShading.tooltip")),
+                                .setTranslator(value -> Component.nullToEmpty((value ? "SSAA" : "MSAA"))).setTooltip(Component.translatable("vulkanmod.options.minSampleShading.tooltip")),
                 })
         };
     }

@@ -50,7 +50,6 @@ public class DescriptorManager {
 
     private static int texturePool = 0;
     private static boolean textureState = true;
-    private static boolean DynamicState = Initializer.CONFIG.isDynamicState();
     private static boolean needsReload = true;
 
 
@@ -282,7 +281,7 @@ public class DescriptorManager {
             if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS))
             {
                 final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
-                if(DynamicState){
+                if(Initializer.CONFIG.isDynamicState()){
                     vSubTextureAtlas.unStitch(Options.getMiplevels());
                     DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
                 }
@@ -320,11 +319,11 @@ public class DescriptorManager {
 
     }
 
-    public static void setTextureState(boolean textureState1, boolean DynamicState1)
+    public static void setTextureState(boolean textureState1)
     {
 //        textureState=DynamicState!=DynamicState1;
         needsReload=textureState1;
-        DynamicState=DynamicState1;
+
     }
 
 /*    private static boolean checkUpdateState(int frame) {

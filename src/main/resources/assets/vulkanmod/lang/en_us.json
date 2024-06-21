@@ -6,5 +6,5 @@
   "vulkanmod.options.entityCulling.tooltip" : "Enables culling for entities on not visible sections.",
   "vulkanmod.options.indirectDraw.tooltip" : "Reduces CPU overhead but increases GPU overhead. Enabling it might help in CPU limited systems.",
   "vulkanmod.options.frameQueue.tooltip" : "Higher values might help stabilize frametime but will increase input lag.",
-  "vulkanmod.options.minSampleShading.tooltip" : "Low: Edges of blocks and textures only\nMedium: MSAA, 1 Sample per Pixel\nHigh: Partial SSAA, 50% Samples per Pixel\nUltra: Full SSAA, All Samples per pixel"
+  "vulkanmod.options.minSampleShading.tooltip" : "MSAA: 1 Sample per Pixel\nSSAA: All Samples per pixel\nSSAA further improves quality over MSAA, but is extremely GPU intensive"
 }

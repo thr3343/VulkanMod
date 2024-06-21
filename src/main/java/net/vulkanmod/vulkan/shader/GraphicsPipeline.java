@@ -7,9 +7,7 @@ import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
-import net.vulkanmod.vulkan.framebuffer.AttachmentTypes;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -119,11 +117,12 @@ public class GraphicsPipeline extends Pipeline {
 
             // ===> MULTISAMPLING <===
 
+            float value = state.minSampleShading_i==1 ? 1f : (1f / state.multiSampleCount_i + 0.0625f);
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(state.minSampleShading_i>0);
+            multisampling.sampleShadingEnable(state.multiSampleCount_i>1);
             multisampling.rasterizationSamples(state.multiSampleCount_i); //Identical to VK_SAMPLE_COUNT_*_BIT
-            multisampling.minSampleShading(getValue(state));
+            multisampling.minSampleShading(value);
 
             // ===> DEPTH TEST <===
 
@@ -197,15 +196,6 @@ public class GraphicsPipeline extends Pipeline {
 
             return pGraphicsPipeline.get(0);
         }
-    }
-
-    private static float getValue(PipelineState state) {
-        return switch (state.minSampleShading_i){
-            default -> 0;
-            case 1 -> (1f/state.minSampleShading_i)+Float.MIN_VALUE;
-            case 2 -> 0.5f;
-            case 3 -> 1f;
-        };
     }
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {

@@ -28,7 +28,7 @@ public class PipelineState {
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
         int multiSampleCount = VRenderSystem.getSampleCount();
-        int minSampleShading = Initializer.CONFIG.minSampleShading;
+        int minSampleShading = Initializer.CONFIG.minSampleShading ? 1 : 0;
 
         if(currentState.checkEquals(assemblyRasterState, multiSampleCount, minSampleShading, blendState, depthState, logicOp, currentColorMask, renderPass))
             return currentState;
