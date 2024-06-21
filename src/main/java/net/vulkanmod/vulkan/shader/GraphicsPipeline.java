@@ -121,9 +121,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(state.multiSampleCount_i>1);
+            multisampling.sampleShadingEnable(state.minSampleShading_i!=0);
             multisampling.rasterizationSamples(state.multiSampleCount_i); //Identical to VK_SAMPLE_COUNT_*_BIT
-            multisampling.minSampleShading(1);
+            multisampling.minSampleShading(0.01f*state.minSampleShading_i);
 
             // ===> DEPTH TEST <===
 

@@ -251,14 +251,9 @@ public abstract class Options {
                                 () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
                         new RangeOption(Component.translatable("MSAA"), 0, 3, 1,
-
-
                                 value -> {
 
                                     config.msaaPreset = value;
-
-//                            VRenderSystem.setMultiSampleState(value);
-
                                     VRenderSystem.setSampleCountFromPreset(config.msaaPreset);
                                     VRenderSystem.reInit();
                                 },
@@ -268,7 +263,11 @@ public abstract class Options {
                                     case 2 -> "4x MSAA";
                                     case 3 -> "8x MSAA";
                                     default -> "Off";
-                                }))
+                                })),
+                        new RangeOption(Component.translatable("minSampleShading"), 0, 100, 1,
+                                value -> config.minSampleShading = value,
+                                () -> config.minSampleShading)
+                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
                 })
         };
     }
