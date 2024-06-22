@@ -278,7 +278,7 @@ public class DescriptorManager {
                 resizeAllSamplerArrays();
             }
 
-            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS))
+            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS, Options.getMiplevels()))
             {
                 final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
                 if(Initializer.CONFIG.isDynamicState()){

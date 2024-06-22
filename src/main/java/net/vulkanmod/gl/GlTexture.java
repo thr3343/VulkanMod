@@ -201,8 +201,9 @@ public class GlTexture {
         return map.containsKey(textureID);
     }
 
-    public static boolean checkTextureState(ResourceLocation blockAtlas) {
-        return getTexture(blockAtlas).getVulkanImage()!=null;
+    public static boolean checkTextureState(ResourceLocation blockAtlas, int miplevels) {
+        final VulkanImage vulkanImage1 = getTexture(blockAtlas).getVulkanImage();
+        return vulkanImage1 != null && vulkanImage1.mipLevels == miplevels + 1;
     }
 
     /*    public static void removeImageResource(int TextureID)

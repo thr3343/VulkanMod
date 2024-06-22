@@ -20,6 +20,7 @@ public class VSubTextureAtlas {
     public final VulkanImage[] TextureArray; //may make dierct handle to reduce GC overhead
     private final int baseID;
     private static final int MAX_IMAGE_LAYERS = DeviceManager.deviceProperties.limits().maxImageArrayLayers(); //Should always be 2048
+    private int perSliceMipmaps;
     //Allows Stitched and Unstitched Variants/Atlases to exist simultaneously at the same time
 
     //TODO: Mixin to Block region lists to allow handling of Non-Uniform/Mismatched Block texture resolutions
@@ -42,13 +43,19 @@ public class VSubTextureAtlas {
 
 
         Arrays.setAll(TextureArray, t ->VulkanImage.createTextureImage(a));
+        this.perSliceMipmaps=mipLevels;
     }
 
     //local GPU2GPU copies
     public void unStitch(int mipLevels)
     {
         VulkanImage basetextureAtlas = GlTexture.getTexture(this.baseID).getVulkanImage();
-//        if(isLoaded) return;
+        final int requiredMipLevels = mipLevels + 1; //Is always 1 if Mipmaps are disabled
+        if(basetextureAtlas.mipLevels != perSliceMipmaps)
+        {
+            this.unload();
+            this.load(16, requiredMipLevels);
+        }
         try (MemoryStack stack = stackPush()) {
             final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
             basetextureAtlas.transferSrcLayout(stack, handle.getHandle());
@@ -61,7 +68,7 @@ public class VSubTextureAtlas {
 
         }
 
-        for (int i = 0; i < mipLevels+1; i++) {
+        for (int i = 0; i < requiredMipLevels; i++) {
             for(int y = 0 ; y < this.tileHeight; y++)
             {
                 for (int x = 0; x < this.tileWidth; x++) {
