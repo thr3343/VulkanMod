@@ -244,22 +244,28 @@ public abstract class Options {
                         new CyclingOption<>(Component.translatable("Anisotropic Filtering"),
                                 new Integer[]{1, 2, 4, 8, 16},
                                 value -> {
-                                    config.af=(value);
                                     DescriptorManager.setTextureState(true);
                                     DescriptorManager.updateAllSets();
-                                    WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                    final boolean b = config.msaaPreset > 1 | value > 1;
+                                    if(b != config.isDynamicState()) {
+                                        WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                    }
+                                    config.af=(value);
                                 },
                                 () -> config.af)
                                 .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
                         new CyclingOption<>(Component.translatable("Multisample Anti-aliasing"),  new Integer[]{1, 2, 4, 8},
                                 value -> {
 
-                                    config.msaaPreset = value;
                                     DescriptorManager.setTextureState(true);
                                     DescriptorManager.updateAllSets();
                                     VRenderSystem.setSampleCountFromPreset(config.msaaPreset);
                                     VRenderSystem.reInit();
-                                    WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                    final boolean b =  config.af > 1 | value > 1;
+                                    if(b != config.isDynamicState()) {
+                                        WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                    }
+                                    config.msaaPreset = value;
                                 },
                                 () -> config.msaaPreset)
                                 .setTranslator(value -> Component.nullToEmpty(switch (value) {

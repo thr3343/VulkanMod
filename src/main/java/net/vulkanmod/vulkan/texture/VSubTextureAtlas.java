@@ -21,6 +21,7 @@ public class VSubTextureAtlas {
     private final int baseID;
     private static final int MAX_IMAGE_LAYERS = DeviceManager.deviceProperties.limits().maxImageArrayLayers(); //Should always be 2048
     private int perSliceMipmaps;
+    private boolean isLoaded;
     //Allows Stitched and Unstitched Variants/Atlases to exist simultaneously at the same time
 
     //TODO: Mixin to Block region lists to allow handling of Non-Uniform/Mismatched Block texture resolutions
@@ -56,6 +57,7 @@ public class VSubTextureAtlas {
             this.unload();
             this.load(16, requiredMipLevels);
         }
+        else if(isLoaded) return;
         try (MemoryStack stack = stackPush()) {
             final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
             basetextureAtlas.transferSrcLayout(stack, handle.getHandle());
@@ -78,6 +80,7 @@ public class VSubTextureAtlas {
             }
         }
         Synchronization.INSTANCE.waitFences();
+        this.isLoaded=true;
     }
 
     private int getTileIndex(int y, int x) {
@@ -93,6 +96,7 @@ public class VSubTextureAtlas {
         for (VulkanImage image : this.TextureArray) {
             image.doFree();
         }
+        this.isLoaded=false;
     }
 
     public int getBaseTileSize() {
