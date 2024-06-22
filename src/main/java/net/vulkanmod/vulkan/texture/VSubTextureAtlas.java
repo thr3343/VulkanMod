@@ -70,15 +70,15 @@ public class VSubTextureAtlas {
 
         }
 
-        for (int i = 0; i < requiredMipLevels; i++) {
+
             for(int y = 0 ; y < this.tileHeight; y++)
             {
                 for (int x = 0; x < this.tileWidth; x++) {
                     final int tileIndex = getTileIndex(y, x);
-                    basetextureAtlas.copySubTileTexture(baseTileSize, x, y, TextureArray[getSliceIndex(tileIndex)], i, tileIndex%MAX_IMAGE_LAYERS);
+                    basetextureAtlas.copySubTileTexture(baseTileSize, x, y, TextureArray[getSliceIndex(tileIndex)], requiredMipLevels, tileIndex%MAX_IMAGE_LAYERS);
                 }
             }
-        }
+
         Synchronization.INSTANCE.waitFences();
         this.isLoaded=true;
     }

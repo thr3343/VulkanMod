@@ -235,29 +235,31 @@ public class VulkanImage {
         }
     }
 
-    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int miplevel, int baseArrayLayer)
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int requiredMipLevels, int baseArrayLayer)
     {
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
 
+            VkImageCopy.Buffer vkImageCopies = VkImageCopy.calloc(requiredMipLevels, stack);
+            for (int miplevel = 0; miplevel < requiredMipLevels; miplevel++) {
+                //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
+                final int StileSize = tileSize / (1 << miplevel);
 
-        //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
-            final int StileSize= tileSize/(1<<miplevel);
+                VkImageCopy vkImageCopy = vkImageCopies.get(miplevel);
+                vkImageCopy.srcOffset().set(targetTileX * StileSize, targetTileY * StileSize, 0);
+                vkImageCopy.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .mipLevel(miplevel)
+                        .baseArrayLayer(0)
+                        .layerCount(1);
+                vkImageCopy.dstOffset().set(0, 0, 0);
+                vkImageCopy.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .mipLevel(miplevel)
+                        .baseArrayLayer(baseArrayLayer)
+                        .layerCount(1);
+                vkImageCopy.extent().set(StileSize, StileSize, 1);
+            }
 
-            VkImageCopy.Buffer vkImageCopy = VkImageCopy.calloc(1, stack);
-            vkImageCopy.srcOffset().set(targetTileX*StileSize, targetTileY*StileSize,0);
-            vkImageCopy.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .mipLevel(miplevel)
-                    .baseArrayLayer(0)
-                    .layerCount(1);
-            vkImageCopy.dstOffset().set(0,0,0);
-            vkImageCopy.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .mipLevel(miplevel)
-                    .baseArrayLayer(baseArrayLayer)
-                    .layerCount(1);
-            vkImageCopy.extent().set(StileSize, StileSize, 1);
-
-            vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopy);
+            vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopies);
 
 
         }
