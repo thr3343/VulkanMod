@@ -248,7 +248,7 @@ public abstract class Options {
                                     DescriptorManager.updateAllSets();
                                     final boolean b = config.msaaPreset > 1 | value > 1;
                                     if(b != config.isDynamicState()) {
-                                        WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                        Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
                                     }
                                     config.af=(value);
                                 },
@@ -263,7 +263,7 @@ public abstract class Options {
                                     VRenderSystem.reInit();
                                     final boolean b =  config.af > 1 | value > 1;
                                     if(b != config.isDynamicState()) {
-                                        WorldRenderer.getInstance().allChanged(); //Actually needed to flush the outdated UV data
+                                        Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
                                     }
                                     config.msaaPreset = value;
                                 },

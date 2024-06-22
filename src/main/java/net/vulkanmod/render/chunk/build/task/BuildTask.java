@@ -37,7 +37,7 @@ public class BuildTask extends ChunkTask {
         super(renderSection);
         this.region = renderRegion;
         this.highPriority = highPriority;
-        final VSubTextureAtlas subTexAtlas = SubTextureAtlasManager.getSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+        final VSubTextureAtlas subTexAtlas = SubTextureAtlasManager.getOrCreateSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
         this.tileWidth= dynamicState ? subTexAtlas.getTileWidth() : 1;
         this.tileHeight = dynamicState ? subTexAtlas.getTileHeight() : 1;
     }

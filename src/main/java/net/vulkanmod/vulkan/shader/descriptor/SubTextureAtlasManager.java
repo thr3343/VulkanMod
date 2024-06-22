@@ -31,6 +31,14 @@ public class SubTextureAtlasManager {
     public static VSubTextureAtlas getSubTexAtlas(ResourceLocation s) {
         return subTextureAtlasObjectArrayMap.get(s);
     }
+    public static VSubTextureAtlas getOrCreateSubTexAtlas(ResourceLocation s) {
+        if(!subTextureAtlasObjectArrayMap.containsKey(s))
+        {
+            final int id = Minecraft.getInstance().getTextureManager().getTexture(s).getId();
+            subTextureAtlasObjectArrayMap.put(s, new VSubTextureAtlas(s, GlTexture.getTexture(id).getVulkanImage(),16, id));
+        }
+        return subTextureAtlasObjectArrayMap.get(s);
+    }
 
     public static void cleanupAll() {
         subTextureAtlasObjectArrayMap.forEach((location, vSubTextureAtlas) -> vSubTextureAtlas.unload());

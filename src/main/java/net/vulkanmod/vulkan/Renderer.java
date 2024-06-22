@@ -268,6 +268,10 @@ public class Renderer {
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
         if(VRenderSystem.renderPassUpdate) this.updateFrameBuffer();
+        if(recomp) {
+            WorldRenderer.getInstance().allChanged();
+            recomp = false;
+        }
         p.pop();
         p.push("Begin_rendering");
 
@@ -785,5 +789,9 @@ public class Renderer {
         vkDeviceWaitIdle(device); //Wait for prior cmdBuffer(s)
         mainPass.getMainFrameBuffer().bindRenderPass(VRenderSystem.getDefaultRenderPassState());
         VRenderSystem.renderPassUpdate =false;
+    }
+
+    public void scheduleRebuild() {
+        recomp=true;
     }
 }
