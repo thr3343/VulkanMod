@@ -106,7 +106,7 @@ public enum UniformState {
         return this.needsUpdate = !this.hashedUniformOffsetMap.containsKey(srcHash);
     }
 
-    public boolean requiresUpdate() { return this.needsUpdate| this.currentHash!=this.newHash; }
+    public boolean requiresUpdate() { return this.needsUpdate; }
 
     public void resetAndUpdate()
     {

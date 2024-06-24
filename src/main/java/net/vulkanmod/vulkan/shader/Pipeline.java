@@ -24,6 +24,7 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -301,17 +302,17 @@ public abstract class Pipeline {
                         //           Initializer.LOGGER.error("NO FOG: {}", this.name);
                         UniformState uniformState = UniformState.valueOf(uniform.getName());
 
-//                        int b = RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1;
-//                        UniformState.EndPortalLayers.getMappedBufferPtr().putInt(0, b);
 
+
+                        final long ptr = uniformState.ptr();
                         switch (uniformState) {
-                            case USE_FOG -> UniformState.USE_FOG.getMappedBufferPtr().putInt(0, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
-                            case LineWidth -> UniformState.LineWidth.getMappedBufferPtr().putFloat(0, RenderSystem.getShaderLineWidth());
+                            case USE_FOG -> VUtil.UNSAFE.putInt(ptr, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                            case LineWidth -> VUtil.UNSAFE.putFloat(ptr, RenderSystem.getShaderLineWidth());
                         }
 
                         //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
 
-                        nvkCmdPushConstants(commandBuffer, Renderer.getLayout(), stage, offset, uniformState.getByteSize(), uniformState.getMappedBufferPtr().ptr);
+                        nvkCmdPushConstants(commandBuffer, this.pipelineLayout, stage, offset, uniformState.getByteSize(), ptr);
                         offset += uniformState.getByteSize();
                     }
 

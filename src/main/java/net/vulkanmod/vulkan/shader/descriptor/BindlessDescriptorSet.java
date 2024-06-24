@@ -42,7 +42,7 @@ public class BindlessDescriptorSet {
 
     private final DescriptorAbstractionArray initialisedFragSamplers;
     private final DescriptorAbstractionArray initialisedVertSamplers;
-    private final boolean[] isUpdated = {false, false};
+    private final boolean[] needsUpdate = {true, true};
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private final int setID;
@@ -131,7 +131,7 @@ public class BindlessDescriptorSet {
         }
         try(MemoryStack stack = stackPush()) {
             checkInlineUniformState(frame, stack, uniformStates);
-            if(!this.isUpdated[frame]){
+            if(this.needsUpdate[frame]){
 
                 final int NUM_UBOs = 1;
                 final int NUM_INLINE_UBOs = uniformStates.uniformState().length;
@@ -151,7 +151,7 @@ public class BindlessDescriptorSet {
                 updateImageSamplers(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
 
 
-                this.isUpdated[frame] = false;
+                this.needsUpdate[frame] = false;
 
                 this.newTex.clear();
 
@@ -169,7 +169,8 @@ public class BindlessDescriptorSet {
     }
 
     private void checkInlineUniformState(int frame, MemoryStack stack, InlineUniformBlock uniformStates) {
-        if (UniformState.FogColor.requiresUpdate()) {
+        //Don't update Inlines twice if update is pending]
+        if (!this.needsUpdate[frame] && UniformState.FogColor.requiresUpdate()) {
 
             VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(uniformStates.uniformState().length, stack);
 
@@ -179,7 +180,9 @@ public class BindlessDescriptorSet {
             descriptorWrites.rewind();
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
 
-            UniformState.FogColor.setUpdateState(this.isUpdated[0] | this.isUpdated[1]);
+            UniformState.FogColor.setUpdateState(false);
+
+            DescriptorManager.updateAllSets();
         }
     }
 
@@ -297,7 +300,7 @@ public class BindlessDescriptorSet {
     }
 
     public void forceDescriptorUpdate() {
-        Arrays.fill(this.isUpdated, false);
+        Arrays.fill(this.needsUpdate, true);
     }
 
 
@@ -326,7 +329,7 @@ public class BindlessDescriptorSet {
     }
 
     public boolean needsUpdate(int frame) {
-        return !this.isUpdated[frame];
+        return this.needsUpdate[frame];
     }
 
     public boolean isTexUnInitialised(int shaderTexture) {
