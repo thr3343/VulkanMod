@@ -98,7 +98,7 @@ public abstract class Pipeline {
 
     public Pipeline(String name, boolean bindless) {
         this.name = name;
-        this.bindless = bindless;
+        this.bindless = this.name==null ? false : name.contains("blit") ? false : bindless;
 
 
         setID = this.name!=null && this.name.contains("terrain") ? 1 : 0;
@@ -148,7 +148,7 @@ public abstract class Pipeline {
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout, this.descriptorSetLayout));
+            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
             //TODO: may reuse PsuhConstant Unfiorm list instead of gloal Push
            /* if (this.pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);

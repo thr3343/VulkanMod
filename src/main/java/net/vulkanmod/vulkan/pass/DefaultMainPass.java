@@ -37,6 +37,8 @@ public class DefaultMainPass implements MainPass {
     private void createRenderPasses() {
         RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
         builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE); //Depth StoreOp needed in case Glowing PostEffect is used
+
         this.mainRenderPass = builder.build();
 
         // Create an auxiliary RenderPass needed in case of main target rebinding

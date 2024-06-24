@@ -36,8 +36,8 @@ public class GraphicsPipeline extends Pipeline {
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
-        descriptorSetLayout = bindless ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
-        pipelineLayout = bindless ? Renderer.getLayout2(this.setID) : createPipelineLayout();
+        descriptorSetLayout = this.isBindless() ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
+        pipelineLayout = this.isBindless() ? Renderer.getLayout2(this.setID) : createPipelineLayout();
 
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
@@ -46,7 +46,7 @@ public class GraphicsPipeline extends Pipeline {
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
-        if(!bindless) createDescriptorSets(Renderer.getFramesNum());
+        if(!this.isBindless()) createDescriptorSets(Renderer.getFramesNum());
 
         PIPELINES.add(this);
     }

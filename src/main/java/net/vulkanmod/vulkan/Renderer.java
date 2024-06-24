@@ -604,6 +604,16 @@ public class Renderer {
 
     }
 
+    public void BindCurrentSets(Pipeline pipeline) {
+        VkCommandBuffer commandBuffer = currentCmdBuffer;
+        if (pipeline.isBindless()) {
+            if(currentLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+        } else {
+            pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        }
+        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
+    }
+
     public void pushConstants(Pipeline pipeline) {
        /* VkCommandBuffer commandBuffer = currentCmdBuffer;
 
