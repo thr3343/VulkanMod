@@ -170,7 +170,7 @@ public class BindlessDescriptorSet {
 
     private void checkInlineUniformState(int frame, MemoryStack stack, InlineUniformBlock uniformStates) {
         //Don't update Inlines twice if update is pending]
-        if (!this.needsUpdate[frame] && UniformState.FogColor.requiresUpdate()) {
+        if (!this.needsUpdate[frame] && (UniformState.FogColor.requiresUpdate()||UniformState.FogEnd.requiresUpdate())) {
 
             VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(uniformStates.uniformState().length, stack);
 
@@ -181,7 +181,9 @@ public class BindlessDescriptorSet {
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
 
             UniformState.FogColor.setUpdateState(false);
-
+            UniformState.FogStart.setUpdateState(false);
+            UniformState.FogEnd.setUpdateState(false);
+            //TODO: Don't update sets twice if only Inlines require update
             DescriptorManager.updateAllSets();
         }
     }
@@ -216,21 +218,12 @@ public class BindlessDescriptorSet {
     private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, InlineUniformBlock uniformStates) {
 
         int offset = 0;
-        final Camera playerPos = Minecraft.getInstance().gameRenderer.getMainCamera();
-        final int effectiveRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
-        FogRenderer.setupFog(playerPos,
-                FogRenderer.FogMode.FOG_TERRAIN,
-                effectiveRenderDistance,
-                false,
-                1);
         //TODO: can't specify static offsets in shader without Spec constants/Stringify Macro Hacks
         for(UniformState inlineUniform : uniformStates.uniformState()) {
 
             final long ptr = switch (inlineUniform)
             {
                 default -> inlineUniform.getMappedBufferPtr().ptr;
-                case FogStart -> stack.nfloat(RenderSystem.getShaderFogStart());
-                case FogEnd -> stack.nfloat(RenderSystem.getShaderFogEnd());
                 case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
                 case LineWidth -> stack.nfloat(RenderSystem.getShaderLineWidth());
 //                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
