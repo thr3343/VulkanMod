@@ -54,6 +54,9 @@ public abstract class RenderSystemMixin {
 
     @Shadow private static @Nullable Thread renderThread;
 
+    @Shadow private static float shaderFogStart;
+    @Shadow private static float shaderFogEnd;
+
     /**
      * @author
      */
@@ -113,6 +116,37 @@ public abstract class RenderSystemMixin {
     public static void enableColorLogicOp() {
         assertOnGameThread();
         VRenderSystem.enableColorLogicOp();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    private static void _setShaderFogStart(float f) {
+
+        if(f!=Float.MAX_VALUE && shaderFogStart != f)
+        {
+
+            UniformState.FogStart.getMappedBufferPtr().putFloat(0, f);
+            UniformState.FogStart.setUpdateState(true);
+        }
+        shaderFogStart = f;
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    private static void _setShaderFogEnd(float f) {
+
+        if(f!=Float.MAX_VALUE && shaderFogEnd != f)
+        {
+            UniformState.FogEnd.getMappedBufferPtr().putFloat(0, f);
+            UniformState.FogEnd.setUpdateState(true);
+        }
+        shaderFogEnd = f;
     }
 
     /**

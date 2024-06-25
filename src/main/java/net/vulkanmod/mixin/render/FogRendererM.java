@@ -18,12 +18,12 @@ public class FogRendererM {
         //FOG_SKY only sets FogStart to 0, can be optimized out to just FOG_TERRAIN
         if(fogMode.equals(FogRenderer.FogMode.FOG_TERRAIN))
         {
-            final float shaderFogStart = RenderSystem.getShaderFogStart();
-            final float shaderFogEnd = RenderSystem.getShaderFogEnd();
-            UniformState.FogStart.getMappedBufferPtr().putFloat(0, shaderFogStart);
-            UniformState.FogEnd.getMappedBufferPtr().putFloat(0, shaderFogEnd);
-            UniformState.FogStart.setUpdateState(true);
-            UniformState.FogEnd.setUpdateState(true);
+//            final float shaderFogStart = RenderSystem.getShaderFogStart();
+//            final float shaderFogEnd = RenderSystem.getShaderFogEnd();
+//            UniformState.FogStart.getMappedBufferPtr().putFloat(0, shaderFogStart);
+//            UniformState.FogEnd.getMappedBufferPtr().putFloat(0, shaderFogEnd);
+//            UniformState.FogStart.setUpdateState(true);
+//            UniformState.FogEnd.setUpdateState(true);
         }
     }
 }
