@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -15,7 +14,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
     private static final int INITIAL_VB_SIZE = 1048576;
-    public static final int INITIAL_UB_SIZE = 1024;
+    public static final int INITIAL_UB_SIZE = 2048;
 
     private static final int MAX_QUAD_VERTICES_UINT16 = 65536 * 2 / 3;
 
@@ -135,23 +134,6 @@ public class Drawer {
         if(currentUniformOffset1<0) return;
 
         currentUniformOffset = currentUniformOffset1;
-
-
-        currentUniformOffset &= 127;
-    }
-    public void updateUniformOffset() {
-
-
-        //get the basealignment/offsets of the Base/Initial Uniform on the DescriptorSet
-        //TODO: manage alignment w/ varing offsets/uniforms : may use a uniform block system instead, but unconfirmed if overlapping ranges are problematic otoh
-        final int currentUniformOffset1 = (UniformState.MVP.getOffsetFromHash()/64);
-
-        if(currentUniformOffset1<0) return;
-
-        currentUniformOffset = currentUniformOffset1;
-
-
-        currentUniformOffset &= 127;
     }
 
     public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount, int textureID) {
@@ -229,4 +211,7 @@ public class Drawer {
         return this.auxUniformBuffers[this.currentFrame];
     }
 
+    public int getCurrentUniformOffset() {
+        return currentUniformOffset;
+    }
 }

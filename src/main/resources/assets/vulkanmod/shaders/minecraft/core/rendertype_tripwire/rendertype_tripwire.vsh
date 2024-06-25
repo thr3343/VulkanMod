@@ -9,9 +9,9 @@ layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
 layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[8];
+   mat4 MVP[32];
 
- layout(offset = 512)  mat4 ModelViewMat;
+
 };
 
 
@@ -24,10 +24,10 @@ layout(location = 1) out vec3 normal;
 layout(location = 3) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0)
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0)
 ;
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0;
     normal = (MVP * vec4(Normal, 0.0)).xyz;
@@ -56,10 +56,10 @@ out vec2 texCoord0;
 out vec4 normal;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0)
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0)
 ;
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0;
     normal = MVP * vec4(Normal, 0.0);

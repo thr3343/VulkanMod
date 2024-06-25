@@ -5,9 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -15,10 +16,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
-import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
-import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
-import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.shader.descriptor.*;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
@@ -52,6 +50,8 @@ public abstract class Pipeline {
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
     final int setID;
+    private static final Int2ObjectOpenHashMap<InlineUniformBlock> UniformBlockMap = new Int2ObjectOpenHashMap<>(32);
+    private static final Int2IntOpenHashMap UniformBaseOffsetMap = new Int2IntOpenHashMap(32);
 
     private static long createPipelineCache() {
         try (MemoryStack stack = stackPush()) {
@@ -82,7 +82,7 @@ public abstract class Pipeline {
 
     public final String name;
     private final boolean bindless;
-    public static int lastPushConstantState;
+    private static int lastPushConstantState;
 
     protected long descriptorSetLayout;
     protected long pipelineLayout;
@@ -274,16 +274,49 @@ public abstract class Pipeline {
     public void pushUniforms(UniformBuffer uniformBuffers) {
 
 
-        int msk = 0;
+        int uniformAggregateHash = 0;
         for (Uniform a : this.buffers.get(0).getUniforms()) {
-            msk |= UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
+            uniformAggregateHash += UniformState.valueOf(a.getName()).getCurrentHash();
         }
+       if(!UniformBaseOffsetMap.containsKey(uniformAggregateHash))
+       {
+           int uniformBlockOffset = uniformBuffers.getBlockOffset();
+           UniformBaseOffsetMap.put(uniformAggregateHash, uniformBlockOffset);
 
-        Renderer.getDrawer().updateUniformOffset2(msk);
+           int blockSize_t = 0;
+           for (Uniform a : this.buffers.get(0).getUniforms()) {
+               UniformState.valueOf(a.getName()).uploadUniform(uniformBuffers, blockSize_t);
+               blockSize_t+=a.getSize()*4;
+           }
+
+           uniformBuffers.updateOffset(blockSize_t);
+       }
+
+
+
+//        //request bew Uniform Block
+//        UniformBlockMap
+//        UniformOffsetMap
+//        if(uniformBuffers.checkCapacity(64))
+//        {
+//            DescriptorManager.pushDescriptorSets();
+//            UniformState.resetAll();
+//        }
+//
+
+
+
+        Renderer.getDrawer().updateUniformOffset2(UniformBaseOffsetMap.get(uniformAggregateHash)/64);
 
 
 
 
+    }
+
+    public static void reset()
+    {
+        lastPushConstantState=0;
+        UniformBaseOffsetMap.clear();
     }
 
     public void pushConstants(VkCommandBuffer commandBuffer) {

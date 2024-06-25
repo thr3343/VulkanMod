@@ -39,17 +39,14 @@ public enum UniformState {
     public final String type;
     public final int align;
     public final int size;
-    private final int bankOffset;
     int currentOffset;
 
     int currentHash, newHash;
     private final MappedBuffer mappedBufferPtr;
-    private final int maxLimit;
     private boolean needsUpdate;
 
     private final Int2IntOpenHashMap hashedUniformOffsetMap;
-    private int usedSize;
-    private final int STATE_MSK;
+    private int uniqueUniforms;
 
 
     UniformState(String vec3, int align, int size, int bankOffset, int maxLimit) {
@@ -58,36 +55,24 @@ public enum UniformState {
         this.align = align;
         this.size = size;
         mappedBufferPtr = new MappedBuffer(size * Float.BYTES);
-        this.maxLimit = maxLimit;
         hashedUniformOffsetMap = new Int2IntOpenHashMap(16);
-        this.bankOffset=bankOffset;
-        this.STATE_MSK= switch (this.name())
-        {
-            default -> 0;
-            case "TextureMat" -> 3;
-            case "ProjMat" -> 4;
-            case "ModelViewMat" -> 5;
-        };
     }
 
 
-    public int updateBank(UniformBuffer uniformBuffer)
+    public void uploadUniform(UniformBuffer uniformBuffer, int i)
     {
 
-        boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(this.newHash);
-        if(isUniqueHash) {
-            this.usedSize =  this.maxLimit==0 ? 0 :usedSize % maxLimit;
 
-            this.hashedUniformOffsetMap.put(this.newHash, this.usedSize);
-            MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getBasePointer() + this.usedSize + this.bankOffset, getByteSize());
-            this.usedSize+= this.maxLimit==0  ? 0 : getByteSize();
+        MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getBasePointer() + uniformBuffer.getUsedBytes() + i, getByteSize());
 
-            this.needsUpdate=true;
-        }
-        this.currentHash=this.newHash;
 
-        final int subBankOffset = bankOffset / getByteSize();
-        return (this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize()+subBankOffset) << STATE_MSK;
+    }
+
+    private int getPositionByteOffset(int neededHash) {
+        return this.hashedUniformOffsetMap.get(neededHash) * this.getByteSize();
+    }
+    private int getPositionByteOffset() {
+        return this.uniqueUniforms * this.getByteSize();
     }
 
     public int getByteSize() {
@@ -121,7 +106,7 @@ public enum UniformState {
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;
             uniformState.hashedUniformOffsetMap.clear();
-            uniformState.usedSize = 0;
+            uniformState.uniqueUniforms = 0;
         }
     }
 
@@ -135,10 +120,6 @@ public enum UniformState {
 
     public void storeCurrentOffset(int currentOffset) {
         this.currentOffset=currentOffset;
-    }
-
-    public int getCurrentOffset() {
-        return this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize() << STATE_MSK;
     }
 
     public int getOffsetFromHash() {

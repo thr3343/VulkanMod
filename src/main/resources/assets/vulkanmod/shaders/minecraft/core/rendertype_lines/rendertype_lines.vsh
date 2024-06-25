@@ -5,7 +5,7 @@ layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
- layout(offset = 640)  mat4 ProjMat;
+    mat4 ProjMat[32];
 };
 
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
@@ -27,8 +27,8 @@ const mat4 VIEW_SCALE = mat4(
 );
 
 void main() {
-    vec4 linePosStart = ProjMat * VIEW_SCALE * vec4(Position, 1.0);
-    vec4 linePosEnd = ProjMat * VIEW_SCALE * vec4(Position + Normal, 1.0);
+    vec4 linePosStart = ProjMat[gl_BaseInstance & 31] * VIEW_SCALE * vec4(Position, 1.0);
+    vec4 linePosEnd = ProjMat[gl_BaseInstance & 31] * VIEW_SCALE * vec4(Position + Normal, 1.0);
 
     vec3 ndc1 = linePosStart.xyz / linePosStart.w;
     vec3 ndc2 = linePosEnd.xyz / linePosEnd.w;
@@ -46,7 +46,7 @@ void main() {
         gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
     }
 
-    //vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    //vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     vertexColor = Color;
 }
 

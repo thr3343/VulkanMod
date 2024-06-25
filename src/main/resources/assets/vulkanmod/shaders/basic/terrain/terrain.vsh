@@ -3,8 +3,7 @@
 #include "light.glsl"
 
 layout (binding = 0, set = 1) uniform UniformBufferObject {
-    layout(offset = 0) mat4 MVP0; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
-    layout(offset = 512) mat4 ModelViewMat;
+    mat4 MVP0[8]; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
 };
 
 layout (push_constant) readonly uniform  PushConstant {
@@ -31,9 +30,9 @@ const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
-    gl_Position = MVP0 * pos;
+    gl_Position = MVP0[gl_InstanceIndex>>24] * pos;
 
-    vertexDistance = length((ModelViewMat * pos).xyz);
+    vertexDistance = length(pos.xyz);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
     texCoord0 = UV0 * UV_INV;

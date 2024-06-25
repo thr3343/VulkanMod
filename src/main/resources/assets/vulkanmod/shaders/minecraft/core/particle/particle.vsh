@@ -6,9 +6,7 @@ layout(location = 2) in vec4 Color;
 layout(location = 3) in ivec2 UV2;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 MVP0; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
-
-   layout(offset = 512) mat4 ModelViewMat;
+   mat4 MVP[32]; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -20,9 +18,9 @@ layout(location = 3) out float vertexDistance;
 
 void main() {
     //TODO: Particles can share the same mat as terrain: Uniform indexing can be optimised out
-    gl_Position = MVP0 * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     texCoord0 = UV0;
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
 }

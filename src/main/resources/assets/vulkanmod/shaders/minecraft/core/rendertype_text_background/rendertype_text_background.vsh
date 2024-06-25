@@ -5,8 +5,8 @@ layout(location = 1) in vec4 Color;
 layout(location = 2) in ivec2 UV2;
 
 layout(binding = 0) uniform UniformBufferObject {
-    layout(offset = 0) mat4 MVP[8];
-    layout(offset = 512) mat4 ModelViewMat;
+    layout(offset = 0) mat4 MVP[32];
+
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -16,10 +16,10 @@ layout(location = 1) out vec2 texCoord0;
 layout(location = 2) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
 
 //    vertexDistance = fog_distance(ModelViewMat, IViewRotMat * Position, FogShape);
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
 }
 
@@ -45,6 +45,6 @@ void main() {
 //    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
 //
 ////    vertexDistance = fog_distance(ModelViewMat, IViewRotMat * Position, FogShape);
-//    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+//    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
 //    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
 //}

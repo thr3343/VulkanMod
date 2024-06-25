@@ -304,7 +304,7 @@ public class WorldRenderer {
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP0(poseStack.last().pose(), projection);
+        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
         int currentFrame = Renderer.getCurrentFrame();
@@ -324,7 +324,7 @@ public class WorldRenderer {
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
             Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer);
 
-
+            final int a =  Renderer.getDrawer().getCurrentUniformOffset() << 24;
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
@@ -337,9 +337,9 @@ public class WorldRenderer {
 
 
                     if (indirectDraw)
-                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType, a);
                     else
-                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType, a);
                 }
             }
         }

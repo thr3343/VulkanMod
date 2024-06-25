@@ -10,7 +10,7 @@ layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 MVP[8];
+   mat4 MVP[32];
 };
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
 layout(push_constant) readonly uniform  PushConstant
@@ -27,7 +27,7 @@ layout(location = 2) out vec4 overlayColor;
 layout(location = 3) out vec2 texCoord0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
 
 
@@ -65,10 +65,10 @@ out vec2 texCoord0;
 out vec4 normal;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0)
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0)
 ;
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = length((MVP[(gl_BaseInstance+1) & 31] * vec4(Position, 1.0)).xyz);
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 / 16, 0);
     overlayColor = texelFetch(Sampler2[1], UV1, 0);
     texCoord0 = UV0;

@@ -7,7 +7,7 @@ layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 MVP[8];
+   mat4 MVP[32];
 };
 
 layout(location = 0) out invariant flat uint baseInstance;
@@ -15,7 +15,7 @@ layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out vec2 texCoord0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
     vertexColor = Color;
     texCoord0 = UV0;

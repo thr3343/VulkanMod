@@ -336,4 +336,8 @@ public class DescriptorManager {
     public static boolean isTexUnInitialised(int setID, int shaderTexture) {
         return sets.get(setID).isTexUnInitialised(shaderTexture);
     }
+
+    public static void pushDescriptorSets() {
+
+    }
 }

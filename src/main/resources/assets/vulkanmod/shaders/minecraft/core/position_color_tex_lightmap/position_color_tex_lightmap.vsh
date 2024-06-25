@@ -6,7 +6,7 @@ layout(location = 2) in vec2 UV0;
 layout(location = 3) in vec2 UV2;
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 MVP[8];
+    mat4 MVP[32];
 
 };
 
@@ -15,7 +15,7 @@ layout(location = 1) out vec2 texCoord0;
 layout(location = 2) out vec2 texCoord2;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0)
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0)
 ;
 
     vertexColor = Color;
