@@ -238,7 +238,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline(true);
+            this.pipeline = builder.createGraphicsPipeline(false);
             this.isLegacy = true;
 
         } catch (Exception e) {
