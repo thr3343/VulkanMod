@@ -36,7 +36,7 @@ public class DescriptorManager {
     private static final long globalDescriptorPoolArrayPool;
 
     private static final int  PER_SET_ALLOCS = 2; //Sets used per BindlessDescriptorSet
-    private static final int MAX_SETS = 2 * PER_SET_ALLOCS;
+    private static final int MAX_SETS = 2;// * PER_SET_ALLOCS;
     private static final Int2ObjectArrayMap<BindlessDescriptorSet> sets = new Int2ObjectArrayMap<>(MAX_SETS);
 //    private static final IntOpenHashSet newTex = new IntOpenHashSet(32);
 
@@ -51,6 +51,7 @@ public class DescriptorManager {
     private static int texturePool = 0;
     private static boolean textureState = true;
     private static boolean needsReload = true;
+    private static final int TOTAL_SETS = 2;
 
 
     static {
@@ -105,7 +106,7 @@ public class DescriptorManager {
 
             VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingsFlags = VkDescriptorSetLayoutBindingFlagsCreateInfo.calloc(stack)
                     .sType$Default()
-                    .bindingCount(MAX_SETS)
+                    .bindingCount(bindingFlags.capacity())
                     .pBindingFlags(bindingFlags);
 
 
@@ -159,11 +160,11 @@ public class DescriptorManager {
 
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.descriptorCount(MAX_SETS);
+                uniformBufferPoolSize.descriptorCount(1);
 
                 VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
                 uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS); //Byte Count/Size For Inline Uniform block
+                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE); //Byte Count/Size For Inline Uniform block
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(2);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -171,13 +172,13 @@ public class DescriptorManager {
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(MAX_SETS);
+                    .maxInlineUniformBlockBindings(1);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.pNext(inlineUniformBlockCreateInfo);
             poolInfo.pPoolSizes(poolSizes);
-            poolInfo.maxSets(MAX_SETS);
+            poolInfo.maxSets(MAX_SETS * TOTAL_SETS); //The real descriptor pool size is pPoolSizes * maxSets: not the individual descriptorPool sizes
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
 
@@ -258,7 +259,7 @@ public class DescriptorManager {
 
 
     public static void addDescriptorSet(int SetID, BindlessDescriptorSet bindlessDescriptorSet) {
-        if(sets.size()> MAX_SETS/PER_SET_ALLOCS) throw new RuntimeException("Too Many DescriptorSets!: "+SetID +">"+MAX_SETS/PER_SET_ALLOCS+"-1");
+        if(sets.size()> MAX_SETS*PER_SET_ALLOCS) throw new RuntimeException("Too Many DescriptorSets!: "+SetID +">"+MAX_SETS/PER_SET_ALLOCS+"-1");
 
         sets.put(bindlessDescriptorSet.getSetID(), bindlessDescriptorSet);
     }
