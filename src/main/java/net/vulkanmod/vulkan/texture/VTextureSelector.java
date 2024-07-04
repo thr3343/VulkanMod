@@ -8,7 +8,7 @@ public abstract class VTextureSelector {
     public static final int SIZE = 8;
 
     private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
-    private static final int[] SamplerIndices = new int[SIZE];
+    private static final int[] DescriptorIndices = new int[SIZE];
 
     private static final int[] levels = new int[SIZE];
 
@@ -21,7 +21,7 @@ public abstract class VTextureSelector {
     }
 
     public static void bindTexture(int i, VulkanImage texture) {
-        if(i < 0 || i > 7) {
+        if(checkRange(i)) {
             Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", i));
             return;
         }
@@ -31,13 +31,17 @@ public abstract class VTextureSelector {
     }
 
     public static void bindImage(int i, VulkanImage texture, int level) {
-        if(i < 0 || i > 7) {
+        if(checkRange(i)) {
             Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", i));
             return;
         }
 
         boundTextures[i] = texture;
         levels[i] = level;
+    }
+
+    private static boolean checkRange(int i) {
+        return i < 0 || i > 7;
     }
 
     public static void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
@@ -76,7 +80,7 @@ public abstract class VTextureSelector {
     }
 
     public static void setActiveTexture(int activeTexture) {
-        if(activeTexture < 0 || activeTexture > 7) {
+        if(checkRange(activeTexture)) {
             throw new IllegalStateException(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
         }
 
@@ -88,10 +92,10 @@ public abstract class VTextureSelector {
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
 
     public static void setSamplerIndex(int imageIdx, int texture) {
-        SamplerIndices[imageIdx]=texture;
+        DescriptorIndices[imageIdx]=texture;
     }
 
     public static int getSamplerIndex(int i) {
-        return SamplerIndices[i];
+        return DescriptorIndices[i];
     }
 }

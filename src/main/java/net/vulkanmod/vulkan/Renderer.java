@@ -110,7 +110,7 @@ public class Renderer {
 
         //Can accept duplicate/Same DescriptorSets
         //w/ One Set for each dedicated Sampler Array
-        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 32)); //Default Set for all Core shaders
+        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
         DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
 
         final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();

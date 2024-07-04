@@ -7,7 +7,7 @@ import java.util.BitSet;
 
 public class DescriptorAbstractionArray {
 
-    private static final int maxLimit = 16; //absoluteMaxBoundSamplerLimit
+    private static final int maxLimit = BindlessDescriptorSet.maxPerStageDescriptorSamplers; //absoluteMaxBoundSamplerLimit
     private final BitSet descriptorIndices; //Only need max of 65536 textures
     int maxSize;
     private final int shaderStage;
@@ -41,13 +41,16 @@ public class DescriptorAbstractionArray {
     }
 
     //Add a new textureID registation/index to the Descripotr Array
-    public boolean registerTexture(int texID, int binding) {
-        if (binding == 0 && texID2DescIdx.containsKey(texID)) return false;
+    public int registerTexture(int texID, int binding) {
+        if (binding == 0 && texID2DescIdx.containsKey(texID)) return texID2DescIdx.get(texID);
+
+        if(texID2DescIdx.size()>=maxLimit)
+            return -1; //Out of maxPerStageSamplers
 
         final int samplerIndex = descriptorIndices.nextClearBit(0);
         texID2DescIdx.put(texID, samplerIndex);
         descriptorIndices.set(samplerIndex);
-        return true;
+        return samplerIndex;
 
     }
 
@@ -109,6 +112,6 @@ public class DescriptorAbstractionArray {
 
     public int resize() {
         final int align = VUtil.align(this.descriptorIndices.size(), 64);
-        return this.maxSize = align==maxSize ? align+64 : align;
+        return Math.min(this.maxSize = align==maxSize ? align+64 : align, maxLimit);
     }
 }

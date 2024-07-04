@@ -11,7 +11,6 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.Map;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -21,7 +20,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorManager {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
-    private static final int VERT_SAMPLER_MAX_LIMIT = 4;
+    static final int VERT_SAMPLER_MAX_LIMIT = 4;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32; //set to 16 for Mac Compatibility w/ MoltenVK
 
     private static final int MAX_POOL_SAMPLERS = 16384; //MoltenVk Bug: https://github.com/KhronosGroup/MoltenVK/issues/2227
@@ -30,6 +29,7 @@ public class DescriptorManager {
 
     private static final long descriptorSetLayout;
     private static final long globalDescriptorPoolArrayPool;
+//    private static final long auxArrayPool; //used for Limited Systems: setup donlt need to worry about fragmentaion due to Semi_Bindful mdoe using fixes Block/TexturePool ranges per Descriptor
 
     private static final int  PER_SET_ALLOCS = 2; //Sets used per BindlessDescriptorSet
     private static final int MAX_SETS = 2;// * PER_SET_ALLOCS;
@@ -39,13 +39,13 @@ public class DescriptorManager {
     private static final int MISSING_TEX_ID = 24;
 
     private static final InlineUniformBlock uniformStates = new InlineUniformBlock(FRAG_UBO_ID,  UniformState.FogColor, UniformState.FogStart, UniformState.FogEnd, UniformState.GameTime, UniformState.LineWidth);
-    private static final int INLINE_UNIFORM_SIZE = uniformStates.size_t();
+    static final int INLINE_UNIFORM_SIZE = uniformStates.size_t();
 
-
+    private static final boolean semiBindless = true; //When the device has a textureLimit < 4096
 
 
     private static int texturePool = 0;
-    private static final int TOTAL_SETS = 2;
+    private static final int TOTAL_SETS = 32;
 
 
     static {
@@ -115,8 +115,11 @@ public class DescriptorManager {
 
             descriptorSetLayout=pDescriptorSetLayout.get(0);
 
-
+            //max Auxillary Sets for Semi_Bindless mode
+            //TODO: WilL Share same pool isnetad of an Aux pool for AuxSets: as the Smapler conumption is efefctviely the same (exluign additonal oevrhead from VertexSamplers
+//            int auxPoolLimit = MAX_POOL_SAMPLERS / DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers();
             globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
+//            auxArrayPool = createGlobalDescriptorPool(auxPoolLimit, MAX_POOL_SAMPLERS);
 
 
         }
@@ -126,7 +129,7 @@ public class DescriptorManager {
 
     static long allocateDescriptorSet(MemoryStack stack, int samplerMaxLimitDefault) {
 
-
+        if(texturePool+samplerMaxLimitDefault>MAX_POOL_SAMPLERS) throw new RuntimeException();
         VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo = VkDescriptorSetVariableDescriptorCountAllocateInfo.calloc(stack)
                 .sType$Default()
                 .pDescriptorCounts(stack.ints(samplerMaxLimitDefault));
@@ -218,6 +221,7 @@ public class DescriptorManager {
             {
                 LongBuffer a = stack.mallocLong(sets.size());
                 sets.forEach((key, value) -> a.put(key, value.getSet(currentFrame)));
+                //TODO: Check disturbed Sets
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout2(1),0, a, null);
             }
 
@@ -336,7 +340,7 @@ public class DescriptorManager {
         return sets.get(setID).isTexUnInitialised(shaderTexture);
     }
 
-    public static void pushDescriptorSets() {
-
-    }
+//    public static long pushDescriptorSets(int setID, int samplerAlloc) {
+//        return loadedSets.get(setID).pushDescriptorSet(-1, samplerAlloc);
+//    }
 }
