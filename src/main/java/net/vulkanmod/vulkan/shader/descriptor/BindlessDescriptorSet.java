@@ -18,12 +18,12 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.nio.LongBuffer;
 import java.util.Arrays;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -59,8 +59,8 @@ public class BindlessDescriptorSet {
 
 //    private final Int2LongOpenHashMap[] AuxSets = new Int2LongOpenHashMap[MAX_SETS]; //Only required for Systems w/ Low texture Slot limits (<=4096)
     private long activeSet, currentSet;
-
-    static final int maxPerStageDescriptorSamplers = 16;//DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers();
+    //TODO: PushDescriptorStes size may get too big if maxPerStageDescriptorSamplers > 1024 but < 65536
+    static final int maxPerStageDescriptorSamplers = /*32;*/Math.min(16384, DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers());
     private int subSetIndex;
     private int boundSubSet;//,  subSetIndex;
 
@@ -74,7 +74,7 @@ public class BindlessDescriptorSet {
         initialisedVertSamplers = new DescriptorAbstractionArray(vertTextureLimit, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
         initialisedFragSamplers = new DescriptorAbstractionArray(fragTextureLimit, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
 
-        DescriptorStack.add(new SubSet(0, vertTextureLimit, fragTextureLimit, fragTextureLimit));
+        DescriptorStack.add(new SubSet(0, vertTextureLimit, fragTextureLimit));
     }
 
 
@@ -103,7 +103,7 @@ public class BindlessDescriptorSet {
         {
             if(subSetIndex>=DescriptorStack.size())
             {
-                this.DescriptorStack.add(subSetIndex, pushDescriptorSet(maxPerStageDescriptorSamplers));
+                this.DescriptorStack.add(subSetIndex, pushDescriptorSet());
             }
 
             this.DescriptorStack.get(subSetIndex).addTexture(TextureID, samplerIndex);
@@ -469,13 +469,13 @@ public class BindlessDescriptorSet {
     // Designed to mimic PushConstants by pushing a new stack, but for Descriptor sets instead
     // A new DescriptorSet is allocated, allowing capacity to be expanded like PushConstants
     // Intended for Semi-Bindless systems w/ very low texture limits (i.e. Intel iGPus, MoltenVK e.g.)
-    public SubSet pushDescriptorSet(int initialSize)
+    public SubSet pushDescriptorSet()
     {
 
 //        try(MemoryStack stack = MemoryStack.stackPush())
         {
 
-            SubSet allocateDescriptorSet = new SubSet(DescriptorStack.size() * maxPerStageDescriptorSamplers, this.vertTextureLimit, this.fragTextureLimit, initialSize);
+            SubSet allocateDescriptorSet = new SubSet(DescriptorStack.size() * maxPerStageDescriptorSamplers, this.vertTextureLimit, maxPerStageDescriptorSamplers);
 
 
             Initializer.LOGGER.info("Pushed SetID {} + SubSet {} textureRange: {} -> {}", this.setID, DescriptorStack.size(), DescriptorStack.size()*maxPerStageDescriptorSamplers, DescriptorStack.size()*maxPerStageDescriptorSamplers+maxPerStageDescriptorSamplers);
@@ -491,7 +491,7 @@ public class BindlessDescriptorSet {
 
 
     public boolean checkCapacity() {
-        return DescriptorStack.get(0).checkCapacity();
+        return DescriptorStack.get(0).needsResize();
     }
 
 
@@ -502,7 +502,7 @@ public class BindlessDescriptorSet {
     void resizeSamplerArrays()
     {
         for(SubSet baseSubSet : this.DescriptorStack) {
-            int newLimit = baseSubSet.checkCapacity() ? baseSubSet.resize() : baseSubSet.currentSize();
+            int newLimit = baseSubSet.needsResize() ? baseSubSet.resize() : baseSubSet.currentSize();
             try (MemoryStack stack = MemoryStack.stackPush()) {
 
                 baseSubSet.allocSets(newLimit, stack);
@@ -543,7 +543,7 @@ public class BindlessDescriptorSet {
 
 
                 {
-                    this.DescriptorStack.add(pushDescriptorSet(maxPerStageDescriptorSamplers));
+                    this.DescriptorStack.add(pushDescriptorSet());
                 }
 //                samplerCount-=maxPerStageDescriptorSamplers;
 

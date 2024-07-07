@@ -11,13 +11,13 @@ public class SubSet {
     private final int baseOffset;  //Starting offset for FragSamplers
     private int currentFragMax;
 //    private final int fragTextureLimit;
-//    private final int vertSize;
+    private final int vertSize;
     private final Int2IntOpenHashMap texID2DescIdx;
     int fragCount;
 
-    public SubSet(int baseOffset, int vertSize, int fragTextureLimit, int initialSize) {
+    public SubSet(int baseOffset, int vertSize, int fragTextureLimit) {
         this.baseOffset = baseOffset;
-//        this.vertSize = vertSize;
+        this.vertSize = vertSize;
         this.currentFragMax = fragTextureLimit;//vertSize;
 //        this.fragCount= initialSize;
 //        this.fragTextureLimit = /*this.fragCount = */fragTextureLimit;
@@ -26,7 +26,7 @@ public class SubSet {
         }
 
 
-        texID2DescIdx = new Int2IntOpenHashMap();
+        texID2DescIdx = new Int2IntOpenHashMap(fragTextureLimit);
     }
     //Can overwrite descSets where due to resetting descriptorPool
     void allocSets(int fragTextureLimit, MemoryStack stack) {
@@ -56,11 +56,11 @@ public class SubSet {
         return descriptorSets[frame];
     }
 //
-    public boolean checkCapacity() {
+    public boolean needsResize() {
 
         if(texID2DescIdx.size()==perSetMax) return false;
 
-        final boolean b = currentFragMax > texID2DescIdx.size();
+        final boolean b = currentFragMax < texID2DescIdx.size();
         return b;// || fragCount==perSetMax;
     }
 
@@ -90,7 +90,7 @@ public class SubSet {
 //    }
 
     public int resize() {
-        final int align = Math.min(this.fragCount<<1, perSetMax);
+        final int align = Math.min(this.currentFragMax<<1, perSetMax);
         return currentFragMax =align;
     }
 

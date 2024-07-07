@@ -265,16 +265,16 @@ public class DescriptorManager {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
 
-//            boolean hasResized = false;
-//            for (Int2ObjectMap.Entry<BindlessDescriptorSet> set : sets.int2ObjectEntrySet()) {
-//                final BindlessDescriptorSet value = set.getValue();
-//                hasResized |= value.checkCapacity();
-//            }
-//
-//            if(hasResized)
-//            {
-//                resizeAllSamplerArrays();
-//            }
+            boolean hasResized = false;
+            for (Int2ObjectMap.Entry<BindlessDescriptorSet> set : sets.int2ObjectEntrySet()) {
+                final BindlessDescriptorSet value = set.getValue();
+                hasResized |= value.checkCapacity();
+            }
+
+            if(hasResized)
+            {
+                resizeAllSamplerArrays();
+            }
 
 //            final int capacity = getCapacity(frame);
 //            final boolean needsUpdate = checkUpdateState(frame);
