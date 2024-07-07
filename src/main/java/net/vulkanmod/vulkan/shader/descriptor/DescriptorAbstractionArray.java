@@ -14,6 +14,7 @@ public class DescriptorAbstractionArray {
     private final int descriptorType;
     private final int descriptorBinding;
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
+    private final Int2IntOpenHashMap DescIdx2texID; //alignedIDs
 
 
 
@@ -25,6 +26,7 @@ public class DescriptorAbstractionArray {
 
 
         this.texID2DescIdx = new Int2IntOpenHashMap(maxSize);
+        this.DescIdx2texID = new Int2IntOpenHashMap(maxSize);
 
         descriptorIndices = new BitSet(maxSize);
     }
@@ -41,16 +43,17 @@ public class DescriptorAbstractionArray {
     }
 
     //Add a new textureID registation/index to the Descripotr Array
-    public int registerTexture(int texID, int binding) {
-        if (binding == 0 && texID2DescIdx.containsKey(texID)) return texID2DescIdx.get(texID);
+    public boolean registerTexture(int texID) {
+        if (texID2DescIdx.containsKey(texID)) return false;
 
-        if(texID2DescIdx.size()>=maxLimit)
-            return -1; //Out of maxPerStageSamplers
+//        if(texID2DescIdx.size()>=maxLimit)
+//            return -1; //Out of maxPerStageSamplers
 
         final int samplerIndex = descriptorIndices.nextClearBit(0);
         texID2DescIdx.put(texID, samplerIndex);
+        DescIdx2texID.put(samplerIndex, texID);
         descriptorIndices.set(samplerIndex);
-        return samplerIndex;
+        return true; //vertSize;
 
     }
 
@@ -61,6 +64,7 @@ public class DescriptorAbstractionArray {
 
 
         texID2DescIdx.put(texID, SamplerIndex);
+        DescIdx2texID.put(SamplerIndex, texID);
         descriptorIndices.set(SamplerIndex);
 
     }
@@ -79,6 +83,10 @@ public class DescriptorAbstractionArray {
         return texID2DescIdx;
     }
 
+    public Int2IntOpenHashMap getAlignedIDs2() {
+        return DescIdx2texID;
+    }
+
     public int currentSize() {
         return this.texID2DescIdx.size();//this.samplerRange;
     }
@@ -94,11 +102,13 @@ public class DescriptorAbstractionArray {
         return this.descriptorBinding;
     }
 
-    public void removeTexture(int id) {
+    public boolean removeTexture(int id) {
 
-        if(!this.texID2DescIdx.containsKey(id)) return;
-       int freedDescIdx = this.texID2DescIdx.remove(id);
+        if(!this.texID2DescIdx.containsKey(id)) return false;
+        int freedDescIdx = this.texID2DescIdx.remove(id);
+        DescIdx2texID.remove(freedDescIdx);
         descriptorIndices.clear(freedDescIdx);
+        return true;
     }
 
     public int getDescType() {

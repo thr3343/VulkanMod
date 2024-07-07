@@ -1,26 +1,32 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import org.lwjgl.system.MemoryStack;
-
-import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
 public class SubSet {
     private static final int perSetMax = BindlessDescriptorSet.maxPerStageDescriptorSamplers;
-    final DescriptorAbstractionArray initialisedFragSamplers;
-    final DescriptorAbstractionArray initialisedVertSamplers;
+
     final long[] descriptorSets = new long[2];
     private final int baseOffset;  //Starting offset for FragSamplers
-    int textureCounts;
+    private int currentFragMax;
+//    private final int fragTextureLimit;
+//    private final int vertSize;
+    private final Int2IntOpenHashMap texID2DescIdx;
+    int fragCount;
 
-    public SubSet(int baseOffset, int vertSize, int fragTextureLimit, int vertexSamplerId, int fragSamplerId) {
+    public SubSet(int baseOffset, int vertSize, int fragTextureLimit, int initialSize) {
         this.baseOffset = baseOffset;
+//        this.vertSize = vertSize;
+        this.currentFragMax = fragTextureLimit;//vertSize;
+//        this.fragCount= initialSize;
+//        this.fragTextureLimit = /*this.fragCount = */fragTextureLimit;
         try(MemoryStack stack = MemoryStack.stackPush()) {
             allocSets(fragTextureLimit, stack);
         }
 
-        initialisedFragSamplers = new DescriptorAbstractionArray(fragTextureLimit, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, fragSamplerId);
-        initialisedVertSamplers = new DescriptorAbstractionArray(vertSize, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vertexSamplerId);
+
+        texID2DescIdx = new Int2IntOpenHashMap();
     }
     //Can overwrite descSets where due to resetting descriptorPool
     void allocSets(int fragTextureLimit, MemoryStack stack) {
@@ -28,31 +34,67 @@ public class SubSet {
             this.descriptorSets[i]= DescriptorManager.allocateDescriptorSet(stack, fragTextureLimit);
         }
     }
+//
+//    public void increment()
+//    {
+//        if(currentFragMax > fragCount && fragCount<=perSetMax)
+//            fragCount++;
+//    }
+//
+//    public void decrement()
+//    {
+//        if(!isSetEmpty())
+//            fragCount--;
+//    }
 
-    public int registerTexture(int binding, int TextureID)
-    {
-        return (binding == 0 ? this.initialisedFragSamplers : initialisedVertSamplers)
-                .registerTexture(TextureID, 0);
-    }
+//    private boolean isSetEmpty() {
+//        return fragCount==0;
+//    }
 
-    public void getSamplerArray(int binding, int texID, int SamplerIndex) {
-        (binding == 0 ? this.initialisedFragSamplers : initialisedVertSamplers).registerImmutableTexture(texID, SamplerIndex);
-    }
 
     public long getSetHandle(int frame) {
         return descriptorSets[frame];
     }
-
+//
     public boolean checkCapacity() {
-        return initialisedFragSamplers.checkCapacity();
+
+        if(texID2DescIdx.size()==perSetMax) return false;
+
+        final boolean b = currentFragMax > texID2DescIdx.size();
+        return b;// || fragCount==perSetMax;
     }
 
-    public int TextureID2SamplerIdx(int binding, int TextureID) {
-        return (binding == 0 ? this.initialisedFragSamplers : initialisedVertSamplers)
-                .TextureID2SamplerIdx(TextureID);
-    }
 
     public int getBaseIndex() {
         return this.baseOffset;
+    }
+
+    public void addTexture(int textureID, int samplerIndex) {
+        this.texID2DescIdx.put(textureID, samplerIndex-baseOffset);
+    }
+
+    public void removeTexture(int id) {
+        this.texID2DescIdx.remove(id);
+    }
+
+    public Int2IntMap getAlignedIDs() {
+        return this.texID2DescIdx;
+    }
+
+//    public int fragSize() {
+//        return this.fragCount;
+//    }
+//
+//    public int vertSize() {
+//        return this.vertSize;
+//    }
+
+    public int resize() {
+        final int align = Math.min(this.fragCount<<1, perSetMax);
+        return currentFragMax =align;
+    }
+
+    public int currentSize() {
+        return currentFragMax;
     }
 }
