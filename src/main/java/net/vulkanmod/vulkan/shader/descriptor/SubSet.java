@@ -90,7 +90,12 @@ public class SubSet {
 //    }
 
     public int resize() {
-        final int align = Math.min(this.currentFragMax<<1, perSetMax);
+        int a = this.currentFragMax << 1;
+        while (a<texID2DescIdx.size())
+        {
+            a<<=1;
+        }
+        final int align = Math.min(a, perSetMax);
         return currentFragMax =align;
     }
 
