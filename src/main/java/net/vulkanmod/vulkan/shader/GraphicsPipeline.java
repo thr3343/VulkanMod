@@ -15,6 +15,9 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -25,6 +28,7 @@ public class GraphicsPipeline extends Pipeline {
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
+    private final EnumSet<SPIRVUtils.SpecConstant> specConstants;
 
     private final long vertShaderModule;
     private final long fragShaderModule;
@@ -38,6 +42,7 @@ public class GraphicsPipeline extends Pipeline {
         this.vertexFormat = builder.vertexFormat;
         descriptorSetLayout = this.isBindless() ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
         pipelineLayout = this.isBindless() ? Renderer.getLayout2(this.setID) : createPipelineLayout();
+        this.specConstants = builder.specConstants;
 
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
@@ -63,6 +68,16 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
+
+            VkSpecializationMapEntry.Buffer specEntrySet =  VkSpecializationMapEntry.malloc(specConstants.size(), stack);
+
+
+            boolean equals = !this.specConstants.isEmpty();
+            VkSpecializationInfo specInfo = equals ? VkSpecializationInfo.malloc(stack)
+                    .pMapEntries(specEntrySet)
+                    .pData(enumSpecConstants(stack, specEntrySet)) : null;
+
+
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
 
             vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -76,6 +91,7 @@ public class GraphicsPipeline extends Pipeline {
             fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
             fragShaderStageInfo.module(fragShaderModule);
             fragShaderStageInfo.pName(entryPoint);
+            fragShaderStageInfo.pSpecializationInfo(specInfo);
 
             // ===> VERTEX STAGE <===
 
@@ -205,6 +221,31 @@ public class GraphicsPipeline extends Pipeline {
             return pGraphicsPipeline.get(0);
         }
     }
+
+
+    private ByteBuffer enumSpecConstants(MemoryStack stack, VkSpecializationMapEntry.Buffer specEntrySet) {
+        int i = 0;
+        int x = 0;
+        ByteBuffer byteBuffer = stack.malloc(specConstants.size()*Integer.BYTES);
+
+        for(var specDef : specConstants)
+        {
+            specEntrySet.get(i)
+                    .constantID(specDef.ordinal())
+                    .offset(x)
+                    .size(4);
+
+            byteBuffer.putInt(i, specDef.getValue());
+            i++; x+=4;
+        }
+        return byteBuffer;
+    }
+
+    //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+    private static ByteBuffer alignedVkBool32(MemoryStack stack, int i) {
+        return stack.malloc(Integer.BYTES).putInt(0, i); //Malloc as Int is always Unaligned, so asIntBuffer doesn't help here afaik
+    }
+
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
 

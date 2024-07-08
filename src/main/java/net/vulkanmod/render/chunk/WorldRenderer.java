@@ -312,7 +312,7 @@ public class WorldRenderer {
         if (allowedRenderTypes.contains(terrainRenderType)) {
 
             //Moved inside allowedRenderTypes to reduce overall pipeline count
-
+            terrainRenderType.setCutoutUniform();
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             renderer.bindGraphicsPipeline(pipeline);
