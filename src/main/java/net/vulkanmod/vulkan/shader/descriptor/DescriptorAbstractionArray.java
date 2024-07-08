@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.vulkanmod.vulkan.util.VUtil;
 
@@ -13,8 +14,7 @@ public class DescriptorAbstractionArray {
     private final int shaderStage;
     private final int descriptorType;
     private final int descriptorBinding;
-    private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
-    private final Int2IntOpenHashMap DescIdx2texID; //alignedIDs
+    private final Int2IntMap texID2DescIdx, DescIdx2texID; //alignedIDs
 
 
 
@@ -79,11 +79,11 @@ public class DescriptorAbstractionArray {
         else return 0;
     }
 
-    public Int2IntOpenHashMap getAlignedIDs() {
+    public Int2IntMap getAlignedIDs() {
         return texID2DescIdx;
     }
 
-    public Int2IntOpenHashMap getAlignedIDs2() {
+    public Int2IntMap getAlignedIDs2() {
         return DescIdx2texID;
     }
 

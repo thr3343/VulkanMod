@@ -35,12 +35,9 @@ public class BindlessDescriptorSet {
 
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
 
-    private static final int SAMPLER_MAX_LIMIT_DEFAULT = 16; //set to 16 for Mac Compatibility due to a MoltenVk Bug/issue: https://github.com/KhronosGroup/MoltenVK/issues/2227
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
 
-    private static final int MAX_SETS = 2;
-    private static final int NEW_TEXTURE = 0;
-    private static final int OUT_OF_SET_SPACE = 1;
+
     private final DescriptorAbstractionArray initialisedFragSamplers;
     private final DescriptorAbstractionArray initialisedVertSamplers;
     private final ObjectArrayList<SubSet> DescriptorStack = new ObjectArrayList<>(16);
@@ -50,17 +47,11 @@ public class BindlessDescriptorSet {
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private final int setID;
     private final int vertTextureLimit;
-    private final int fragTextureLimit;
-    private int currentSamplerSize = SAMPLER_MAX_LIMIT_DEFAULT;
     private int MissingTexID = -1;
 
-
-//    private final long[] descriptorSets = new long[MAX_SETS];
-
-//    private final Int2LongOpenHashMap[] AuxSets = new Int2LongOpenHashMap[MAX_SETS]; //Only required for Systems w/ Low texture Slot limits (<=4096)
-    private long activeSet, currentSet;
     //TODO: PushDescriptorStes size may get too big if maxPerStageDescriptorSamplers > 1024 but < 65536
-    static final int maxPerStageDescriptorSamplers = /*32;*/Math.min(16384, DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers());
+    static final int maxPerStageDescriptorSamplers = /*32;*/Math.min(DescriptorManager.MAX_POOL_SAMPLERS, DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers());
+    static final boolean semiBindless = maxPerStageDescriptorSamplers < DescriptorManager.MAX_POOL_SAMPLERS;
     private int subSetIndex;
     private int boundSubSet;//,  subSetIndex;
 
@@ -68,7 +59,6 @@ public class BindlessDescriptorSet {
     public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit) {
         this.setID = setID;
         this.vertTextureLimit = vertTextureLimit;
-        this.fragTextureLimit = fragTextureLimit;
 
 
         initialisedVertSamplers = new DescriptorAbstractionArray(vertTextureLimit, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
@@ -80,27 +70,20 @@ public class BindlessDescriptorSet {
 
     public void registerTexture(int binding, int TextureID)
     {
-        //TODO: Select needed SuBSet based on texture Range: Switching +mrebingin SuBSets as needed to Page in-Out Required texture ranges
-
-
-
-
-            //TODO: DescriptorView
-
-        //BaseSmaplerIndex of currentDescriptorSet
-//        int samplerOffset =
 
 
         final boolean isNewTex = (binding == 0 ? this.initialisedFragSamplers
          : this.initialisedVertSamplers).registerTexture(TextureID);
 
-        if(binding!=0) return;
+        if(binding!=0) return; //Ignore the immutable Vertex Samplers
 
 
         final int samplerIndex = this.initialisedFragSamplers.TextureID2SamplerIdx(TextureID);
         int subSetIndex = getSubSetIndex(samplerIndex);
         if(isNewTex)
         {
+            // Push New descriptorSet onto the DescriptorStack if textureCount > maxPerStageDescriptorSamplers
+            // (Only applicable to semi-Bindless Devices)
             if(subSetIndex>=DescriptorStack.size())
             {
                 this.DescriptorStack.add(subSetIndex, pushDescriptorSet());
@@ -112,105 +95,48 @@ public class BindlessDescriptorSet {
             return;
 
         }
+        this.subSetIndex=subSetIndex;
+        if(semiBindless) bindSubSetIfNeeded();
+
+    }
+    //Change SuBSet if the texture range exceeds the max of the currently bound SuBSet (i.e. maxPerStageDescriptorSamplers)
+    void bindSubSetIfNeeded() {
+
+        if(this.subSetIndex!=boundSubSet && this.subSetIndex<DescriptorStack.size()) {
+            boundSubSet = this.subSetIndex;
 
 
-
-        //Change SuBSet if the texture range exceeds maxPerStageDescriptorSamplers
-       if(subSetIndex!=boundSubSet && subSetIndex<DescriptorStack.size())
-        {
-            boundSubSet = subSetIndex;
-           this.subSetIndex=subSetIndex;
-//          DescriptorManager.BindAllSets(Renderer.getCurrentFrame(), Renderer.getCommandBuffer());
-
-            try(MemoryStack stack = MemoryStack.stackPush())
-            {
-
-                //TODO: Check disturbed Sets
+            try (MemoryStack stack = MemoryStack.stackPush()) {
                 vkCmdBindDescriptorSets(Renderer.getCommandBuffer(),
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        Renderer.getLayout(),
+                        Renderer.getLayout(), //Don't need the Full layout for Blocks Set (set = 1): can just bind this set only
                         0,
-                        stack.longs(this.DescriptorStack.get(subSetIndex).getSetHandle(Renderer.getCurrentFrame())),
+                        stack.longs(this.DescriptorStack.get(this.subSetIndex).getSetHandle(Renderer.getCurrentFrame())),
                         null);
             }
         }
-
-      /*  int samplerIndex = getSamplerIndex(binding, TextureID);
-        final boolean b = samplerIndex == -1;
-        final boolean b1 = subSetIndex >= DescriptorStack.size();
-        if(b1 ||b)
-        {
-//            subSetIndex++;
-//                subSetIndex= this.DescriptorStack.size();
-            this.DescriptorStack.push(this.pushDescriptorSet());
-//                subSetIndex=max;
-            samplerIndex = this.DescriptorStack.top().registerTexture(binding, TextureID);
-        }
-
-
-        //Skip rendering current pipeline if texture is not registered yet
-        if(b1 ||  b || samplerIndex>0)
-        {
-
-            newTex.add(TextureID);
-            this.forceDescriptorUpdate();
-
-        }
-        textureId2SamplerIndex.put(TextureID, samplerIndex);
-        subSetIndex = textureId2SamplerIndex.get(TextureID) / maxPerStageDescriptorSamplers;
-        if(subSetIndex>=DescriptorStack.size())
-        {
-            this.DescriptorStack.push(this.pushDescriptorSet());
-//                subSetIndex=max;
-            samplerIndex = this.DescriptorStack.top().registerTexture(binding, TextureID);
-            textureId2SamplerIndex.put(TextureID, samplerIndex);
-        }
-        else if(boundSubSet!=subSetIndex) {
-            boundSubSet=subSetIndex;
-            DescriptorManager.BindAllSets(Renderer.getCurrentFrame(), Renderer.getCommandBuffer());
-        }*/
-//        DescriptorManager.BindAllSets(Renderer.getCurrentFrame(), Renderer.getCommandBuffer());
-//        if(subSetIndex != samplerIndex / maxPerStageDescriptorSamplers)
-//        {
-//            subSetIndex = samplerIndex / maxPerStageDescriptorSamplers;
-//        }
-
-
-
-        //TODO: Push new set if Capacity is exhausted
-
-
-
-
-
     }
 
-    //    private long getCurrentSet(int currentTextureRange, int frame) {
-//        if(currentTextureRange>AuxSets[frame].size())
-//        {
-//            AuxSets[frame].computeIfAbsent(currentTextureRange, integer -> pushDescriptorSet(frame, maxPerStageDescriptorSamplers));
-//        }
-//        return AuxSets[frame].get(currentTextureRange);
-//    }
 
     public int getTexture(int binding, int TextureID)
     {
 //        if(binding!=0) return 0;
         final int i = (binding == 0 ? initialisedFragSamplers : initialisedVertSamplers).TextureID2SamplerIdx(TextureID);
 //        return DescriptorStack.get(getSubSetIndex(i)).getAlignedIDs().get(TextureID);
-        return i - DescriptorStack.get(getSubSetIndex(i)).getBaseIndex();
+        return i - getSubSet(i).getBaseIndex();
     }
 
-    //TODO: may remove this, as using texture broadcast seems to have the same performance
+    private SubSet getSubSet(int i) {
+        return this.DescriptorStack.get(getSubSetIndex(i));
+    }
+
+    //TODO: may remove this, as using Non-hardcoded Frag Sampler Indices with texture broadcast seems to have the same performance
     private void setupHardcodedTextures() {
 
-        //TODO: make this handle Vanilla's Async texture Loader
-        // so images can be loaded and register asynchronously without risk of Undefined behaviour or Uninitialised descriptors
-        // + Reserving texture Slots must use resourceLocation as textureIDs are not Determinate due to the Async Texture Loading
         this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
 
         final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        //TODO: need to check this writes to reference or Not
+
         if(this.setID==0) {
 //            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
@@ -251,11 +177,10 @@ public class BindlessDescriptorSet {
                 for(SubSet currentSet : this.DescriptorStack) {
 
                     final long setID = currentSet.getSetHandle(frame);
-                    final int baseSamplerOffset = currentSet.getBaseIndex();
 
                     final int NUM_UBOs = 1;
                     final int NUM_INLINE_UBOs = uniformStates.uniformState().length;
-                    final int fragSize = Math.min(currentSet.getAlignedIDs().size(), maxPerStageDescriptorSamplers);
+                    final int fragSize = currentSet.getAlignedIDs().size();
                     final int capacity = fragSize + initialisedVertSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
                     VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 //                    final long currentSet = descriptorSets[frame];
@@ -269,8 +194,8 @@ public class BindlessDescriptorSet {
                     updateInlineUniformBlocks(stack, descriptorWrites, setID, uniformStates);
                     //TODO: May remove VertxSampler updates, as they are mostly immutable textures
 
-                    updateImageSamplers(stack, descriptorWrites, setID, this.initialisedVertSamplers, 0);
-                    updateImageSamplers2(stack, descriptorWrites, currentSet, this.initialisedFragSamplers, setID);
+                    updateImageSamplers2(stack, descriptorWrites, setID, this.initialisedVertSamplers.getAlignedIDs(), this.initialisedVertSamplers.getBinding());
+                    updateImageSamplers2(stack, descriptorWrites, setID, currentSet.getAlignedIDs(), this.initialisedFragSamplers.getBinding());
 
 
 
@@ -367,21 +292,15 @@ public class BindlessDescriptorSet {
     }
 
 
-    private void updateImageSamplers(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, DescriptorAbstractionArray descriptorArray, int baseSamplerOffset) {
-        //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
-        if(descriptorArray.currentSize()==0) return;
-//        if(SubSetSize>maxPerStageDescriptorSamplers) throw new RuntimeException(this.setID +"->"+SubSetSize+">"+maxPerStageDescriptorSamplers);
-//        if(SubSetSize==0) return;
+    private void updateImageSamplers2(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long setHandle, Int2IntMap alignedIDs, int binding) {
 
-        final int subSetSize = Math.min(descriptorArray.currentSize()-baseSamplerOffset, maxPerStageDescriptorSamplers);
+        for (Int2IntMap.Entry texId : alignedIDs.int2IntEntrySet()) {
+            final int texId1 = texId.getIntKey();
+            final int samplerIndex = Math.max(0, texId.getIntValue());
 
-
-        for (int samplerIndex = 0; samplerIndex < subSetSize; samplerIndex++) {
-
-            final int texId1 = descriptorArray.getAlignedIDs2().get(samplerIndex + baseSamplerOffset);
 
             boolean b = !GlTexture.hasImageResource(texId1);
-            if(!b) b =  !GlTexture.hasImage(texId1);
+            if (!b) b = !GlTexture.hasImage(texId1);
             VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
 
             image.readOnlyLayout();
@@ -395,63 +314,19 @@ public class BindlessDescriptorSet {
 
             final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
             vkWriteDescriptorSet.sType$Default()
-                    .dstBinding(descriptorArray.getBinding())
+                    .dstBinding(binding)
                     .dstArrayElement(samplerIndex)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .descriptorCount(1)
                     .pImageInfo(imageInfo)
-                    .dstSet(currentSet);
-
-
+                    .dstSet(setHandle);
 
 
         }
     }
 
-    private void updateImageSamplers2(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, SubSet currentSet, DescriptorAbstractionArray descriptorArray, long setHandle) {
-        //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
-        if(descriptorArray.currentSize()==0) return;
-//        if(SubSetSize>maxPerStageDescriptorSamplers) throw new RuntimeException(this.setID +"->"+SubSetSize+">"+maxPerStageDescriptorSamplers);
-//        if(SubSetSize==0) return;
 
-//        final int subSetSize = Math.min(descriptorArray.currentSize()-baseSamplerOffset, maxPerStageDescriptorSamplers);
-
-
-        for (Int2IntMap.Entry texId : currentSet.getAlignedIDs().int2IntEntrySet()) {
-            {
-                final int texId1 = texId.getIntKey();
-                final int samplerIndex = Math.max(0, texId.getIntValue());
-
-
-                boolean b = !GlTexture.hasImageResource(texId1);
-                if (!b) b = !GlTexture.hasImage(texId1);
-                VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
-                        .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-                        .imageView(image.getImageView())
-                        .sampler(image.getSampler());
-
-                final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
-                vkWriteDescriptorSet.sType$Default()
-                        .dstBinding(descriptorArray.getBinding())
-                        .dstArrayElement(samplerIndex)
-                        .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                        .descriptorCount(1)
-                        .pImageInfo(imageInfo)
-                        .dstSet(setHandle);
-
-
-            }
-        }
-    }
-
-
-    public void removeImage(int id) {
+    public void removeFragImage(int id) {
         int samplerIndex = initialisedFragSamplers.getAlignedIDs().get(id);
 
         this.initialisedFragSamplers.removeTexture(id);
