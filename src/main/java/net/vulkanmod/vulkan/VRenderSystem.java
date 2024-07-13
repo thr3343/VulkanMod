@@ -60,8 +60,11 @@ public abstract class VRenderSystem {
     public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
 
-        UniformState.ScreenSize.getMappedBufferPtr().putFloat(0, window.getWidth());
-        UniformState.ScreenSize.getMappedBufferPtr().putFloat(4, window.getHeight());
+        final int width = window.getWidth();
+        final int height = window.getHeight();
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(0, width);
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(4, height);
+        UniformState.ScreenSize.needsUpdate(Float.floatToRawIntBits(width)+Float.floatToRawIntBits(height));
     }
 
     public static void setWindow(long window) {
@@ -111,11 +114,14 @@ public abstract class VRenderSystem {
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), f1, f2, f3, f4);
+        int hash = Float.floatToRawIntBits(f1) + Float.floatToRawIntBits(f2) + Float.floatToRawIntBits(f3) + Float.floatToRawIntBits(f4);
+        UniformState.ColorModulator.needsUpdate(hash);
     }
     //TOOD: Schedule update when actually unique data has been provided
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(UniformState.FogColor.getMappedBufferPtr(), f1, f2, f3, f4);
-        UniformState.FogColor.setUpdateState(true);
+        int hash = Float.floatToRawIntBits(f1) + Float.floatToRawIntBits(f2) + Float.floatToRawIntBits(f3) + Float.floatToRawIntBits(f4);
+        UniformState.FogColor.needsUpdate(hash);
     }
 
     public static MappedBuffer getShaderFogColor() {

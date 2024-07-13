@@ -25,13 +25,16 @@
 
 #include <fog.glsl>
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
+    vec4 FogColor;
     float FogStart;
     float FogEnd;
-    vec4 FogColor;
+};
+
+layout(push_constant) readonly uniform pushConstant{
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(location = 0) in float vertexDistance;
@@ -45,5 +48,5 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color; //linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor); //Fog uniforms not specified in this shader
 }
