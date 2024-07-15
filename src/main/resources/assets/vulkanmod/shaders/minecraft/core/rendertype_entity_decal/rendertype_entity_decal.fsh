@@ -19,6 +19,7 @@ layout(location = 0) flat in uint baseInstance;
 layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in vec4 overlayColor;
 layout(location = 3) in vec2 texCoord0;
+layout(location = 4) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 
