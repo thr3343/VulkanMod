@@ -20,7 +20,7 @@ layout(location = 3) out float vertexDistance;
 
 void main() {
     gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
-
+    baseInstance = gl_BaseInstance>>16;
     vertexDistance = fog_distance(Position.xyz, 0);
     texCoord0 = UV0;
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);

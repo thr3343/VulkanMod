@@ -39,7 +39,6 @@ layout(push_constant) readonly uniform pushConstant{
 
 layout(location = 0) in float vertexDistance;
 layout(location = 1) in vec4 vertexColor;
-layout(location = 2) in vec4 normal;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -48,5 +47,5 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = color; //linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor); //Fog uniforms not specified in this shader
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }

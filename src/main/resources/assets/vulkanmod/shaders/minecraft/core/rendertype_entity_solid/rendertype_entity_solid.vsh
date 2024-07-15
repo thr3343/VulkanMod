@@ -37,6 +37,6 @@ void main() {
     vertexDistance = fog_distance(Position.xyz, 0);
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
     lightMapColor = texelFetch(Sampler2[0], UV2 / 16, 0);
-    //overlayColor = texelFetch(Sampler1, UV1, 0);
+    overlayColor = texelFetch(Sampler2[1], UV1, 0);
     texCoord0 = UV0;
 }

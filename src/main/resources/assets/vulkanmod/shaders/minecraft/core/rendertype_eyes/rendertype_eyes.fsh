@@ -1,4 +1,6 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
 #include "fog.glsl"
 
 layout(binding = 3) uniform sampler2D Sampler0[];
@@ -8,8 +10,8 @@ layout(push_constant) readonly uniform  PushConstant{
 };
 
 layout(binding = 1) uniform UBO{
-    float FogStart;
-    float FogEnd;
+    layout(offset = 16) float FogStart;
+    layout(offset = 20) float FogEnd;
 };
 
 

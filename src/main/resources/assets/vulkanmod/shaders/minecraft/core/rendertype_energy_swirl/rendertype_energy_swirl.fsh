@@ -6,8 +6,8 @@
 layout(binding = 3) uniform sampler2D Sampler0[];
 
 layout(binding = 1) uniform UBO{
-    float FogStart;
-    float FogEnd;
+    layout(offset = 16) float FogStart;
+    layout(offset = 20) float FogEnd;
 };
 
 layout(push_constant) readonly uniform pushConstant{
@@ -23,7 +23,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
-    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor * ColorModulator;;
+    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor * ColorModulator;
     if (color.a < 0.1) {
         discard;
     }

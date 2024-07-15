@@ -10,7 +10,7 @@ vec4 projection_from_position(vec4 position) {
 
 layout(location = 0) in vec3 Position;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[32];
 };
 

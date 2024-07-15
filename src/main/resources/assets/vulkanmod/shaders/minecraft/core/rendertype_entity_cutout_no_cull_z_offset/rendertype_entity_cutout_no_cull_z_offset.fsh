@@ -3,7 +3,7 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #include "fog.glsl"
 
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 layout(binding = 1) uniform UBO{
     vec4 FogColor;
