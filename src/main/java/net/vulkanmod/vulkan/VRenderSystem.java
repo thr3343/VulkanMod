@@ -14,6 +14,7 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.FloatBuffer;
@@ -78,6 +79,8 @@ public abstract class VRenderSystem {
     public static void applyMVP(Matrix4f MV, Matrix4f P) {
         MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
         P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        ModelViewMat.needsUpdate(MV.hashCode());
+        UniformState.ProjMat.needsUpdate(P.hashCode());
         calculateMVP();
     }
 

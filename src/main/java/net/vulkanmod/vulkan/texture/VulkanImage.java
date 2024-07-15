@@ -7,6 +7,7 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -246,6 +247,9 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(int maxLod, byte flags) {
+
+        if(mipLevels>1) flags |= USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT; //Don't disable mipmaps if mipLevels > 1
+
         this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags);
     }
 

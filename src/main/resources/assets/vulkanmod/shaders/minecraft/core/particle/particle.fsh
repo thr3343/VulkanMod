@@ -24,7 +24,8 @@ layout(location = 3) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0[0], texCoord0) * vertexColor * ColorModulator;
+    const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
+    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor;
     if (color.a < 0.1) {
         discard;
     }

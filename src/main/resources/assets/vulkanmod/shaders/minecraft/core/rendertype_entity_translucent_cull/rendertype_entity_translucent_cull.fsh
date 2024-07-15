@@ -11,8 +11,8 @@ layout(binding = 1) uniform UBO{
     float FogEnd;
 };
 
-layout(push_constant) readonly uniform pushConstant{
-    layout(offset = 32) vec4 ColorModulator;
+layout(push_constant) uniform PushConstant{
+   layout(offset = 32) bool USE_FOG;
 };
 
 layout(location = 0) in flat uint baseInstance;
@@ -24,9 +24,9 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
-    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor * ColorModulator;
+    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor;
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }
