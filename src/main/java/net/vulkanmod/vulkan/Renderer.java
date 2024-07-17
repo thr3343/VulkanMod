@@ -22,6 +22,7 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.descriptor.BindlessDescriptorSet;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -534,7 +535,7 @@ public class Renderer {
         vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
-
+        SamplerManager.cleanUp();
         DescriptorManager.cleanup();
     }
 
