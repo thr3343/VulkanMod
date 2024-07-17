@@ -12,7 +12,7 @@ layout(binding = 1) uniform UBO{
 };
 
 layout(push_constant) readonly uniform pushConstant{
-    layout(offset = 32) vec4 ColorModulator;
+    layout(offset = 32) bool USE_FOG;
 };
 
 layout(location = 0) in flat uint baseInstance;
@@ -30,8 +30,8 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    color *= vertexColor * ColorModulator;
+    color *= vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = USE_FOG ? linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor) : color;
 }
