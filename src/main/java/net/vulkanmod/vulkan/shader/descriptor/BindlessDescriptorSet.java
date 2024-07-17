@@ -84,13 +84,15 @@ public class BindlessDescriptorSet {
         {
             // Push New descriptorSet onto the DescriptorStack if textureCount > maxPerStageDescriptorSamplers
             // (Only applicable to semi-Bindless Devices)
-            if(subSetIndex>=DescriptorStack.size())
+            if(semiBindless && subSetIndex>=DescriptorStack.size())
             {
                 this.DescriptorStack.add(subSetIndex, pushDescriptorSet());
             }
 
             this.DescriptorStack.get(subSetIndex).addTexture(TextureID, samplerIndex);
             newTex.add(TextureID);
+
+            //TODO: selective updates instead of the full set
             this.forceDescriptorUpdate();
             return;
 
@@ -327,7 +329,7 @@ public class BindlessDescriptorSet {
         }
     }
 
-
+    //Remove a sampler descriptor from the array: based on the given TextureID
     public void removeFragImage(int id) {
         int samplerIndex = initialisedFragSamplers.getAlignedIDs().get(id);
 
@@ -362,6 +364,7 @@ public class BindlessDescriptorSet {
 
     }
 
+    //Force unconditional update of all descriptor bindings for this Set; is a selective update: does not effect other sets
     public void forceDescriptorUpdate() {
         Arrays.fill(this.needsUpdate, true);
     }
