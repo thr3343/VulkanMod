@@ -18,7 +18,7 @@ public class MSpriteAtlasTexture {
         VulkanImage image = new VulkanImage.Builder(width, height).setMipLevels(maxLevel + 1).createVulkanImage();
         ((VAbstractTextureI)(this)).setVulkanImage(image);
         ((VAbstractTextureI)(this)).bindTexture();
-        DescriptorManager.updateAllSets(); //Ensure sampler updates are scheduled correctly
+        DescriptorManager.updateAllSets(); //Ensure mipmaps updates are scheduled correctly
     }
 
     /**

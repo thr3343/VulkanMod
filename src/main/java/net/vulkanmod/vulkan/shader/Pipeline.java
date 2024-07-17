@@ -93,6 +93,10 @@ public abstract class Pipeline {
         return bindless;
     }
 
+    public int getSetID() {
+        return setID;
+    }
+
     public Pipeline(String name, boolean bindless) {
         this.name = name;
         this.bindless = this.name==null ? false : name.contains("blit") ? false : bindless;

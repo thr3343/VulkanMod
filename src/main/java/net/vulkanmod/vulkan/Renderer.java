@@ -53,8 +53,8 @@ public class Renderer {
     public static boolean skipRendering = false;
 
 
-    private final long pipelineLayout0, pipelineLayout1;
-    private long currentLayout;
+    private final long pipelineLayout0;
+    private long boundPipelineLayout;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -116,19 +116,16 @@ public class Renderer {
         final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
         //TODO: move these to Descriptor manager so they can ge selected per SetID
-        pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout); //Only used for DescriptorBinding + terrain Shaders
+        // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s)
+        pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
 
-        pipelineLayout1 = createPipelineLayout(descriptorSetLayout); //Used for core shaders Pipelines
-        currentLayout = pipelineLayout0;
+
+        boundPipelineLayout = pipelineLayout0;
 
     }
 
     public static long getLayout() {
-        return INSTANCE.pipelineLayout1;
-    }
-
-    public static long getLayout2(int setID) {
-        return setID == 1 ? INSTANCE.pipelineLayout0 : INSTANCE.pipelineLayout1;
+        return INSTANCE.pipelineLayout0;
     }
 
     private long createPipelineLayout(long... descriptorSetLayouts) {
@@ -535,7 +532,6 @@ public class Renderer {
 
         drawer.cleanUpResources();
         vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout1, null);
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
 
@@ -595,22 +591,22 @@ public class Renderer {
         if (pipeline.isBindless()) {
             pipeline.pushUniforms(drawer.getUniformBuffer());
             pipeline.pushConstants(commandBuffer);
-            if(currentLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+            if(boundPipelineLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);
         }
-        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
+        this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
 
     }
 
     public void BindCurrentSets(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
         if (pipeline.isBindless()) {
-            if(currentLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+            if(boundPipelineLayout!= pipelineLayout0)  DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);
         }
-        this.currentLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
+        this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
     }
 
     public static void setDepthBias(float units, float factor) {

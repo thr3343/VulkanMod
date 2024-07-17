@@ -268,7 +268,7 @@ public class DescriptorManager {
 
 
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout2(1), 0, updatedSets.rewind(), null);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer.getLayout(), 0, updatedSets.rewind(), null);
 
 
             //Reset Frag PushConstant range to default state

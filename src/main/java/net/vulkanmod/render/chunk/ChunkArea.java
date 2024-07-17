@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 public class ChunkArea {
     public final int index;
-    final byte[] frustumBuffer = new byte[64];
+    private final byte[] frustumBuffer = new byte[64];
 
     final Vector3i position;
 

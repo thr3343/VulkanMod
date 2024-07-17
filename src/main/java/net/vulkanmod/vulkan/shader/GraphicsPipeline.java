@@ -42,7 +42,7 @@ public class GraphicsPipeline extends Pipeline {
         this.vertexFormat = builder.vertexFormat;
 
         descriptorSetLayout = this.isBindless() ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
-        pipelineLayout = this.isBindless() ? Renderer.getLayout2(this.setID) : createPipelineLayout();
+        pipelineLayout = this.isBindless() ? Renderer.getLayout() : createPipelineLayout();
 
         this.specConstants = builder.specConstants;
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
@@ -278,87 +278,37 @@ public class GraphicsPipeline extends Pipeline {
             int elementCount = formatElement.getCount();
 
             switch (usage) {
-                case POSITION:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 12;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.BYTE) {
-                        posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
+                case POSITION -> {
+                    switch (type) {
+                        case FLOAT -> posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+                        case SHORT -> posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                        case BYTE -> posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
                     }
-
-                    break;
-
-                case COLOR:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                    posDescription.offset(offset);
-
-//                offset += 16;
-                    offset += 4;
-                    break;
-
-                case UV:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    } else if (type == VertexFormatElement.Type.USHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_UINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
+                }
+                case COLOR -> posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                case UV -> {
+                    switch (type) {
+                        case FLOAT -> posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                        case SHORT -> posDescription.format(VK_FORMAT_R16G16_SINT);
+                        case USHORT -> posDescription.format(VK_FORMAT_R16G16_UINT);
                     }
-                    break;
-
-                case NORMAL:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
-                    posDescription.offset(offset);
-
-                    offset += 4;
-                    break;
-
-                case PADDING:
+                }
+                case NORMAL -> posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                case PADDING -> {
                     //Do nothing as padding format (VK_FORMAT_R8) is not supported everywhere
-                    break;
-
-                case GENERIC:
+                }
+                case GENERIC -> {
                     if (type == VertexFormatElement.Type.SHORT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 2;
-                        break;
                     } else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R32_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                        break;
-                    } else {
-                        throw new RuntimeException(String.format("Unknown format: %s", usage));
                     }
-
-
-                default:
-                    throw new RuntimeException(String.format("Unknown format: %s", usage));
+                }
+                default -> throw new RuntimeException(String.format("Unknown format: %s", usage));
             }
 
-            posDescription.offset(((VertexFormatMixed) (vertexFormat)).getOffset(i));
+            posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
+            offset += formatElement.getByteSize();
         }
 
         return attributeDescriptions.rewind();
