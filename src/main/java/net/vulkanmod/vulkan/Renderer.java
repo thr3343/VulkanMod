@@ -116,7 +116,7 @@ public class Renderer {
         final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
         //TODO: move these to Descriptor manager so they can ge selected per SetID
-        // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s)
+        // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
         pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
 
 
