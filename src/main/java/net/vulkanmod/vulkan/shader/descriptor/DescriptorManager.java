@@ -13,6 +13,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.stream.Stream;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -236,7 +237,14 @@ public class DescriptorManager {
     //TODO: Texture VRAM Usage
     public static String[] getDebugInfo()
     {
-        return new String[]{""};
+
+
+        int loaded = sets.get(0).getLoadedTextures();
+        int reserved = sets.get(0).getReservedTextures();
+
+
+        return new String[]{"-=== Texture Stats ===-", "Loaded: "+loaded, "Reserved: "+reserved, "Max: "+MAX_POOL_SAMPLERS/MAX_SETS};
+
     }
 
 
