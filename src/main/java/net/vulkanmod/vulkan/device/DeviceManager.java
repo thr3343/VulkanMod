@@ -183,7 +183,8 @@ public abstract class DeviceManager {
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors)
                     .descriptorBindingPartiallyBound(hasIndexedDescriptors)
-                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
+                    .shaderSampledImageArrayNonUniformIndexing(hasIndexedDescriptors);
 
             //Using extension version instead of core 1.3 version to avoid requiring Vulkan 1.3
             VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeaturesEXT.calloc(stack)

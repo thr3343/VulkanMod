@@ -34,11 +34,15 @@ public abstract class MipmapGeneratorM {
             nativeImages2[0] = nativeImages[0];
 
             long srcPtr = ((NativeImageAccessor)(Object)nativeImages2[0]).getPixels();
-            boolean bl = hasTransparentPixel(srcPtr, nativeImages2[0].getWidth(), nativeImages2[0].getHeight());
+            NativeImage baseMip0 = nativeImages2[0];
+            int avg = calculateAverage(baseMip0);
+            avg = avg & 0x00FFFFFF; //mask out alpha
+            boolean bl = hasTransparentPixel(((NativeImageAccessor)(Object)baseMip0).getPixels(), baseMip0.getWidth(), baseMip0.getHeight());
+            nativeImages2[0] = handleBaseBlend(baseMip0, bl, avg);
 
             if (bl) {
-                int avg = calculateAverage(nativeImages2[0]);
-                avg = avg & 0x00FFFFFF; //mask out alpha
+
+
 
                 NativeImage nativeImage = nativeImages2[0];
                 int width = nativeImage.getWidth();
@@ -90,6 +94,36 @@ public abstract class MipmapGeneratorM {
 
             return nativeImages2;
         }
+    }
+
+    private static NativeImage handleBaseBlend(NativeImage baseMip0, boolean bl, int avg) {
+
+        final int width = baseMip0.getWidth();
+        final int height = baseMip0.getHeight();
+        NativeImage nativeImage2 = new NativeImage(width, height, false);
+        //get prev Mipmap/mipped image
+        long srcPtr = ((NativeImageAccessor) (Object) baseMip0).getPixels();
+        long dstPtr = ((NativeImageAccessor)(Object)nativeImage2).getPixels();
+
+        for(int m = 0; m < width; ++m) {
+            for(int n = 0; n < height; ++n) {
+                int p0 = MemoryUtil.memGetInt(srcPtr + ((m + 0) + ((n + 0) * width)) * 4L);
+//                int p1 = MemoryUtil.memGetInt(srcPtr + ((m + 1) + ((n + 0) * width)) * 4L);
+//                int p2 = MemoryUtil.memGetInt(srcPtr + ((m + 0) + ((n + 1) * width)) * 4L);
+//                int p3 = MemoryUtil.memGetInt(srcPtr + ((m + 1) + ((n + 1) * width)) * 4L);
+
+                if(bl) {
+                    p0 = ((p0 >> 24) & 0xFF) >= ALPHA_CUTOFF ? p0 : avg | p0;
+//                    p1 = ((p1 >> 24) & 0xFF) >= ALPHA_CUTOFF ? p1 : avg | p1 & 0xFF000000;
+//                    p2 = ((p2 >> 24) & 0xFF) >= ALPHA_CUTOFF ? p2 : avg | p2 & 0xFF000000;
+//                    p3 = ((p3 >> 24) & 0xFF) >= ALPHA_CUTOFF ? p3 : avg | p3 & 0xFF000000;
+                }
+
+//                int outColor = blend(p0, avg, avg, avg);
+                MemoryUtil.memPutInt(dstPtr + (m + (long) n * width) * 4L, p0);
+            }
+        }
+        return nativeImage2;
     }
 
     private static boolean hasTransparentPixel(long ptr, int width, int height) {

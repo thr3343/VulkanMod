@@ -20,6 +20,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -37,7 +38,8 @@ public class BindlessDescriptorSet {
 
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
 
-
+    private final ResourceLocation blockAtlas;
+    private boolean isSubTexState = true;
     private final DescriptorAbstractionArray initialisedFragSamplers;
     private final DescriptorAbstractionArray initialisedVertSamplers;
     private final ObjectArrayList<SubSet> DescriptorStack = new ObjectArrayList<>(16);
@@ -46,6 +48,7 @@ public class BindlessDescriptorSet {
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private final int setID;
+    private final boolean isDedicated;
     private final int vertTextureLimit;
     private int MissingTexID = -1;
 
@@ -53,18 +56,20 @@ public class BindlessDescriptorSet {
     static final int maxPerStageDescriptorSamplers = /*32;*/Math.min(DescriptorManager.MAX_POOL_SAMPLERS, DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers());
     static final boolean semiBindless = maxPerStageDescriptorSamplers < DescriptorManager.MAX_POOL_SAMPLERS;
     private int subSetIndex;
-    private int boundSubSet;//,  subSetIndex;
+    private int boundSubSet;//,/,  subSetIndex;
 
 
-    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit) {
+    public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit, boolean isDedicated) {
         this.setID = setID;
         this.vertTextureLimit = vertTextureLimit;
-
+        this.isDedicated = isDedicated; //I
 
         initialisedVertSamplers = new DescriptorAbstractionArray(vertTextureLimit, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
         initialisedFragSamplers = new DescriptorAbstractionArray(fragTextureLimit, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
 
         DescriptorStack.add(new SubSet(0, vertTextureLimit, fragTextureLimit));
+
+        blockAtlas = isDedicated ? InventoryMenu.BLOCK_ATLAS : null; //TODO: allow this to be set dynamically
     }
 
 
@@ -154,7 +159,7 @@ public class BindlessDescriptorSet {
             this.initialisedVertSamplers.registerImmutableTexture(8, 1);
         }
         else {
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 0);
+//            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 0);
             this.initialisedVertSamplers.registerImmutableTexture(6, 0);
         }
 
@@ -302,10 +307,7 @@ public class BindlessDescriptorSet {
             final int texId1 = texId.getIntKey();
             final int samplerIndex = Math.max(0, texId.getIntValue());
 
-
-            boolean b = !GlTexture.hasImageResource(texId1);
-            if (!b) b = !GlTexture.hasImage(texId1);
-            VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
+            final VulkanImage image = texId1 >= 65536 ? getSubTexImage(samplerIndex) : getSamplerTexture(texId1);
 
             image.readOnlyLayout();
 
@@ -326,7 +328,19 @@ public class BindlessDescriptorSet {
                     .dstSet(setHandle);
 
 
+
         }
+    }
+
+    private VulkanImage getSubTexImage(int texId1) {
+        return SubTextureAtlasManager.getSubTexAtlas(blockAtlas).TextureArray[texId1];
+    }
+
+    private VulkanImage getSamplerTexture(int texId1) {
+        boolean b = !GlTexture.hasImageResource(texId1);
+        if(!b) b =  !GlTexture.hasImage(texId1);
+        VulkanImage image = GlTexture.getTexture(b ? MissingTexID : texId1).getVulkanImage();
+        return image;
     }
 
     //Remove a sampler descriptor from the array: based on the given TextureID
@@ -412,24 +426,42 @@ public class BindlessDescriptorSet {
         return this.setID;
     }
 
-    public void checkSubSets() {
-//        subSetIndex=boundSubSet=0;
-        final int samplerCount = this.initialisedFragSamplers.currentSize();
-        int requiredSubsets = samplerCount / maxPerStageDescriptorSamplers;
-        if(requiredSubsets>this.DescriptorStack.size()-1) {
-            for (int i = 0; i < requiredSubsets; i++) {
-
-//                int fragCount = Math.min(samplerCount, maxPerStageDescriptorSamplers);
-
-
-                {
-                    this.DescriptorStack.add(pushDescriptorSet());
-                }
-//                samplerCount-=maxPerStageDescriptorSamplers;
-
-            }
+    //TODO:make Descriptor Arrays use vkImageView Handles instead
+    // + Check Row-Major order
+    public void registerTextureArray(VSubTextureAtlas vSubTextureAtlas)
+    {
+//        resetDescriptorState();
+        int i = DescriptorManager.getMaxPoolSamplers();
+        int ix =0;
+//        final VSubTextureAtlas vSubTextureAtlas1 = SubTextureAtlasManager.getSubTexAtlas(blockAtlas);
+        for(VulkanImage ignored : vSubTextureAtlas.TextureArray)
+        {
+            this.initialisedFragSamplers.registerImmutableTexture(ix+65536, ix);
+            DescriptorStack.get(0).addTexture(ix+65536, ix);
+            ix++;
         }
+        isSubTexState = true;
+//
+//        DescriptorManager.updateAllSets();
+//        DescriptorManager.resizeAllSamplerArrays();
+    }
 
+    //Flush all textures, resetting the DescriptorSet to its initial state
+    public void resetDescriptorState() {
+
+        this.initialisedVertSamplers.flushAll();
+        this.initialisedFragSamplers.flushAll();
+        DescriptorStack.clear();
+        DescriptorManager.resizeAllSamplerArrays(); //Flush all DescriptorSets + Signal update state to all initialized sets
+        setupHardcodedTextures();
+    }
+
+    public void unregisterTextureArray() {
+
+        resetDescriptorState();
+        this.initialisedFragSamplers.registerImmutableTexture(Minecraft.getInstance().getTextureManager().getTexture(blockAtlas).getId(), 0);
+
+        isSubTexState = false;
     }
 
     public int getLoadedTextures() {

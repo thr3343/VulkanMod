@@ -141,7 +141,7 @@ public class MemoryManager {
     }
 
     public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                                                LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int value) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -152,7 +152,7 @@ public class MemoryManager {
             imageInfo.extent().height(height);
             imageInfo.extent().depth(1);
             imageInfo.mipLevels(mipLevels);
-            imageInfo.arrayLayers(1);
+            imageInfo.arrayLayers(value);
             imageInfo.format(format);
             imageInfo.tiling(tiling);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);

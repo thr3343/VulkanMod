@@ -224,8 +224,8 @@ public class RenderSection {
         }
     }
 
-    public boolean rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
-        BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
+    public boolean rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache, boolean dynamicState) {
+        BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache, dynamicState);
 
         if (chunkCompileTask == null)
             return false;
@@ -238,7 +238,7 @@ public class RenderSection {
     public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
     }
 
-    public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache) {
+    public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache, boolean dynamicState) {
         boolean flag = this.cancelTasks();
 
         Level level = WorldRenderer.getLevel();
@@ -252,7 +252,7 @@ public class RenderSection {
         RenderRegion renderRegion = renderRegionCache.createRegion(level, secX, secY, secZ);
 
         boolean flag1 = this.compileStatus.compiledSection == CompiledSection.UNCOMPILED;
-        this.compileStatus.buildTask = ChunkTask.createBuildTask(this, renderRegion, !flag1 || flag);
+        this.compileStatus.buildTask = ChunkTask.createBuildTask(this, renderRegion, !flag1 || flag, dynamicState);
         return this.compileStatus.buildTask;
     }
 

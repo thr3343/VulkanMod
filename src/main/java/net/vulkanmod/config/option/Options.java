@@ -11,6 +11,7 @@ import net.vulkanmod.config.video.VideoModeSet;
 import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 
 import java.util.stream.IntStream;
 
@@ -223,9 +224,23 @@ public abstract class Options {
                                     minecraftOptions.mipmapLevels().set(value);
                                     minecraft.updateMaxMipLevel(value);
                                     minecraft.delayTextureReload();
+                                    DescriptorManager.setTextureState(true);
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
-                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(value.toString())),
+                        new CyclingOption<>(Component.translatable("Anisotropic Filtering"),
+                                new Integer[]{1, 2, 4, 8, 16},
+                                value -> {
+                                    DescriptorManager.setTextureState(true);
+                                    DescriptorManager.updateAllSets();
+                                    final boolean b = value > 1;
+                                    if(b != config.isDynamicState()) {
+                                        Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
+                                    }
+                                    config.af=(value);
+                                },
+                                () -> config.af)
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
                 })
         };
     }
@@ -291,5 +306,10 @@ public abstract class Options {
                 })
         };
 
+    }
+
+    public static int getMiplevels()
+    {
+        return minecraftOptions.mipmapLevels().get();
     }
 }

@@ -194,10 +194,11 @@ public class SectionGraph {
     }
 
     private void scheduleRebuilds() {
+        final boolean dynamicState = Initializer.CONFIG.isDynamicState(); //Move out of BuildTask to reduce cache misses/Spills/Evictions e.g.
         for (int i = 0; i < this.rebuildQueue.size(); i++) {
             RenderSection section = this.rebuildQueue.get(i);
 
-            section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
+            section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache, dynamicState);
             section.setNotDirty();
         }
         this.rebuildQueue.clear();

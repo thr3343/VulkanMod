@@ -33,6 +33,55 @@ public abstract class ImageUtil {
             vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
     }
+    public static void copyBufferToArrayImageCmd(VkCommandBuffer commandBuffer,
+                                                 long buffer,
+                                                 long image,
+                                                 int mipLevel,
+                                                 int width,
+                                                 int height,
+                                                 int xOffset,
+                                                 int yOffset,
+                                                 int bufferOffset,
+                                                 int bufferRowLenght,
+                                                 int bufferImageHeight,
+                                                 int layers, int divisor) {
+        //TODO: TexCopyOfsfet mucy be wrapped to 3D coords due to the Layer system + target the correct layer
+        // tetxures are always 16x16 if Vanilla,
+
+
+        final int tileDim = /*mipLevel == 0 ? 16 : */16 / (1<<mipLevel); //avoid Divide by Zero
+        int xTileArrayOffset = xOffset / tileDim;
+        int yTileArrayOffset = yOffset / tileDim;
+
+        try (MemoryStack stack = stackPush()) {
+            int rows = width/tileDim;
+            int cols = height/tileDim;
+
+            VkBufferImageCopy.Buffer regions = VkBufferImageCopy.calloc(rows*cols, stack);
+
+            for (int x = 0; x < rows; x++) {
+
+                for (int y = 0; y < cols; y++) {
+
+                    VkBufferImageCopy region = regions.get();
+                    region.bufferOffset(bufferOffset);
+                    region.bufferRowLength(bufferRowLenght);   // Tightly packed
+                    region.bufferImageHeight(bufferImageHeight);  // Tightly packed
+                    region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    region.imageSubresource().mipLevel(mipLevel);
+                    region.imageSubresource().baseArrayLayer(((yTileArrayOffset+y)*64) + xTileArrayOffset+x); //Must target specific layer to copy: i.e. will need a 3D texcoord Wrapping setup
+                    region.imageSubresource().layerCount(1);
+                    region.imageOffset().set(0, 0, 0);
+                    region.imageExtent().set(tileDim, tileDim, 1);
+
+                }
+            }
+
+            vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.rewind());
+
+
+        }
+    }
 
     public static void downloadTexture(VulkanImage image, long ptr) {
         try (MemoryStack stack = stackPush()) {

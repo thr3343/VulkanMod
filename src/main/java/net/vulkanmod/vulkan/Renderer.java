@@ -111,8 +111,8 @@ public class Renderer {
 
         //Can accept duplicate/Same DescriptorSets
         //w/ One Set for each dedicated Sampler Array
-        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
-        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
+        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16, false)); //Default Set for all Core shaders
+        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1, true)); //Special set reserved for terrain/Blocks only
 
         final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
@@ -280,6 +280,10 @@ public class Renderer {
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
+        if(recomp) {
+            WorldRenderer.getInstance().allChanged();
+            recomp = false;
+        }
         p.pop();
         p.push("Begin_rendering");
 
@@ -788,5 +792,9 @@ public class Renderer {
 
     public static void scheduleSwapChainUpdate() {
         swapChainUpdate = true;
+    }
+
+    public void scheduleRebuild() {
+        recomp=true;
     }
 }

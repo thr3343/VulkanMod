@@ -2,12 +2,16 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.option.Options;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -44,6 +48,8 @@ public class DescriptorManager {
 
 
     private static int texturePool = 0;
+    private static boolean textureState = true;
+    private static boolean needsReload = true;
     private static final int TOTAL_SETS = 32;
 
 
@@ -69,7 +75,7 @@ public class DescriptorManager {
 
             bindingFlags.put(VERT_UBO_ID, 0);
             //Vertex samplers are always immutable: they are never updated or removed unlike Frag Samplers
-            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0);
+            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0, (byte) 0);
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
                     .descriptorCount(INLINE_UNIFORM_SIZE)
@@ -270,6 +276,23 @@ public class DescriptorManager {
             }
 
             LongBuffer updatedSets = stack.mallocLong(sets.size());
+            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS, Options.getMiplevels()))
+            {
+                final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                if(Initializer.CONFIG.isDynamicState()){
+                    vSubTextureAtlas.unStitch(Options.getMiplevels());
+                    DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
+                }
+                else
+                {
+                    DescriptorManager.unregisterTextureArray(1);
+                    SubTextureAtlasManager.unRegisterSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                }
+                DescriptorManager.updateAllSets();
+                DescriptorManager.resizeAllSamplerArrays();
+                textureState=false;
+                needsReload=false;
+            }
 
             for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
                 updatedSets.put(bindlessDescriptorSet.updateAndBind(frame, uniformId, uniformStates));
@@ -289,9 +312,16 @@ public class DescriptorManager {
 
     }
 
+    public static void setTextureState(boolean textureState1)
+    {
+//        textureState=DynamicState!=DynamicState1;
+        needsReload=textureState1;
+
+    }
+
 
     //TODO: Descriptor pool resizing if Texture count > or exceeds MAX_POOL_SAMPLERS
-    private static void resizeAllSamplerArrays()
+    static void resizeAllSamplerArrays()
     {
         Vulkan.waitIdle();
         //Reset pool to avoid Fragmentation: (not using VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT for performance reasons)
@@ -314,7 +344,21 @@ public class DescriptorManager {
         return sets.get(setID).isTexUnInitialised(shaderTexture);
     }
 
-    public static void checkSubSetState(int setID) {
-        if(semiBindless) sets.get(setID).bindSubSetIfNeeded();
+    public static int getMaxPoolSamplers() {
+        return MAX_POOL_SAMPLERS;
+    }
+    //TODO; Allows VSubTextureAtlas to be hotswapped between DescriptorSets without the need to hardcode them
+
+    public static void registerTextureArray(int i, VSubTextureAtlas vSubTextureAtlas) {
+        sets.get(i).registerTextureArray(vSubTextureAtlas);
+    }
+
+    public static void resetSamplerState(int setID)
+    {
+        sets.get(setID).resetDescriptorState();
+    }
+
+    public static void unregisterTextureArray(int i) {
+        sets.get(i).unregisterTextureArray();
     }
 }
