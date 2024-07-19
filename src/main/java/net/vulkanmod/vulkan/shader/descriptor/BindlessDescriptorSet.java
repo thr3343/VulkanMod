@@ -48,6 +48,7 @@ public class BindlessDescriptorSet {
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private final int setID;
+    private final int fragTextureLimit;
     private final boolean isDedicated;
     private final int vertTextureLimit;
     private int MissingTexID = -1;
@@ -62,6 +63,7 @@ public class BindlessDescriptorSet {
     public BindlessDescriptorSet(int setID, int vertTextureLimit, int fragTextureLimit, boolean isDedicated) {
         this.setID = setID;
         this.vertTextureLimit = vertTextureLimit;
+        this.fragTextureLimit = fragTextureLimit;
         this.isDedicated = isDedicated; //I
 
         initialisedVertSamplers = new DescriptorAbstractionArray(vertTextureLimit, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
@@ -453,14 +455,18 @@ public class BindlessDescriptorSet {
         this.initialisedFragSamplers.flushAll();
         DescriptorStack.clear();
         DescriptorManager.resizeAllSamplerArrays(); //Flush all DescriptorSets + Signal update state to all initialized sets
+
+
+        DescriptorStack.add(new SubSet(0, vertTextureLimit, fragTextureLimit));
         setupHardcodedTextures();
     }
 
     public void unregisterTextureArray() {
 
         resetDescriptorState();
-        this.initialisedFragSamplers.registerImmutableTexture(Minecraft.getInstance().getTextureManager().getTexture(blockAtlas).getId(), 0);
-
+        final int id = Minecraft.getInstance().getTextureManager().getTexture(blockAtlas).getId();
+        this.initialisedFragSamplers.registerImmutableTexture(id, 0);
+        DescriptorStack.get(0).addTexture(id, 0);
         isSubTexState = false;
     }
 
