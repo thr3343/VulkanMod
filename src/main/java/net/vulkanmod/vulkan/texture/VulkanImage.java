@@ -25,6 +25,7 @@ public class VulkanImage {
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
+    private int samplerFlags;
 
     private long id;
     private long allocation;
@@ -32,7 +33,7 @@ public class VulkanImage {
 
     private long[] levelImageViews;
 
-    private long sampler;
+
 
     public final int format;
     public final int aspect;
@@ -59,7 +60,7 @@ public class VulkanImage {
         this.layers = layers;
         this.aspect = getAspect(this.format);
 
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0, (byte) (layers>1 ? Initializer.CONFIG.af : 0));
+        this.samplerFlags = 0;
     }
 
     private VulkanImage(Builder builder) {
@@ -79,7 +80,7 @@ public class VulkanImage {
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage, builder.layers);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels, builder.layers);
 
-        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags, (byte) (builder.layers>1 ? Initializer.CONFIG.af : 0));
+        image.samplerFlags = builder.samplerFlags;
 
         if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -293,7 +294,7 @@ public class VulkanImage {
 
         if(mipLevels>1) flags |= USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT; //Don't disable mipmaps if mipLevels > 1
 
-        this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags, (byte) Initializer.CONFIG.af);
+        this.samplerFlags = flags;
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
@@ -454,9 +455,9 @@ public class VulkanImage {
     public long[] getLevelImageViews() {
         return levelImageViews;
     }
-
+    //Easier to update Anisotropy flags for the Sampler at getSampler rather than at updateTextureSampler
     public long getSampler() {
-        return sampler;
+        return SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) this.samplerFlags, (byte) (layers>1 ? Initializer.CONFIG.af : 0));
     }
 
     public static Builder builder(int width, int height) {
