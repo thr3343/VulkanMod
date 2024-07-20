@@ -10,6 +10,7 @@ import org.lwjgl.system.MemoryStack;
 import java.util.Arrays;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
 
 public class VSubTextureAtlas {
 
@@ -58,16 +59,13 @@ public class VSubTextureAtlas {
             this.load(16, requiredMipLevels);
         }
         else if(isLoaded) return;
+        final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            final CommandPool.CommandBuffer handle = DeviceManager.getGraphicsQueue().getCommandBuffer();
             basetextureAtlas.transferSrcLayout(stack, handle.getHandle());
             for(VulkanImage slice : TextureArray)
             {
                 slice.transferDstLayout(stack, handle.getHandle());
             }
-
-            Synchronization.waitFence(DeviceManager.getGraphicsQueue().submitCommands(handle));
-
         }
 
 
@@ -75,11 +73,11 @@ public class VSubTextureAtlas {
             {
                 for (int x = 0; x < this.tileWidth; x++) {
                     final int tileIndex = getTileIndex(y, x);
-                    basetextureAtlas.copySubTileTexture(baseTileSize, x, y, TextureArray[getSliceIndex(tileIndex)], requiredMipLevels, tileIndex%MAX_IMAGE_LAYERS);
+                    basetextureAtlas.copySubTileTexture(baseTileSize, x, y, TextureArray[getSliceIndex(tileIndex)], requiredMipLevels, tileIndex%MAX_IMAGE_LAYERS, handle);
                 }
             }
-
-        Synchronization.INSTANCE.waitFences();
+        //Group commands into one fence
+        Synchronization.waitFence(DeviceManager.getGraphicsQueue().submitCommands(handle));
         this.isLoaded=true;
     }
 

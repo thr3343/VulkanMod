@@ -193,9 +193,9 @@ public class VulkanImage {
         }
     }
 
-    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int requiredMipLevels, int baseArrayLayer)
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int requiredMipLevels, int baseArrayLayer, CommandPool.CommandBuffer commandBuffer)
     {
-        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+
         try (MemoryStack stack = stackPush()) {
 
             VkImageCopy.Buffer vkImageCopies = VkImageCopy.calloc(requiredMipLevels, stack);
@@ -221,12 +221,6 @@ public class VulkanImage {
 
 
         }
-        //todo: too many fences: need to merge/batch
-        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
-        if (fence != VK_NULL_HANDLE)
-//            Synchronization.INSTANCE.addFence(fence);
-            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
-
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
