@@ -457,7 +457,7 @@ public class VulkanImage {
     }
     //Easier to update Anisotropy flags for the Sampler at getSampler rather than at updateTextureSampler
     public long getSampler() {
-        return SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) this.samplerFlags, (byte) (layers>1 ? Initializer.CONFIG.af : 0));
+        return SamplerManager.getTextureSampler((byte) this.samplerFlags, (byte) (layers>1 ? Initializer.CONFIG.af : 0));
     }
 
     public static Builder builder(int width, int height) {

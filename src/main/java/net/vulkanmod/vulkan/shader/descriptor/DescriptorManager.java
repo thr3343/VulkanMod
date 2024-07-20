@@ -17,7 +17,6 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.stream.Stream;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -75,7 +74,7 @@ public class DescriptorManager {
 
             bindingFlags.put(VERT_UBO_ID, 0);
             //Vertex samplers are always immutable: they are never updated or removed unlike Frag Samplers
-            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0, (byte) 0);
+            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0);
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
                     .descriptorCount(INLINE_UNIFORM_SIZE)
