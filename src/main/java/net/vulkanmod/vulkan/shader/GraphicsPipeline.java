@@ -73,10 +73,10 @@ public class GraphicsPipeline extends Pipeline {
             VkSpecializationMapEntry.Buffer specEntrySet =  VkSpecializationMapEntry.malloc(specConstants.size(), stack);
 
 
-            boolean equals = !this.specConstants.isEmpty();
-            VkSpecializationInfo specInfo = equals ? VkSpecializationInfo.malloc(stack)
-                    .pMapEntries(specEntrySet)
-                    .pData(enumSpecConstants(stack, specEntrySet)) : null;
+//            boolean equals = !this.specConstants.isEmpty();
+//            VkSpecializationInfo specInfo = equals ? VkSpecializationInfo.malloc(stack)
+//                    .pMapEntries(specEntrySet)
+//                    .pData(enumSpecConstants(stack, specEntrySet)) : null;
 
 
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
@@ -92,7 +92,7 @@ public class GraphicsPipeline extends Pipeline {
             fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
             fragShaderStageInfo.module(fragShaderModule);
             fragShaderStageInfo.pName(entryPoint);
-            fragShaderStageInfo.pSpecializationInfo(specInfo); //Incorrect warning: pSpecializationInfo is marked as @Nullable
+//            fragShaderStageInfo.pSpecializationInfo(specInfo); //Incorrect warning: pSpecializationInfo is marked as @Nullable
 
             // ===> VERTEX STAGE <===
 
@@ -215,9 +215,9 @@ public class GraphicsPipeline extends Pipeline {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if (vkCreateGraphicsPipelines(DeviceManager.vkDevice, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create graphics pipeline");
-            }
+            Vulkan.checkResult(vkCreateGraphicsPipelines(DeviceManager.vkDevice, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline),
+                    "Failed to create graphics pipeline");
+
 
             return pGraphicsPipeline.get(0);
         }
