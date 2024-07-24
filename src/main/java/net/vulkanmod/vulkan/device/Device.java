@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.device;
 
+import net.vulkanmod.Initializer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -69,7 +70,12 @@ public class Device {
             this.hasLogicOp = availableFeatures.features().logicOp();
             this.hasWideLines = availableFeatures.features().wideLines();
 
-            this.hasBindless = vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536;
+            if(!hasIndexedDescriptors) {
+                Initializer.LOGGER.error("Descriptor indexing (Bindless Rendering) not available!: Disabling Bindless mode");
+            }
+
+
+            this.hasBindless = false;//hasIndexedDescriptors & (vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536);
 
 
             final int subGroupStages = subgroupProperties.supportedStages();

@@ -20,28 +20,47 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorManager {
     static final int VERT_SAMPLER_MAX_LIMIT = 4;
     static final int MAX_POOL_SAMPLERS = 16384; //MoltenVk Bug: https://github.com/KhronosGroup/MoltenVK/issues/2227
-    static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
+    static final int VERT_UBO_ID = 0;
+    static final int FRAG_UBO_ID = 1;
+    public static final int VERTEX_SAMPLER_ID = 2;
+    public static final int FRAG_SAMPLER_ID = 3;
     static final int maxPerStageSamplers = DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers();
-    private static final VkDevice DEVICE = Vulkan.getVkDevice();
+    private static final VkDevice DEVICE;
     private static final int bindingsSize = 4;
     private static final long descriptorSetLayout;
     private static final long globalDescriptorPoolArrayPool;
     private static final int PER_SET_ALLOCS = 2; //Sets used per BindlessDescriptorSet
     private static final int MAX_SETS = 2;// * PER_SET_ALLOCS;
     private static final Int2ObjectArrayMap<BindlessDescriptorSet> sets = new Int2ObjectArrayMap<>(MAX_SETS);
-    private static final InlineUniformBlock uniformStates = new InlineUniformBlock(FRAG_UBO_ID, UniformState.FogColor, UniformState.FogStart, UniformState.FogEnd, UniformState.GlintAlpha, UniformState.GameTime, UniformState.LineWidth);
-    static final int INLINE_UNIFORM_SIZE = uniformStates.size_t();
+    private static final InlineUniformBlock uniformStates;
+    private static final int INLINE_UNIFORM_SIZE;
     private static final boolean semiBindless = maxPerStageSamplers < MAX_POOL_SAMPLERS; //When the device has a textureLimit < MAX_POOL_SAMPLERS
     private static final int TOTAL_SETS = 32;
     private static int texturePool = 0;
 
     static {
-
-        Initializer.LOGGER.info("Setting Rendering Mode: Bindless mode: {}", semiBindless ? "Semi-Bindless" : "Fully-Bindless");
         Initializer.LOGGER.info("Max Per Stage Samplers: {}", maxPerStageSamplers);
+        //Don't load the global descriptor set resources if bindless is unsupported
+        if(!DeviceManager.device.isHasBindless()) {
+            descriptorSetLayout = getGlobalDescriptorLayout();
+
+            globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
+
+            uniformStates = new InlineUniformBlock(FRAG_UBO_ID, UniformState.FogColor, UniformState.FogStart, UniformState.FogEnd, UniformState.GlintAlpha, UniformState.GameTime, UniformState.LineWidth);
+
+            INLINE_UNIFORM_SIZE = uniformStates.size_t();
+
+            DEVICE = Vulkan.getVkDevice();
+        }
+        else {
+            descriptorSetLayout=globalDescriptorPoolArrayPool=INLINE_UNIFORM_SIZE=0;
+            uniformStates=null;
+            DEVICE=null;
+        }
+    }
+
+    private static long getGlobalDescriptorLayout() {
         try (MemoryStack stack = stackPush()) {
-
-
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
             IntBuffer bindingFlags = stack.callocInt(bindingsSize);
 
@@ -99,12 +118,7 @@ public class DescriptorManager {
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
             Vulkan.checkResult(vkCreateDescriptorSetLayout(DEVICE, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout), "Failed to create descriptor set layout");
-
-            descriptorSetLayout = pDescriptorSetLayout.get(0);
-
-            globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
-
-
+            return pDescriptorSetLayout.get(0);
         }
     }
 

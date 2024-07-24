@@ -52,6 +52,7 @@ public class Renderer {
 
 
     private final long pipelineLayout0;
+    private static final boolean hasBindless = DeviceManager.device.isHasBindless();
     private long boundPipelineLayout;
 
     public static void initRenderer() {
@@ -106,19 +107,24 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
 
 
-        //Can accept duplicate/Same DescriptorSets
-        //w/ One Set for each dedicated Sampler Array
-        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
-        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
+        if(hasBindless) {
+            //Can accept duplicate/Same DescriptorSets
+            //w/ One Set for each dedicated Sampler Array
+            DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
+            DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
 
-        final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
+            final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
-        //TODO: move these to Descriptor manager so they can ge selected per SetID
-        // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
-        pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
+            //TODO: move these to Descriptor manager so they can ge selected per SetID
+            // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
+            pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
 
 
-        boundPipelineLayout = pipelineLayout0;
+            boundPipelineLayout = pipelineLayout0;
+        }
+        else pipelineLayout0=0;
+
+        Initializer.LOGGER.info("Setting Rendering Mode: {}", hasBindless ? "Bindless" : "Non-Bindless (Bindful)");
 
     }
 
@@ -317,7 +323,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
+            if(hasBindless) DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -528,11 +534,15 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        if(hasBindless)
+        {
+            DescriptorManager.cleanup();
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        }
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
         SamplerManager.cleanUp();
-        DescriptorManager.cleanup();
+
     }
 
     private void destroySyncObjects() {
@@ -585,13 +595,15 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
+        pipeline.pushConstants(commandBuffer);
+
         if (pipeline.isBindless()) {
             pipeline.pushUniforms(drawer.getUniformBuffer());
-            pipeline.pushConstants(commandBuffer);
             if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         } else {
             pipeline.bindDescriptorSets(commandBuffer, currentFrame);
         }
+
         this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
 
     }
