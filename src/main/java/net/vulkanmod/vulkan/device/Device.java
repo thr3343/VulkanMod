@@ -75,7 +75,7 @@ public class Device {
             }
 
 
-            this.hasBindless = false;//hasIndexedDescriptors & (vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536);
+            this.hasBindless = hasIndexedDescriptors & (vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536);
 
 
             final int subGroupStages = subgroupProperties.supportedStages();
