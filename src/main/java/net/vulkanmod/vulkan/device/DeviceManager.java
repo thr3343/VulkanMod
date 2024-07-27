@@ -42,7 +42,8 @@ public abstract class DeviceManager {
 
     public static void init(VkInstance instance) {
         try {
-            DeviceManager.pickPhysicalDevice(instance);
+            DeviceManager.getSuitableDevices(instance);
+            DeviceManager.pickPhysicalDevice();
             DeviceManager.createLogicalDevice();
         } catch (Exception e) {
             logUnsupportedExtensions();
@@ -93,9 +94,7 @@ public abstract class DeviceManager {
         suitableDevices = devices;
     }
 
-    public static void pickPhysicalDevice(VkInstance instance) {
-        getSuitableDevices(instance);
-
+    public static void pickPhysicalDevice() {
         try (MemoryStack stack = stackPush()) {
 
             int deviceIdx = Initializer.CONFIG.device;
@@ -325,6 +324,9 @@ public abstract class DeviceManager {
     static void logUnsupportedExtensions() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
+
+        if (availableDevices == null)
+            return;
 
         if (availableDevices.isEmpty()) {
             stringBuilder.append("No available device found");

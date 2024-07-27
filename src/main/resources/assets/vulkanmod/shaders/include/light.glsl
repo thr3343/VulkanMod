@@ -13,7 +13,8 @@ vec4 minecraft_mix_light(vec3 lightDir0, vec3 lightDir1, vec3 normal, vec4 color
 }
 
 vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
-    return texelFetch(lightMap, bitfieldExtract(uv, 4, 8), 0); //return texture(lightMap, clamp(uv / 256.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
+    return texelFetch(lightMap, bitfieldExtract(uv, 4, 8), 0);
+    //return texture(lightMap, clamp(uv / 256.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
 }
 
 vec4 sample_lightmap(sampler2D lightMap, ivec2 uv) {
@@ -24,8 +25,4 @@ vec4 sample_lightmap2(sampler2D lightMap, uint uv) {
     const ivec2 lm = ivec2(bitfieldExtract(uv, 4, 4), bitfieldExtract(uv, 12, 4));
     //    const ivec2 lm = ivec2(uv >> 12, (uv >> 4) & 0xF);
     return texelFetch(lightMap, lm, 0);
-}
-
-vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    return (vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, min(smoothstep(fogStart, fogEnd, vertexDistance), 1.0) * fogColor.a);
 }

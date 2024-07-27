@@ -62,8 +62,6 @@ public abstract class DebugScreenOverlayM {
         strings.add("BARMemory: " + MemoryType.BAR_MEM.usedBytes()+"/" + MemoryType.BAR_MEM.maxSize() + "MB");
         strings.add("DeviceMemory: " + MemoryType.GPU_MEM.usedBytes()+"/" + MemoryType.GPU_MEM.maxSize() + "MB");
         strings.add("");
-//        strings.add("PCIe Transfers");
-//        strings.add("GPU Transfers");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + SystemInfo.cpuInfo);
         strings.add("GPU: " + device.deviceName);
