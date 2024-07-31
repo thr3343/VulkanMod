@@ -233,5 +233,9 @@ public enum Queue {
         nvkCmdUpdateBuffer(commandBuffer.getHandle(), id, baseOffset, sizeT, bufferPtr);
 
     }
+
+    public int getFamilyIndex() {
+        return familyIndex;
+    }
 }
 

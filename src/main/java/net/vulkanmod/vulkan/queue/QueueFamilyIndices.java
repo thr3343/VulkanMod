@@ -87,7 +87,6 @@ public class QueueFamilyIndices {
 
 
 
-            hasDedicatedTransferQueue=graphicsFamily!=transferFamily;
 
 
             if (graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
@@ -107,8 +106,6 @@ public class QueueFamilyIndices {
     }
 
     public static int graphicsFamily = VK_QUEUE_FAMILY_IGNORED, presentFamily = VK_QUEUE_FAMILY_IGNORED, transferFamily = VK_QUEUE_FAMILY_IGNORED;
-
-    public static boolean hasDedicatedTransferQueue = false;
 
     public static boolean isComplete() {
         return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED;
