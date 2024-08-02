@@ -1,5 +1,5 @@
 #version 460
-
+layout (constant_id = 1) const int MAX_ARRAY_LAYERS = 2047;
 #include "light.glsl"
 #include "fog.glsl"
 
@@ -36,7 +36,7 @@ void main() {
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
     gl_Position = MVP[gl_BaseInstance>>24] * pos;
 
-    textureIndex = Position.a & 2047;
+    textureIndex = Position.a & MAX_ARRAY_LAYERS;
     vertexDistance = fog_distance(pos.xyz, 0);
     texCoord0 = UV0 * UV_INV;
     vertexColor = Color * sample_lightmap(Sampler2, UV2);

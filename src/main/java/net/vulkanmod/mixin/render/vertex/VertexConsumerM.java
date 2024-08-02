@@ -34,20 +34,15 @@ public interface VertexConsumerM {
         for (int k = 0; k < j; ++k) {
             float r, g, b;
 
-            float quadR, quadG, quadB;
-
             int i = k * 8;
             float x = Float.intBitsToFloat(js[i]);
             float y = Float.intBitsToFloat(js[i + 1]);
             float z = Float.intBitsToFloat(js[i + 2]);
 
             if (useQuadColorData) {
-                quadR = ColorUtil.RGBA.unpackR(js[i + 3]);
-                quadG = ColorUtil.RGBA.unpackG(js[i + 3]);
-                quadB = ColorUtil.RGBA.unpackB(js[i + 3]);
-                r = quadR * brightness[k] * red;
-                g = quadG * brightness[k] * green;
-                b = quadB * brightness[k] * blue;
+                r = ColorUtil.RGBA.unpackR(js[i + 3]) * brightness[k] * red;
+                g = ColorUtil.RGBA.unpackG(js[i + 3]) * brightness[k] * green;
+                b = ColorUtil.RGBA.unpackB(js[i + 3]) * brightness[k] * blue;
             } else {
                 r = brightness[k] * red;
                 g = brightness[k] * green;

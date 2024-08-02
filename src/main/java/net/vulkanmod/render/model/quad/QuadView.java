@@ -26,5 +26,7 @@ public interface QuadView {
         return this.getColorIndex() != -1;
     }
 
-
+    default int vulkanMod$getBaseArrayLayer() {
+        return 0;
+    }
 }

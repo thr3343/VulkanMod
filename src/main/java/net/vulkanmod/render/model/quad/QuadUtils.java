@@ -45,6 +45,12 @@ public abstract class QuadUtils {
 
     }
 
+    public static int getBaseTileSize(float baseU, float baseV, int baseAtlasWidth, int baseAtlasHeight)
+    {
+        int BlockRes = (int) Math.abs((baseU * baseAtlasWidth) - (baseV * baseAtlasHeight));
+        return BlockRes;
+    }
+
     public static int getBaseArrayLayer(float baseU, float baseV, int tilesWidth, int tilesHeight) {
         int xTileLayerOffset = (int) (baseU * tilesWidth);
         int yTileLayerOffset = (int) (baseV * tilesHeight);

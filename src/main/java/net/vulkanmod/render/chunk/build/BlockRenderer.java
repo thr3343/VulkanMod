@@ -141,7 +141,7 @@ public class BlockRenderer {
         bufferBuilder.ensureCapacity();
 
 
-        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(idx), quad.getV(idx), tilesWidth, tilesHeight);
+        final int baseArrayLayer = quad.vulkanMod$getBaseArrayLayer();//QuadUtils.getBaseArrayLayer(quad.getU(idx), quad.getV(idx), tilesWidth, tilesHeight);
 
 
 
@@ -166,8 +166,8 @@ public class BlockRenderer {
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
 
-            float u = quad.getU(idx)* (tilesWidth);
-            float v = quad.getV(idx)* (tilesHeight);
+            float u = quad.getU(idx);
+            float v = quad.getV(idx);
 
             bufferBuilder.vertex(x, y, z, color, u, v, light, baseArrayLayer);
 

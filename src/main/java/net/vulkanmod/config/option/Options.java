@@ -237,6 +237,7 @@ public abstract class Options {
                                     if(b != config.isDynamicState()) {
                                         Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
                                     }
+                                    minecraft.reloadResourcePacks();
                                     config.af=(value);
                                 },
                                 () -> config.af)

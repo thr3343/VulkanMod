@@ -2,6 +2,10 @@
 
 #include "light.glsl"
 #include "fog.glsl"
+/*TODO: not enough space/Attribute space to pass baseArrayLayer: may need to resort to custom shaders + vertex Formats like terrain
+
+* Or Retain tetzure Atlass (Increased VRAM usage + Possible texture Locality issues + animation problems e.g.)
+*/
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
