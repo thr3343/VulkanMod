@@ -13,6 +13,8 @@ layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in vec2 texCoord0;
 //layout(location = 3) in vec4 normal;
 
+
+//layout(location = 0) out uint sampleMask;
 layout(location = 0) out vec4 fragColor;
 
 void main() {

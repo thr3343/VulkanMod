@@ -53,6 +53,7 @@ public abstract class VRenderSystem {
     private static int sampleCount= Initializer.CONFIG.msaaPreset;
 //    private static float minSampleShading= 0.01f*Initializer.CONFIG.minSampleShading;
     static boolean renderPassUpdate =true;
+    private static boolean alphaToCoverage = false;
 
     public static void initRenderer() {
         RenderSystem.assertInInitPhase();
@@ -138,11 +139,11 @@ public abstract class VRenderSystem {
         VUtil.UNSAFE.putFloat(ptr + 8, f3);
     }
     public static boolean isSampleShadingEnable() {
-        return sampleCount>1;
+        return Initializer.CONFIG.msaaPreset>1;
     }
 
     public static int getSampleCount() {
-        return sampleCount;
+        return Initializer.CONFIG.msaaPreset;
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
@@ -301,6 +302,14 @@ public abstract class VRenderSystem {
 
     public static void reInit() {
         renderPassUpdate =true;
+    }
+
+    public static boolean isAlphaToCoverage() {
+        return alphaToCoverage;
+    }
+
+    public static void setAlphaToCoverage(boolean b) {
+        alphaToCoverage=b;
     }
 //
 //    public static int getMultiSampleState() {

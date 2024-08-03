@@ -273,11 +273,7 @@ public abstract class Options {
                                     case 4 -> "4x";
                                     case 8 -> "8x";
                                     default -> "Off";
-                                })),
-                        new CyclingOption<>(Component.translatable("MSAA Mode"), new Boolean[]{false, true},
-                                value -> config.minSampleShading = value,
-                                () -> config.minSampleShading)
-                                .setTranslator(value -> Component.nullToEmpty((value ? "SSAA" : "MSAA"))).setTooltip(Component.translatable("vulkanmod.options.minSampleShading.tooltip")),
+                                }))
                 })
         };
     }

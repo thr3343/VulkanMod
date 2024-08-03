@@ -28,7 +28,6 @@ public class Config {
     public int ambientOcclusion = 1;
     public int af = 1;
     public int msaaPreset = 1;
-    public boolean minSampleShading = false;
 
     public void write() {
 

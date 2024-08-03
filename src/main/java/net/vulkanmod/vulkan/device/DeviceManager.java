@@ -177,7 +177,6 @@ public abstract class DeviceManager {
             deviceFeatures.features().logicOp(device.hasLogicOp());
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
             deviceFeatures.features().wideLines(device.hasWideLines());
-            deviceFeatures.features().sampleRateShading(true);
             shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
 
             final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();

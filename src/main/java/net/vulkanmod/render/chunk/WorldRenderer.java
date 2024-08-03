@@ -312,7 +312,7 @@ public class WorldRenderer {
         if (allowedRenderTypes.contains(terrainRenderType)) {
 
             //Moved inside allowedRenderTypes to reduce overall pipeline count
-
+            VRenderSystem.setAlphaToCoverage(terrainRenderType!=TerrainRenderType.TRANSLUCENT && Initializer.CONFIG.msaaPreset>1);
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             renderer.bindGraphicsPipeline(pipeline);
@@ -342,6 +342,8 @@ public class WorldRenderer {
                 }
             }
         }
+
+        VRenderSystem.setAlphaToCoverage(false);
 
         if (indirectDraw && (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE)) {
             indirectBuffers[currentFrame].submitUploads();
