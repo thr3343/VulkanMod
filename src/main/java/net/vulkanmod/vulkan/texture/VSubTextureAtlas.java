@@ -52,12 +52,13 @@ public class VSubTextureAtlas {
     //local GPU2GPU copies
     public void unStitch(int mipLevels)
     {
+        //TODO: use preparations list for tiles instead of a uniform SubTileSize
         VulkanImage basetextureAtlas = GlTexture.getTexture(this.baseID).getVulkanImage();
         final int requiredMipLevels = mipLevels + 1; //Is always 1 if Mipmaps are disabled
         if(basetextureAtlas.mipLevels != perSliceMipmaps)
         {
             this.unload();
-            this.load(16, requiredMipLevels);
+            this.load(baseTileSize, requiredMipLevels);
         }
         else if(isLoaded) return;
         try (MemoryStack stack = stackPush()) {
@@ -90,7 +91,7 @@ public class VSubTextureAtlas {
     }
 
     private int getSliceIndex(int s) {
-        return s>>Integer.bitCount(MAX_IMAGE_LAYERS-1);
+        return s/MAX_IMAGE_LAYERS;
     }
 
     public void unload()
@@ -125,9 +126,9 @@ public class VSubTextureAtlas {
 
 
         final int i = 1<<mip;
-        final int tileIndex = getTileIndex((yOffset) / 16, (xOffset) / 16);
+        final int tileIndex = getTileIndex((yOffset) / baseTileSize, (xOffset) / baseTileSize);
         int baseTileIndex = 1024;
-        final int sliceIndex = 0;//this.getSliceIndex(tileIndex);
+        final int sliceIndex = this.getSliceIndex(tileIndex);
         TextureArray[sliceIndex].uploadSubTileAsync(tileIndex, mip, bufferImageHeight, bufferOffset, bufferRowLength, this.baseTileSize >> mip, srcBuffer);
 
         SpriteUtil.addTransitionedLayout(TextureArray[sliceIndex]);

@@ -53,6 +53,7 @@
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
     "screen.OptionsScreenM",
+    "texture.AtlasSetM",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
