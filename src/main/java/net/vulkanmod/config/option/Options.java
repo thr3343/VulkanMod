@@ -10,6 +10,7 @@ import net.vulkanmod.config.video.VideoModeSet;
 import net.vulkanmod.config.gui.OptionBlock;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -238,6 +239,7 @@ public abstract class Options {
                                     Minecraft.getInstance().updateMaxMipLevel(value);
                                     Minecraft.getInstance().delayTextureReload();
                                     DescriptorManager.setTextureState(true);
+                                    SpriteUtil.setDoUpload(false);
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
                                 .setTranslator(value -> Component.nullToEmpty(value.toString())),

@@ -6,6 +6,7 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.UniformState;
@@ -295,6 +296,7 @@ public class DescriptorManager {
                 DescriptorManager.resizeAllSamplerArrays();
                 textureState=false;
                 needsReload=false;
+                SpriteUtil.setDoUpload(true);
             }
 
 //            final int capacity = getCapacity(frame);

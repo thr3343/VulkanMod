@@ -7,35 +7,29 @@
   "mixins": [
   ],
   "client": [
-    "window.WindowMixin",
-    "window.WindowAccessor",
-
+    "chunk.ClientChunkCacheM",
+    "chunk.ClientPacketListenerM",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
     "chunk.RenderBuffersM",
     "chunk.VisibilitySetMixin",
-    "chunk.ClientPacketListenerM",
-    "chunk.ClientChunkCacheM",
-
     "compatibility.EffectInstanceM",
+    "compatibility.PostChainM",
+    "compatibility.PostPassM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
     "compatibility.gl.GL15M",
     "compatibility.gl.GL30M",
-
     "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
-
     "matrix.Matrix4fM",
-
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
     "profiling.LevelRendererMixin",
-
     "render.BufferUploaderM",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
@@ -45,6 +39,7 @@
     "render.RenderSystemMixin",
     "render.RenderTypeM",
     "render.ShaderInstanceM",
+    "render.block.BakedQuadM",
     "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
@@ -57,12 +52,7 @@
     "render.vertex.VertexBufferM",
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
-
     "screen.OptionsScreenM",
-
-    "texture.mip.MipmapGeneratorM",
-    "texture.image.MNativeImage",
-    "texture.image.NativeImageAccessor",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
@@ -72,28 +62,23 @@
     "texture.MSimpleTexture",
     "texture.MSpriteAtlasTexture",
     "texture.MSpriteContents",
+    "texture.MSpriteContents$InterpolationDataM",
     "texture.MTextureManager",
     "texture.MTextureUtil",
-
+    "texture.image.MNativeImage",
+    "texture.image.NativeImageAccessor",
+    "texture.mip.MipmapGeneratorM",
     "util.ScreenshotRecorderM",
-
     "vertex.EntityOutlineGeneratorM",
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
     "vertex.VertexMultiConsumersM$MultipleM",
     "vertex.VertexMultiConsumersM$SheetDecalM",
-
+    "voxel.VoxelShapeMixin",
     "wayland.InputConstantsM",
     "wayland.MinecraftMixin",
-
-    "texture.mip.MipmapGeneratorM",
-
-    "compatibility.PostChainM",
-    "compatibility.PostPassM",
-
-    "render.block.BakedQuadM",
-
-    "voxel.VoxelShapeMixin"
+    "window.WindowAccessor",
+    "window.WindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1

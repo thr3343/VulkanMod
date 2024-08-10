@@ -502,6 +502,48 @@ public class VulkanImage {
         return new Builder(width, height);
     }
 
+    public void uploadSubTileAsync(int baseTileIndex, int mip, int bufferImageHeight, int bufferOffset, int bufferRowLength, int tileSize, ByteBuffer srcBuffer) {
+
+
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+
+
+                transferDstLayout(stack, commandBuffer.getHandle());
+
+
+
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+            stagingBuffer.align(this.formatSize);
+
+            stagingBuffer.copyBuffer(tileSize*tileSize*this.formatSize, srcBuffer);
+
+
+        //TODO:E snjure TielIdnexAlingment + Batch per Mipmap
+            VkBufferImageCopy.Buffer tileBuffer2ImageCopy = VkBufferImageCopy.calloc(1, stack);
+            tileBuffer2ImageCopy.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            tileBuffer2ImageCopy.imageSubresource().baseArrayLayer(baseTileIndex);
+            tileBuffer2ImageCopy.imageSubresource().layerCount(1);
+            tileBuffer2ImageCopy.imageSubresource().mipLevel(mip);
+            tileBuffer2ImageCopy.bufferImageHeight(bufferImageHeight); //18 Offset Vubration.....
+            tileBuffer2ImageCopy.bufferOffset(stagingBuffer.getOffset() +((bufferRowLength)*4)); //Unpack Rows....
+            tileBuffer2ImageCopy.bufferRowLength(bufferRowLength);
+            tileBuffer2ImageCopy.imageOffset().set(0, 0, 0);
+            tileBuffer2ImageCopy.imageExtent().set(tileSize, tileSize, 1);
+
+
+            vkCmdCopyBufferToImage(commandBuffer.getHandle(), stagingBuffer.getId(), this.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tileBuffer2ImageCopy);
+
+            long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+            if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+                Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        }
+
+    }
+
     public static class Builder {
         final int width;
         final int height;

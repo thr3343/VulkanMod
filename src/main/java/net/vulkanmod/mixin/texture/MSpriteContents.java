@@ -3,8 +3,12 @@ package net.vulkanmod.mixin.texture;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.vulkanmod.render.texture.SpriteUtil;
+import net.vulkanmod.vulkan.shader.descriptor.SubTextureAtlasManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import org.spongepowered.asm.mixin.Dynamic;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -19,4 +23,22 @@ public class MSpriteContents {
 
         SpriteUtil.addTransitionedLayout(VTextureSelector.getBoundTexture(0));
     }
+
+
+
+
+    @Mixin(SpriteContents.InterpolationData.class)
+    static
+    class InterpolationDataM
+    {
+        @Dynamic @Final @Shadow SpriteContents field_21757; //Synthetic
+        @Shadow @Final private NativeImage[] activeFrame;
+
+        @Inject(method = "uploadInterpolatedFrame(IILnet/minecraft/client/renderer/texture/SpriteContents$Ticker;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;upload(IIII[Lcom/mojang/blaze3d/platform/NativeImage;)V"))
+        private void ibjectSuBTExCopy(int i, int j, SpriteContents.Ticker ticker, CallbackInfo ci)
+        {
+            SubTextureAtlasManager.upload(field_21757.name(), i, j, 0, 0, this.activeFrame);
+        }
+    }
+
 }

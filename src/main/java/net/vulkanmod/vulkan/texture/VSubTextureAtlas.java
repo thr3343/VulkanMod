@@ -2,11 +2,13 @@ package net.vulkanmod.vulkan.texture;
 
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.system.MemoryStack;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -113,5 +115,22 @@ public class VSubTextureAtlas {
 
     public int getBaseID() {
         return baseID;
+    }
+
+
+    public void uploadSubTileAsync(int xOffset, int yOffset, int mip, int bufferImageHeight, int bufferOffset, int bufferRowLength, ByteBuffer srcBuffer)
+    {
+        //x= height, y = width
+        //TODO: Check pixel corods are being coveretd to Tile idnex Cor
+
+
+        final int i = 1<<mip;
+        final int tileIndex = getTileIndex((yOffset) / 16, (xOffset) / 16);
+        int baseTileIndex = 1024;
+        final int sliceIndex = 0;//this.getSliceIndex(tileIndex);
+        TextureArray[sliceIndex].uploadSubTileAsync(tileIndex, mip, bufferImageHeight, bufferOffset, bufferRowLength, this.baseTileSize >> mip, srcBuffer);
+
+        SpriteUtil.addTransitionedLayout(TextureArray[sliceIndex]);
+
     }
 }
