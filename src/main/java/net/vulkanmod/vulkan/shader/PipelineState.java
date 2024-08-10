@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.RenderPass2;
@@ -16,7 +17,7 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), 1, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass(), false);
+    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), 1, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass(), false, false);
 
     public static PipelineState currentState = DEFAULT;
 
@@ -28,13 +29,14 @@ public class PipelineState {
         int logicOp = getLogicOpState();
         int multiSampleCount = VRenderSystem.getSampleCount();
         final boolean alphaToCoverage1 = VRenderSystem.isAlphaToCoverage();
+        final boolean sampleShading1 = Initializer.CONFIG.ssaa;
 
 
-        if(currentState.checkEquals(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, alphaToCoverage1, renderPass)) {
+        if(currentState.checkEquals(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, alphaToCoverage1, sampleShading1, renderPass)) {
             return currentState;
         }
         else {
-            return currentState = new PipelineState(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, renderPass, alphaToCoverage1);
+            return currentState = new PipelineState(assemblyRasterState, multiSampleCount, blendState, depthState, logicOp, currentColorMask, renderPass, alphaToCoverage1, sampleShading1);
         }
     }
 
@@ -76,8 +78,9 @@ public class PipelineState {
     final int colorMask_i;
     final int logicOp_i;
     final boolean alphaToCoverage;
+    final boolean sampleShading;
 
-    public PipelineState(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass, boolean alphaToCoverage1) {
+    public PipelineState(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass, boolean alphaToCoverage1, boolean sampleShading1) {
         this.renderPass = renderPass;
 
         this.assemblyRasterState = assemblyRasterState;
@@ -87,13 +90,14 @@ public class PipelineState {
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
         this.alphaToCoverage = alphaToCoverage1;
+        this.sampleShading = sampleShading1;
     }
 
-    private boolean checkEquals(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, boolean alphaToCoverage1, RenderPass2 renderPass) {
+    private boolean checkEquals(int assemblyRasterState, int multiSampleCount, int blendState, int depthState, int logicOp, int colorMask, boolean alphaToCoverage1, boolean sampleShading1, RenderPass2 renderPass) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
                 && (assemblyRasterState == this.assemblyRasterState)
-                && colorMask == this.colorMask_i && this.multiSampleCount_i == multiSampleCount && this.alphaToCoverage==alphaToCoverage1;
+                && colorMask == this.colorMask_i && this.multiSampleCount_i == multiSampleCount && this.alphaToCoverage == alphaToCoverage1 && this.sampleShading == sampleShading1;
     }
 
     @Override
@@ -107,12 +111,12 @@ public class PipelineState {
         return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
                 && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
                 && this.assemblyRasterState == that.assemblyRasterState
-                && this.colorMask_i == that.colorMask_i && this.multiSampleCount_i == that.multiSampleCount_i && this.alphaToCoverage==that.alphaToCoverage;
+                && this.colorMask_i == that.colorMask_i && this.multiSampleCount_i == that.multiSampleCount_i && this.alphaToCoverage == that.alphaToCoverage && this.sampleShading == that.sampleShading;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, multiSampleCount_i, colorMask_i, renderPass);
+        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, multiSampleCount_i, colorMask_i, sampleShading, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {

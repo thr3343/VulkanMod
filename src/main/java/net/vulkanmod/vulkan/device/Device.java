@@ -30,7 +30,7 @@ public class Device {
     //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp, hasWideLines;
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp, hasWideLines, hasMinSampleShading;
 
     public Device(VkPhysicalDevice device) {
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -71,6 +71,7 @@ public class Device {
             this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
             this.hasLogicOp = availableFeatures.features().logicOp();
             this.hasWideLines = availableFeatures.features().wideLines();
+            this.hasMinSampleShading = availableFeatures.features().sampleRateShading();
             //TODO: Handle specific Mac drivers not supporting Subgroup Ballot
             //E.g. Macros/Spec Constant workarounds
             final int subGroupStages = subgroupProperties.supportedStages();
@@ -187,6 +188,10 @@ public class Device {
     }
 
     public boolean hasLogicOp() {
+        return this.hasLogicOp;
+    }
+
+    public boolean hasMinSampleShading() {
         return this.hasLogicOp;
     }
 }

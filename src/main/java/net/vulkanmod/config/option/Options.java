@@ -255,7 +255,8 @@ public abstract class Options {
                                     config.af=(value);
                                 },
                                 () -> config.af)
-                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString())),
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))
+                                .setTooltip(Component.translatable("vulkanmod.options.anisotropicFiltering.tooltip")),
                         new CyclingOption<>(Component.translatable("Multisample Anti-aliasing"),  new Integer[]{1, 2, 4, 8},
                                 value -> {
 
@@ -275,7 +276,12 @@ public abstract class Options {
                                     case 4 -> "4x";
                                     case 8 -> "8x";
                                     default -> "Off";
-                                }))
+                                })),
+                        new CyclingOption<>(Component.translatable("MSAA Quality"), new Boolean[]{false, true},
+                                value -> config.ssaa = value,
+                                () -> config.ssaa)
+                                .setTranslator(value -> Component.nullToEmpty(value ? "Max" : "Min"))
+                                .setTooltip(Component.translatable("vulkanmod.options.minSampleShading.tooltip")),
                 })
         };
     }
