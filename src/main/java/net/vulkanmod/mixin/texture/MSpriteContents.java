@@ -34,9 +34,12 @@ public class MSpriteContents {
         @Dynamic @Final @Shadow SpriteContents field_21757; //Synthetic
         @Shadow @Final private NativeImage[] activeFrame;
 
-        @Inject(method = "uploadInterpolatedFrame(IILnet/minecraft/client/renderer/texture/SpriteContents$Ticker;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;upload(IIII[Lcom/mojang/blaze3d/platform/NativeImage;)V"))
+        @Inject(method = "uploadInterpolatedFrame(IILnet/minecraft/client/renderer/texture/SpriteContents$Ticker;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;upload(IIII[Lcom/mojang/blaze3d/platform/NativeImage;)V"), cancellable = true)
         private void ibjectSuBTExCopy(int i, int j, SpriteContents.Ticker ticker, CallbackInfo ci)
         {
+            if(!SpriteUtil.shouldUpload())
+                ci.cancel();
+
             SubTextureAtlasManager.upload(field_21757.name(), i, j, 0, 0, this.activeFrame);
         }
     }

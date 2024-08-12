@@ -22,7 +22,7 @@ public class AtlasSetM {
         //Hardcoded temporarily: as only BLOCK_ATLAS is used
         if(textureAtlas.location().equals(InventoryMenu.BLOCK_ATLAS))
         {
-            SubTextureAtlasManager.addPreparations(textureAtlas.location(), preparations);
+            SubTextureAtlasManager.setupSubtexAtlas(textureAtlas.location(), preparations);
         }
     }
 }

@@ -276,7 +276,7 @@ public class BindlessDescriptorSet {
             final int texId1 = texId.getIntKey();
             final int samplerIndex = texId.getIntValue();
 
-            final VulkanImage image = texId1 >= 65536 ? getSubTexImage(samplerIndex) : getSamplerTexture(texId1);
+            final VulkanImage image = texId1 >= 65536 && SubTextureAtlasManager.hasSubTextAtlas(blockAtlas) ? getSubTexImage(samplerIndex) : getSamplerTexture(texId1);
 
             image.readOnlyLayout();
 

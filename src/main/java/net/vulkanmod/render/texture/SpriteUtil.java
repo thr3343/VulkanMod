@@ -1,5 +1,6 @@
 package net.vulkanmod.render.texture;
 
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -18,7 +19,7 @@ public abstract class SpriteUtil {
     }
 
     public static boolean shouldUpload() {
-        return doUpload;
+        return doUpload || !DescriptorManager.isNeedsReload();
     }
 
     public static void addTransitionedLayout(VulkanImage image) {

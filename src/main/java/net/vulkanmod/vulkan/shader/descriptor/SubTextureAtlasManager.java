@@ -13,28 +13,25 @@ import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Map;
-
 public class SubTextureAtlasManager {
 
     private static final Object2ObjectArrayMap<ResourceLocation, VSubTextureAtlas> subTextureAtlasObjectArrayMap = new Object2ObjectArrayMap<>(2);
     private static final Object2ObjectArrayMap<ResourceLocation, SpriteLoader.Preparations> preparationsList = new Object2ObjectArrayMap<>(2);
 
     //using ResourceLocation instead of names for parity with vanilla
-    public static VSubTextureAtlas registerSubTexAtlas(ResourceLocation s) {
-        if(subTextureAtlasObjectArrayMap.containsKey(s)) return subTextureAtlasObjectArrayMap.get(s);
-        final int id = Minecraft.getInstance().getTextureManager().getTexture(s).getId();
-        final VulkanImage vulkanImage = GlTexture.getTexture(id).getVulkanImage();
+    public static void registerSubTexAtlas(ResourceLocation s, int width, int height, int mipLevels) {
+        if(subTextureAtlasObjectArrayMap.containsKey(s))
+            unRegisterSubTexAtlas(s); //TODO: Check unloads/Reloads are handled correctly e.g.
 
 
         final int baseTileSize = getResourcePackResolution(s);
-        final VSubTextureAtlas v = new VSubTextureAtlas(s, vulkanImage, baseTileSize, id);
+        //TODO: Check Miplevels
+        final VSubTextureAtlas v = new VSubTextureAtlas(s, baseTileSize, width, height, mipLevels);
         subTextureAtlasObjectArrayMap.put(s, v);
-        return v;
     }
 
 
-
+    //Highyl flawed, need to repalce w. a betetr system later
     private static int getResourcePackResolution(ResourceLocation s) {
 
         ///Assumes width==height
@@ -76,8 +73,8 @@ public class SubTextureAtlasManager {
     public static VSubTextureAtlas getOrCreateSubTexAtlas(ResourceLocation s) {
         if(!subTextureAtlasObjectArrayMap.containsKey(s))
         {
-            final int id = Minecraft.getInstance().getTextureManager().getTexture(s).getId();
-            subTextureAtlasObjectArrayMap.put(s, new VSubTextureAtlas(s, GlTexture.getTexture(id).getVulkanImage(), getResourcePackResolution(s), id));
+            final SpriteLoader.Preparations subTexParams = preparationsList.get(s);
+            subTextureAtlasObjectArrayMap.put(s, new VSubTextureAtlas(s, getResourcePackResolution(s), subTexParams.width(), subTexParams.height(), subTexParams.mipLevel()+1));
         }
         return subTextureAtlasObjectArrayMap.get(s);
     }
@@ -113,7 +110,9 @@ public class SubTextureAtlasManager {
 
     }
     //Unsure about CPU cache eviction issues
-    public static void addPreparations(ResourceLocation location, SpriteLoader.Preparations preparations) {
+    public static void setupSubtexAtlas(ResourceLocation location, SpriteLoader.Preparations preparations) {
         preparationsList.put(location, preparations);
+
+        registerSubTexAtlas(location, preparations.width(), preparations.height(), preparations.mipLevel()+1);
     }
 }

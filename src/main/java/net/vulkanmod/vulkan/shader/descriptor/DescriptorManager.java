@@ -280,9 +280,9 @@ public class DescriptorManager {
                 resizeAllSamplerArrays();
             }
 
-            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS, Options.getMiplevels()))
+            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS, Options.getMiplevels()) && SubTextureAtlasManager.hasSubTextAtlas(InventoryMenu.BLOCK_ATLAS))
             {
-                final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.registerSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.getSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
                 if(Initializer.CONFIG.isDynamicState()){
                     vSubTextureAtlas.unStitch(Options.getMiplevels());
                     DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
@@ -329,7 +329,11 @@ public class DescriptorManager {
 
     }
 
-/*    private static boolean checkUpdateState(int frame) {
+    public static boolean isNeedsReload() {
+        return needsReload;
+    }
+
+    /*    private static boolean checkUpdateState(int frame) {
         boolean capacity = false;
         for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
             capacity |= bindlessDescriptorSet.needsUpdate(frame);;

@@ -20,7 +20,7 @@ public class VSubTextureAtlas {
     private final int tileWidth;
     private final int tileHeight;
     public final VulkanImage[] TextureArray; //may make dierct handle to reduce GC overhead
-    private final int baseID;
+
     private static final int MAX_IMAGE_LAYERS = DeviceManager.deviceProperties.limits().maxImageArrayLayers(); //Should always be 2048
     private int perSliceMipmaps;
     private boolean isLoaded;
@@ -29,15 +29,15 @@ public class VSubTextureAtlas {
     //TODO: Mixin to Block region lists to allow handling of Non-Uniform/Mismatched Block texture resolutions
     // + 
 
-    public VSubTextureAtlas(ResourceLocation basetextureAtlas, VulkanImage vulkanImage, int baseTileSize, int BaseID) {
+    public VSubTextureAtlas(ResourceLocation basetextureAtlas, int baseTileSize, int width, int height, int mipLevels) {
         this.basetextureAtlas = basetextureAtlas;
-        this.baseID = BaseID;
+
         this.baseTileSize = baseTileSize;
-        this.tileWidth = vulkanImage.width/baseTileSize;
-        this.tileHeight = vulkanImage.height/baseTileSize;
+        this.tileWidth = width/baseTileSize;
+        this.tileHeight = height/baseTileSize;
         int layerCount = tileHeight * tileWidth;
         this.TextureArray = new VulkanImage[layerCount / MAX_IMAGE_LAYERS];
-        load(baseTileSize, vulkanImage.mipLevels);
+        load(baseTileSize, mipLevels);
 
     }
 
@@ -53,7 +53,7 @@ public class VSubTextureAtlas {
     public void unStitch(int mipLevels)
     {
         //TODO: use preparations list for tiles instead of a uniform SubTileSize
-        VulkanImage basetextureAtlas = GlTexture.getTexture(this.baseID).getVulkanImage();
+        VulkanImage basetextureAtlas = GlTexture.getTexture(this.basetextureAtlas).getVulkanImage();
         final int requiredMipLevels = mipLevels + 1; //Is always 1 if Mipmaps are disabled
         if(basetextureAtlas.mipLevels != perSliceMipmaps)
         {
@@ -97,7 +97,7 @@ public class VSubTextureAtlas {
     public void unload()
     {
         for (VulkanImage image : this.TextureArray) {
-            image.doFree();
+            image.free();
         }
         this.isLoaded=false;
     }
@@ -114,21 +114,21 @@ public class VSubTextureAtlas {
         return tileHeight;
     }
 
-    public int getBaseID() {
-        return baseID;
-    }
-
 
     public void uploadSubTileAsync(int xOffset, int yOffset, int mip, int bufferImageHeight, int bufferOffset, int bufferRowLength, ByteBuffer srcBuffer)
     {
         //x= height, y = width
-        //TODO: Check pixel corods are being coveretd to Tile idnex Cor
+        //TODO: Abort Uploads when Changing/reloading SubtexAtlases (lso occurs when chnaging texture packs)
+
+        if(mip >= TextureArray[0].mipLevels) return;
 
 
         final int i = 1<<mip;
         final int tileIndex = getTileIndex((yOffset) / baseTileSize, (xOffset) / baseTileSize);
         int baseTileIndex = 1024;
         final int sliceIndex = this.getSliceIndex(tileIndex);
+
+        if(tileIndex>MAX_IMAGE_LAYERS) return;
         TextureArray[sliceIndex].uploadSubTileAsync(tileIndex, mip, bufferImageHeight, bufferOffset, bufferRowLength, this.baseTileSize >> mip, srcBuffer);
 
         SpriteUtil.addTransitionedLayout(TextureArray[sliceIndex]);

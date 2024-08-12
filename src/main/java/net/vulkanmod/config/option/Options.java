@@ -252,6 +252,7 @@ public abstract class Options {
                                     if(b != config.isDynamicState()) {
                                         Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
                                     }
+                                    SpriteUtil.setDoUpload(false);
                                     config.af=(value);
                                 },
                                 () -> config.af)
@@ -268,6 +269,7 @@ public abstract class Options {
                                     if(b != config.isDynamicState()) {
                                         Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
                                     }
+                                    SpriteUtil.setDoUpload(false);
                                     config.msaaPreset = value;
                                 },
                                 () -> config.msaaPreset)
