@@ -179,6 +179,7 @@ public abstract class DeviceManager {
             deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
             // TODO: Disable indirect draw option if unsupported.
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+            deviceFeatures.features().shaderInt64(device.isHas64BitVertex());
 
             // Must not set line width to anything other than 1.0 if this is not supported
             if (device.availableFeatures.features().wideLines()) {

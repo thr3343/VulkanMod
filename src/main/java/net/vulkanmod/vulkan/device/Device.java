@@ -34,7 +34,7 @@ public class Device {
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, has64BitVertex;
 
     public Device(VkPhysicalDevice device) {
         this.physicalDevice = device;
@@ -64,9 +64,9 @@ public class Device {
 
         vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+        this.drawIndirectSupported = this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters();
 
+        this.has64BitVertex = this.availableFeatures.features().shaderInt64() && checkVertexFormat(VK10.VK_FORMAT_R64_SINT);
     }
 
     private static String decodeVendor(int i) {
@@ -119,6 +119,18 @@ public class Device {
             return vkVer1;
         }
     }
+    //Move to constructor?
+    private boolean checkVertexFormat(int vtxFmt) {
+        try (MemoryStack stack = stackPush()) {
+            VkFormatProperties props = VkFormatProperties.malloc(stack);
+
+            vkGetPhysicalDeviceFormatProperties(physicalDevice, vtxFmt, props);
+
+            return (props.bufferFeatures() & VK10.VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) != 0;
+        }
+
+
+    }
 
     public Set<String> getUnsupportedExtensions(Set<String> requiredExtensions) {
         try (MemoryStack stack = stackPush()) {
@@ -144,6 +156,10 @@ public class Device {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public boolean isHas64BitVertex() {
+        return has64BitVertex;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:

@@ -432,7 +432,7 @@ public class TerrainBufferBuilder {
     }
 
     static class CompressedVertexBuilder implements VertexBuilder {
-        private static final int VERTEX_SIZE = 20;
+        private static final int VERTEX_SIZE = 16;
 
         public static final float POS_CONV_MUL = 2048.0f;
         public static final float POS_OFFSET = -4.0f;

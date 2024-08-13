@@ -20,7 +20,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsPipeline extends Pipeline {
-
+    private static final boolean shaderInt64 = Vulkan.getDevice().isHas64BitVertex();
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
@@ -253,7 +253,7 @@ public class GraphicsPipeline extends Pipeline {
 
                         offset += 12;
                     } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                        posDescription.format(shaderInt64 ? VK_FORMAT_R64_SINT : VK_FORMAT_R16G16B16A16_SINT); //Lazy simplification to minimise code changes + additional branches
                         posDescription.offset(offset);
 
                         offset += 8;

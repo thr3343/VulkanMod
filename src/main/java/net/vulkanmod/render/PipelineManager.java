@@ -2,9 +2,11 @@ package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
@@ -37,8 +39,12 @@ public abstract class PipelineManager {
     }
 
     private static void createBasicPipelines() {
-        terrainShaderEarlyZ = createPipeline("terrain","terrain", "terrain_Z", TERRAIN_VERTEX_FORMAT);
-        terrainShader = createPipeline("terrain", "terrain", "terrain", TERRAIN_VERTEX_FORMAT);
+        final String defVertStage = Vulkan.getDevice().isHas64BitVertex() | Vulkan.getDevice().isAMD() /*GCN*/ ? "terrain_i64" : "terrain_i16";
+        Initializer.LOGGER.info("Selecting Terrain Format: {}", defVertStage);
+
+        //Dedicated (i.e. format-specific) shaders avoids need to add ugly preprocessor Macros
+        terrainShaderEarlyZ = createPipeline("terrain", defVertStage, "terrain_Z", TERRAIN_VERTEX_FORMAT);
+        terrainShader = createPipeline("terrain", defVertStage, "terrain", TERRAIN_VERTEX_FORMAT);
         fastBlitPipeline = createPipeline("blit", "blit", "blit", CustomVertexFormat.NONE);
     }
 

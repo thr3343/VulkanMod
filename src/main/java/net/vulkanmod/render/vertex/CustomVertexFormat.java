@@ -12,7 +12,7 @@ public class CustomVertexFormat {
     public static final VertexFormatElement ELEMENT_UV2 = new VertexFormatElement(2, VertexFormatElement.Type.SHORT, VertexFormatElement.Usage.UV, 2);
 
     public static final VertexFormat COMPRESSED_TERRAIN = new VertexFormat(new ImmutableMap.Builder<String, VertexFormatElement>()
-        .put("Position",ELEMENT_POSITION).put("Color",ELEMENT_COLOR).put("UV0",ELEMENT_UV0).put("UV2",ELEMENT_UV2).build());
+        .put("Position",ELEMENT_POSITION).put("Color",ELEMENT_COLOR).put("UV0",ELEMENT_UV0).build());
 
     public static final VertexFormat NONE = new VertexFormat(ImmutableMap.of());
 }
