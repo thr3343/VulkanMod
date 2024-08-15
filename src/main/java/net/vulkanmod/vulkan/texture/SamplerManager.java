@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.texture;
 
 import it.unimi.dsi.fastutil.shorts.Short2LongMap;
 import it.unimi.dsi.fastutil.shorts.Short2LongOpenHashMap;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -59,9 +60,15 @@ public abstract class SamplerManager {
                 samplerInfo.addressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT);
                 samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT);
             }
+            //TODO: Bad cleanup
+            if((flags & (USE_ANISOTROPIC_BIT)) != 0) {
+                samplerInfo.anisotropyEnable(true);
+                samplerInfo.maxAnisotropy(Initializer.CONFIG.af);
+            } else {
+                samplerInfo.anisotropyEnable(false);
+                samplerInfo.maxAnisotropy(0.0f);
+            }
 
-            samplerInfo.anisotropyEnable(false);
-            //samplerInfo.maxAnisotropy(16.0f);
             samplerInfo.borderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE);
             samplerInfo.unnormalizedCoordinates(false);
             samplerInfo.compareEnable(false);
@@ -112,4 +119,5 @@ public abstract class SamplerManager {
     public static final byte MIPMAP_LINEAR_FILTERING_BIT = 0b1000;
     public static final byte REDUCTION_MIN_BIT = 0b10000;
     public static final byte REDUCTION_MAX_BIT = 0b100000;
+    public static final byte USE_ANISOTROPIC_BIT = 0b1000000;
 }

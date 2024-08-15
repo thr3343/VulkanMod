@@ -2,12 +2,17 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.option.Options;
+import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -34,6 +39,10 @@ public class DescriptorManager {
     private static final boolean semiBindless = maxPerStageSamplers < MAX_POOL_SAMPLERS; //When the device has a textureLimit < MAX_POOL_SAMPLERS
     private static final int TOTAL_SETS = 32;
     private static int texturePool = 0;
+    private static boolean textureState = true;
+    private static boolean needsReload = true;
+
+
 
     static {
         Initializer.LOGGER.info("Max Per Stage Samplers: {}", maxPerStageSamplers);
@@ -190,6 +199,7 @@ public class DescriptorManager {
         vkDestroyDescriptorSetLayout(DEVICE, descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, globalDescriptorPoolArrayPool, null);
         sets.clear();
+        SubTextureAtlasManager.cleanupAll();
 
 
     }
@@ -259,6 +269,28 @@ public class DescriptorManager {
                 resizeAllSamplerArrays();
             }
 
+            if(needsReload && GlTexture.checkTextureState(InventoryMenu.BLOCK_ATLAS, Options.getMiplevels()) && SubTextureAtlasManager.hasSubTextAtlas(InventoryMenu.BLOCK_ATLAS))
+            {
+                final VSubTextureAtlas vSubTextureAtlas = SubTextureAtlasManager.getSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                if(Initializer.CONFIG.isDynamicState()){
+                    vSubTextureAtlas.unStitch(Options.getMiplevels());
+                    DescriptorManager.registerTextureArray(1, vSubTextureAtlas);
+                }
+                else
+                {
+                    DescriptorManager.unregisterTextureArray(1);
+                    SubTextureAtlasManager.unRegisterSubTexAtlas(InventoryMenu.BLOCK_ATLAS);
+                }
+                DescriptorManager.updateAllSets();
+                DescriptorManager.resizeAllSamplerArrays();
+                textureState=false;
+                needsReload=false;
+                SpriteUtil.setDoUpload(true);
+            }
+
+//            final int capacity = getCapacity(frame);
+//            final boolean needsUpdate = checkUpdateState(frame);
+            //TODO; Set 1 is not updated unless a Descriptor Array resize is used
             LongBuffer updatedSets = stack.mallocLong(sets.size());
 
             for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
@@ -277,9 +309,36 @@ public class DescriptorManager {
 
     }
 
+    public static void setTextureState(boolean textureState1)
+    {
+//        textureState=DynamicState!=DynamicState1;
+        needsReload=textureState1;
+
+    }
+
+    public static boolean isNeedsReload() {
+        return needsReload;
+    }
+
+    /*    private static boolean checkUpdateState(int frame) {
+        boolean capacity = false;
+        for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
+            capacity |= bindlessDescriptorSet.needsUpdate(frame);;
+        }
+        return capacity;
+    }
+
+    private static int getCapacity(int frame) {
+        int capacity = 0;
+        for (BindlessDescriptorSet bindlessDescriptorSet : sets.values()) {
+            int writesSize = bindlessDescriptorSet.getWritesSize(frame);
+            capacity += writesSize;
+        }
+        return capacity;
+    }*/
 
     //TODO: Descriptor pool resizing if Texture count > or exceeds MAX_POOL_SAMPLERS
-    private static void resizeAllSamplerArrays() {
+    static void resizeAllSamplerArrays() {
         Vulkan.waitIdle();
         //Reset pool to avoid Fragmentation: (not using VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT for performance reasons)
         // requires all Sets to be reallocated but avoids Descriptor Fragmentation
@@ -301,7 +360,21 @@ public class DescriptorManager {
         return sets.get(setID).isTexUnInitialised(shaderTexture);
     }
 
-    public static void checkSubSetState(int setID) {
-        if (semiBindless) sets.get(setID).bindSubSetIfNeeded();
+    public static int getMaxPoolSamplers() {
+        return MAX_POOL_SAMPLERS;
+    }
+    //TODO; Allows VSubTextureAtlas to be hotswapped between DescriptorSets without the need to hardcode them
+
+    public static void registerTextureArray(int i, VSubTextureAtlas vSubTextureAtlas) {
+        sets.get(i).registerTextureArray(vSubTextureAtlas);
+    }
+
+    public static void resetSamplerState(int setID)
+    {
+        sets.get(setID).resetDescriptorState();
+    }
+
+    public static void unregisterTextureArray(int i) {
+        sets.get(i).unregisterTextureArray();
     }
 }

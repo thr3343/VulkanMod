@@ -100,6 +100,10 @@ public class SubSet {
         return currentFragMax = align;
     }
 
+    public void resetSubSet() {
+        this.texID2DescIdx.forEach((integer, integer2) -> removeTexture(integer));
+    }
+
     public int currentSize() {
         return currentFragMax;
     }

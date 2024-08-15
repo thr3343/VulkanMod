@@ -50,13 +50,14 @@ public interface VertexBuilder {
             MemoryUtil.memPutShort(ptr + 2, sY);
             MemoryUtil.memPutShort(ptr + 4, sZ);
 
-            final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
-            MemoryUtil.memPutShort(ptr + 6, l);
+            MemoryUtil.memPutShort(ptr + 6, (short) packedNormal);
 
             MemoryUtil.memPutInt(ptr + 8, color);
 
             MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV_MUL));
             MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV_MUL));
+
+            MemoryUtil.memPutInt(ptr + 16, light);
         }
 
         @Override

@@ -1,6 +1,8 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
@@ -69,6 +71,15 @@ public class GlTexture {
         return map.get(id);
     }
 
+    public static GlTexture getTexture(ResourceLocation resourceLocation) {
+
+        int id = Minecraft.getInstance().getTextureManager().getTexture(resourceLocation).getId();
+        if (id == 0)
+            return null;
+
+        return map.get(id);
+    }
+    //TODO: Descriptor Indexing
     public static void activeTexture(int i) {
         activeTexture = i - GL30.GL_TEXTURE0;
 
@@ -192,6 +203,19 @@ public class GlTexture {
         return map.containsKey(textureID);
     }
 
+    public static boolean checkTextureState(ResourceLocation blockAtlas, int miplevels) {
+        final VulkanImage vulkanImage1 = getTexture(blockAtlas).getVulkanImage();
+        return vulkanImage1 != null && vulkanImage1.mipLevels == miplevels + 1;
+    }
+
+    /*    public static void removeImageResource(int TextureID)
+    {
+//        if(TextureID!=-1)
+//        {
+//            var a =  TexIDtoResourceName.remove(TextureID);
+//           if(a!=null) Initializer.LOGGER.info("UnRegistered texture: " + TextureID + " <-> " + "! -> "+a);
+//        }
+    }*/
     public int getId() {
         return id;
     }

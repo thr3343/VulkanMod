@@ -7,9 +7,10 @@ import net.vulkanmod.vulkan.util.VUtil;
 import java.util.BitSet;
 
 public class DescriptorAbstractionArray {
-
+    //TODO:
     private static final int maxLimit = BindlessDescriptorSet.maxPerStageDescriptorSamplers; //absoluteMaxBoundSamplerLimit
     private final BitSet descriptorIndices; //Only need max of 65536 textures
+    private final int defaultSize;
     private final int shaderStage;
     private final int descriptorType;
     private final int descriptorBinding;
@@ -18,6 +19,7 @@ public class DescriptorAbstractionArray {
 
 
     public DescriptorAbstractionArray(int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
+        this.defaultSize = maxSize;
         this.maxSize = maxSize;
         this.shaderStage = shaderStage;
         this.descriptorType = descriptorType;
@@ -118,7 +120,15 @@ public class DescriptorAbstractionArray {
     }
 
     public int resize() {
-        final int align = VUtil.align(this.descriptorIndices.size(), 64);
-        return Math.min(this.maxSize = align == maxSize ? align + 64 : align, maxLimit);
+        if(!checkCapacity()) return this.maxSize;
+
+        final int align = VUtil.align(this.descriptorIndices.length(), defaultSize);
+        return this.maxSize = align==maxSize ? align+defaultSize : align;
+    }
+
+    public void flushAll() {
+        this.descriptorIndices.clear();
+        this.texID2DescIdx.clear();
+        maxSize= defaultSize;
     }
 }

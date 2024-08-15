@@ -62,6 +62,7 @@
     "texture.mip.MipmapGeneratorM",
     "texture.image.MNativeImage",
     "texture.image.NativeImageAccessor",
+    "texture.MAtlasSet",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
