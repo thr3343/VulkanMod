@@ -1,7 +1,5 @@
 package net.vulkanmod.mixin;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.vulkanmod.Initializer;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -10,8 +8,6 @@ import java.util.List;
 import java.util.Set;
 
 public class MixinPlugin implements IMixinConfigPlugin {
-
-    private static final boolean hasJourneyMap = FabricLoader.getInstance().isModLoaded("journeymap");
 
     @Override
     public void onLoad(String mixinPackage) {
@@ -24,9 +20,6 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if(hasJourneyMap && mixinClassName.equals("net.vulkanmod.mixin.render.LevelRendererMixin")) {
-            return false;
-        }
         return true;
     }
 
