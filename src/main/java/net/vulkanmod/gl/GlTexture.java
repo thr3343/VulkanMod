@@ -117,7 +117,7 @@ public class GlTexture {
 
         switch (pName) {
             case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
-            case GL30.GL_TEXTURE_MAX_LOD -> boundTexture.setMaxLod(param);
+            case GL30.GL_TEXTURE_MAX_LOD -> {}
             case GL30.GL_TEXTURE_MIN_LOD -> {}
             case GL30.GL_TEXTURE_LOD_BIAS -> {}
 
@@ -176,7 +176,6 @@ public class GlTexture {
 
     boolean needsUpdate = false;
     int maxLevel = 0;
-    int maxLod = 0;
     int minFilter, magFilter = GL11.GL_LINEAR;
 
     boolean clamp = true;
@@ -243,7 +242,7 @@ public class GlTexture {
             default -> 0;
         };
 
-        vulkanImage.updateTextureSampler(maxLod, samplerFlags);
+        vulkanImage.updateTextureSampler(samplerFlags);
     }
 
     private void uploadImage(ByteBuffer pixels) {
@@ -271,16 +270,6 @@ public class GlTexture {
         if (maxLevel != l) {
             maxLevel = l;
             needsUpdate = true;
-        }
-    }
-
-    void setMaxLod(int l) {
-        if (l < 0)
-            throw new IllegalStateException("max level cannot be < 0.");
-
-        if (maxLod != l) {
-            maxLod = l;
-            updateSampler();
         }
     }
 
