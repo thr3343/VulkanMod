@@ -16,5 +16,10 @@ layout(location = 0) out vec4 fragColor;
 void main() {
 
     vec4 color = texture(Sampler0[nonuniformEXT(textureIndex>>11)], vec3(texCoord0, textureIndex&2047));
+
+    if(color.a < 0.5f) {
+        discard;
+    }
+
     fragColor = color * vertexColor;
 }

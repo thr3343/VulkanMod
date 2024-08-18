@@ -12,6 +12,7 @@ import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
@@ -615,11 +616,10 @@ public class Renderer {
     }
 
     public static void clearAttachments(int v) {
-        Framebuffer framebuffer = Renderer.getInstance().boundFramebuffer;
-        if (framebuffer == null)
-            return;
+       if(!Renderer.getInstance().recordingCmds) return;
 
-        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
+       final Framebuffer2 mainFrameBuffer = Renderer.getInstance().mainPass.getMainFrameBuffer();
+       clearAttachments(v, mainFrameBuffer.width, mainFrameBuffer.height);
     }
 
     public static void clearAttachments(int v, int width, int height) {
