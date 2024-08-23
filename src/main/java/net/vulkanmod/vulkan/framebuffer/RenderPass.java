@@ -61,7 +61,7 @@ public class RenderPass {
                         .storeOp(colorAttachmentInfo.storeOp)
                         .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
                         .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-                        .initialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                        .initialLayout(colorAttachmentInfo.initialLayout)
                         .finalLayout(colorAttachmentInfo.finalLayout);
 
                 VkAttachmentReference colorAttachmentRef = attachmentRefs.get(0)
@@ -106,9 +106,9 @@ public class RenderPass {
                             .srcSubpass(VK_SUBPASS_EXTERNAL)
                             .dstSubpass(0)
                             .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                            .dstStageMask(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT)
+                            .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
                             .srcAccessMask(0)
-                            .dstAccessMask(0);
+                            .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
                     renderPassInfo.pDependencies(subpassDependencies);
                 }
@@ -119,7 +119,7 @@ public class RenderPass {
                             .dstSubpass(VK_SUBPASS_EXTERNAL)
                             .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
                             .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-                            .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                            .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)  //Allows optimizing out VK_ACCESS_COLOR_ATTACHMENT_READ_BIT when in Default (i..e Non-PostFX) mode
                             .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
 
                     renderPassInfo.pDependencies(subpassDependencies);
@@ -139,8 +139,8 @@ public class RenderPass {
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
 
         if (colorAttachmentInfo != null
-                && framebuffer.getColorAttachment().getCurrentLayout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                && framebuffer.getColorAttachment().getCurrentLayout() != colorAttachmentInfo.initialLayout)
+            framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, colorAttachmentInfo.initialLayout);
         if (depthAttachmentInfo != null
                 && framebuffer.getDepthAttachment().getCurrentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
             framebuffer.getDepthAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -245,6 +245,7 @@ public class RenderPass {
     public static class AttachmentInfo {
         final Type type;
         final int format;
+        int initialLayout;
         int finalLayout;
         int loadOp;
         int storeOp;
@@ -253,6 +254,7 @@ public class RenderPass {
             this.type = type;
             this.format = format;
             this.finalLayout = type.defaultLayout;
+            this.initialLayout = type.defaultLayout;
 
             this.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             this.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -267,6 +269,12 @@ public class RenderPass {
 
         public AttachmentInfo setLoadOp(int loadOp) {
             this.loadOp = loadOp;
+
+            return this;
+        }
+
+        public AttachmentInfo setInitialLayout(int initialLayout) {
+            this.initialLayout = initialLayout;
 
             return this;
         }

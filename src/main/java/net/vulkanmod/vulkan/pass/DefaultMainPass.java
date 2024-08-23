@@ -38,6 +38,7 @@ public class DefaultMainPass implements MainPass {
 
     private void createRenderPasses() {
         RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
+        builder.getColorAttachmentInfo().setInitialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
         builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
@@ -46,9 +47,10 @@ public class DefaultMainPass implements MainPass {
 
         // Create an auxiliary RenderPass needed in case of main target rebinding
         builder = RenderPass.builder(this.mainFramebuffer);
+        builder.getColorAttachmentInfo().setInitialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_STORE);
         builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_STORE);
-        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         this.auxRenderPass = builder.build();
     }
@@ -57,8 +59,7 @@ public class DefaultMainPass implements MainPass {
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain framebuffer = Vulkan.getSwapChain();
 
-        VulkanImage colorAttachment = framebuffer.getColorAttachment();
-        colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 
         framebuffer.beginRenderPass(commandBuffer, this.mainRenderPass, stack);
 

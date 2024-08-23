@@ -32,6 +32,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.EXTValidationFeatures.VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
@@ -39,8 +40,8 @@ import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     //    public static final boolean DYNAMIC_RENDERING = true;
     public static final boolean DYNAMIC_RENDERING = false;
@@ -240,9 +241,13 @@ public class Vulkan {
 
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
 
+                VkValidationFeaturesEXT vkValidationFeaturesEXT = VkValidationFeaturesEXT.calloc(stack)
+                        .sType$Default()
+                        .pEnabledValidationFeatures(stack.ints(EXTValidationFeatures.VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT));
+
                 VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
                 populateDebugMessengerCreateInfo(debugCreateInfo);
-                createInfo.pNext(debugCreateInfo.address());
+                createInfo.pNext(debugCreateInfo.address()).pNext(vkValidationFeaturesEXT);
             }
 
             // We need to retrieve the pointer of the created instance
@@ -421,10 +426,11 @@ public class Vulkan {
 
             MemoryStack stack = stackGet();
 
-            PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 1);
+            PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 2);
 
             extensions.put(glfwExtensions);
             extensions.put(stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+            extensions.put(stack.UTF8(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME));
 
             // Rewind the buffer before returning it to reset its position back to 0
             return extensions.rewind();
