@@ -11,6 +11,7 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(AbstractTexture.class)
 public abstract class MAbstractTexture implements VAbstractTextureI {
@@ -20,22 +21,25 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
     @Shadow public abstract int getId();
 
+    @Unique
     protected VulkanImage vulkanImage;
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bind() {
         if (!RenderSystem.isOnRenderThreadOrInit()) {
-            RenderSystem.recordRenderCall(this::bindTexture);
+            RenderSystem.recordRenderCall(this::vulkanMod$bindTexture);
         } else {
-            this.bindTexture();
+            this.vulkanMod$bindTexture();
         }
     }
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void releaseId() {
@@ -47,12 +51,13 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         TextureUtil.releaseTextureId(this.id);
     }
 
-    public void setId(int i) {
+    public void vulkanMod$setId(int i) {
         this.id = i;
     }
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void setFilter(boolean blur, boolean mipmap) {
@@ -66,7 +71,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
     }
 
     @Override
-    public void bindTexture() {
+    public void vulkanMod$bindTexture() {
         GlTexture.bindTexture(this.id);
 
         // TODO: probably not needed
@@ -74,7 +79,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
             VTextureSelector.bindTexture(this.vulkanImage);
     }
 
-    public VulkanImage getVulkanImage() {
+    public VulkanImage vulkanMod$getVulkanImage() {
         if (this.vulkanImage != null)
             return this.vulkanImage;
         else {
@@ -82,11 +87,11 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
             if (glTexture != null)
                 return glTexture.getVulkanImage();
             else
-                return ((VAbstractTextureI) MissingTextureAtlasSprite.getTexture()).getVulkanImage();
+                return ((VAbstractTextureI) MissingTextureAtlasSprite.getTexture()).vulkanMod$getVulkanImage();
         }
     }
 
-    public void setVulkanImage(VulkanImage image) {
+    public void vulkanMod$setVulkanImage(VulkanImage image) {
         this.vulkanImage = image;
 
         if (this.id == -1)

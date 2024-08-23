@@ -32,7 +32,7 @@ public class CompileResult {
     public void updateSection() {
         this.renderSection.updateGlobalBlockEntities(globalBlockEntities);
         this.renderSection.setCompiledSection(compiledSection);
-        this.renderSection.setVisibility(((VisibilitySetExtended)visibilitySet).getVisibility());
+        this.renderSection.setVisibility(((VisibilitySetExtended)visibilitySet).vulkanMod$getVisibility());
         this.renderSection.setCompletelyEmpty(compiledSection.isCompletelyEmpty);
         this.renderSection.setContainsBlockEntities(!blockEntities.isEmpty());
     }

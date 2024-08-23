@@ -5,6 +5,7 @@ import net.vulkanmod.interfaces.VoxelShapeExtended;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -13,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class VoxelShapeMixin implements VoxelShapeExtended {
     @Shadow @Final protected DiscreteVoxelShape shape;
 
+    @Unique
     int co;
 
     @SuppressWarnings("UnreachableCode")
@@ -49,7 +51,7 @@ public class VoxelShapeMixin implements VoxelShapeExtended {
         this.co = co;
     }
 
-    public int getCornerOcclusion() {
+    public int vulkanMod$getCornerOcclusion() {
         return this.co;
     }
 }

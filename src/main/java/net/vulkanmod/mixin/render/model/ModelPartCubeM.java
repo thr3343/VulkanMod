@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.vulkanmod.interfaces.ModelPartCubeMixed;
 import net.vulkanmod.render.model.CubeModel;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -14,6 +15,7 @@ import java.util.Set;
 @Mixin(ModelPart.Cube.class)
 public class ModelPartCubeM implements ModelPartCubeMixed {
 
+    @Unique
     CubeModel cube;
 
     @Inject(method = "<init>", at = @At(value = "FIELD",
@@ -28,7 +30,7 @@ public class ModelPartCubeM implements ModelPartCubeMixed {
 
 
     @Override
-    public CubeModel getCubeModel() {
+    public CubeModel vulkanMod$getCubeModel() {
         return this.cube;
     }
 }

@@ -4,26 +4,26 @@ import net.minecraft.core.Direction;
 
 public interface QuadView {
 
-    int getFlags();
+    int vulkanMod$getFlags();
 
-    float getX(int idx);
+    float vulkanMod$getX(int idx);
 
-    float getY(int idx);
+    float vulkanMod$getY(int idx);
 
-    float getZ(int idx);
+    float vulkanMod$getZ(int idx);
 
-    int getColor(int idx);
+    int vulkanMod$getColor(int idx);
 
-    float getU(int idx);
+    float vulkanMod$getU(int idx);
 
-    float getV(int idx);
+    float vulkanMod$getV(int idx);
 
-    int getColorIndex();
+    int vulkanMod$getColorIndex();
 
-    Direction getFacingDirection();
+    Direction vulkanMod$getFacingDirection();
 
-    default boolean isTinted() {
-        return this.getColorIndex() != -1;
+    default boolean vulkanMod$isTinted() {
+        return this.vulkanMod$getColorIndex() != -1;
     }
 
 

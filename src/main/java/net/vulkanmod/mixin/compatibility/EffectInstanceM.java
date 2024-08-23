@@ -1,6 +1,7 @@
 package net.vulkanmod.mixin.compatibility;
 
 import com.google.gson.JsonObject;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.BlendMode;
 import com.mojang.blaze3d.shaders.EffectProgram;
@@ -22,10 +23,7 @@ import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -60,18 +58,19 @@ public class EffectInstanceM {
     @Shadow @Final private Map<String, IntSupplier> samplerMap;
 
     @Shadow @Final private String name;
+    @Unique
     private static GraphicsPipeline lastPipeline;
 
+    @Unique
     private GraphicsPipeline pipeline;
 
     @Inject(method = "<init>",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/EffectInstance;updateLocations()V",
-                    shift = At.Shift.AFTER),
-            locals = LocalCapture.CAPTURE_FAILHARD
+                    shift = At.Shift.AFTER)
     )
     private void inj(ResourceManager resourceManager, String string, CallbackInfo ci,
-                     ResourceLocation resourceLocation, Resource resource, Reader reader, JsonObject jsonObject, String string2, String string3) {
+                     @Local(ordinal = 1) String string2, @Local(ordinal = 2) String string3) {
         createShaders(resourceManager, string2, string3);
     }
 
@@ -96,6 +95,7 @@ public class EffectInstanceM {
 //        ProgramManager.releaseProgram(this);
     }
 
+    @Unique
     private void createShaders(ResourceManager resourceManager, String vertexShader, String fragShader) {
 
         try {
@@ -130,6 +130,7 @@ public class EffectInstanceM {
 
     }
 
+    @Unique
     private void setUniformSuppliers(UBO ubo) {
 
         for(Uniform v_uniform : ubo.getUniforms()) {
@@ -156,6 +157,7 @@ public class EffectInstanceM {
 
     }
 
+    @Unique
     private String[] decompose(String string, char c) {
         String[] strings = new String[]{"minecraft", string};
         int i = string.indexOf(c);

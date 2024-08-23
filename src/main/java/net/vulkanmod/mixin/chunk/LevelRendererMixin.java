@@ -75,6 +75,7 @@ public abstract class LevelRendererMixin {
 
     @Shadow protected abstract void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource);
 
+    @Unique
     private WorldRenderer worldRenderer;
 
     @Unique

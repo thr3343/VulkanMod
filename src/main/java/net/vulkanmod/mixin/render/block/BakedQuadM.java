@@ -8,6 +8,7 @@ import net.vulkanmod.render.model.quad.ModelQuadFlags;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,6 +21,7 @@ public class BakedQuadM implements QuadView {
     @Shadow @Final protected int[] vertices;
     @Shadow @Final protected Direction direction;
     @Shadow @Final protected int tintIndex;
+    @Unique
     private int flags;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -28,55 +30,56 @@ public class BakedQuadM implements QuadView {
     }
 
     @Override
-    public int getFlags() {
+    public int vulkanMod$getFlags() {
         return flags;
     }
 
     @Override
-    public float getX(int idx) {
+    public float vulkanMod$getX(int idx) {
         return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + 0]);
     }
 
     @Override
-    public float getY(int idx) {
+    public float vulkanMod$getY(int idx) {
         return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + 1]);
     }
 
     @Override
-    public float getZ(int idx) {
+    public float vulkanMod$getZ(int idx) {
         return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + 2]);
     }
 
     @Override
-    public int getColor(int idx) {
+    public int vulkanMod$getColor(int idx) {
         return this.vertices[vertexOffset(idx) + 3];
     }
 
     @Override
-    public float getU(int idx) {
+    public float vulkanMod$getU(int idx) {
         return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + 4]);
     }
 
     @Override
-    public float getV(int idx) {
+    public float vulkanMod$getV(int idx) {
         return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + 5]);
     }
 
     @Override
-    public int getColorIndex() {
+    public int vulkanMod$getColorIndex() {
         return this.tintIndex;
     }
 
     @Override
-    public Direction getFacingDirection() {
+    public Direction vulkanMod$getFacingDirection() {
         return this.direction;
     }
 
     @Override
-    public boolean isTinted() {
+    public boolean vulkanMod$isTinted() {
         return this.tintIndex != -1;
     }
 
+    @Unique
     private static int vertexOffset(int vertexIndex) {
         return vertexIndex * VERTEX_SIZE;
     }

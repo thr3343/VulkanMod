@@ -9,9 +9,11 @@ import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(MipmapGenerator.class)
 public abstract class MipmapGeneratorM {
+    @Unique
     private static final int ALPHA_CUTOFF = 50;
 
     @Shadow
@@ -92,6 +94,7 @@ public abstract class MipmapGeneratorM {
         }
     }
 
+    @Unique
     private static boolean hasTransparentPixel(long ptr, int width, int height) {
         for(int i = 0; i < width; ++i) {
             for(int j = 0; j < height; ++j) {
@@ -104,6 +107,7 @@ public abstract class MipmapGeneratorM {
         return false;
     }
 
+    @Unique
     private static int blend(int p0, int p1, int p2, int p3) {
         int a = gammaBlend(p0, p1, p2, p3, 24);
 //        int a = ((p0 >> 24 & 0xFF) + (p1 >> 24 & 0xFF) + (p2 >> 24 & 0xFF) + (p3 >> 24 & 0xFF)) >> 2;
@@ -113,10 +117,12 @@ public abstract class MipmapGeneratorM {
         return a << 24 | b << 16 | g << 8 | r;
     }
 
+    @Unique
     private static int getMax(int i0, int i1, int i2, int i3) {
         return Math.max(Math.max(Math.max(i0, i1), i2), i3);
     }
 
+    @Unique
     private static int gammaBlend(int i, int j, int k, int l, int m) {
         float f = getPow22(i >> m);
         float g = getPow22(j >> m);
@@ -126,10 +132,12 @@ public abstract class MipmapGeneratorM {
         return (int)((double)o * 255.0);
     }
 
+    @Unique
     private static int getPixelA(int rgba) {
         return rgba >> 24;
     }
 
+    @Unique
     @SuppressWarnings("UnreachableCode")
     private static int calculateAverage(NativeImage nativeImage) {
         final int width = nativeImage.getWidth();

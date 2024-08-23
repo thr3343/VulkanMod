@@ -2,5 +2,5 @@ package net.vulkanmod.interfaces;
 
 public interface VisibilitySetExtended {
 
-    long getVisibility();
+    long vulkanMod$getVisibility();
 }

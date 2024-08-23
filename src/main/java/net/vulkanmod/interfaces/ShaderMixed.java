@@ -4,5 +4,5 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 
 public interface ShaderMixed {
 
-    GraphicsPipeline getPipeline();
+    GraphicsPipeline vulkanMod$getPipeline();
 }

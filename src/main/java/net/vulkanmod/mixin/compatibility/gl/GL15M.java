@@ -14,6 +14,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     @NativeType("void")
@@ -23,6 +24,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glBindBuffer(@NativeType("GLenum") int target, @NativeType("GLuint") int buffer) {
@@ -31,6 +33,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glBufferData(@NativeType("GLenum") int target, @NativeType("void const *") ByteBuffer data, @NativeType("GLenum") int usage) {
@@ -39,6 +42,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glBufferData(int i, long l, int j) {
@@ -47,6 +51,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     @NativeType("void *")
@@ -56,6 +61,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     @Nullable
@@ -66,6 +72,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     @NativeType("GLboolean")
@@ -75,6 +82,7 @@ public class GL15M {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void glDeleteBuffers(int i) {

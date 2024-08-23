@@ -7,6 +7,7 @@ import net.vulkanmod.render.VBO;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(VertexBuffer.class)
 public class VertexBufferM {
 
+    @Unique
     private VBO vbo;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -34,18 +36,21 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bind() {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static void unbind() {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void upload(BufferBuilder.RenderedBuffer buffer) {
@@ -54,6 +59,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
@@ -62,6 +68,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void draw() {
@@ -70,6 +77,7 @@ public class VertexBufferM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void close() {

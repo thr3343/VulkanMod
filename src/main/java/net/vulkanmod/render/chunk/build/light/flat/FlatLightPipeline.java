@@ -36,7 +36,7 @@ public class FlatLightPipeline implements LightPipeline {
         if (cullFace != null) {
             lightmap = getLightmap(pos, cullFace);
         } else {
-            int flags = quad.getFlags();
+            int flags = quad.vulkanMod$getFlags();
             // If the face is aligned, use the light data above it
             // To match vanilla behavior, also treat the face as aligned if it is parallel and the block state is a full cube
             if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && unpackFC(this.lightCache.get(pos)))) {

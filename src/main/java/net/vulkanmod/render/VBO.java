@@ -112,7 +112,7 @@ public class VBO {
 
             RenderSystem.setShader(() -> shader);
 
-            drawWithShader(MV, P, ((ShaderMixed) shader).getPipeline());
+            drawWithShader(MV, P, ((ShaderMixed) shader).vulkanMod$getPipeline());
 
         }
     }

@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.render.target;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -14,10 +13,7 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 
 @Mixin(RenderTarget.class)
 public abstract class RenderTargetMixin implements ExtendedRenderTarget {
@@ -34,15 +30,20 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Shadow @Final private float[] clearChannels;
     @Shadow @Final public boolean useDepth;
 
+    @Unique
     Framebuffer framebuffer;
 
+    @Unique
     boolean needClear = false;
+    @Unique
     boolean bound = false;
 
+    @Unique
     private static int boundTarget = 0;
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void clear(boolean getError) {
@@ -97,6 +98,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bindRead() {
@@ -113,6 +115,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void unbindRead() {
@@ -122,6 +125,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void bindWrite(boolean bl) {
@@ -137,6 +141,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void _bindWrite(boolean bl) {
@@ -158,6 +163,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void unbindWrite() {
@@ -176,6 +182,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
@@ -191,12 +198,12 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     }
 
     @Override
-    public boolean isBound() {
+    public boolean vulkanMod$isBound() {
         return bound;
     }
 
     @Override
-    public RenderPass getRenderPass() {
+    public RenderPass vulkanMod$getRenderPass() {
         return GlFramebuffer.getFramebuffer(this.frameBufferId).getRenderPass();
     }
 }

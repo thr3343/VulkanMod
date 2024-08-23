@@ -14,14 +14,17 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(FaceBakery.class)
 public class FaceBakeryM {
 
+    @Unique
     private static final float d = 1.0f / 16.0f;
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private float[] setupShape(Vector3f vector3f, Vector3f vector3f2) {
@@ -37,6 +40,7 @@ public class FaceBakeryM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static BlockFaceUV recomputeUVs(BlockFaceUV blockFaceUV, Direction direction, Transformation transformation, ResourceLocation resourceLocation) {

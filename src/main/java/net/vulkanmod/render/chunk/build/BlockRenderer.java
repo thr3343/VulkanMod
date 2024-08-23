@@ -114,8 +114,8 @@ public class BlockRenderer {
 
     private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData) {
         float r, g, b;
-        if (quadView.isTinted()) {
-            int color = blockColors.getColor(blockState, resources.region, blockPos, quadView.getColorIndex());
+        if (quadView.vulkanMod$isTinted()) {
+            int color = blockColors.getColor(blockState, resources.region, blockPos, quadView.vulkanMod$getColorIndex());
             r = ColorUtil.ARGB.unpackR(color);
             g = ColorUtil.ARGB.unpackG(color);
             b = ColorUtil.ARGB.unpackB(color);
@@ -129,7 +129,7 @@ public class BlockRenderer {
     }
 
     public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue) {
-        Vec3i normal = quad.getFacingDirection().getNormal();
+        Vec3i normal = quad.vulkanMod$getFacingDirection().getNormal();
         int packedNormal = VertexUtil.packNormal(normal.getX(), normal.getY(), normal.getZ());
 
         float[] brightnessArr = quadLightData.br;
@@ -141,14 +141,14 @@ public class BlockRenderer {
         bufferBuilder.ensureCapacity();
 
         for (byte i = 0; i < 4; ++i) {
-            final float x = pos.x() + quad.getX(idx);
-            final float y = pos.y() + quad.getY(idx);
-            final float z = pos.z() + quad.getZ(idx);
+            final float x = pos.x() + quad.vulkanMod$getX(idx);
+            final float y = pos.y() + quad.vulkanMod$getY(idx);
+            final float z = pos.z() + quad.vulkanMod$getZ(idx);
 
             final float r, g, b;
             final float quadR, quadG, quadB;
 
-            final int quadColor = quad.getColor(idx);
+            final int quadColor = quad.vulkanMod$getColor(idx);
             quadR = ColorUtil.RGBA.unpackR(quadColor);
             quadG = ColorUtil.RGBA.unpackG(quadColor);
             quadB = ColorUtil.RGBA.unpackB(quadColor);
@@ -160,8 +160,8 @@ public class BlockRenderer {
 
             final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
-            final float u = quad.getU(idx);
-            final float v = quad.getV(idx);
+            final float u = quad.vulkanMod$getU(idx);
+            final float v = quad.vulkanMod$getV(idx);
 
             bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
 

@@ -38,7 +38,7 @@ public enum TerrainRenderType {
     }
 
     public static TerrainRenderType get(RenderType renderType) {
-        return ((ExtendedRenderType)renderType).getTerrainRenderType();
+        return ((ExtendedRenderType)renderType).vulkanMod$getTerrainRenderType();
     }
 
     public static TerrainRenderType get(String name) {

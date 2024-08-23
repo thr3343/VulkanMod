@@ -66,7 +66,7 @@ public class SectionGraph {
         }
 
         profiler.push("frustum");
-        this.frustum = (((FrustumMixed) (frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
+        this.frustum = (((FrustumMixed) (frustum)).vulkanMod$customFrustum()).offsetToFullyIncludeCameraCube(8);
         this.sectionGrid.updateFrustumVisibility(this.frustum);
         profiler.pop();
 

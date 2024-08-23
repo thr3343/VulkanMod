@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
@@ -416,8 +415,8 @@ public class LiquidRenderer {
 
     private int calculateNormal(ModelQuad quad) {
         // TODO
-        Vector3f normal = new Vector3f(quad.getX(1), quad.getY(1), quad.getZ(1))
-                .cross(quad.getX(3), quad.getY(3), quad.getZ(3));
+        Vector3f normal = new Vector3f(quad.vulkanMod$getX(1), quad.vulkanMod$getY(1), quad.vulkanMod$getZ(1))
+                .cross(quad.vulkanMod$getX(3), quad.vulkanMod$getY(3), quad.vulkanMod$getZ(3));
         normal.normalize();
 
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
@@ -435,11 +434,11 @@ public class LiquidRenderer {
         for (int j = 0; j < 4; j++) {
             i = k;
 
-            final float x = xOffset + quad.getX(i);
-            final float y = yOffset + quad.getY(i);
-            final float z = zOffset + quad.getZ(i);
+            final float x = xOffset + quad.vulkanMod$getX(i);
+            final float y = yOffset + quad.vulkanMod$getY(i);
+            final float z = zOffset + quad.vulkanMod$getZ(i);
 
-            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.getU(i), quad.getV(i), quadLightData.lm[i], 0);
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.vulkanMod$getU(i), quad.vulkanMod$getV(i), quadLightData.lm[i], 0);
 
             k += (flip ? -1 : +1);
             k &= 0b11;

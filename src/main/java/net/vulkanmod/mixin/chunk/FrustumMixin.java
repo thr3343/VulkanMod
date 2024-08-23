@@ -6,6 +6,7 @@ import net.vulkanmod.render.chunk.frustum.VFrustum;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -16,6 +17,7 @@ public class FrustumMixin implements FrustumMixed {
     @Shadow private double camX;
     @Shadow private double camY;
     @Shadow private double camZ;
+    @Unique
     private final VFrustum vFrustum = new VFrustum();
 
     @Inject(method = "calculateFrustum", at = @At("HEAD"), cancellable = true)
@@ -31,7 +33,7 @@ public class FrustumMixin implements FrustumMixed {
     }
 
     @Override
-    public VFrustum customFrustum() {
+    public VFrustum vulkanMod$customFrustum() {
         return vFrustum;
     }
 }

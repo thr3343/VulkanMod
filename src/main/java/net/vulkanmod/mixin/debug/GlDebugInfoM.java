@@ -12,6 +12,7 @@ public class GlDebugInfoM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static String getVendor() {
@@ -20,6 +21,7 @@ public class GlDebugInfoM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static String getRenderer() {
@@ -28,6 +30,7 @@ public class GlDebugInfoM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static String getOpenGLVersion() {
@@ -36,6 +39,7 @@ public class GlDebugInfoM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public static String getCpuInfo() {

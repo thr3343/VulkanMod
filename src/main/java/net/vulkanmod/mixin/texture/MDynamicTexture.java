@@ -9,6 +9,7 @@ import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -54,12 +55,13 @@ public abstract class MDynamicTexture extends AbstractTexture {
 
     }
 
+    @Unique
     private void createTexture() {
         VAbstractTextureI texture = ((VAbstractTextureI)(this));
 
         VulkanImage vulkanImage = new VulkanImage.Builder(this.pixels.getWidth(), this.pixels.getHeight()).createVulkanImage();
-        texture.setVulkanImage(vulkanImage);
-        texture.bindTexture();
+        texture.vulkanMod$setVulkanImage(vulkanImage);
+        texture.vulkanMod$bindTexture();
 //        texture.setId(TextureMap.getId(vulkanImage));
     }
 

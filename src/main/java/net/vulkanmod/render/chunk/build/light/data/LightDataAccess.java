@@ -5,7 +5,6 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.vulkanmod.Initializer;
@@ -123,7 +122,7 @@ public abstract class LightDataAccess {
         int crs = (fo || fc) && lu == 0 && useAo ? 0xFF : 0;
         if(!fo && op) {
             VoxelShape shape = state.getShape(world, pos);
-            crs = ((VoxelShapeExtended)(shape)).getCornerOcclusion();
+            crs = ((VoxelShapeExtended)(shape)).vulkanMod$getCornerOcclusion();
         }
 
        return packFC(fc) | packFO(fo) | packOP(op) | packEM(em) | packCO(crs) | packAO(ao) | packSL(sl) | packBL(bl);

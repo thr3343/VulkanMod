@@ -5,11 +5,13 @@ import net.minecraft.core.Direction;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(VisibilitySet.class)
 public class VisibilitySetMixin implements VisibilitySetExtended {
 
 //    private int vis2 = 0;
+    @Unique
     private long vis = 0;
 
     /**
@@ -43,7 +45,7 @@ public class VisibilitySetMixin implements VisibilitySetExtended {
     }
 
     @Override
-    public long getVisibility() {
+    public long vulkanMod$getVisibility() {
         return vis;
     }
 }

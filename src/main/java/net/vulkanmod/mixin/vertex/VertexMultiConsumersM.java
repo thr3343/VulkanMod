@@ -22,12 +22,12 @@ public class VertexMultiConsumersM {
         @Shadow @Final private VertexConsumer second;
 
         @Override
-        public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+        public void vulkanMod$vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
             ExtendedVertexBuilder firstExt = (ExtendedVertexBuilder) this.first;
             ExtendedVertexBuilder secondExt = (ExtendedVertexBuilder) this.second;
 
-            firstExt.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
-            secondExt.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
+            firstExt.vulkanMod$vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
+            secondExt.vulkanMod$vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
         }
     }
 
@@ -36,11 +36,11 @@ public class VertexMultiConsumersM {
         @Shadow @Final private VertexConsumer[] delegates;
 
         @Override
-        public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+        public void vulkanMod$vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
             for (VertexConsumer vertexConsumer : this.delegates) {
                 ExtendedVertexBuilder extendedVertexBuilder = (ExtendedVertexBuilder) vertexConsumer;
 
-                extendedVertexBuilder.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
+                extendedVertexBuilder.vulkanMod$vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
             }
         }
     }
@@ -54,7 +54,7 @@ public class VertexMultiConsumersM {
         @Shadow @Final private float textureScale;
 
         @Override
-        public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+        public void vulkanMod$vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
             float nx = VertexUtil.unpackN1(packedNormal);
             float ny = VertexUtil.unpackN2(packedNormal);
             float nz = VertexUtil.unpackN3(packedNormal);

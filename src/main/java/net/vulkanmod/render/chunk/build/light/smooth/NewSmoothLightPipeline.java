@@ -45,7 +45,7 @@ public class NewSmoothLightPipeline implements LightPipeline {
     public void calculate(QuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFaceO, boolean shade) {
         this.updateCachedData(pos.asLong());
 
-        int flags = quad.getFlags();
+        int flags = quad.vulkanMod$getFlags();
 
         SimpleDirection lightFace = SimpleDirection.of(lightFaceO);
 
@@ -92,9 +92,9 @@ public class NewSmoothLightPipeline implements LightPipeline {
 
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
-            float cx = clamp(quad.getX(i));
-            float cy = clamp(quad.getY(i));
-            float cz = clamp(quad.getZ(i));
+            float cx = clamp(quad.vulkanMod$getX(i));
+            float cy = clamp(quad.vulkanMod$getY(i));
+            float cz = clamp(quad.vulkanMod$getZ(i));
 
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
@@ -115,9 +115,9 @@ public class NewSmoothLightPipeline implements LightPipeline {
 
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
-            float cx = clamp(quad.getX(i));
-            float cy = clamp(quad.getY(i));
-            float cz = clamp(quad.getZ(i));
+            float cx = clamp(quad.vulkanMod$getX(i));
+            float cy = clamp(quad.vulkanMod$getY(i));
+            float cz = clamp(quad.vulkanMod$getZ(i));
 
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
@@ -142,9 +142,9 @@ public class NewSmoothLightPipeline implements LightPipeline {
     private void applyNonParallelFace(AoNeighborInfo neighborInfo, QuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
-            float cx = clamp(quad.getX(i));
-            float cy = clamp(quad.getY(i));
-            float cz = clamp(quad.getZ(i));
+            float cx = clamp(quad.vulkanMod$getX(i));
+            float cy = clamp(quad.vulkanMod$getY(i));
+            float cz = clamp(quad.vulkanMod$getZ(i));
 
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);

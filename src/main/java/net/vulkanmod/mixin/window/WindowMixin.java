@@ -14,10 +14,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -80,6 +77,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void updateVsync(boolean vsync) {
@@ -89,6 +87,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void toggleFullScreen() {
@@ -98,6 +97,7 @@ public abstract class WindowMixin {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void updateDisplay() {
@@ -109,10 +109,12 @@ public abstract class WindowMixin {
         }
     }
 
+    @Unique
     private boolean wasOnFullscreen = false;
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     private void setMode() {

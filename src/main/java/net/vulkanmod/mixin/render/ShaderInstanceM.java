@@ -20,10 +20,7 @@ import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -57,14 +54,18 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GAME_TIME;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform SCREEN_SIZE;
 
+    @Unique
     private String vsPath;
+    @Unique
     private String fsName;
 
+    @Unique
     private GraphicsPipeline pipeline;
+    @Unique
     boolean isLegacy = false;
 
 
-    public GraphicsPipeline getPipeline() {
+    public GraphicsPipeline vulkanMod$getPipeline() {
         return pipeline;
     }
 
@@ -109,6 +110,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void close() {
@@ -118,6 +120,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void apply() {
@@ -180,10 +183,12 @@ public class ShaderInstanceM implements ShaderMixed {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite
     public void clear() {}
 
+    @Unique
     private void setUniformSuppliers(UBO ubo) {
 
         for(Uniform vUniform : ubo.getUniforms()) {
@@ -214,6 +219,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     }
 
+    @Unique
     private void createLegacyShader(ResourceProvider resourceProvider, VertexFormat format) {
         try {
             String vertPath = this.vsPath + ".vsh";

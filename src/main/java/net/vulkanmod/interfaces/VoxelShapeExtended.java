@@ -2,5 +2,5 @@ package net.vulkanmod.interfaces;
 
 public interface VoxelShapeExtended {
 
-    int getCornerOcclusion();
+    int vulkanMod$getCornerOcclusion();
 }

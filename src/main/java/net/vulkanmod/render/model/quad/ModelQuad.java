@@ -14,47 +14,47 @@ public class ModelQuad implements QuadView {
     private int flags;
     
     @Override
-    public int getFlags() {
+    public int vulkanMod$getFlags() {
         return flags;
     }
 
     @Override
-    public float getX(int idx) {
+    public float vulkanMod$getX(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx)]);
     }
 
     @Override
-    public float getY(int idx) {
+    public float vulkanMod$getY(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx) + 1]);
     }
 
     @Override
-    public float getZ(int idx) {
+    public float vulkanMod$getZ(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx) + 2]);
     }
 
     @Override
-    public int getColor(int idx) {
+    public int vulkanMod$getColor(int idx) {
         return this.data[vertexOffset(idx) + 3];
     }
 
     @Override
-    public float getU(int idx) {
+    public float vulkanMod$getU(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx) + 4]);
     }
 
     @Override
-    public float getV(int idx) {
+    public float vulkanMod$getV(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx) + 5]);
     }
 
     @Override
-    public int getColorIndex() {
+    public int vulkanMod$getColorIndex() {
         return -1;
     }
 
     @Override
-    public Direction getFacingDirection() {
+    public Direction vulkanMod$getFacingDirection() {
         return this.direction;
     }
 

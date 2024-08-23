@@ -21,6 +21,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _bindTexture(int i) {
@@ -29,6 +30,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _disableBlend() {
@@ -38,6 +40,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _enableBlend() {
@@ -47,6 +50,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _blendFunc(int i, int j) {
@@ -57,6 +61,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _blendFuncSeparate(int i, int j, int k, int l) {
@@ -67,6 +72,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _disableScissorTest() {
@@ -75,12 +81,14 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _enableScissorTest() {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _enableCull() {
@@ -89,6 +97,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _disableCull() {
@@ -97,6 +106,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _viewport(int x, int y, int width, int height) {
@@ -105,6 +115,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _scissorBox(int x, int y, int width, int height) {
@@ -114,6 +125,7 @@ public class GlStateManagerM {
     //TODO
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int _getError() {
@@ -122,6 +134,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable IntBuffer pixels) {
@@ -130,6 +143,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _texSubImage2D(int target, int level, int offsetX, int offsetY, int width, int height, int format, int type, long pixels) {
@@ -138,6 +152,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _activeTexture(int i) {
@@ -146,6 +161,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _texParameter(int i, int j, int k) {
@@ -154,6 +170,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _texParameter(int i, int j, float k) {
@@ -162,6 +179,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int _getTexLevelParameter(int i, int j, int k) {
@@ -170,6 +188,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
@@ -178,6 +197,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int _genTexture() {
@@ -187,6 +207,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _deleteTexture(int i) {
@@ -196,6 +217,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _colorMask(boolean red, boolean green, boolean blue, boolean alpha) {
@@ -205,6 +227,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _depthFunc(int i) {
@@ -214,6 +237,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _clearColor(float f, float g, float h, float i) {
@@ -223,12 +247,14 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _clearDepth(double d) {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _clear(int mask, boolean bl) {
@@ -238,12 +264,14 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glUseProgram(int i) {}
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _disableDepthTest() {
@@ -253,6 +281,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _enableDepthTest() {
@@ -262,6 +291,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _depthMask(boolean bl) {
@@ -272,6 +302,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int glGenFramebuffers() {
@@ -281,6 +312,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int glGenRenderbuffers() {
@@ -290,6 +322,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glBindFramebuffer(int i, int j) {
@@ -299,6 +332,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glFramebufferTexture2D(int i, int j, int k, int l, int m) {
@@ -308,6 +342,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glBindRenderbuffer(int i, int j) {
@@ -317,6 +352,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glFramebufferRenderbuffer(int i, int j, int k, int l) {
@@ -326,6 +362,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glRenderbufferStorage(int i, int j, int k, int l) {
@@ -335,6 +372,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int glCheckFramebufferStatus(int i) {
@@ -344,6 +382,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static int _glGenBuffers() {
@@ -353,6 +392,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glBindBuffer(int i, int j) {
@@ -362,6 +402,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glBufferData(int i, ByteBuffer byteBuffer, int j) {
@@ -371,6 +412,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glBufferData(int i, long l, int j) {
@@ -380,6 +422,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     @Nullable
@@ -390,6 +433,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glUnmapBuffer(int i) {
@@ -399,6 +443,7 @@ public class GlStateManagerM {
 
     /**
      * @author
+     * @reason
      */
     @Overwrite(remap = false)
     public static void _glDeleteBuffers(int i) {

@@ -326,7 +326,7 @@ public class GraphicsPipeline extends Pipeline {
                     throw new RuntimeException(String.format("Unknown format: %s", usage));
             }
 
-            posDescription.offset(((VertexFormatMixed) (vertexFormat)).getOffset(i));
+            posDescription.offset(((VertexFormatMixed) (vertexFormat)).vulkanMod$getOffset(i));
         }
 
         return attributeDescriptions.rewind();

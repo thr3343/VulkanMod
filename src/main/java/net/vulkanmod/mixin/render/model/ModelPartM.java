@@ -11,13 +11,11 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.Iterator;
 import java.util.List;
 
 @Mixin(ModelPart.class)
@@ -39,7 +37,7 @@ public class ModelPartM {
 
         for (ModelPart.Cube cube : this.cubes) {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
-            CubeModel cubeModel = cubeMixed.getCubeModel();
+            CubeModel cubeModel = cubeMixed.vulkanMod$getCubeModel();
 
             ModelPart.Polygon[] polygons = cubeModel.getPolygons();
 //            int var12 = polygons.length;
@@ -69,7 +67,7 @@ public class ModelPartM {
 
                     Vector3f pos = vertex.pos;
 //                    vertexConsumer.vertex(pos.x(), pos.y(), pos.z(), r, g, b, a, vertex.u, vertex.v, j, i, l, m, n);
-                    vertexBuilder.vertex(pos.x(), pos.y(), pos.z(), packedColor, vertex.u, vertex.v, j, i, packedNormal);
+                    vertexBuilder.vulkanMod$vertex(pos.x(), pos.y(), pos.z(), packedColor, vertex.u, vertex.v, j, i, packedNormal);
                 }
             }
         }

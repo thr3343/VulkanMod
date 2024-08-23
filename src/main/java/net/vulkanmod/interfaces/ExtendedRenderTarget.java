@@ -4,7 +4,7 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 
 public interface ExtendedRenderTarget {
 
-    boolean isBound();
+    boolean vulkanMod$isBound();
 
-    RenderPass getRenderPass();
+    RenderPass vulkanMod$getRenderPass();
 }

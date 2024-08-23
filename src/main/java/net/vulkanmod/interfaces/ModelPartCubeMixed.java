@@ -4,5 +4,5 @@ import net.vulkanmod.render.model.CubeModel;
 
 public interface ModelPartCubeMixed {
 
-    CubeModel getCubeModel();
+    CubeModel vulkanMod$getCubeModel();
 }
