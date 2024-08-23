@@ -8,9 +8,11 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
 import net.fabricmc.fabric.impl.client.rendering.FabricShaderProgram;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -98,6 +100,8 @@ public abstract class GameRendererMixin {
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
 
     @Shadow public abstract float getRenderDistance();
+
+    @Shadow @Final private Minecraft minecraft;
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) throws IOException {
@@ -367,5 +371,27 @@ public abstract class GameRendererMixin {
 //        return this.getRenderDistance() * 4.0F;
         return Float.POSITIVE_INFINITY;
     }
+
+    //Main target (framebuffer) ops
+    /**
+     * @author
+     * @reason Respect <code> minecraft.norender</code> As some mods rely on it+ Some mods inject into render (e.g. DynamicFPS)
+     */
+    @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;noRender:Z"))
+    private void beginRender(float f, long l, boolean bl, CallbackInfo ci) {
+        if(!this.minecraft.noRender) Renderer.getInstance().beginFrame();
+
+    }
+
+
+    /**
+     * @author
+     * @reason Contain rendering to GameRenderer.render to try to more closely mimic/emulate Vanilla rendering behaviour
+     */
+    @Inject(method = "render", at = @At(value = "RETURN"))
+    private void submitRender(float f, long l, boolean bl, CallbackInfo ci) {
+        Renderer.getInstance().endFrame();
+    }
+
 
 }

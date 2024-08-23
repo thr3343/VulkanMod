@@ -47,18 +47,6 @@ public class MinecraftMixin {
         Renderer.getInstance().preInitFrame();
     }
 
-    //Main target (framebuffer) ops
-    @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
-    private void beginRender(int i, boolean bl) {
-        RenderSystem.clear(i, bl);
-        Renderer.getInstance().beginFrame();
-    }
-
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
-    private void submitRender(boolean tick, CallbackInfo ci) {
-        Renderer.getInstance().endFrame();
-    }
-
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))
     private void redirectMainTarget1(RenderTarget instance, boolean bl) {
         Renderer.getInstance().getMainPass().mainTargetBindWrite();
