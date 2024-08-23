@@ -1,5 +1,6 @@
 package net.vulkanmod.mixin.chunk;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -215,10 +216,10 @@ public abstract class LevelRendererMixin {
      * @author
      * @reason Avoid use of @Overwrite or @Inject to prevent potential mixin Conflicts
      */
-    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderEntity(Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V"))
-    private void renderEntity2(LevelRenderer instance, Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, Operation<Void> original) {
+    @WrapMethod(method = "renderEntity")
+    private void renderEntity2(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, Operation<Void> original) {
         if (!Initializer.CONFIG.entityCulling) {
-            renderEntity(entity, d, e, f, g, poseStack, multiBufferSource);
+            original.call(entity, d, e, f, g, poseStack, multiBufferSource);
         }
 
         var entityClass = entity.getClass();
