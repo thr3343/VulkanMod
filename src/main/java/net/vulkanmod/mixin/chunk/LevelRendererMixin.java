@@ -216,10 +216,10 @@ public abstract class LevelRendererMixin {
      * @author
      * @reason Avoid use of @Overwrite or @Inject to prevent potential mixin Conflicts
      */
-    @WrapMethod(method = "renderEntity")
-    private void renderEntity2(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, Operation<Void> original) {
+    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderEntity(Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V"))
+    private void renderEntity2(LevelRenderer instance, Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, Operation<Void> original) {
         if (!Initializer.CONFIG.entityCulling) {
-            original.call(entity, d, e, f, g, poseStack, multiBufferSource);
+            original.call(instance, entity, d, e, f, g, poseStack, multiBufferSource);
         }
 
         var entityClass = entity.getClass();
@@ -246,14 +246,7 @@ public abstract class LevelRendererMixin {
 
         for (var list : this.entitiesMap.values()) {
             for (var pair : list) {
-                Entity entity = pair.first;
-                MultiBufferSource multiBufferSource = pair.second;
-
-                double h = Mth.lerp(partialTicks, entity.xOld, entity.getX());
-                double i = Mth.lerp(partialTicks, entity.yOld, entity.getY());
-                double j = Mth.lerp(partialTicks, entity.zOld, entity.getZ());
-                float k = Mth.lerp(partialTicks, entity.yRotO, entity.getYRot());
-                this.entityRenderDispatcher.render(entity, h - cameraPos.x, i - cameraPos.y, j - cameraPos.z, k, partialTicks, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, partialTicks));
+                this.renderEntity(pair.first, cameraPos.x, cameraPos.y, cameraPos.z, partialTicks, poseStack, pair.second);
             }
         }
     }
