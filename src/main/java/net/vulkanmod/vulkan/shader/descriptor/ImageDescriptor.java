@@ -14,6 +14,7 @@ public class ImageDescriptor implements Descriptor {
     public final int imageIdx;
 
     public final boolean isStorageImage;
+    private final int stage;
     public boolean useSampler;
     public boolean isReadOnlyLayout;
     private int layout;
@@ -24,6 +25,12 @@ public class ImageDescriptor implements Descriptor {
     }
 
     public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
+        this.stage = switch (name) {
+            case "Sampler0", "DiffuseSampler", "SamplerProj" -> VK_SHADER_STAGE_FRAGMENT_BIT;
+            case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
+            default -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        };
+
         this.binding = binding;
         this.qualifier = type;
         this.name = name;
@@ -47,7 +54,7 @@ public class ImageDescriptor implements Descriptor {
 
     @Override
     public int getStages() {
-        return VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
+        return stage;
     }
 
     public void setLayout(int layout) {
