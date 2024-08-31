@@ -76,6 +76,7 @@ public abstract class Pipeline {
 
     public final String name;
     public final boolean isDynamic;
+    public final boolean isPostEffect;
 
     protected long descriptorSetLayout;
     protected long pipelineLayout;
@@ -88,7 +89,8 @@ public abstract class Pipeline {
 
     public Pipeline(String name) {
         this.name = name;
-        this.isDynamic = name.contains("dynamic"); //TODO: better detection method
+        this.isDynamic = name!=null && name.contains("dynamic"); //TODO: better detection method
+        this.isPostEffect = name==null;
     }
 
     protected void createDescriptorSetLayout() {
