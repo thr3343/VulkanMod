@@ -5,10 +5,10 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3, set = SET_ID) uniform sampler2DArray Sampler0[];
+layout(binding = 3) uniform sampler2DArray Sampler0[];
 
 
-layout(binding = 1, set = SET_ID) uniform UBO {
+layout(binding = 1) uniform UBO {
     vec4 FogColor;
     float FogStart;
     float FogEnd;
