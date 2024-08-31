@@ -75,6 +75,7 @@ public abstract class Pipeline {
     }
 
     public final String name;
+    public final boolean isDynamic;
 
     protected long descriptorSetLayout;
     protected long pipelineLayout;
@@ -87,6 +88,7 @@ public abstract class Pipeline {
 
     public Pipeline(String name) {
         this.name = name;
+        this.isDynamic = name.contains("dynamic"); //TODO: better detection method
     }
 
     protected void createDescriptorSetLayout() {

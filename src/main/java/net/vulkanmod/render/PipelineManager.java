@@ -2,6 +2,7 @@ package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
+import net.vulkanmod.config.option.Options;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -21,7 +22,7 @@ public abstract class PipelineManager {
         TERRAIN_VERTEX_FORMAT = format;
     }
 
-    static GraphicsPipeline terrainShaderEarlyZ, terrainShader, fastBlitPipeline;
+    static GraphicsPipeline terrainShaderEarlyZ, terrainShader, terrainShaderEarlyZDynamic, terrainShaderDynamic, fastBlitPipeline;
 
     private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
 
@@ -33,12 +34,22 @@ public abstract class PipelineManager {
     }
 
     public static void setDefaultShader() {
-        setShaderGetter(renderType -> renderType == TerrainRenderType.TRANSLUCENT ? terrainShaderEarlyZ : terrainShader);
+        setShaderGetter(renderType -> {
+            final GraphicsPipeline graphicsPipeline = switch (renderType) {
+                case TRANSLUCENT ->  Options.isDynamicState() ? terrainShaderEarlyZDynamic : terrainShaderEarlyZ;
+                default -> Options.isDynamicState() ? terrainShaderDynamic : terrainShader;
+            };
+            return graphicsPipeline;
+        });
     }
 
     private static void createBasicPipelines() {
-        terrainShaderEarlyZ = createPipeline("terrain","terrain", "terrain_Z", TERRAIN_VERTEX_FORMAT);
+        terrainShaderEarlyZ = createPipeline("terrain","terrain", "terrain_z", TERRAIN_VERTEX_FORMAT);
         terrainShader = createPipeline("terrain", "terrain", "terrain", TERRAIN_VERTEX_FORMAT);
+        //TODO: Too many pipelines: might use an ugly macro instead
+        terrainShaderEarlyZDynamic = createPipeline("terrain_dynamic","terrain_dynamic", "terrain_dynamic_z", TERRAIN_VERTEX_FORMAT);
+        terrainShaderDynamic = createPipeline("terrain_dynamic", "terrain_dynamic", "terrain_dynamic", TERRAIN_VERTEX_FORMAT);
+
         fastBlitPipeline = createPipeline("blit", "blit", "blit", CustomVertexFormat.NONE);
     }
 

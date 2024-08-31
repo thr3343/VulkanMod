@@ -292,4 +292,9 @@ public abstract class Options {
         };
 
     }
+
+    public static boolean isDynamicState()
+    {
+        return config.af>1;
+    }
 }

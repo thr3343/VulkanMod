@@ -26,6 +26,7 @@ public class Config {
     public int device = -1;
 
     public int ambientOcclusion = 1;
+    public int af = 1;
 
     public void write() {
 
