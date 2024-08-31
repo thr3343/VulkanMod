@@ -1,10 +1,8 @@
 package net.vulkanmod.vulkan.device;
 
-import org.lwjgl.PointerBuffer;
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
 
 import java.nio.IntBuffer;
 import java.util.HashSet;
@@ -15,12 +13,11 @@ import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK11.*;
 
 public class Device {
     final VkPhysicalDevice physicalDevice;
-    final VkPhysicalDeviceProperties properties;
+    final VkPhysicalDeviceProperties2 properties;
 
     private final int vendorId;
     public final String vendorIdString;
@@ -28,44 +25,50 @@ public class Device {
     public final String driverVersion;
     public final String vkVersion;
 
-    public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
 
-//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
-//    public final boolean vulkan13Support;
-
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, hasNonUniformTextures, hasSamplerAnisotropy, hasLogicOp, hasWideLines, hasRuntimeArray;
 
     public Device(VkPhysicalDevice device) {
-        this.physicalDevice = device;
 
-        properties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, properties);
+        //Using memory stack to avoid the off-heap becoming cluttered w/ unused DeviceProperties
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            this.physicalDevice = device;
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+            VkPhysicalDeviceVulkan12Properties vk12Properties = VkPhysicalDeviceVulkan12Properties.malloc(stack).sType$Default();
 
-        this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-        this.availableFeatures.sType$Default();
+            properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(vk12Properties);
+            VK11.vkGetPhysicalDeviceProperties2(physicalDevice, properties);
 
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+            this.vendorId = properties.properties().vendorID();
+            this.vendorIdString = decodeVendor(properties.properties().vendorID());
+            this.deviceName = properties.properties().deviceNameString();
+            this.driverVersion = decodeDvrVersion(properties.properties().driverVersion(), properties.properties().vendorID());
+            this.vkVersion = decDefVersion(getVkVer());
 
-        //Vulkan 1.3
-//        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
-//        this.availableFeatures13.sType$Default();
-//        this.availableFeatures11.pNext(this.availableFeatures13.address());
-//
-//        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
+            VkPhysicalDeviceFeatures2 availableFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            availableFeatures.sType$Default();
 
-        vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+            VkPhysicalDeviceVulkan12Features availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc(stack).sType$Default();
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+            VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc(stack).sType$Default();
+            availableFeatures.pNext(availableFeatures12);
+            availableFeatures.pNext(availableFeatures11);
+            vkGetPhysicalDeviceFeatures2(this.physicalDevice, availableFeatures);
+
+
+            this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
+            this.hasNonUniformTextures = availableFeatures12.shaderSampledImageArrayNonUniformIndexing(); //Dynamic Textures
+            this.hasRuntimeArray = availableFeatures12.runtimeDescriptorArray();
+            this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
+            this.hasLogicOp = availableFeatures.features().logicOp();
+            this.hasWideLines = availableFeatures.features().wideLines();
+            //TODO: Might make these features optional
+            if(!hasNonUniformTextures)
+                throw new RuntimeException("Dynamic textures now available!");
+
+            if(!hasRuntimeArray)
+                throw new RuntimeException("runtimeDescriptorArray not available!");
+        }
 
     }
 
@@ -144,6 +147,26 @@ public class Device {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public boolean isHasNonUniformTextures() {
+        return hasNonUniformTextures;
+    }
+
+    public boolean isHasRuntimeArray() {
+        return hasRuntimeArray;
+    }
+
+    public boolean isHasSamplerAnisotropy() {
+        return hasSamplerAnisotropy;
+    }
+
+    public boolean isHasLogicOp() {
+        return hasLogicOp;
+    }
+
+    public boolean isHasWideLines() {
+        return hasWideLines;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
