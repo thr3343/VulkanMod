@@ -1,5 +1,7 @@
 package net.vulkanmod.mixin.chunk;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -70,6 +72,8 @@ public abstract class LevelRendererMixin {
 
     @Shadow
     public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
+
+    @Shadow protected abstract void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource);
 
     private WorldRenderer worldRenderer;
 
@@ -206,18 +210,11 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.getVisibleSectionsCount();
     }
 
-    /**
-     * @author
-     * @reason
-     */
-    @Overwrite
-    private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
+
+    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderEntity(Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V"))
+    private void renderEntity2(LevelRenderer instance, Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, Operation<Void> original) {
         if (!Initializer.CONFIG.entityCulling) {
-            double h = Mth.lerp(g, entity.xOld, entity.getX());
-            double i = Mth.lerp(g, entity.yOld, entity.getY());
-            double j = Mth.lerp(g, entity.zOld, entity.getZ());
-            float k = Mth.lerp(g, entity.yRotO, entity.getYRot());
-            this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, g, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, g));
+            original.call(instance, entity, d, e, f, g, poseStack, multiBufferSource);
             return;
         }
 
@@ -245,14 +242,7 @@ public abstract class LevelRendererMixin {
 
         for (var list : this.entitiesMap.values()) {
             for (var pair : list) {
-                Entity entity = pair.first;
-                MultiBufferSource multiBufferSource = pair.second;
-
-                double h = Mth.lerp(partialTicks, entity.xOld, entity.getX());
-                double i = Mth.lerp(partialTicks, entity.yOld, entity.getY());
-                double j = Mth.lerp(partialTicks, entity.zOld, entity.getZ());
-                float k = Mth.lerp(partialTicks, entity.yRotO, entity.getYRot());
-                this.entityRenderDispatcher.render(entity, h - cameraPos.x, i - cameraPos.y, j - cameraPos.z, k, partialTicks, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, partialTicks));
+                this.renderEntity(pair.first, cameraPos.x, cameraPos.y, cameraPos.z, partialTicks, poseStack, pair.second);
             }
         }
     }
