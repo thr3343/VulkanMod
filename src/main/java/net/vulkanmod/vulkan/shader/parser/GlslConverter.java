@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.shader.parser;
 
-import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptorArray;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
 import java.util.Arrays;
@@ -143,7 +143,7 @@ public class GlslConverter {
         return this.uniformParser.getUbo();
     }
 
-    public List<ImageDescriptorArray> getSamplerList() {
+    public List<ImageDescriptor> getSamplerList() {
         return this.uniformParser.getSamplers();
     }
 

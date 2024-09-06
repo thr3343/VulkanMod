@@ -5,7 +5,7 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3) uniform sampler2DArray Sampler0[];
+layout(binding = 2) uniform sampler2DArray Sampler0[];
 
 
 layout(binding = 1) uniform UBO {

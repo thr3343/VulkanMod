@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptorArray;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
 
@@ -69,13 +69,13 @@ public abstract class VTextureSelector {
     public static void bindShaderTextures(Pipeline pipeline) {
         var imageDescriptors = pipeline.getImageDescriptors();
 
-        for (ImageDescriptorArray state : imageDescriptors) {
-            final int shaderTexture = RenderSystem.getShaderTexture(state.baseImageIdx);
+        for (ImageDescriptor state : imageDescriptors) {
+            final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
             final GlTexture texture = GlTexture.getTexture(shaderTexture);
 
             if (texture != null) {
-                VTextureSelector.bindTexture(state.baseImageIdx, texture.getVulkanImage());
+                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
             }
         }
     }

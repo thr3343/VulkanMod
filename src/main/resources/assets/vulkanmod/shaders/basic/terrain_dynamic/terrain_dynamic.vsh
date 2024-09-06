@@ -11,7 +11,7 @@ layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 2) uniform sampler2D Sampler2;
+layout (binding = 3) uniform sampler2D Sampler2;
 
 layout (location = 0) out flat uint textureIndex;
 layout (location = 1) out float vertexDistance;
