@@ -37,8 +37,11 @@ public class GraphicsPipeline extends Pipeline {
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        createDescriptorSetLayout();
-        createPipelineLayout();
+//        if(postFX)
+//        {
+//            createDescriptorSetLayout();
+//            createPipelineLayout();
+//        }
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if (builder.renderPass != null)
@@ -344,8 +347,11 @@ public class GraphicsPipeline extends Pipeline {
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+//        if(postFX)
+//        {
+//            vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
+//            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+//        }
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);

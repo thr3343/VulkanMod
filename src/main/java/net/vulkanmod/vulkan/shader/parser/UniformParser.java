@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.shader.parser;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptorArray;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
@@ -20,7 +20,7 @@ public class UniformParser {
     private String name;
 
     private UBO ubo;
-    private List<ImageDescriptorArray> imageDescriptors;
+    private List<ImageDescriptor> imageDescriptors;
 
     public UniformParser(GlslConverter converterInstance) {
         this.converterInstance = converterInstance;
@@ -89,7 +89,7 @@ public class UniformParser {
 
         this.imageDescriptors = createSamplerList();
 
-        for(ImageDescriptorArray imageDescriptor : this.imageDescriptors) {
+        for(ImageDescriptor imageDescriptor : this.imageDescriptors) {
             builder.append(String.format("layout(binding = %d) uniform %s %s;\n", imageDescriptor.getBinding(), imageDescriptor.qualifier, imageDescriptor.name));
         }
         builder.append("\n");
@@ -108,15 +108,15 @@ public class UniformParser {
         return builder.buildUBO(0, Pipeline.Builder.getStageFromString("all"));
     }
 
-    private List<ImageDescriptorArray> createSamplerList() {
+    private List<ImageDescriptor> createSamplerList() {
         int currentLocation = 1;
 
-        List<ImageDescriptorArray> imageDescriptors = new ObjectArrayList<>();
+        List<ImageDescriptor> imageDescriptors = new ObjectArrayList<>();
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
                 int imageIdx = currentLocation - 1;
-                imageDescriptors.add(new ImageDescriptorArray(currentLocation, uniform.type, uniform.name, imageIdx));
+                imageDescriptors.add(new ImageDescriptor(uniform.type, uniform.name, imageIdx));
                 currentLocation++;
             }
         }
@@ -135,7 +135,7 @@ public class UniformParser {
         return this.ubo;
     }
 
-    public List<ImageDescriptorArray> getSamplers() {
+    public List<ImageDescriptor> getSamplers() {
         return this.imageDescriptors;
     }
 

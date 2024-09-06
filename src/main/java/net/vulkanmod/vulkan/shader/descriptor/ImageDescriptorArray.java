@@ -1,49 +1,50 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class ImageDescriptorArray implements Descriptor {
+public class ImageDescriptor implements Descriptor {
 
     private final int descriptorType;
     private final int binding;
     public final String qualifier;
     public final String name;
-    public final int baseImageIdx;
+    public final int imageIdx;
 
     public final boolean isStorageImage;
     private final int stage;
-    private final int range; //Number of Samplers
     public boolean useSampler;
     public boolean isReadOnlyLayout;
     private int layout;
     private int mipLevel = -1;
 
-    private final State[] boundTextures;
-
-    public ImageDescriptorArray(int baseBinding, String type, String name, int baseImageIdx) {
-        this(baseBinding, type, name, baseImageIdx, false, 1);
+    public ImageDescriptor(String type, String name, int imageIdx) {
+        this(type, name, imageIdx, false);
     }
 
-    public ImageDescriptorArray(int binding, String type, String name, int baseImageIdx, boolean isStorageImage, int range) {
-        this.stage = switch (name) {
+    public ImageDescriptor(String type, String name, int imageIdx, boolean isStorageImage) {
+        final int stage1 = switch (name) {
             case "Sampler0", "DiffuseSampler", "SamplerProj" -> VK_SHADER_STAGE_FRAGMENT_BIT;
             case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
             default -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         };
 
-        this.binding = binding;
+        this.binding = switch (stage1) {
+            case VK_SHADER_STAGE_FRAGMENT_BIT -> Pipeline.FRAG_SAMPLER_ID;
+            case VK_SHADER_STAGE_VERTEX_BIT -> Pipeline.VERTEX_SAMPLER_ID;
+            default -> -1;
+        };
         this.qualifier = type;
         this.name = name;
         this.isStorageImage = isStorageImage;
         this.useSampler = !isStorageImage;
-        this.baseImageIdx = baseImageIdx;
-        this.range = range;
-        descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        this.imageIdx = imageIdx;
+        this.stage = stage1;
 
-        boundTextures = new State[range];
+        descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         setLayout(isStorageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
@@ -79,12 +80,8 @@ public class ImageDescriptorArray implements Descriptor {
         return mipLevel;
     }
 
-    public int getSize() {
-        return range;
-    }
-
-    public VulkanImage getImage(int offset) {
-        return VTextureSelector.getImage(this.baseImageIdx + offset);
+    public VulkanImage getImage() {
+        return VTextureSelector.getImage(this.imageIdx);
     }
 
     public long getImageView(VulkanImage image) {
