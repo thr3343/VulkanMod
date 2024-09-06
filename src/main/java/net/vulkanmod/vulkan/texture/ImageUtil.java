@@ -28,7 +28,7 @@ public abstract class ImageUtil {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }

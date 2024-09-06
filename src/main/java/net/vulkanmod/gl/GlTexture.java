@@ -1,6 +1,9 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -57,6 +60,15 @@ public class GlTexture {
     }
 
     public static GlTexture getTexture(int id) {
+        if (id == 0)
+            return null;
+
+        return map.get(id);
+    }
+    //Slow due to CPU cache misses
+    public static GlTexture getTexture(ResourceLocation resourceLocation) {
+
+        int id = Minecraft.getInstance().getTextureManager().getTexture(resourceLocation).getId();
         if (id == 0)
             return null;
 

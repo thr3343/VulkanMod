@@ -148,7 +148,7 @@ public class MemoryManager {
     }
 
     public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                                LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                                                LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -159,15 +159,15 @@ public class MemoryManager {
             imageInfo.extent().height(height);
             imageInfo.extent().depth(1);
             imageInfo.mipLevels(mipLevels);
-            imageInfo.arrayLayers(1);
+            imageInfo.arrayLayers(layers);
             imageInfo.format(format);
             imageInfo.tiling(tiling);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            // TODO hardcoded queue family indices
-            imageInfo.pQueueFamilyIndices(stack.ints(0, 1));
+            //TODO: Graphics Queue is always Zero
+            imageInfo.pQueueFamilyIndices(stack.ints(0));
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(memProperties);

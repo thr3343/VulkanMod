@@ -5,26 +5,29 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class ImageDescriptor implements Descriptor {
+public class ImageDescriptorArray implements Descriptor {
 
     private final int descriptorType;
     private final int binding;
     public final String qualifier;
     public final String name;
-    public final int imageIdx;
+    public final int baseImageIdx;
 
     public final boolean isStorageImage;
     private final int stage;
+    private final int range; //Number of Samplers
     public boolean useSampler;
     public boolean isReadOnlyLayout;
     private int layout;
     private int mipLevel = -1;
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx) {
-        this(binding, type, name, imageIdx, false);
+    private final State[] boundTextures;
+
+    public ImageDescriptorArray(int baseBinding, String type, String name, int baseImageIdx) {
+        this(baseBinding, type, name, baseImageIdx, false, 1);
     }
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
+    public ImageDescriptorArray(int binding, String type, String name, int baseImageIdx, boolean isStorageImage, int range) {
         this.stage = switch (name) {
             case "Sampler0", "DiffuseSampler", "SamplerProj" -> VK_SHADER_STAGE_FRAGMENT_BIT;
             case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
@@ -36,9 +39,11 @@ public class ImageDescriptor implements Descriptor {
         this.name = name;
         this.isStorageImage = isStorageImage;
         this.useSampler = !isStorageImage;
-        this.imageIdx = imageIdx;
-
+        this.baseImageIdx = baseImageIdx;
+        this.range = range;
         descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+        boundTextures = new State[range];
         setLayout(isStorageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
@@ -74,8 +79,12 @@ public class ImageDescriptor implements Descriptor {
         return mipLevel;
     }
 
-    public VulkanImage getImage() {
-        return VTextureSelector.getImage(this.imageIdx);
+    public int getSize() {
+        return range;
+    }
+
+    public VulkanImage getImage(int offset) {
+        return VTextureSelector.getImage(this.baseImageIdx + offset);
     }
 
     public long getImageView(VulkanImage image) {

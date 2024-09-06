@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -42,12 +43,13 @@ public class VulkanImage {
     public final int width;
     public final int height;
     public final int formatSize;
+    public final int layers;
     private final int usage;
 
     private int currentLayout;
 
     //Used for swap chain images
-    public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
+    public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView, int layers) {
         this.id = id;
         this.mainImageView = imageView;
 
@@ -57,6 +59,7 @@ public class VulkanImage {
         this.formatSize = formatSize;
         this.format = format;
         this.usage = usage;
+        this.layers = layers;
         this.aspect = getAspect(this.format);
 
         this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
@@ -69,14 +72,15 @@ public class VulkanImage {
         this.formatSize = builder.formatSize;
         this.format = builder.format;
         this.usage = builder.usage;
+        this.layers = builder.layers;
         this.aspect = getAspect(this.format);
     }
 
     public static VulkanImage createTextureImage(Builder builder) {
         VulkanImage image = new VulkanImage(builder);
 
-        image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
-        image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
+        image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage, builder.layers);
+        image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels, builder.layers);
 
         image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
 
@@ -84,7 +88,7 @@ public class VulkanImage {
             image.levelImageViews = new long[builder.mipLevels];
 
             for (int i = 0; i < builder.mipLevels; ++i) {
-                image.levelImageViews[i] = createImageView(image.id, image.format, image.aspect, i, 1);
+                image.levelImageViews[i] = createImageView(image.id, image.format, image.aspect, i, image.layers);
             }
         }
 
@@ -120,7 +124,7 @@ public class VulkanImage {
         }
     }
 
-    private void createImage(int mipLevels, int width, int height, int format, int usage) {
+    private void createImage(int mipLevels, int width, int height, int format, int usage, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -132,7 +136,7 @@ public class VulkanImage {
                     usage,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation);
+                    pAllocation, layers);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -162,24 +166,24 @@ public class VulkanImage {
         };
     }
 
-    public static long createImageView(long image, int format, int aspectFlags, int mipLevels) {
-        return createImageView(image, format, aspectFlags, 0, mipLevels);
+    public static long createImageView(long image, int format, int aspectFlags, int mipLevels, int layers) {
+        return createImageView(image, format, aspectFlags, 0, mipLevels, layers);
     }
 
-    public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels) {
+    public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels, int layers) {
 
         try (MemoryStack stack = stackPush()) {
 
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
             viewInfo.sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
             viewInfo.image(image);
-            viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
+            viewInfo.viewType(layers != 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
             viewInfo.format(format);
             viewInfo.subresourceRange().aspectMask(aspectFlags);
             viewInfo.subresourceRange().baseMipLevel(baseMipLevel);
             viewInfo.subresourceRange().levelCount(mipLevels);
             viewInfo.subresourceRange().baseArrayLayer(0);
-            viewInfo.subresourceRange().layerCount(1);
+            viewInfo.subresourceRange().layerCount(layers);
 
             LongBuffer pImageView = stack.mallocLong(1);
 
@@ -189,6 +193,42 @@ public class VulkanImage {
 
             return pImageView.get(0);
         }
+    }
+
+    public void copySubTileTexture(int tileSize, int targetTileX, int targetTileY, VulkanImage dstTileImage, int requiredMipLevels, int baseArrayLayer)
+    {
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        try (MemoryStack stack = stackPush()) {
+
+            VkImageCopy.Buffer vkImageCopies = VkImageCopy.calloc(requiredMipLevels, stack);
+            for (int miplevel = 0; miplevel < requiredMipLevels; miplevel++) {
+                //Can't execute too many commands due to MemoryStack limits: will limit to per row to compensate
+                final int StileSize = tileSize / (1 << miplevel);
+
+                VkImageCopy vkImageCopy = vkImageCopies.get(miplevel);
+                vkImageCopy.srcOffset().set(targetTileX * StileSize, targetTileY * StileSize, 0);
+                vkImageCopy.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .mipLevel(miplevel)
+                        .baseArrayLayer(0)
+                        .layerCount(1);
+                vkImageCopy.dstOffset().set(0, 0, 0);
+                vkImageCopy.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .mipLevel(miplevel)
+                        .baseArrayLayer(baseArrayLayer)
+                        .layerCount(1);
+                vkImageCopy.extent().set(StileSize, StileSize, 1);
+            }
+
+            vkCmdCopyImage(commandBuffer.getHandle(), this.id, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTileImage.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkImageCopies);
+
+
+        }
+        //todo: too many fences: need to merge/batch
+        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+        if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
@@ -213,7 +253,11 @@ public class VulkanImage {
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
-    private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
+    void transferSrcLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
+        transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    }
+
+    void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     }
 
@@ -238,6 +282,9 @@ public class VulkanImage {
         flags |= clamp ? CLAMP_BIT : 0;
         flags |= (byte) (mipmaps ? USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT : 0);
 
+        final boolean b = Initializer.CONFIG.af > 1 && this.layers > 1;
+        flags |= b ? USE_ANISOTROPIC_BIT : 0;
+        //TODO:
         this.updateTextureSampler(flags);
     }
 
@@ -416,9 +463,53 @@ public class VulkanImage {
         return new Builder(width, height);
     }
 
+    public void uploadSubTileAsync(int baseTileIndex, int mip, int bufferImageHeight, int bufferOffset, int bufferRowLength, int tileSize, ByteBuffer srcBuffer) {
+
+
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+
+
+                transferDstLayout(stack, commandBuffer.getHandle());
+
+
+
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+            stagingBuffer.align(this.formatSize);
+
+            stagingBuffer.copyBuffer(tileSize*tileSize*this.formatSize, srcBuffer);
+
+
+        //TODO:E snjure TielIdnexAlingment + Batch per Mipmap
+            VkBufferImageCopy.Buffer tileBuffer2ImageCopy = VkBufferImageCopy.calloc(1, stack);
+            tileBuffer2ImageCopy.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            tileBuffer2ImageCopy.imageSubresource().baseArrayLayer(baseTileIndex);
+            tileBuffer2ImageCopy.imageSubresource().layerCount(1);
+            tileBuffer2ImageCopy.imageSubresource().mipLevel(mip);
+            tileBuffer2ImageCopy.bufferImageHeight(bufferImageHeight); //18 Offset Vubration.....
+            tileBuffer2ImageCopy.bufferOffset(stagingBuffer.getOffset() +((bufferRowLength)*4)); //Unpack Rows....
+            tileBuffer2ImageCopy.bufferRowLength(bufferRowLength);
+            tileBuffer2ImageCopy.imageOffset().set(0, 0, 0);
+            tileBuffer2ImageCopy.imageExtent().set(tileSize, tileSize, 1);
+
+
+            vkCmdCopyBufferToImage(commandBuffer.getHandle(), stagingBuffer.getId(), this.id, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tileBuffer2ImageCopy);
+
+            long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+            if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+                Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        }
+
+    }
+
     public static class Builder {
         final int width;
         final int height;
+        int layers = 1;
+        int divisor;
 
         int format = VulkanImage.DefaultFormat;
         int formatSize;
@@ -432,6 +523,16 @@ public class VulkanImage {
         public Builder(int width, int height) {
             this.width = width;
             this.height = height;
+        }
+
+        public Builder setLayers(int layers) {
+            this.layers = layers;
+            return this;
+        }
+
+        public Builder setDivisor(int divisor) {
+            this.divisor = divisor;
+            return this;
         }
 
         public Builder setFormat(int format) {
@@ -470,6 +571,11 @@ public class VulkanImage {
 
         public Builder setClamp(boolean b) {
             this.samplerFlags |= b ? CLAMP_BIT : 0;
+            return this;
+        }
+
+        public Builder setAnisotropy(boolean b) {
+            this.samplerFlags |= b ? USE_ANISOTROPIC_BIT : 0;
             return this;
         }
 

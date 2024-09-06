@@ -44,8 +44,8 @@ public class LiquidRenderer {
         this.resources = resources;
     }
 
-    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
-        tessellate(blockState, fluidState, blockPos, vertexConsumer);
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
+        tessellate(blockState, fluidState, blockPos, vertexConsumer, tilesWidth, tilesHeight);
     }
 
     private boolean isFaceOccludedByState(BlockGetter blockGetter, float h, Direction direction, BlockPos blockPos, BlockState blockState) {
@@ -85,7 +85,7 @@ public class LiquidRenderer {
         return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
         BlockAndTintGetter region = this.resources.region;
 
         final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
@@ -214,10 +214,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.UP);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
             if (fluidState.shouldRenderBackwardUpFace(region, blockPos.above())) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
             }
 
         }
@@ -240,7 +240,7 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.DOWN);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
         }
 
@@ -347,10 +347,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, direction);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
 
             if (!isOverlay) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
             }
 
         }
@@ -423,13 +423,17 @@ public class LiquidRenderer {
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip, int tilesWidth, int tilesHeight) {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
         int k = QuadUtils.getIterationStartIdx(quadLightData.br);
 
         bufferBuilder.ensureCapacity();
+
+
+
+        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(k), quad.getV(k), tilesWidth, tilesHeight);
 
         int i;
         for (int j = 0; j < 4; j++) {
@@ -439,7 +443,10 @@ public class LiquidRenderer {
             final float y = yOffset + quad.getY(i);
             final float z = zOffset + quad.getZ(i);
 
-            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.getU(i), quad.getV(i), quadLightData.lm[i], 0);
+            float u = quad.getU(k)* (tilesWidth);
+            float v = quad.getV(k)* (tilesHeight);
+
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], u, v, quadLightData.lm[i], baseArrayLayer);
 
             k += (flip ? -1 : +1);
             k &= 0b11;

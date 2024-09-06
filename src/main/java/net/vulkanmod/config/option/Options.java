@@ -225,7 +225,16 @@ public abstract class Options {
                                     minecraft.delayTextureReload();
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
-                                .setTranslator(value -> Component.nullToEmpty(value.toString()))
+                                .setTranslator(value -> Component.nullToEmpty(value.toString())),
+                        new CyclingOption<>(Component.translatable("Anisotropic Filtering"),
+                                new Integer[]{1, 2, 4, 8, 16},
+                                value -> {
+//                                    Renderer.getInstance().scheduleRebuild(); //Actually needed to flush the outdated UV data
+                                    config.af=(value);
+                                    minecraft.delayTextureReload();
+                                },
+                                () -> config.af)
+                                .setTranslator(value -> Component.nullToEmpty(value==1 ? "Off" : value.toString()))
                 })
         };
     }

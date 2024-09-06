@@ -70,4 +70,8 @@ public class Config {
 
         return config;
     }
+
+    public boolean isDynamicState() {
+        return af>1;
+    }
 }

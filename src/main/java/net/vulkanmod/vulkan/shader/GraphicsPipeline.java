@@ -9,6 +9,7 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.texture.VSubTextureAtlas;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 

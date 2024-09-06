@@ -13,7 +13,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptorArray;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
@@ -84,7 +84,7 @@ public abstract class Pipeline {
     protected DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
-    protected List<ImageDescriptor> imageDescriptors;
+    protected List<ImageDescriptorArray> imageDescriptors;
     protected PushConstants pushConstants;
 
     public Pipeline(String name) {
@@ -108,7 +108,7 @@ public abstract class Pipeline {
                 uboLayoutBinding.stageFlags(ubo.getStages());
             }
 
-            for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
+            for (ImageDescriptorArray imageDescriptor : this.imageDescriptors) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
@@ -197,7 +197,7 @@ public abstract class Pipeline {
         return pipelineLayout;
     }
 
-    public List<ImageDescriptor> getImageDescriptors() {
+    public List<ImageDescriptorArray> getImageDescriptors() {
         return imageDescriptors;
     }
 
@@ -238,16 +238,16 @@ public abstract class Pipeline {
         private int currentIdx = -1;
 
         private final long[] boundUBs;
-        private final ImageDescriptor.State[] boundTextures;
+
         private final IntBuffer dynamicOffsets;
 
         DescriptorSets(Pipeline pipeline) {
             this.pipeline = pipeline;
-            this.boundTextures = new ImageDescriptor.State[pipeline.imageDescriptors.size()];
+            this.boundTextures = new ImageDescriptorArray.State[pipeline.imageDescriptors.size()];
             this.dynamicOffsets = MemoryUtil.memAllocInt(pipeline.buffers.size());
             this.boundUBs = new long[pipeline.buffers.size()];
 
-            Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
+            Arrays.setAll(boundTextures, i -> new ImageDescriptorArray.State(0, 0));
 
             try (MemoryStack stack = stackPush()) {
                 this.createDescriptorPool(stack);
@@ -294,8 +294,8 @@ public abstract class Pipeline {
                 return true;
 
             for (int j = 0; j < pipeline.imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
-                VulkanImage image = imageDescriptor.getImage();
+                ImageDescriptorArray imageDescriptor = pipeline.imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage(offset);
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
 
@@ -378,8 +378,8 @@ public abstract class Pipeline {
             VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[pipeline.imageDescriptors.size()];
 
             for (int j = 0; j < pipeline.imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
-                VulkanImage image = imageDescriptor.getImage();
+                ImageDescriptorArray imageDescriptor = pipeline.imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage(offset);
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
                 int layout = imageDescriptor.getLayout();
@@ -498,7 +498,7 @@ public abstract class Pipeline {
         List<UBO> UBOs;
         ManualUBO manualUBO;
         PushConstants pushConstants;
-        List<ImageDescriptor> imageDescriptors;
+        List<ImageDescriptorArray> imageDescriptors;
         int nextBinding;
 
         SPIRV vertShaderSPIRV;
@@ -526,7 +526,7 @@ public abstract class Pipeline {
             return new GraphicsPipeline(this);
         }
 
-        public void setUniforms(List<UBO> UBOs, List<ImageDescriptor> imageDescriptors) {
+        public void setUniforms(List<UBO> UBOs, List<ImageDescriptorArray> imageDescriptors) {
             this.UBOs = UBOs;
             this.imageDescriptors = imageDescriptors;
         }
@@ -633,7 +633,7 @@ public abstract class Pipeline {
             String name = GsonHelper.getAsString(jsonobject, "name");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
+            this.imageDescriptors.add(new ImageDescriptorArray(this.nextBinding, "sampler2D", name, imageIdx));
             this.nextBinding++;
         }
 
