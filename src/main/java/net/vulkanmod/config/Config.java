@@ -23,6 +23,8 @@ public class Config {
 
     public boolean earlyZ = false;
     public boolean entityCulling = true;
+    public boolean animations = true;
+    public boolean renderSky = true;
     public int device = -1;
 
     public int ambientOcclusion = 1;

@@ -36,5 +36,7 @@
   "vulkanmod.options.earlyZ": "Early-Z (Fast Leaves)",
   "vulkanmod.options.earlyZ.tooltip": "Enables Early-Z culling: (Experimental version of Vanilla's Fast leaves)\nHas the drawback of increased drawcalls, may be slower on some hardware",
 
-  "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen"
+  "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen",
+  "vulkanmod.options.renderSky": "RenderSky",
+  "vulkanmod.options.animations": "Animations"
 }
