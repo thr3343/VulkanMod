@@ -28,6 +28,8 @@ public class Config {
     public int device = -1;
 
     public int ambientOcclusion = 1;
+    public boolean colorClear = true;
+    public boolean depthClears = true;
 
     public void write() {
 

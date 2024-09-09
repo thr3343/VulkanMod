@@ -38,5 +38,7 @@
 
   "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen",
   "vulkanmod.options.renderSky": "RenderSky",
-  "vulkanmod.options.animations": "Animations"
+  "vulkanmod.options.animations": "Animations",
+  "vulkanmod.options.colorClear": "ColorClears",
+  "vulkanmod.options.depthClears": "DepthClears"
 }

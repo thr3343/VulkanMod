@@ -214,7 +214,13 @@ public abstract class Options {
                                 () -> config.renderSky),
                         new SwitchOption(Component.translatable("vulkanmod.options.animations"),
                                 value -> config.animations = value,
-                                () -> config.animations)
+                                () -> config.animations)                       ,
+                        new SwitchOption(Component.translatable("vulkanmod.options.colorClear"),
+                                value -> config.colorClear = value,
+                                () -> config.colorClear),
+                        new SwitchOption(Component.translatable("vulkanmod.options.depthClears"),
+                                value -> config.depthClears = value,
+                                () -> config.depthClears)
 
                 }),
                 new OptionBlock("", new Option<?>[]{
