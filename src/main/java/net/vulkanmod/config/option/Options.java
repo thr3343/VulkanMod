@@ -208,6 +208,13 @@ public abstract class Options {
                                     minecraft.levelRenderer.allChanged();
                                 },
                                 () -> minecraftOptions.biomeBlendRadius().get()),
+                        new SwitchOption(Component.translatable("vulkanmod.options.renderSky"),
+                                value -> config.renderSky = value,
+                                () -> config.renderSky),
+                        new SwitchOption(Component.translatable("vulkanmod.options.animations"),
+                                value -> config.animations = value,
+                                () -> config.animations)
+
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("options.entityShadows"),
