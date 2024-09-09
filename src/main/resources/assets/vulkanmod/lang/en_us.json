@@ -36,5 +36,7 @@
   "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
 
-  "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen"
+  "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen",
+  "vulkanmod.options.renderSky": "RenderSky",
+  "vulkanmod.options.animations": "Animations"
 }
