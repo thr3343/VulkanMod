@@ -24,5 +24,5 @@ void main() {
         discard;
     }
     //moving multiply after Alpha test seems to be more performant
-    fragColor = linear_fog(color * vertexColor, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color * vertexColor;
 }

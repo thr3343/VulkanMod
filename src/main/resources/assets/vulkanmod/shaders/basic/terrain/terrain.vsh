@@ -33,7 +33,7 @@ void main() {
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
     gl_Position = MVP * pos;
 
-    vertexDistance = fog_distance(pos.xyz, 0);
+
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
     texCoord0 = UV0 * UV_INV;
 }
