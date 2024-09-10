@@ -111,7 +111,7 @@ public abstract class Pipeline {
                 VkDescriptorSetLayoutBinding uboLayoutBinding1 = bindings.get();
                 uboLayoutBinding1.binding(1);
                 uboLayoutBinding1.descriptorCount(1);
-                uboLayoutBinding1.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+                uboLayoutBinding1.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC); //TODO; MAybe Replace Dynamic UBO w/ Global Push Constant
                 uboLayoutBinding1.pImmutableSamplers(null);
                 uboLayoutBinding1.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 

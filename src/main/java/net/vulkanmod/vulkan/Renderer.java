@@ -298,6 +298,13 @@ public class Renderer {
             submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
+            /*TODO: Priple irdering
+            *  Move pieline thwt requir eAtathcment clears to sepearte reperpass,
+            *  Moving Clera independant piepleisn to te main pass
+            *  laoowing the intensivepieples to avoid nto be enforce don rasterzation order/stalls+ monimisng state chnage s= pipleine stalles within each pass/overallcomamndbueffr exeutio flow e.g.
+            *  Need to confirm of multible rederpasses cabe engaded at once per command buffer
+            *  and allowing dpeht clears to be negate dfor GUI elements
+            * */
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
