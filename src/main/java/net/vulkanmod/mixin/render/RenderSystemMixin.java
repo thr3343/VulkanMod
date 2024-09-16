@@ -54,23 +54,6 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void _setShaderTexture(int i, int id) {
-        if (i >= 0 && i < VTextureSelector.SIZE) {
-            GlTexture glTexture = GlTexture.getTexture(id);
-            VulkanImage vulkanImage = glTexture != null ? glTexture.getVulkanImage() : null;
-
-            if(vulkanImage == null)
-                return;
-
-            VTextureSelector.bindTexture(i, vulkanImage);
-        }
-
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
     public static void initRenderer(int debugVerbosity, boolean debugSync) {
         VRenderSystem.initRenderer();
 
