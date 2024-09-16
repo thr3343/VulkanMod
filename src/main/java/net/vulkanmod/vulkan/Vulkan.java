@@ -5,7 +5,7 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
@@ -147,7 +147,6 @@ public class Vulkan {
         DeviceManager.init(instance);
 
         createVma();
-        MemoryTypes.createMemoryTypes();
 
         createCommandPool();
         allocateImmediateCmdBuffer();
@@ -167,11 +166,11 @@ public class Vulkan {
         chunkStaging = new StagingBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024, MemoryTypes.HOST_MEM);
+            stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024, MemoryType.HOST_MEM);
         }
 
         for (int i = 0; i < chunkStaging.length; ++i) {
-            chunkStaging[i] = new StagingBuffer(8388608, MemoryTypes.BAR_MEM);
+            chunkStaging[i] = new StagingBuffer(8388608, MemoryType.BAR_MEM);
         }
     }
 
