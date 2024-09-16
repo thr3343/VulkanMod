@@ -43,10 +43,12 @@ public class MemoryTypes {
                }
             }
         }
-        //Likely if Device is iGPU
+
         if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
             return;
 
+
+        //ResizableBAR Mode
         // Could not find 1 or more MemoryTypes, need to use fallback
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
