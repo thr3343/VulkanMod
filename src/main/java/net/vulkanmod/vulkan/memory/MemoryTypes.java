@@ -135,6 +135,7 @@ public class MemoryTypes {
         }
     }
     //Also Uncached to allow Write Combining
+    //TODO: maybe adapt thsi to temp uploads like Texture Pack setup: with vkInvalidateMappedMemoryRanges to flush/reset mapped ranges + the buffer
     static class HostLocalWriteCombinedMemory extends MappableMemory {
 
         HostLocalWriteCombinedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
