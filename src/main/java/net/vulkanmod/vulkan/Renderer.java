@@ -614,15 +614,15 @@ public class Renderer {
         try (MemoryStack stack = stackPush()) {
             VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
             viewport.x(x);
-            viewport.y(height + y);
+            viewport.y(y);
             viewport.width(width);
-            viewport.height(-height);
+            viewport.height(height);
             viewport.minDepth(0.0f);
             viewport.maxDepth(1.0f);
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(0, 0);
-            scissor.extent().set(width, Math.abs(height));
+            scissor.extent().set(width, height);
 
             vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
@@ -636,9 +636,9 @@ public class Renderer {
 
             VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
             viewport.x(0.0f);
-            viewport.y(height);
+            viewport.y(0.0f);
             viewport.width(width);
-            viewport.height(-height);
+            viewport.height(height);
             viewport.minDepth(0.0f);
             viewport.maxDepth(1.0f);
 
