@@ -35,7 +35,7 @@ public class UploadManager {
             return;
 
         this.queue.submitCommands(this.commandBuffer);
-
+        //TODO: Maybe Separate Graphics and Transfer Commands/fences: i.e. Per Queue fence Pools
         Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
         this.commandBuffer = null;
@@ -47,7 +47,7 @@ public class UploadManager {
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+        StagingBuffer stagingBuffer = Vulkan.getChunkStaging();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if (!this.dstBuffers.add(buffer.getId())) {
@@ -67,7 +67,8 @@ public class UploadManager {
 
             this.dstBuffers.clear();
         }
-
+        //TODO: AMD recommends GraphicsQueue, not TransferQueue for GPU2GPU copies: has less bandwidth than Graphics Queue apparently: https://gpuopen.com/learn/using-d3d12-heap-type-gpu-upload/#recommendations
+        // Otoh don't want to mess with Memory Barriers again, so will avoid for now
         TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
     }
 

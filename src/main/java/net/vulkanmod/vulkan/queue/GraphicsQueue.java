@@ -7,6 +7,7 @@ import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsQueue extends Queue {
@@ -16,6 +17,26 @@ public class GraphicsQueue extends Queue {
 
     public GraphicsQueue(MemoryStack stack, int familyIndex) {
         super(stack, familyIndex);
+    }
+
+    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+        try (MemoryStack stack = stackPush()) {
+
+            CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+            this.submitCommands(commandBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
+            return commandBuffer.fence;
+        }
     }
 
     public void startRecording() {

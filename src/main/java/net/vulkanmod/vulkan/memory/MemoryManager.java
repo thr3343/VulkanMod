@@ -39,6 +39,7 @@ public class MemoryManager {
     static int Frames;
 
     private static long deviceMemory = 0;
+    private static long barMemory = 0;
     private static long nativeMemory = 0;
 
     private int currentFrame = 0;
@@ -114,6 +115,7 @@ public class MemoryManager {
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
+                ///TODO: Fix Heap Size reporting w. BAR Mem
                 Initializer.LOGGER.info(String.format("Failed to create buffer with size: %.3f MB", ((float) size / BYTES_IN_MB)));
                 Initializer.LOGGER.info(String.format("Tracked Device Memory used: %d/%d MB", getAllocatedDeviceMemoryMB(), getDeviceMemoryMB()));
                 Initializer.LOGGER.info(getHeapStats());
@@ -137,10 +139,10 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
 
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0) {
-                deviceMemory += size;
-            } else {
-                nativeMemory += size;
+            switch (buffer.type.type) {
+                case DEVICE_LOCAL -> deviceMemory += size;
+                case UPLOAD_LOCAL -> barMemory += size;
+                default -> nativeMemory += size;
             }
 
             buffers.putIfAbsent(buffer.getId(), buffer);
@@ -208,10 +210,10 @@ public class MemoryManager {
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
-        if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
-        } else {
-            nativeMemory -= bufferInfo.bufferSize();
+        switch (bufferInfo.type()) {
+            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
+            case UPLOAD_LOCAL -> barMemory -= bufferInfo.bufferSize();
+            default -> nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());
@@ -304,6 +306,10 @@ public class MemoryManager {
 
     public int getDeviceMemoryMB() {
         return bytesInMb(MemoryTypes.GPU_MEM.vkMemoryHeap.size());
+    }
+
+    public long getBarMemoryMB() {
+        return bytesInMb(barMemory);
     }
 
     int bytesInMb(long bytes) {
