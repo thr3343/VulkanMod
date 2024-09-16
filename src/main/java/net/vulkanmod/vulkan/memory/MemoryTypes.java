@@ -14,7 +14,8 @@ public class MemoryTypes {
     public static MemoryType GPU_MEM;
     public static MemoryType BAR_MEM;
     public static MemoryType HOST_MEM;
-
+    private static final int DEVICE_LOCAL_FLAG = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT; //Guarantees that the Heap is actually device-local memory
+    private static final int HOST_LOCAL_FLAG = 0; //Guarantees heap is Host-local (i.e. RAM) Doesn't exist on Some iGPUs (i.e. VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
     public static void createMemoryTypes() {
 
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
@@ -23,18 +24,22 @@ public class MemoryTypes {
 
             //GPU only Memory
             if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+                if(heap.flags()==DEVICE_LOCAL_FLAG) {
+                    GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+                }
 
             }
             //TODO: Mimics D3D12_HEAP_TYPE_GPU_UPLOAD
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                BAR_MEM = new GPUUploadMemory(memoryType, heap);
+                if(heap.flags()==DEVICE_LOCAL_FLAG) {
+                    BAR_MEM = new GPUUploadMemory(memoryType, heap);
+                }
 
             }
             //TODO: Remove CACHED_BIT: Mimics D3D12_HEAP_TYPE_UPLOAD
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-               if(heap.flags()==0) {
-                   HOST_MEM = new HostLocalUncachedMemory(memoryType, heap);
+               if(heap.flags()==HOST_LOCAL_FLAG) {
+                   HOST_MEM = new HostLocalWriteCombinedMemory(memoryType, heap);
                }
             }
         }
@@ -130,9 +135,9 @@ public class MemoryTypes {
         }
     }
     //Also Uncached to allow Write Combining
-    static class HostLocalUncachedMemory extends MappableMemory {
+    static class HostLocalWriteCombinedMemory extends MappableMemory {
 
-        HostLocalUncachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+        HostLocalWriteCombinedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
             super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
         }
 
