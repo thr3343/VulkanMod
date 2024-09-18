@@ -271,7 +271,6 @@ public abstract class Pipeline {
                 int currentOffset = (int) ub.getUsedBytes();
                 this.dynamicOffsets.put(i, currentOffset);
 
-                // TODO: non mappable memory
 
                 int alignedSize = UniformBuffer.getAlignedSize(ubo.getSize());
                 ub.checkCapacity(alignedSize);

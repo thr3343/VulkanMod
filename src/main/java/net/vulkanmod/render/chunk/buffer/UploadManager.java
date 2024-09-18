@@ -46,7 +46,7 @@ public class UploadManager {
         beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
-
+        ///TODO: Abstra staging uplaods to allow easy switcning between Default and ReBAr mode
         StagingBuffer stagingBuffer = Vulkan.getChunkStaging();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 

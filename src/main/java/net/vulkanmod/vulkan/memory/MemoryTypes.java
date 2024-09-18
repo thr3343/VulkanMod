@@ -20,6 +20,8 @@ public class MemoryTypes {
 
     public static void createMemoryTypes() {
 
+//        boolean reBAR = checkReBAR();
+
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
             VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
@@ -73,6 +75,27 @@ public class MemoryTypes {
 
         // Could not find device memory, fallback to host memory
         GPU_MEM = HOST_MEM = BAR_MEM;
+    }
+
+    private static boolean checkReBAR() {
+        if(DeviceManager.memoryProperties.memoryTypeCount()==0) return true;
+        long DeviceLocalSize =0;
+        long ReBARSize =0;
+        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
+            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                ReBARSize=heap.size();
+            }
+            if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+            {
+                DeviceLocalSize=heap.size();
+            }
+        }
+
+
+        return ReBARSize > 0x10000000 && DeviceLocalSize == ReBARSize;
     }
 
     public static class DeviceLocalMemory extends MemoryType {

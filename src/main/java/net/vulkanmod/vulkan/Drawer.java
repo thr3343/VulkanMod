@@ -64,7 +64,7 @@ public class Drawer {
             );
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
-        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.BAR_MEM));
     }
 
     public void resetBuffers(int currentFrame) {
