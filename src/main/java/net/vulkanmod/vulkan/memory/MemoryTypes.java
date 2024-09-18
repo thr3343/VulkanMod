@@ -15,6 +15,9 @@ public class MemoryTypes {
     public static MemoryType BAR_MEM;
     public static MemoryType HOST_MEM;
 
+    private static final int DEVICE_LOCAL_HEAP = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT; //Guarantees Device_Local Memory
+    private static final int HOST_LOCAL_HEAP = 0; //Guarantees Host-Only memory
+
     public static void createMemoryTypes() {
 
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
@@ -23,17 +26,20 @@ public class MemoryTypes {
 
             //GPU only Memory
             if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+                if(heap.flags() == DEVICE_LOCAL_HEAP)
+                    GPU_MEM = new DeviceLocalMemory(memoryType, heap);
 
             }
 
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                BAR_MEM = new DeviceMappableMemory(memoryType, heap);
+                if(heap.flags() == DEVICE_LOCAL_HEAP)
+                    BAR_MEM = new DeviceMappableMemory(memoryType, heap);
 
             }
 
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                HOST_MEM = new HostLocalUncachedMemory(memoryType, heap);
+                if(heap.flags() == HOST_LOCAL_HEAP) //Prevent HOST_MEM from using the Device local heap by accident
+                    HOST_MEM = new HostLocalUncachedMemory(memoryType, heap);
             }
         }
 
