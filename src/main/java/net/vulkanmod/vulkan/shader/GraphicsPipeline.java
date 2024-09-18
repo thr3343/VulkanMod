@@ -110,8 +110,9 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.rasterizerDiscardEnable(false);
             rasterizer.polygonMode(polygonMode);
             rasterizer.lineWidth(1.0f);
-            rasterizer.cullMode(cullMode);
-            rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            //TODO: Couldn't fix decoding for VK_CULL_MODE_FRONT_BIT (Visual Ehrmanntraut's code has Rust syndrome, and is impossible to read)
+            rasterizer.cullMode(cullMode == VK_CULL_MODE_BACK_BIT ? VK_CULL_MODE_FRONT_BIT : cullMode);
+            rasterizer.frontFace(VK_FRONT_FACE_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
 
             // ===> MULTISAMPLING <===
