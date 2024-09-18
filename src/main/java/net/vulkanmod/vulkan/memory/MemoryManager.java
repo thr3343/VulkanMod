@@ -39,6 +39,7 @@ public class MemoryManager {
     static int Frames;
 
     private static long deviceMemory = 0;
+    private static long barMemory = 0;
     private static long nativeMemory = 0;
 
     private int currentFrame = 0;
@@ -137,11 +138,12 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
 
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0) {
-                deviceMemory += size;
-            } else {
-                nativeMemory += size;
+            switch (buffer.type.type) {
+                case DEVICE_LOCAL -> deviceMemory += size;
+                case BAR_LOCAL -> barMemory += size;
+                case HOST_LOCAL -> nativeMemory += size;
             }
+
 
             buffers.putIfAbsent(buffer.getId(), buffer);
         }
@@ -208,10 +210,10 @@ public class MemoryManager {
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
-        if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
-        } else {
-            nativeMemory -= bufferInfo.bufferSize();
+        switch (bufferInfo.type()) {
+            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
+            case BAR_LOCAL -> barMemory -= bufferInfo.bufferSize();
+            case HOST_LOCAL -> nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());
@@ -302,8 +304,12 @@ public class MemoryManager {
         return bytesInMb(deviceMemory);
     }
 
+    public int getBarMemoryMB() {
+        return bytesInMb(barMemory);
+    }
+
     public int getDeviceMemoryMB() {
-        return bytesInMb(MemoryTypes.GPU_MEM.vkMemoryHeap.size());
+        return bytesInMb(MemoryTypes.GPU_MEM.maxSize);
     }
 
     int bytesInMb(long bytes) {
@@ -316,7 +322,7 @@ public class MemoryManager {
 
             vmaGetHeapBudgets(ALLOCATOR, vmaBudgets);
 
-            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.vkMemoryType.heapIndex());
+            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.heapIndex);
             long usage = vmaBudget.usage();
             long budget = vmaBudget.budget();
 

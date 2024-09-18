@@ -7,13 +7,13 @@ import java.nio.ByteBuffer;
 
 public abstract class MemoryType {
     final Type type;
-    public final VkMemoryType vkMemoryType;
-    public final VkMemoryHeap vkMemoryHeap;
+    final int heapIndex;
+    final long maxSize;
 
     MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
         this.type = type;
-        this.vkMemoryType = vkMemoryType;
-        this.vkMemoryHeap = vkMemoryHeap;
+        this.heapIndex = vkMemoryType.heapIndex();
+        this.maxSize = vkMemoryHeap.size();
     }
 
     abstract void createBuffer(Buffer buffer, int size);
@@ -30,6 +30,7 @@ public abstract class MemoryType {
 
     public enum Type {
         DEVICE_LOCAL,
+        BAR_LOCAL,
         HOST_LOCAL
     }
 }
