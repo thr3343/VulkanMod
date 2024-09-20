@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.pass;
 
-import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer2;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
@@ -22,4 +22,7 @@ public interface MainPass {
     default int getColorAttachmentGlId() {
         return -1;
     }
+    RenderPass2 getMainRenderPass();
+    Framebuffer2 getMainFrameBuffer();
+
 }
