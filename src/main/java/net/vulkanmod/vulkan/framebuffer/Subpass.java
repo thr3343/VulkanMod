@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.framebuffer;
 
 import org.lwjgl.vulkan.VK10;
 
+import java.util.Arrays;
+
 //public class SubpassReference {
 public class Subpass {
 
@@ -13,10 +15,10 @@ public class Subpass {
     private final int srcAccess;
     private final int dstAccess;
     private final subStatesModifiers[] attachmentTypes;
-    private final int colorAttachments;
-    private final int depthAttachments;
-    private final int inputAttachments;
-    private final int resolveAttachments;
+//    private final int colorAttachments;
+//    private final int depthAttachments;
+//    private final int inputAttachments;
+//    private final int resolveAttachments;
 
     public Subpass(int subPassID, int src, int dst, int srcStage, int dstStage, int srcAccess, int dstAccess, subStatesModifiers... attachmentTypes) {
 
@@ -28,10 +30,11 @@ public class Subpass {
         this.srcAccess = srcAccess;
         this.dstAccess = dstAccess;
         this.attachmentTypes = attachmentTypes;
-        this.colorAttachments = 1;
-        this.depthAttachments = 1;
-        this.inputAttachments = 1;
-        this.resolveAttachments = 1;
+//        this.colorAttachments = 1;
+//        this.depthAttachments = (int) Arrays.stream(attachmentTypes).filter(x -> x == subStatesModifiers.DEPTH).count();
+//
+//        this.inputAttachments = (int) Arrays.stream(attachmentTypes).filter(x -> x == subStatesModifiers.INPUT).count();
+//        this.resolveAttachments = (int) Arrays.stream(attachmentTypes).filter(x -> x == subStatesModifiers.RESOLVE).count();
     }
 
     public int getSubPassID() {
@@ -49,22 +52,22 @@ public class Subpass {
     public int getDstSub() {
         return dstSub;
     }
-
-    public int getColorAttachments() {
-        return colorAttachments;
-    }
-
-    public int getDepthAttachments() {
-        return depthAttachments;
-    }
-
-    public int getInputAttachments() {
-        return inputAttachments;
-    }
-
-    public int getResolveAttachments() {
-        return resolveAttachments;
-    }
+//
+//    public int getColorAttachments() {
+//        return colorAttachments;
+//    }
+//
+//    public int getDepthAttachments() {
+//        return depthAttachments;
+//    }
+//
+//    public int getInputAttachments() {
+//        return inputAttachments;
+//    }
+//
+//    public int getResolveAttachments() {
+//        return resolveAttachments;
+//    }
 
     public int getSrcStage() {
         return srcStage;
@@ -80,6 +83,10 @@ public class Subpass {
 
     public int getDstAccess() {
         return dstAccess;
+    }
+
+    public int getAttachmentCount(subStatesModifiers subStatesModifiers) {
+        return (int) Arrays.stream(attachmentTypes).filter(x -> x == subStatesModifiers).count();
     }
 
     //Modify the state of a given attachment per SubPass
@@ -99,7 +106,7 @@ public class Subpass {
         //Does not effect Initial and final layout, only per subpass layouts
         public int checkLayout(int defaultLayout)
         {
-            return defaultLayout | switch (this)
+            return switch (this)
             {
                 case SAMPLED, INPUT -> VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 case COLOR ->  VK10.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

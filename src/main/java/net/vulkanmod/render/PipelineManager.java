@@ -21,7 +21,7 @@ public abstract class PipelineManager {
         TERRAIN_VERTEX_FORMAT = format;
     }
 
-    static GraphicsPipeline terrainShaderEarlyZ, terrainShader, fastBlitPipeline;
+    static GraphicsPipeline terrainShaderEarlyZ, terrainShader, fastBlitPipeline, subpassPipeline;
 
     private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
 
@@ -40,6 +40,7 @@ public abstract class PipelineManager {
         terrainShaderEarlyZ = createPipeline("terrain","terrain", "terrain_Z", TERRAIN_VERTEX_FORMAT);
         terrainShader = createPipeline("terrain", "terrain", "terrain", TERRAIN_VERTEX_FORMAT);
         fastBlitPipeline = createPipeline("blit", "blit", "blit", CustomVertexFormat.NONE);
+        subpassPipeline = createPipeline("fog", "fog", "fog", CustomVertexFormat.NONE);
     }
 
     private static GraphicsPipeline createPipeline(String baseName, String vertName, String fragName,VertexFormat vertexFormat) {
@@ -75,9 +76,14 @@ public abstract class PipelineManager {
 
     public static GraphicsPipeline getFastBlitPipeline() { return fastBlitPipeline; }
 
+    public static GraphicsPipeline getSubpassPipeline() {
+        return subpassPipeline;
+    }
+
     public static void destroyPipelines() {
         terrainShaderEarlyZ.cleanUp();
         terrainShader.cleanUp();
+        subpassPipeline.cleanUp();
         fastBlitPipeline.cleanUp();
     }
 }

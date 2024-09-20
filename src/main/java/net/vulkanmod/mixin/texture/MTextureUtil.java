@@ -35,7 +35,7 @@ public class MTextureUtil {
             if(image != null)
                 image.free();
 
-            image = new VulkanImage.Builder(width, height)
+            image = new VulkanImage.Builder(width, height, false)
                     .setLinearFiltering(false)
                     .setClamp(false)
                     .createVulkanImage();

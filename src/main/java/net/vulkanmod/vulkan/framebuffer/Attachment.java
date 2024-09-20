@@ -1,19 +1,21 @@
 package net.vulkanmod.vulkan.framebuffer;
 
-import static net.vulkanmod.vulkan.framebuffer.AttachmentTypes.*;
+import net.vulkanmod.vulkan.texture.VulkanImage;
+
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Attachment
 {
 //    public int width;
 //    public int height;
-    long imageView;
+//    long imageView;
     final int format;
     final int loadOp, storeOp;
     final int BindingID;
     public final AttachmentTypes type;
     public final int samples;
     final AttachmentTypes dependencies=null;
+    private VulkanImage vkImage;
 
     public Attachment(int format, int bindingID, AttachmentTypes type, int samples) {
 //        this.width = width;
@@ -22,18 +24,31 @@ public class Attachment
         this.format = format;
         BindingID = bindingID;
         this.type = type;
-        this.loadOp = (!type.resolve) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        this.storeOp = (samples==1 && type.color) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        this.loadOp = switch (type){
+            case PRESENT -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+            case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+        };
+
+
+        this.storeOp = switch (type){
+            case PRESENT -> VK_ATTACHMENT_STORE_OP_STORE;
+            case COLOR -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            case DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        };
         this.samples = type.resolve ? VK_SAMPLE_COUNT_1_BIT : samples;
     }
 
-    public void bindImageReference(long imageView)
+    public void bindImageReference(VulkanImage image)
     {
 //        this.width=width;
 //        this.height=height;
-        this.imageView=imageView;
+        this.vkImage=image;
     }
 
+    public VulkanImage getVkImage() {
+        return vkImage;
+    }
 //    public int getStage() {
 //        return switch (this.type){
 //

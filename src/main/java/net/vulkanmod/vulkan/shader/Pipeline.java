@@ -295,7 +295,7 @@ public abstract class Pipeline {
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
 
-                if (imageDescriptor.isReadOnlyLayout)
+                if (!imageDescriptor.isReadOnlyLayout)
                     image.readOnlyLayout();
 
                 if (!this.boundTextures[j].isCurrentState(view, sampler)) {
@@ -334,8 +334,11 @@ public abstract class Pipeline {
         private void updateDescriptorSet(MemoryStack stack, UniformBuffer uniformBuffer) {
 
             //Check if update is needed
-            if (!needsUpdate(uniformBuffer))
-                return;
+//            if(!this.pipeline.name.contains("basic/fog"))
+            {
+              if (!needsUpdate(uniformBuffer))
+                  return;
+            }
 
             this.currentIdx++;
 
@@ -377,9 +380,9 @@ public abstract class Pipeline {
                 ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
                 VulkanImage image = imageDescriptor.getImage();
                 long view = imageDescriptor.getImageView(image);
-                long sampler = image.getSampler();
+                long sampler = imageDescriptor.useSampler ? image.getSampler() : VK_NULL_HANDLE;
                 int layout = imageDescriptor.getLayout();
-
+                //TODO:
                 if (imageDescriptor.isReadOnlyLayout)
                     image.readOnlyLayout();
 
@@ -432,23 +435,23 @@ public abstract class Pipeline {
 
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(size, stack);
 
-            int i;
-            for (i = 0; i < pipeline.buffers.size(); ++i) {
-                VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
+
+            for (int i = 0; i < pipeline.buffers.size(); i++) {
+                VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get();
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
 
-            for (; i < pipeline.buffers.size() + pipeline.imageDescriptors.size(); ++i) {
-                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(i);
-                textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            for (int i = 0; i < pipeline.imageDescriptors.size(); i++) {
+                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get();
+                textureSamplerPoolSize.type(pipeline.imageDescriptors.get(i).getType());
                 textureSamplerPoolSize.descriptorCount(this.poolSize);
             }
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-            poolInfo.pPoolSizes(poolSizes);
+            poolInfo.pPoolSizes(poolSizes.rewind());
             poolInfo.maxSets(this.poolSize);
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
@@ -563,6 +566,7 @@ public abstract class Pipeline {
             JsonArray jsonUbos = GsonHelper.getAsJsonArray(jsonObject, "UBOs", null);
             JsonArray jsonManualUbos = GsonHelper.getAsJsonArray(jsonObject, "ManualUBOs", null);
             JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", null);
+            JsonArray jsonInput = GsonHelper.getAsJsonArray(jsonObject, "inputs", null);
             JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", null);
 
             if (jsonUbos != null) {
@@ -578,6 +582,12 @@ public abstract class Pipeline {
             if (jsonSamplers != null) {
                 for (JsonElement jsonelement : jsonSamplers) {
                     this.parseSamplerNode(jsonelement);
+                }
+            }
+
+            if (jsonInput != null) {
+                for (JsonElement jsonelement : jsonInput) {
+                    this.parseInputNode(jsonelement);
                 }
             }
 
@@ -629,7 +639,16 @@ public abstract class Pipeline {
             String name = GsonHelper.getAsString(jsonobject, "name");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
+            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx, false));
+            this.nextBinding++;
+        }
+
+        private void parseInputNode(JsonElement jsonelement) {
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Input");
+            String name = GsonHelper.getAsString(jsonobject, "name");
+
+            int imageIdx = VTextureSelector.getTextureIdx(name);
+            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "inputAttachment", name, imageIdx, true));
             this.nextBinding++;
         }
 
@@ -653,7 +672,7 @@ public abstract class Pipeline {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");

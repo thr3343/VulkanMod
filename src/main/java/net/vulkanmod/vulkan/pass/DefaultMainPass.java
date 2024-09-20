@@ -1,7 +1,10 @@
 package net.vulkanmod.vulkan.pass;
 
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.*;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
@@ -45,12 +48,24 @@ public class DefaultMainPass implements MainPass {
                 VK_SUBPASS_EXTERNAL,
                 0,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                 0,
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                0,
+                Subpass.subStatesModifiers.DISABLED,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.DEPTH);
-        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference}, AttachmentTypes.PRESENT, AttachmentTypes.DEPTH);
+
+        Subpass subpassReference2 = new Subpass(1,
+                1,
+                1,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0,
+                VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+                Subpass.subStatesModifiers.COLOR,
+                Subpass.subStatesModifiers.INPUT,
+                Subpass.subStatesModifiers.DISABLED);
+        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
@@ -83,7 +98,16 @@ public class DefaultMainPass implements MainPass {
 
     @Override
     public void end(VkCommandBuffer commandBuffer) {
-//        Renderer.getInstance().endRenderPass(commandBuffer);
+
+        mainRenderPass.nextSubPass(commandBuffer);
+
+        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
+//        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
+        VTextureSelector.bindTexture(0, attachment.getVkImage());
+//        VTextureSelector.bindTexture(1, attachment1.getVkImage());
+
+        DrawUtil.fastBlit2();
+
 
         vkCmdEndRenderPass(commandBuffer);
 

@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -19,7 +20,7 @@ public class RenderPass2 {
     static final int depthFormat = DeviceManager.findDepthFormat(true);
     final AttachmentTypes[] attachmentTypes;
 
-    final EnumMap<AttachmentTypes, Attachment> attachment = new EnumMap<>(AttachmentTypes.class);
+    public final EnumMap<AttachmentTypes, Attachment> attachment = new EnumMap<>(AttachmentTypes.class);
     final AttachmentTypes presentKey;
     final Subpass[] subpassReferences;
     public final long renderPass;
@@ -57,6 +58,8 @@ public class RenderPass2 {
             final boolean hasColor = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.color);
             for(Attachment attach : this.attachment.values())
             {
+
+                //TODO; Combine Usage flags based on Subpass Modifers
                 attachments.get(attach.BindingID)
                         .format(attach.format)
                         .samples(attach.samples)
@@ -70,39 +73,58 @@ public class RenderPass2 {
 
             for(var subPass : this.subpassReferences)
             {
-                final int colorAttachments = subPass.getColorAttachments();
-                final int resolveAttachments = subPass.getResolveAttachments();
+                final int colorAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.COLOR);
+                final int resolveAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.RESOLVE);
+                final int inputAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.INPUT);
+                final int attachmentCount = subPass.getAttachmentCount(Subpass.subStatesModifiers.DISABLED);
+                IntBuffer disabled = stack.mallocInt(attachmentCount);
 
 
                 final VkSubpassDescription subpassDef = subpasses.get();
                 subpassDef.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
-                subpassDef.colorAttachmentCount(colorAttachments);
+                subpassDef.colorAttachmentCount(1);
 
                 //Empty: filled with Attachment references based on Type
 
                 VkAttachmentReference.Buffer colorAttach = VkAttachmentReference.malloc(colorAttachments, stack);
                 VkAttachmentReference.Buffer resolveAttach = VkAttachmentReference.malloc(resolveAttachments, stack);
+                VkAttachmentReference.Buffer inputAttach = VkAttachmentReference.malloc(inputAttachments, stack);
 
+                //TODO; Confirm if VK_ATTACHMENT_UNUSED or preserve attachments are faster
 
-                int attachmentID = 0;
                 for (Attachment attach : this.attachment.values()) {
                     //                    Attachment attachment =  this.attachment.get(attach);
-
+                    int attachmentID = attach.BindingID;
                     final Subpass.subStatesModifiers modifier = subPass.getAttachmentType(attachmentID);
 
+//                    final boolean isDisabled = modifier.equals(Subpass.subStatesModifiers.DISABLED);
+                    final int bindingID = attach.BindingID;
+                    final int layout = modifier.checkLayout(attach.type.layout);
                     VkAttachmentReference attachmentRef = VkAttachmentReference.malloc(stack)
-                            .set(attach.BindingID, modifier.checkLayout(attach.type.layout));
+                            .set(bindingID, layout);
+                    //Skip attahcment if Disabled
+
 
                     switch (modifier) {
                         case COLOR -> colorAttach.put(attachmentRef);
                         case DEPTH -> subpassDef.pDepthStencilAttachment(attachmentRef);
                         case RESOLVE -> resolveAttach.put(attachmentRef);
+                        case DISABLED -> disabled.put(attachmentID);
+                        case INPUT -> inputAttach.put(attachmentRef);
                     }
-                    attachmentID++;
+
+//                    if(modifier== Subpass.subStatesModifiers.DISABLED)
+//                    {
+//                        disabled.put(bindingID);
+//                    }
+
+
                 }
 
-                subpassDef.pColorAttachments(hasColor ? colorAttach.rewind() : null);
-                subpassDef.pResolveAttachments(hasResolve ? resolveAttach.rewind() : null);
+                subpassDef.pColorAttachments(colorAttachments!=0 ? colorAttach.rewind() : null);
+                subpassDef.pResolveAttachments(resolveAttachments!=0 ? resolveAttach.rewind() : null);
+                subpassDef.pInputAttachments(inputAttachments!=0 ? inputAttach.rewind() : null);
+                subpassDef.pPreserveAttachments(attachmentCount!=0 ? disabled.rewind() : null);
 
                 //Todo: Determine Stage and Access masks automatically
                 subpassDependencies.get()
@@ -131,8 +153,13 @@ public class RenderPass2 {
             return pRenderPass.get(0);
         }
     }
+
+    public VulkanImage getImage(Attachment attachment) {
+        return  this.attachment.get(attachment).getVkImage();
+    }
+
     public void bindImageReference(AttachmentTypes attachmentTypes, VulkanImage colorAttachment) {
-        this.attachment.get(attachmentTypes).bindImageReference(colorAttachment.getImageView());
+        this.attachment.get(attachmentTypes).bindImageReference(colorAttachment);
     }
 
     //Framebuffer can use different renderPasses if compatible: SubPassState is mutually exclusive to the Framebuffer

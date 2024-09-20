@@ -34,6 +34,21 @@ public class DrawUtil {
         RenderSystem.enableCull();
     }
 
+    public static void fastBlit2() {
+        GraphicsPipeline subpassPipeline = PipelineManager.getSubpassPipeline();
+
+        RenderSystem.disableCull();
+
+        Renderer renderer = Renderer.getInstance();
+        renderer.bindGraphicsPipeline(subpassPipeline);
+        renderer.uploadAndBindUBOs(subpassPipeline);
+
+        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+        VK11.vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+        RenderSystem.enableCull();
+    }
+
     public static void defualtBlit() {
         Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 1.0F);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);

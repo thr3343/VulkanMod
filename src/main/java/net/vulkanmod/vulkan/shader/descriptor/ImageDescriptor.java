@@ -13,7 +13,7 @@ public class ImageDescriptor implements Descriptor {
     public final String name;
     public final int imageIdx;
 
-    public final boolean isStorageImage;
+    public final boolean isInput;
     public boolean useSampler;
     public boolean isReadOnlyLayout;
     private int layout;
@@ -23,16 +23,16 @@ public class ImageDescriptor implements Descriptor {
         this(binding, type, name, imageIdx, false);
     }
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
+    public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isInputAttachment) {
         this.binding = binding;
         this.qualifier = type;
         this.name = name;
-        this.isStorageImage = isStorageImage;
-        this.useSampler = !isStorageImage;
+        this.isInput = isInputAttachment;
+        this.useSampler = !isInputAttachment;
         this.imageIdx = imageIdx;
 
-        descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        setLayout(isStorageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        descriptorType = isInputAttachment ? VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ImageDescriptor implements Descriptor {
 
     @Override
     public int getStages() {
-        return VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
+        return useSampler ? VK_SHADER_STAGE_ALL_GRAPHICS : VK_SHADER_STAGE_FRAGMENT_BIT;
     }
 
     public void setLayout(int layout) {

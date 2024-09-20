@@ -117,9 +117,9 @@ public class Framebuffer2 {
         if(reInitialised)
         {
             checkTransitions(commandBuffer, stack);
-            if(this.swapChainMode)
-
-                getSwapChain().getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+//            if(this.swapChainMode)
+//
+//                getSwapChain().getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         }
 
 
@@ -138,7 +138,7 @@ public class Framebuffer2 {
             if(a.type.color) clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
             else clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
 
-            longs.put(a.BindingID, a.imageView);
+            longs.put(a.BindingID, a.getVkImage().getImageView());
         }
         VkRenderPassAttachmentBeginInfo attachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()

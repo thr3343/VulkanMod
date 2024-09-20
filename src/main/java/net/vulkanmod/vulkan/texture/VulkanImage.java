@@ -80,7 +80,7 @@ public class VulkanImage {
 
         //TODO: might need separating into separate dedicated AttachmentImage Class Instantiation
 
-        VulkanImage image = new VulkanImage.Builder(width1, height1)
+        VulkanImage image = new VulkanImage.Builder(width1, height1, true)
                 .setMipLevels(1)
                 .setFormat(format)
                 .addUsage(usage)
@@ -458,7 +458,7 @@ public class VulkanImage {
     }
 
     public static Builder builder(int width, int height) {
-        return new Builder(width, height);
+        return new Builder(width, height, false);
     }
 
     public static class Builder {
@@ -468,15 +468,16 @@ public class VulkanImage {
         int format = VulkanImage.DefaultFormat;
         int formatSize;
         byte mipLevels = 1;
-        int usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        int usage;
 
         byte samplerFlags = 0;
 
         boolean levelViews = false;
 
-        public Builder(int width, int height) {
+        public Builder(int width, int height, boolean attachment) {
             this.width = width;
             this.height = height;
+            usage = attachment ? 0 : VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         }
 
         public Builder setFormat(int format) {

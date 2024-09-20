@@ -185,7 +185,7 @@ public class GraphicsPipeline extends Pipeline {
 
             if (!Vulkan.DYNAMIC_RENDERING) {
                 pipelineInfo.renderPass(state.renderPass.renderPass);
-                pipelineInfo.subpass(0);
+                pipelineInfo.subpass(this.name.contains("basic/fog") ? 1 : 0);
             } else {
                 //dyn-rendering
                 VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
