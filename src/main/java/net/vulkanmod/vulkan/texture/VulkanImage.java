@@ -5,6 +5,7 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Attachment;
+import net.vulkanmod.vulkan.framebuffer.AttachmentTypes;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -89,7 +90,8 @@ public class VulkanImage {
 //        VulkanImage image = new VulkanImage(format, 1, 1, width1, height1, usage, 0);
         //TODO: Broken Aspect
         image.createAttachmentImage(width1, height1, attachment);
-        image.mainImageView = createImageView(image.id, format, attachment.type.aspect, 0, 1);
+        final int aspect1 = attachment.type== AttachmentTypes.DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        image.mainImageView = createImageView(image.id, format, aspect1, 0, 1);
 
         return image;
     }
@@ -137,7 +139,7 @@ public class VulkanImage {
     }
 
     public static VulkanImage createDepthImage(int format, int width, int height, int usage, boolean blur, boolean clamp) {
-        VulkanImage image = VulkanImage.builder(width, height)
+        VulkanImage image = VulkanImage.builder(width, height, true)
                 .setFormat(format)
                 .setUsage(usage)
                 .setLinearFiltering(blur)
@@ -153,7 +155,7 @@ public class VulkanImage {
             ByteBuffer buffer = stack.malloc(4);
             buffer.putInt(0, i);
 
-            VulkanImage image = VulkanImage.builder(1, 1)
+            VulkanImage image = VulkanImage.builder(1, 1, false)
                     .setFormat(DefaultFormat)
                     .setUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
                     .setLinearFiltering(false)
@@ -457,8 +459,8 @@ public class VulkanImage {
         return sampler;
     }
 
-    public static Builder builder(int width, int height) {
-        return new Builder(width, height, false);
+    public static Builder builder(int width, int height, boolean attachment) {
+        return new Builder(width, height, attachment);
     }
 
     public static class Builder {

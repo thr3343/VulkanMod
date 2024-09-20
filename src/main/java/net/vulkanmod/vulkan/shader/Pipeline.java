@@ -376,7 +376,7 @@ public abstract class Pipeline {
 
             VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[pipeline.imageDescriptors.size()];
 
-            for (int j = 0; j < pipeline.imageDescriptors.size(); ++j) {
+            for (int j = 0; j < pipeline.imageDescriptors.size(); j++) {
                 ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
                 VulkanImage image = imageDescriptor.getImage();
                 long view = imageDescriptor.getImageView(image);

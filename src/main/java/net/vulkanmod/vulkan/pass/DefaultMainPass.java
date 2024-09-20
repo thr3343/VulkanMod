@@ -56,8 +56,8 @@ public class DefaultMainPass implements MainPass {
                 Subpass.subStatesModifiers.DEPTH);
 
         Subpass subpassReference2 = new Subpass(1,
-                1,
-                1,
+                0,
+                0,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 0,
@@ -102,9 +102,9 @@ public class DefaultMainPass implements MainPass {
         mainRenderPass.nextSubPass(commandBuffer);
 
         final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
-//        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
+        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
         VTextureSelector.bindTexture(0, attachment.getVkImage());
-//        VTextureSelector.bindTexture(1, attachment1.getVkImage());
+        VTextureSelector.bindTexture(1, attachment1.getVkImage());
 
         DrawUtil.fastBlit2();
 

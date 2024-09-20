@@ -75,7 +75,7 @@ public class RenderPass2 {
             {
                 final int colorAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.COLOR);
                 final int resolveAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.RESOLVE);
-                final int inputAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.INPUT);
+                final int inputAttachments = subPass.getAttachmentCount(Subpass.subStatesModifiers.INPUT) + subPass.getAttachmentCount(Subpass.subStatesModifiers.INPUT_DEPTH);
                 final int attachmentCount = subPass.getAttachmentCount(Subpass.subStatesModifiers.DISABLED);
                 IntBuffer disabled = stack.mallocInt(attachmentCount);
 
@@ -97,8 +97,8 @@ public class RenderPass2 {
                     int attachmentID = attach.BindingID;
                     final Subpass.subStatesModifiers modifier = subPass.getAttachmentType(attachmentID);
 
-//                    final boolean isDisabled = modifier.equals(Subpass.subStatesModifiers.DISABLED);
-                    final int bindingID = attach.BindingID;
+                    final boolean isDisabled = modifier.equals(Subpass.subStatesModifiers.DISABLED);
+                    final int bindingID = isDisabled ? VK_ATTACHMENT_UNUSED : attach.BindingID;
                     final int layout = modifier.checkLayout(attach.type.layout);
                     VkAttachmentReference attachmentRef = VkAttachmentReference.malloc(stack)
                             .set(bindingID, layout);
@@ -109,8 +109,7 @@ public class RenderPass2 {
                         case COLOR -> colorAttach.put(attachmentRef);
                         case DEPTH -> subpassDef.pDepthStencilAttachment(attachmentRef);
                         case RESOLVE -> resolveAttach.put(attachmentRef);
-                        case DISABLED -> disabled.put(attachmentID);
-                        case INPUT -> inputAttach.put(attachmentRef);
+                        case INPUT, INPUT_DEPTH -> inputAttach.put(attachmentRef);
                     }
 
 //                    if(modifier== Subpass.subStatesModifiers.DISABLED)
@@ -124,7 +123,6 @@ public class RenderPass2 {
                 subpassDef.pColorAttachments(colorAttachments!=0 ? colorAttach.rewind() : null);
                 subpassDef.pResolveAttachments(resolveAttachments!=0 ? resolveAttach.rewind() : null);
                 subpassDef.pInputAttachments(inputAttachments!=0 ? inputAttach.rewind() : null);
-                subpassDef.pPreserveAttachments(attachmentCount!=0 ? disabled.rewind() : null);
 
                 //Todo: Determine Stage and Access masks automatically
                 subpassDependencies.get()

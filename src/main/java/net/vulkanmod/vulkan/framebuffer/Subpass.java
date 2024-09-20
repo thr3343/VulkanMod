@@ -94,14 +94,13 @@ public class Subpass {
     {
 
         INPUT,
+        INPUT_DEPTH,
         SAMPLED,
         RESOLVE,
         COLOR,
 //        PRESENT,
         DEPTH,
-        DISABLED,
-        DEFAULT,
-        NONE;
+        DISABLED;
         //Change required layout based on current subpass/attachment state
         //Does not effect Initial and final layout, only per subpass layouts
         public int checkLayout(int defaultLayout)
@@ -109,10 +108,11 @@ public class Subpass {
             return switch (this)
             {
                 case SAMPLED, INPUT -> VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                case INPUT_DEPTH -> VK10.VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
                 case COLOR ->  VK10.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 case DEPTH ->  VK10.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 //                case PRESENT ->  KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                default -> 0;
+                default -> defaultLayout;
             };
         }
 
