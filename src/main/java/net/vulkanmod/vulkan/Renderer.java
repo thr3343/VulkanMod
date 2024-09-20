@@ -461,6 +461,7 @@ public class Renderer {
 
         this.onResizeCallbacks.forEach(Runnable::run);
         ((WindowAccessor) (Object) Minecraft.getInstance().getWindow()).getEventHandler().resizeDisplay();
+        mainPass.getMainFrameBuffer().setSize(Vulkan.getSwapChain().getWidth(), Vulkan.getSwapChain().getHeight());
 
         currentFrame = 0;
     }
@@ -511,7 +512,7 @@ public class Renderer {
     public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-        PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
+        PipelineState currentState = PipelineState.getCurrentPipelineState(mainPass.getMainRenderPass());
         final long handle = pipeline.getHandle(currentState);
 
         if (boundPipeline == handle) {

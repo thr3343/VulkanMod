@@ -1,8 +1,11 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.framebuffer.RenderPass2;
+import net.vulkanmod.vulkan.pass.DefaultMainPass;
 
 import java.util.Objects;
 
@@ -15,11 +18,11 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), null);
+    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass());
 
     public static PipelineState currentState = DEFAULT;
 
-    public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
+    public static PipelineState getCurrentPipelineState(RenderPass2 renderPass) {
         int assemblyRasterState = getAssemblyRasterState();
         int blendState = getBlendState();
         int currentColorMask = VRenderSystem.getColorMask();
@@ -61,7 +64,7 @@ public class PipelineState {
         return logicOpState;
     }
 
-    final RenderPass renderPass;
+    final RenderPass2 renderPass;
 
     int assemblyRasterState;
     int blendState_i;
@@ -69,7 +72,7 @@ public class PipelineState {
     int colorMask_i;
     int logicOp_i;
 
-    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
         this.renderPass = renderPass;
 
         this.assemblyRasterState = assemblyRasterState;
@@ -79,7 +82,7 @@ public class PipelineState {
         this.logicOp_i = logicOp;
     }
 
-    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
                 && (assemblyRasterState == this.assemblyRasterState)
