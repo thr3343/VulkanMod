@@ -16,7 +16,8 @@ public enum AttachmentTypes {
         RESOLVE_COLOR       (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
         RESOLVE_DEPTH       (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
         PRESERVE            (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        INPUT               (DEPTH_LAYOUT, DEFAULT_FORMAT, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT);
+        INPUT_COLOR               (INPUT_LAYOUT, DEFAULT_FORMAT, INPUT_USAGE|COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+        INPUT_DEPTH               (INPUT_LAYOUT, depthFormat, INPUT_USAGE|DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     public final int layout;
     public final int format;
@@ -24,7 +25,7 @@ public enum AttachmentTypes {
     public final int aspect;
     public final int finalLayout;
     public final int initialLayout;
-        public final boolean present, resolve, color, depth;
+        public final boolean present, resolve, color, depth, input;
 
         AttachmentTypes(int layout, int format, int usage, int aspect) {
             this.layout = layout;
@@ -35,14 +36,18 @@ public enum AttachmentTypes {
             this.depth = this.aspect==2;
             this.present = this.name().contains("PRESENT");
             this.resolve = this.name().contains("RESOLVE");
+            this.input = this.name().contains("INPUT");
             this.initialLayout = this.present ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : this.layout;
             this.finalLayout = this.present ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : this.layout;
         }
 
     record Constants() {
         static final int COLOR_LAYOUT = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        static final int COLOR_USAGE = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         static final int DEPTH_LAYOUT = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        static final int INPUT_LAYOUT = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        static final int COLOR_USAGE = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         static final int DEPTH_USAGE = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        static final int INPUT_USAGE = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     }
 }
