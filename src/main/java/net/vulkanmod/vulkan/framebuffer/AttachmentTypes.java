@@ -8,16 +8,16 @@ import static org.lwjgl.vulkan.VK10.*;
 public enum AttachmentTypes {
         PRESENT             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
         COLOR               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        DEPTH               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
-        PRESENT_SAMPLED             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        COLOR_SAMPLED               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        DEPTH_SAMPLED               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
-        PRESENT_RESOLVE     (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        RESOLVE_COLOR       (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        RESOLVE_DEPTH       (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
-        PRESERVE            (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        INPUT_COLOR               (INPUT_LAYOUT, DEFAULT_FORMAT, INPUT_USAGE|COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
-        INPUT_DEPTH               (INPUT_LAYOUT, depthFormat, INPUT_USAGE|DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT);
+        DEPTH               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT);
+//        PRESENT_SAMPLED             (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        COLOR_SAMPLED               (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        DEPTH_SAMPLED               (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
+//        PRESENT_RESOLVE     (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        RESOLVE_COLOR       (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        RESOLVE_DEPTH       (DEPTH_LAYOUT, depthFormat, DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT),
+//        PRESERVE            (COLOR_LAYOUT, DEFAULT_FORMAT, COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        INPUT_COLOR               (INPUT_LAYOUT, DEFAULT_FORMAT, INPUT_USAGE|COLOR_USAGE, VK_IMAGE_ASPECT_COLOR_BIT),
+//        INPUT_DEPTH               (INPUT_LAYOUT, depthFormat, INPUT_USAGE|DEPTH_USAGE, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     public final int layout;
     public final int format;
@@ -30,7 +30,7 @@ public enum AttachmentTypes {
         AttachmentTypes(int layout, int format, int usage, int aspect) {
             this.layout = layout;
             this.format = format;
-            this.usage = usage | (this.name().contains("SAMPLED") ? VK_IMAGE_USAGE_SAMPLED_BIT : 0);
+            this.usage = usage;
             this.aspect = aspect;
             this.color = this.aspect==1;
             this.depth = this.aspect==2;

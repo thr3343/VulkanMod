@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.framebuffer;
 
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -22,12 +21,14 @@ public class RenderPass2 {
 
     final EnumMap<AttachmentTypes, Attachment> attachment = new EnumMap<>(AttachmentTypes.class);
     final AttachmentTypes presentKey;
+    final Subpass[] subpassReferences;
     public final long renderPass;
 
 
     //RenderPasses exist completely separately from resolution and VkImages + Allowing them to be fully independent of any form of Framebuffer + allows for Abstraction/Modularity
-    public RenderPass2(AttachmentTypes... attachmentTypes)
+    public RenderPass2(Subpass[] subpassReferences, AttachmentTypes... attachmentTypes)
     {
+        this.subpassReferences = subpassReferences;
         this.attachmentTypes = attachmentTypes;
         for (int i = 0; i < attachmentTypes.length; i++) {
             attachment.put(attachmentTypes[i], new Attachment(attachmentTypes[i].format, i, attachmentTypes[i], /*VRenderSystem.isSampleShadingEnable() ? VRenderSystem.getSampleCount() : */1));
@@ -45,18 +46,16 @@ public class RenderPass2 {
         try(MemoryStack stack = stackPush()) {
 
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.calloc(this.attachmentTypes.length, stack);
-            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.calloc(this.attachmentTypes.length, stack);
-            VkAttachmentReference.Buffer attachmentRefsInput = VkAttachmentReference.calloc(2, stack);
 
-            VkSubpassDescription.Buffer subpasses = VkSubpassDescription.calloc(2, stack);
-            VkSubpassDescription subpass = subpasses.get(0)
-                    .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                    .colorAttachmentCount(1);
+            final VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(subpassReferences.length, stack);
+
+            VkSubpassDescription.Buffer subpasses = VkSubpassDescription.calloc(subpassReferences.length, stack);
+
 
             final boolean hasResolve = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.resolve);
             final boolean hasDepth = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.depth);
             final boolean hasColor = Arrays.stream(this.attachmentTypes).anyMatch(attachmentTypes1 -> attachmentTypes1.color);
-            for(var attach : this.attachment.values())
+            for(Attachment attach : this.attachment.values())
             {
                 attachments.get(attach.BindingID)
                         .format(attach.format)
@@ -66,58 +65,61 @@ public class RenderPass2 {
                         .initialLayout(attach.type.initialLayout)
                         .finalLayout(attach.type.finalLayout);
 
-                attachmentRefs.get(attach.BindingID).set(attach.BindingID, attach.type.layout);
-
-                switch (attach.type) {
-                    case COLOR, COLOR_SAMPLED, PRESENT, PRESENT_SAMPLED -> subpass.pColorAttachments(getAtachBfr(attach, stack));
-                    case DEPTH, DEPTH_SAMPLED -> subpass.pDepthStencilAttachment(attachmentRefs.get(attach.BindingID));
-                    case PRESENT_RESOLVE, RESOLVE_COLOR, RESOLVE_DEPTH -> subpass.pResolveAttachments(getAtachBfr(attach, stack));
-                }
-
             }
 
 
-            VkSubpassDescription PostFXSubpass = subpasses.get(1);
-
-            for(var attach : this.attachment.values())
+            for(var subPass : this.subpassReferences)
             {
+                final int colorAttachments = subPass.getColorAttachments();
+                final int resolveAttachments = subPass.getResolveAttachments();
 
-                attachmentRefs.get(attach.BindingID).set(attach.BindingID, attach.type.layout);
 
-                switch (attach.type) {
-                    case INPUT_COLOR, INPUT_DEPTH -> attachmentRefsInput.put(getAtachBfr(attach, stack));
-                    case PRESENT -> PostFXSubpass.pColorAttachments(getAtachBfr(attach, stack));
+                final VkSubpassDescription subpassDef = subpasses.get();
+                subpassDef.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
+                subpassDef.colorAttachmentCount(colorAttachments);
+
+                //Empty: filled with Attachment references based on Type
+
+                VkAttachmentReference.Buffer colorAttach = VkAttachmentReference.malloc(colorAttachments, stack);
+                VkAttachmentReference.Buffer resolveAttach = VkAttachmentReference.malloc(resolveAttachments, stack);
+
+
+                int attachmentID = 0;
+                for (Attachment attach : this.attachment.values()) {
+                    //                    Attachment attachment =  this.attachment.get(attach);
+
+                    final Subpass.subStatesModifiers modifier = subPass.getAttachmentType(attachmentID);
+
+                    VkAttachmentReference attachmentRef = VkAttachmentReference.malloc(stack)
+                            .set(attach.BindingID, modifier.checkLayout(attach.type.layout));
+
+                    switch (modifier) {
+                        case COLOR -> colorAttach.put(attachmentRef);
+                        case DEPTH -> subpassDef.pDepthStencilAttachment(attachmentRef);
+                        case RESOLVE -> resolveAttach.put(attachmentRef);
+                    }
+                    attachmentID++;
                 }
 
+                subpassDef.pColorAttachments(hasColor ? colorAttach.rewind() : null);
+                subpassDef.pResolveAttachments(hasResolve ? resolveAttach.rewind() : null);
+
+                //Todo: Determine Stage and Access masks automatically
+                subpassDependencies.get()
+                        .srcSubpass(subPass.getSrcSub()).dstSubpass(subPass.getDstSub())
+                        .srcStageMask(subPass.getSrcStage()).dstStageMask(subPass.getDstStage())
+                        .srcAccessMask(subPass.getSrcAccess()).dstAccessMask(subPass.getDstAccess())
+                        .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+
+
             }
-            PostFXSubpass.pInputAttachments(attachmentRefsInput);
 
-
-            final VkSubpassDependency.Buffer subpassDependencies = VkSubpassDependency.calloc(2, stack);
-
-            subpassDependencies.get(0)
-                    .srcSubpass(VK_SUBPASS_EXTERNAL)
-                    .dstSubpass(0)
-                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .srcAccessMask(0)
-                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-
-            subpassDependencies.get(1)
-                    .srcSubpass(0)
-                    .dstSubpass(1)
-                    .srcStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .srcAccessMask(0)
-                    .dstAccessMask(0)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack)
                     .sType$Default()
                     .pAttachments(attachments)
-                    .pSubpasses(subpasses)
-                    .pDependencies(subpassDependencies);
+                    .pSubpasses(subpasses.rewind())
+                    .pDependencies(subpassDependencies.rewind());
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
@@ -129,9 +131,16 @@ public class RenderPass2 {
             return pRenderPass.get(0);
         }
     }
-
     public void bindImageReference(AttachmentTypes attachmentTypes, VulkanImage colorAttachment) {
         this.attachment.get(attachmentTypes).bindImageReference(colorAttachment.getImageView());
+    }
+
+    //Framebuffer can use different renderPasses if compatible: SubPassState is mutually exclusive to the Framebuffer
+    public void nextSubPass(VkCommandBuffer vkCommandBuffer)
+    {
+        if(subpassReferences.length==1) return;
+        vkCmdNextSubpass(vkCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+//        this.subpassIndex++;
     }
     public int getFormat(AttachmentTypes attachmentTypes) {
         return this.attachment.get(attachmentTypes).format;

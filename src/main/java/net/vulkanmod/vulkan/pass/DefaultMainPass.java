@@ -41,7 +41,16 @@ public class DefaultMainPass implements MainPass {
 
 //        RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
 //        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        this.mainRenderPass = new RenderPass2(AttachmentTypes.PRESENT, AttachmentTypes.INPUT_COLOR, AttachmentTypes.INPUT_DEPTH);
+        Subpass subpassReference = new Subpass(0,
+                VK_SUBPASS_EXTERNAL,
+                0,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                0,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                Subpass.subStatesModifiers.COLOR,
+                Subpass.subStatesModifiers.DEPTH);
+        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference}, AttachmentTypes.PRESENT, AttachmentTypes.DEPTH);
 
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
@@ -76,7 +85,6 @@ public class DefaultMainPass implements MainPass {
     public void end(VkCommandBuffer commandBuffer) {
 //        Renderer.getInstance().endRenderPass(commandBuffer);
 
-        vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdEndRenderPass(commandBuffer);
 
         int result = vkEndCommandBuffer(commandBuffer);
