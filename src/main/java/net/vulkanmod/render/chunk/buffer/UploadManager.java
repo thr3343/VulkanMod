@@ -3,11 +3,9 @@ package net.vulkanmod.render.chunk.buffer;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.Queue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -15,6 +13,7 @@ import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -25,7 +24,6 @@ public class UploadManager {
         INSTANCE = new UploadManager();
     }
 
-    Queue queue = DeviceManager.getTransferQueue();
     CommandPool.CommandBuffer commandBuffer;
 
     LongOpenHashSet dstBuffers = new LongOpenHashSet();
@@ -34,7 +32,7 @@ public class UploadManager {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
+        TransferQueue.submitCommands(this.commandBuffer);
 
         Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
@@ -43,7 +41,8 @@ public class UploadManager {
     }
 
     public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
-        beginCommands();
+        if (this.commandBuffer == null)
+            this.commandBuffer = TransferQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
         ///TODO: Abstra staging uplaods to allow easy switcning between Default and ReBAr mode
@@ -76,7 +75,8 @@ public class UploadManager {
     }
 
     public void copyBuffer(Buffer src, int srcOffset, Buffer dst, int dstOffset, int size) {
-        beginCommands();
+        if (this.commandBuffer == null)
+            this.commandBuffer = GraphicsQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
@@ -101,19 +101,14 @@ public class UploadManager {
         }
 
         this.dstBuffers.add(dst.getId());
-
-        TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
+        //TODO: AMD recommends GraphicsQueue, not TransferQueue for Local2Local copies: has less bandwidth than Graphics Queue apparently: https://gpuopen.com/learn/using-d3d12-heap-type-gpu-upload/#recommendations
+        GraphicsQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
 
     public void syncUploads() {
         submitUploads();
 
         Synchronization.INSTANCE.waitFences();
-    }
-
-    private void beginCommands() {
-        if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
     }
 
 }
