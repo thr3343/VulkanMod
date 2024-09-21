@@ -38,10 +38,6 @@ public class MemoryManager {
 
     static int Frames;
 
-    private static long deviceMemory = 0;
-    private static long barMemory = 0;
-    private static long nativeMemory = 0;
-
     private int currentFrame = 0;
 
     private ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers = new ObjectArrayList[Frames];
@@ -116,7 +112,7 @@ public class MemoryManager {
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
                 Initializer.LOGGER.info(String.format("Failed to create buffer with size: %.3f MB", ((float) size / BYTES_IN_MB)));
-                Initializer.LOGGER.info(String.format("Tracked Device Memory used: %d/%d MB", getAllocatedDeviceMemoryMB(), getDeviceMemoryMB()));
+                Initializer.LOGGER.info(String.format("Tracked Device Memory used: %d/%d MB", MemoryTypes.GPU_MEM.usedBytes(), MemoryTypes.GPU_MEM.maxSize()));
                 Initializer.LOGGER.info(getHeapStats());
 
                 throw new RuntimeException("Failed to create buffer: %s".formatted(VkResult.decode(result)));
@@ -137,12 +133,6 @@ public class MemoryManager {
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
-
-            switch (buffer.type.type) {
-                case DEVICE_LOCAL -> deviceMemory += size;
-                case BAR_LOCAL -> barMemory += size;
-                case HOST_LOCAL -> nativeMemory += size;
-            }
 
 
             buffers.putIfAbsent(buffer.getId(), buffer);
@@ -210,11 +200,13 @@ public class MemoryManager {
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
-        switch (bufferInfo.type()) {
-            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
-            case BAR_LOCAL -> barMemory -= bufferInfo.bufferSize();
-            case HOST_LOCAL -> nativeMemory -= bufferInfo.bufferSize();
-        }
+        bufferInfo.type().updateSize( bufferInfo.bufferSize());
+
+//        switch (bufferInfo.type()) {
+//            case GPU_MEM -> deviceMemory -= bufferInfo.bufferSize();
+//            case BAR_MEM -> barMemory -= bufferInfo.bufferSize();
+//            case HOST_MEM -> nativeMemory -= bufferInfo.bufferSize();
+//        }
 
         buffers.remove(bufferInfo.id());
     }
@@ -294,22 +286,6 @@ public class MemoryManager {
 
     public void addToFreeSegment(AreaBuffer areaBuffer, int offset) {
         this.segmentsToFree[this.currentFrame].add(new Pair<>(areaBuffer, offset));
-    }
-
-    public int getNativeMemoryMB() {
-        return bytesInMb(nativeMemory);
-    }
-
-    public int getAllocatedDeviceMemoryMB() {
-        return bytesInMb(deviceMemory);
-    }
-
-    public int getBarMemoryMB() {
-        return bytesInMb(barMemory);
-    }
-
-    public int getDeviceMemoryMB() {
-        return bytesInMb(MemoryTypes.GPU_MEM.maxSize);
     }
 
     int bytesInMb(long bytes) {

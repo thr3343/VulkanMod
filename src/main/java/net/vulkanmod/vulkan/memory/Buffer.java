@@ -10,11 +10,11 @@ public abstract class Buffer {
     protected int usedBytes;
     protected int offset;
 
-    protected MemoryType type;
+    protected MemoryTypes type;
     protected int usage;
     protected PointerBuffer data;
 
-    protected Buffer(int usage, MemoryType type) {
+    protected Buffer(int usage, MemoryTypes type) {
         //TODO: check usage
         this.usage = usage;
         this.type = type;
@@ -51,9 +51,9 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType()); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type); }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize, MemoryTypes type) {
 
     }
 }

@@ -1,7 +1,8 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
@@ -10,208 +11,171 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class MemoryTypes {
-    public static MemoryType GPU_MEM;
-    public static MemoryType BAR_MEM;
-    public static MemoryType HOST_MEM;
+public enum MemoryTypes {
+    GPU_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
 
-    private static final int DEVICE_LOCAL_HEAP = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT; //Guarantees Device_Local Memory
-    private static final int HOST_LOCAL_HEAP = 0; //Guarantees Host-Only memory
+    BAR_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+    HOST_MEM(false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    public static void createMemoryTypes() {
+    private final long maxSize;
+    private long usedBytes;
+    private final int flags;
+    final int heapIndex;
 
-//        boolean reBAR = checkReBAR();
+    MemoryTypes(boolean useVRAM, int... optimalFlags) {
 
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
-            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+//        this.maxSize = maxSize;
+//        this.resizableBAR = size > 0xD600000;
 
-            //GPU only Memory
-            if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                if(heap.flags() == DEVICE_LOCAL_HEAP)
-                    GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+        //TODO: Fix enumeration errors on many devices
 
+        //Some devices don't have a separate RAM only/Non-Device local heap
+        final int VRAMFlag = useVRAM ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : hasHeapFlag(0) ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        for (int optimalFlagMask : optimalFlags) {
+            for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
+
+                VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+                final int availableFlags = memoryType.propertyFlags();
+                final int extractedFlags = optimalFlagMask & availableFlags;
+                final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
+
+                final boolean hasMemType = useVRAM == ((availableFlags & VRAMFlag) != 0);
+                if (hasRequiredFlags && hasMemType) {
+                    this.maxSize = memoryHeap.size();
+                    this.flags = optimalFlagMask;
+                    this.heapIndex = memoryType.heapIndex();
+
+                    Initializer.LOGGER.info(this.name()+"\n"
+                            + "     Memory Heap Index/Bank: "+ memoryType.heapIndex() +"\n"
+                            + "     IsVRAM: "+ memoryHeap.flags() +"\n"
+                            + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
+                            + "     AvailableFlags:" + getMemoryTypeFlags(availableFlags) + "\n"
+                            + "     EnabledFlags:" + getMemoryTypeFlags(optimalFlagMask));
+//                    this.mappable = ((this.flags = optimalFlagMask) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+
+                    return;
+                }
             }
-
-            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                if(heap.flags() == DEVICE_LOCAL_HEAP)
-                    BAR_MEM = new DeviceMappableMemory(memoryType, heap);
-
-            }
-
-            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                if(heap.flags() == HOST_LOCAL_HEAP) //Prevent HOST_MEM from using the Device local heap by accident
-                    HOST_MEM = new HostLocalUncachedMemory(memoryType, heap);
-            }
+//            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }
 
-        if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
-            return;
+        //Some very old pre 2021 drivers do not Expose BAR Memory, and.or lack  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        throw new RuntimeException("Unsupported MemoryType: "+this.name() + ": Try updating your driver and/or Vulkan version");
 
-        // Could not find 1 or more MemoryTypes, need to use fallback
-        //TODO: Refactor/repurpose as ReBAR mode
-        // Can be exploited as iGPUs typically almost always have ReBAR as well
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
-            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+//        VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(0);
+//        VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(0);
+//        this.maxSize = memoryHeap.size();
+//        this.flags = memoryType.propertyFlags();
+//            return;
+//
+//
 
-            //TODO: Check this is correct
-            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
-                GPU_MEM = new DeviceLocalMemory(memoryType, heap);
-            }
-
-            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
-                BAR_MEM = new DeviceMappableMemory(memoryType, heap);
-
-            }
-
-            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                HOST_MEM = new HostLocalFallbackMemory(memoryType, heap);
-            }
-
-            if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
-                return;
-        }
-
-        // Could not find device memory, fallback to host memory
-        GPU_MEM = HOST_MEM = BAR_MEM;
     }
 
-    private static boolean checkReBAR() {
-        if(DeviceManager.memoryProperties.memoryTypeCount()==0) return true;
-        long DeviceLocalSize =0;
-        long ReBARSize =0;
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
-            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
-            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+    private String getMemoryTypeFlags(int memFlags)
+    {
+        final int[] x = new int[]{1,2,4,8,16};
+        StringBuilder memTypeFlags = new StringBuilder();
+        for (int memFlag : x) {
+            boolean hasMemFlag = (memFlag & memFlags)!=0;
+            if(hasMemFlag)
             {
-                ReBARSize=heap.size();
+                switch (memFlag){
+                    case VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT -> memTypeFlags.append(" | DEVICE_LOCAL");
+                    case VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT -> memTypeFlags.append(" | HOST_VISIBLE");
+                    case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT -> memTypeFlags.append(" | HOST_COHERENT");
+                    case VK_MEMORY_PROPERTY_HOST_CACHED_BIT -> memTypeFlags.append(" | HOST_CACHED");
+                    case VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT -> memTypeFlags.append(" | LAZILY_ALLOCATED");
+                }
             }
-            if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-            {
-                DeviceLocalSize=heap.size();
-            }
         }
-
-
-        return ReBARSize > 0x10000000 && DeviceLocalSize == ReBARSize;
+        return memTypeFlags.toString();
     }
 
-    public static class DeviceLocalMemory extends MemoryType {
-
-        DeviceLocalMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+    private static boolean hasHeapFlag(int heapFlag) {
+        for(VkMemoryHeap memoryHeap : DeviceManager.memoryProperties.memoryHeaps()) {
+            if(memoryHeap.flags()==heapFlag) return true;
         }
-
-        @Override
-        void createBuffer(Buffer buffer, int size) {
-            MemoryManager.getInstance().createBuffer(buffer, size,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
-        }
-
-        @Override
-        void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-            stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
-
-            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
-        }
-
-        @Override
-        void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            // TODO
-        }
-
-        public long copyBuffer(Buffer src, Buffer dst) {
-            if (dst.bufferSize < src.bufferSize) {
-                throw new IllegalArgumentException("dst size is less than src size.");
-            }
-
-            return DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
-        }
-
-        @Override
-        boolean mappable() {
-            return false;
-        }
+        return false;
     }
 
-    static abstract class MappableMemory extends MemoryType {
+    void createBuffer(Buffer buffer, int size)
+    {
 
-        MappableMemory(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(type, vkMemoryType, vkMemoryHeap);
-        }
+        //Allow resizable bar heaps to bypass the staging buffer
+        final int usage = buffer.usage | (this.mappable() ? 0 : VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-        @Override
-        void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), (int) bufferSize, buffer.getUsedBytes());
-        }
-
-        @Override
-        void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            VUtil.memcpy(buffer.data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, 0);
-        }
-
-        @Override
-        boolean mappable() {
-            return true;
-        }
-    }
-    //Removing VK_MEMORY_PROPERTY_HOST_CACHED_BIT enables Write Combining optimizations, which can boost transfer speed and bandwidth
-    //https://gpuopen.com/learn/using-d3d12-heap-type-gpu-upload/#recommendations
-    static class HostLocalUncachedMemory extends MappableMemory {
-
-        HostLocalUncachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
-        }
-
-        @Override
-        void createBuffer(Buffer buffer, int size) {
-
-            MemoryManager.getInstance().createBuffer(buffer, size,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        }
-
-        void copyToBuffer(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer byteBuffer) {
-            VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer((int) 0, (int) buffer.bufferSize), (int) bufferSize, dstOffset);
-        }
-
-        void copyBuffer(Buffer src, Buffer dst) {
-            VUtil.memcpy(src.data.getByteBuffer(0, src.bufferSize),
-                    dst.data.getByteBuffer(0, dst.bufferSize), src.bufferSize, 0);
-
-//            copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
-        }
+        MemoryManager.getInstance().createBuffer(buffer, size, usage, this.flags);
+        this.usedBytes+=size;
     }
 
-    static class HostLocalFallbackMemory extends MappableMemory {
-
-        HostLocalFallbackMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
-        }
-
-        @Override
-        void createBuffer(Buffer buffer, int size) {
-            MemoryManager.getInstance().createBuffer(buffer, size,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        }
+//    void addSubCopy(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
+//    {
+//        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+//
+//        var a = new SubCopyCommand()
+//        if(subCpyContiguous)
+//    }
+//
+//    void executeSubCopy(Buffer srcBuffer, Buffer dstBuffer)
+//    {
+//
+//    }
+    void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer)
+    {
+         if(!this.mappable()){
+             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
+             DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+         }
+         else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), bufferSize, buffer.getUsedBytes());
     }
 
-    static class DeviceMappableMemory extends MappableMemory {
 
-        DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.BAR_LOCAL, vkMemoryType, vkMemoryHeap);
-        }
+    void freeBuffer(Buffer buffer)
+    {
+        MemoryManager.getInstance().addToFreeable(buffer);
 
-        @Override
-        void createBuffer(Buffer buffer, int size) {
-            MemoryManager.getInstance().createBuffer(buffer, size,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-        }
+//        this.usedBytes-=buffer.bufferSize;
     }
+
+
+//    abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
+//    abstract void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
+
+    /**
+     * Replace data from byte 0
+     */
+    public void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer, int dstOffset)
+    {
+      if(!this.mappable())
+      {
+          int bufferSize = byteBuffer.remaining();
+          StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+          stagingBuffer.copyBuffer(bufferSize, byteBuffer);
+
+          DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), dstOffset, bufferSize);
+      }
+
+      else VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, buffer.bufferSize), byteBuffer.remaining(), dstOffset);
+    }
+
+    final boolean mappable() { return (this.flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0; }
+
+    public int usedBytes() { return (int) (this.usedBytes >> 20); }
+
+    public int maxSize() { return (int) (this.maxSize >> 20); }
+
+    public int heapIndex() {
+        return 0;
+    }
+
+    public void updateSize(long l) {
+        //Ensure heap Usage is accurate
+        this.usedBytes-=l;
+    }
+
+//    public int checkUsage(int usage) {
+//        return (usage & this.flags) !=0 ? usage : this.flags;
+//    }
 }
