@@ -23,17 +23,14 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DrawBuffers {
     private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    private final int index;
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated = false;
     AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
-    public DrawBuffers(int index, Vector3i origin, int minHeight) {
-        this.index = index;
+    public DrawBuffers(Vector3i origin, int minHeight) {
         this.origin = origin;
         this.minHeight = minHeight;
     }
@@ -66,7 +63,6 @@ public class DrawBuffers {
     }
 
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType renderType) {
-        this.allocated = true;
 
         int initialSize = switch (renderType) {
             case SOLID, CUTOUT -> 100000;
@@ -180,7 +176,7 @@ public class DrawBuffers {
     }
 
     public void releaseBuffers() {
-        if (!this.allocated)
+        if (this.vertexBuffers.isEmpty())
             return;
 
         this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
@@ -190,7 +186,6 @@ public class DrawBuffers {
             this.indexBuffer.freeBuffer();
         this.indexBuffer = null;
 
-        this.allocated = false;
     }
 
     public boolean isAllocated() {

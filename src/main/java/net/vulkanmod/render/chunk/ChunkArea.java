@@ -23,7 +23,7 @@ public class ChunkArea {
     public ChunkArea(int i, Vector3i origin, int minHeight) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
+        this.drawBuffers = new DrawBuffers(origin, minHeight);
     }
 
     public void updateFrustum(VFrustum frustum) {

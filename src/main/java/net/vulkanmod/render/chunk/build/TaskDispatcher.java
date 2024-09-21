@@ -14,6 +14,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.Queue;
 
 public class TaskDispatcher {
@@ -154,22 +155,11 @@ public class TaskDispatcher {
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
         // Check if area has been dismissed before uploading
-        ChunkAreaManager chunkAreaManager = WorldRenderer.getInstance().getChunkAreaManager();
-        if (chunkAreaManager.getChunkArea(renderArea.index) != renderArea)
+        if (WorldRenderer.getInstance().getChunkAreaManager().getChunkArea(renderArea.index) != renderArea)
             return;
 
         if(compileResult.fullUpdate) {
-            var renderLayers = compileResult.renderedLayers;
-            for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
-                UploadBuffer uploadBuffer = renderLayers.get(renderType);
-
-                if(uploadBuffer != null) {
-                    drawBuffers.upload(section, uploadBuffer, renderType);
-                } else {
-                    section.getDrawParameters(renderType).reset(renderArea, renderType);
-                }
-            }
-
+            compileResult.renderedLayers.forEach((key, value) -> drawBuffers.upload(section, value, key));
             compileResult.updateSection();
         }
         else {

@@ -61,7 +61,7 @@ public class RenderSection {
         this.yOffset = y;
         this.zOffset = z;
 
-        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
+        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.size()];
         for (int i = 0; i < this.drawParametersArray.length; ++i) {
             this.drawParametersArray[i] = new DrawBuffers.DrawParameters();
         }
