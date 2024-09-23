@@ -57,14 +57,14 @@ public class DefaultMainPass implements MainPass {
 
         Subpass subpassReference2 = new Subpass(1,
                 0,
-                0,
+                1,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 0,
                 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.INPUT,
-                Subpass.subStatesModifiers.DISABLED);
+                Subpass.subStatesModifiers.INPUT);
         this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
 
