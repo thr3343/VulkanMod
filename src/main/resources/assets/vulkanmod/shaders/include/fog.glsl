@@ -1,5 +1,5 @@
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    return inColor;//(vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, smoothstep(fogStart, fogEnd, vertexDistance) * fogColor.a);
+    return (vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, smoothstep(fogStart, fogEnd, vertexDistance) * fogColor.a);
 }
 
 float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
@@ -13,5 +13,11 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
 }
 
 float fog_distance(vec3 pos, int shape) {
-    return 1;
+    if (shape == 0) {
+        return length(pos);
+    } else {
+        float distXZ = length(pos.xz);
+        float distY = abs(pos.y);
+        return max(distXZ, distY);
+    }
 }

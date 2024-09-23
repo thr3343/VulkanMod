@@ -16,8 +16,8 @@ layout(location = 0) out vec4 fragColor;
 void main() {
    //fragColor = subpassLoad(Color).rgba;
     vec4 color = subpassLoad(Color);
-    float depth = subgroupQuadBroadcast(subpassLoad(Depth).r, 0);
+    float depth = subpassLoad(Depth).r;
 
-    fragColor = depth <0.99875 ? color : mix(color, FogColor, smoothstep(0.99875, 1, depth));
+    fragColor = depth == 1 ? color : mix(color, FogColor, smoothstep(0.99875, 1, depth));
 
 }
