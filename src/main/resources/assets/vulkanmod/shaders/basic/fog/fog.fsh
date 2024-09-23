@@ -15,9 +15,9 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
    //fragColor = subpassLoad(Color).rgba;
-    vec4 color = subpassLoad(Color);
+    vec3 color = subpassLoad(Color).rgb;
     float depth = subpassLoad(Depth).r;
 
-    fragColor = depth == 1 ? color : mix(color, FogColor, smoothstep(0.99875, 1, depth));
+    fragColor = vec4(depth == 1 ? color : mix(color, FogColor.rgb, smoothstep(0.99875, 1, depth)), 1.0f);
 
 }
