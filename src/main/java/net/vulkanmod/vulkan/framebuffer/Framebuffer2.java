@@ -129,14 +129,13 @@ public class Framebuffer2 {
 
         final int length = renderPass2.attachmentTypes.length;
 
-        var clearValues = VkClearValue.malloc(length, stack);
+        var clearValues = VkClearValue.calloc(length, stack);
         final LongBuffer longs = stack.mallocLong(length);
 
         if(this.swapChainMode) this.renderPass2.bindImageReference(presentState,  getSwapChain().getColorAttachment());
 //Clear Color value is ignored if Load Op is Not set to Clear
         for(var a : renderPass2.attachment.values()) {
-            if(a.type.color) clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
-            else clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
+            if(!a.type.color) clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
 
             longs.put(a.BindingID, a.getVkImage().getImageView());
         }
