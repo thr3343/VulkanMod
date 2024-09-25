@@ -51,7 +51,6 @@ public class DefaultMainPass implements MainPass {
                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                 0,
                 0,
-                Subpass.subStatesModifiers.DISABLED,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.DEPTH);
 
@@ -64,8 +63,8 @@ public class DefaultMainPass implements MainPass {
                 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.INPUT,
-                Subpass.subStatesModifiers.INPUT);
-        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+                Subpass.subStatesModifiers.DISABLED);
+        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference}, AttachmentTypes.PRESENT, AttachmentTypes.DEPTH);
 
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
@@ -99,14 +98,14 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void end(VkCommandBuffer commandBuffer) {
 
-        mainRenderPass.nextSubPass(commandBuffer);
-
-        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
-        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
-        VTextureSelector.bindTexture(0, attachment.getVkImage());
-        VTextureSelector.bindTexture(1, attachment1.getVkImage());
-
-        DrawUtil.fastBlit2();
+//        mainRenderPass.nextSubPass(commandBuffer);
+//
+//        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
+//        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
+//        VTextureSelector.bindTexture(0, attachment.getVkImage());
+//        VTextureSelector.bindTexture(1, attachment1.getVkImage());
+//
+//        DrawUtil.fastBlit2();
 
 
         vkCmdEndRenderPass(commandBuffer);

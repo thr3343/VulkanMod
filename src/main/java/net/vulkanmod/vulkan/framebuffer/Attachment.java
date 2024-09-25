@@ -25,7 +25,7 @@ public class Attachment
         BindingID = bindingID;
         this.type = type;
         this.loadOp = switch (type){
-            case PRESENT -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            case PRESENT -> VK_ATTACHMENT_LOAD_OP_CLEAR;
             case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
             case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
         };

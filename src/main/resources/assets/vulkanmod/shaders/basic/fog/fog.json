@@ -1,7 +1,6 @@
 {
     "inputs": [
-        { "name": "Sampler0" },
-        { "name": "Sampler1" }
+        { "name": "Sampler0" }
     ],
     "UBOs": [
         { "type":  "fragment", "binding": 0, "fields": [
