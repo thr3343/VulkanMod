@@ -313,6 +313,7 @@ public class WorldRenderer {
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
         Renderer renderer = Renderer.getInstance();
+        VRenderSystem.depthMask(terrainRenderType != TerrainRenderType.TRANSLUCENT);
         GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
         renderer.bindGraphicsPipeline(pipeline);
 
