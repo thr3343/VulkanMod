@@ -130,7 +130,7 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.lineWidth(1.0f);
             rasterizer.cullMode(cullMode);
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            rasterizer.depthBiasEnable(true);
+            rasterizer.depthBiasEnable(false);
 
             // ===> MULTISAMPLING <===
 
