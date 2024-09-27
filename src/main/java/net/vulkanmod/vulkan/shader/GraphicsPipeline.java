@@ -19,6 +19,7 @@ import java.util.EnumSet;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.NVFillRectangle.VK_POLYGON_MODE_FILL_RECTANGLE_NV;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsPipeline extends Pipeline {
@@ -125,7 +126,7 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
             rasterizer.depthClampEnable(false);
             rasterizer.rasterizerDiscardEnable(false);
-            rasterizer.polygonMode(polygonMode);
+            rasterizer.polygonMode(this.name.contains("basic/fog") ? VK_POLYGON_MODE_FILL_RECTANGLE_NV : polygonMode);
             rasterizer.lineWidth(1.0f);
             rasterizer.cullMode(cullMode);
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
