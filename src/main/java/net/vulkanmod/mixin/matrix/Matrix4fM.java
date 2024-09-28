@@ -6,8 +6,11 @@ import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+
+import static org.joml.Matrix4fc.PROPERTY_IDENTITY;
 
 @Mixin(Matrix4f.class)
 public abstract class Matrix4fM {
@@ -57,8 +60,6 @@ public abstract class Matrix4fM {
             at = @At(value = "INVOKE", target = "Lorg/joml/Matrix4f;_m11(F)Lorg/joml/Matrix4f;"), remap = false)
     private Matrix4f flipPerspectiveY(Matrix4f instance, float m11, Operation<Matrix4f> original)
     {
-        //invertNDCY or flipPerspectiveY
-
         //Invert the y component of the Perspective Matrix
         return original.call(instance, m11*-1.0f);
     }
