@@ -292,6 +292,7 @@ public class GraphicsPipeline extends Pipeline {
                         case FLOAT -> posDescription.format(VK_FORMAT_R32G32_SFLOAT);
                         case SHORT -> posDescription.format(VK_FORMAT_R16G16_SINT);
                         case USHORT -> posDescription.format(VK_FORMAT_R16G16_UINT);
+                        case UINT -> posDescription.format(VK_FORMAT_R32_UINT);
                     }
                 }
                 case NORMAL -> posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
