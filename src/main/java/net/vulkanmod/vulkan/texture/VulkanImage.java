@@ -61,7 +61,7 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
 
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
+        this.sampler = SamplerManager.getTextureSampler((byte) 0);
     }
 
     private VulkanImage(Builder builder) {

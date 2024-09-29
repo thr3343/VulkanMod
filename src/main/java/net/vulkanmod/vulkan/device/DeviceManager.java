@@ -169,9 +169,9 @@ public abstract class DeviceManager {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
             VkPhysicalDeviceShaderDrawParameterFeatures shaderDrawParameterFeatures = VkPhysicalDeviceShaderDrawParameterFeatures.calloc(stack).sType$Default();
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
-            deviceVulkan12Features.sType$Default();
-            deviceVulkan12Features.imagelessFramebuffer(true);
+            VkPhysicalDeviceImagelessFramebufferFeatures imagelessFramebufferFeatures = VkPhysicalDeviceImagelessFramebufferFeatures.calloc(stack);
+            imagelessFramebufferFeatures.sType$Default();
+            imagelessFramebufferFeatures.imagelessFramebuffer(true);
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
             deviceFeatures.features().samplerAnisotropy(device.hasSamplerAnisotropy());
@@ -199,7 +199,7 @@ public abstract class DeviceManager {
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(descriptorIndexingFeatures).pNext(inlineUniformBlockFeatures).pNext(shaderDrawParameterFeatures).pNext(deviceVulkan12Features);
+            createInfo.pNext(descriptorIndexingFeatures).pNext(inlineUniformBlockFeatures).pNext(shaderDrawParameterFeatures).pNext(imagelessFramebufferFeatures);
             createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);

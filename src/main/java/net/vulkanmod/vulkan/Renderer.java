@@ -533,6 +533,7 @@ public class Renderer {
         VRenderSystem.getScreenSize();
         this.onResizeCallbacks.forEach(Runnable::run);
         ((WindowAccessor) (Object) Minecraft.getInstance().getWindow()).getEventHandler().resizeDisplay();
+        mainPass.getMainFrameBuffer().setSize(Vulkan.getSwapChain().getWidth(), Vulkan.getSwapChain().getHeight());
 
         currentFrame = 0;
     }

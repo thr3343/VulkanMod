@@ -32,6 +32,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.EXTInlineUniformBlock.VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
@@ -62,7 +63,7 @@ public class Vulkan {
     public static final Set<String> REQUIRED_EXTENSION = getRequiredExtensionSet();
 
     private static Set<String> getRequiredExtensionSet() {
-        ArrayList<String> extensions = new ArrayList<>(List.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME, NVFillRectangle.VK_NV_FILL_RECTANGLE_EXTENSION_NAME));
+        ArrayList<String> extensions = new ArrayList<>(List.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, NVFillRectangle.VK_NV_FILL_RECTANGLE_EXTENSION_NAME));
 
         if (DYNAMIC_RENDERING) {
             extensions.add(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
