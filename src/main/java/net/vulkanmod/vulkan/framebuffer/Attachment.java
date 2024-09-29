@@ -26,7 +26,7 @@ public class Attachment
         this.type = type;
         this.loadOp = switch (type){
             case PRESENT -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+            case COLOR -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
         };
 

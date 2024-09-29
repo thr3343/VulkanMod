@@ -40,7 +40,7 @@ public class DrawUtil {
 
         RenderSystem.disableCull();
         RenderSystem.disableDepthTest();
-        RenderSystem.enableBlend();
+        RenderSystem.disableBlend();
         RenderSystem.disableColorLogicOp();
 
         Renderer renderer = Renderer.getInstance();

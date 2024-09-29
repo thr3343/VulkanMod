@@ -542,11 +542,11 @@ public class Renderer {
     }
 
     public static void clearAttachments(int v) {
-        Framebuffer framebuffer = Renderer.getInstance().boundFramebuffer;
-        if (framebuffer == null)
-            return;
-
-        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
+//        Framebuffer framebuffer = Renderer.getInstance().boundFramebuffer;
+//        if (framebuffer == null)
+//            return;
+//
+//        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
     }
 
     public static void clearAttachments(int v, int width, int height) {

@@ -38,7 +38,7 @@ public abstract class LevelRendererMixin {
     @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V"))
     private void setSuBPass(Camera camera, FogRenderer.FogMode fogMode, float f, boolean bl, float g, Operation<Void> original)
     {
-        Renderer.getInstance().getMainPass().getMainRenderPass().nextSubPass(Renderer.getCommandBuffer(), 1);
+//        Renderer.getInstance().getMainPass().getMainRenderPass().nextSubPass(Renderer.getCommandBuffer(), 1);
         original.call(camera, fogMode, f, bl, g);
     }
 //    /**

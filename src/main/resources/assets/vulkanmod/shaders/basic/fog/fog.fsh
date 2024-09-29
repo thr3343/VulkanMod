@@ -1,9 +1,9 @@
 #version 450
-
+#extension GL_KHR_shader_subgroup_ballot : enable
 layout(early_fragment_tests) in;
 
-layout(input_attachment_index = 0, binding = 0) uniform subpassInput Color;
-//layout(input_attachment_index = 1, binding = 2) uniform subpassInput Depth;
+
+layout(input_attachment_index = 0, binding =0) uniform subpassInput Depth;
 
 
 layout(location = 0) out vec4 fragColor;
@@ -11,8 +11,9 @@ layout(location = 0) out vec4 fragColor;
 void main() {
    //fragColor = subpassLoad(Color).rgba;
     //vec3 color = subpassLoad(Color).rgb;
-    //float depth = subpassLoad(Depth).r;
 
-    fragColor = subpassLoad(Color);
+    if(subgroupBroadcastFirst(subpassLoad(Depth).r) < 1) discard;
+
+    fragColor = vec4(0,0,1, 1);
 
 }
