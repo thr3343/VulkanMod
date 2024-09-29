@@ -1,6 +1,9 @@
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
     return (vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, smoothstep(fogStart, fogEnd, vertexDistance) * fogColor.a);
 }
+vec4 linear_fog2(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
+    return  (vertexDistance <= fogStart) ? inColor : vec4(fogColor.rgb, (vertexDistance - fogEnd) / fogStart);
+}
 
 float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     if (vertexDistance <= fogStart) {
