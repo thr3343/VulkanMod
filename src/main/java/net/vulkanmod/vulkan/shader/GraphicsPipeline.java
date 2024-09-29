@@ -200,9 +200,11 @@ public class GraphicsPipeline extends Pipeline {
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 
+            ///TODO: Retire unused pipelines w/ unused/dummy SubPassIndices
+            // As making subpassIndices stateful will likely cause high pipeline bloat
             if (!Vulkan.DYNAMIC_RENDERING) {
                 pipelineInfo.renderPass(state.renderPass.renderPass);
-                pipelineInfo.subpass(this.name.contains("basic/fog") ? 1 : 0);
+                pipelineInfo.subpass(state.renderPass.getCurrentSubpassIndex());
             } else {
                 //dyn-rendering
                 VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);

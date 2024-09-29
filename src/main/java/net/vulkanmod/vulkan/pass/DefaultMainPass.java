@@ -44,7 +44,73 @@ public class DefaultMainPass implements MainPass {
 
 //        RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
 //        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        Subpass subpassReference = new Subpass(0,
+
+
+        //TODO: poosble t LogicOp?Colour belnd w. translucent Apha w.o clearcoloura nd.or priot
+        // Maybe Store Op None to allow Indefine valeus to be masked out in final blend pass
+
+        //TODO: Simultaneous/Async Passes; Render multiple Pipelines/Shaders at the Same Time
+        // Tempral ferquencies: i.e Per-Tick Rendering render Differnt atathcmenst at diif freqs: t consvere hardware resources (ala Exordium)
+        //  Resuce output.result of static elements:
+        //  * Maybe w/ Preserve/StoreOpStore/NoClear
+        //  * May be possible to further reduce with Player Movment chnages:Per angl/PLaye Mov+POV check, which is prob less freq than per Tick
+        //      * i.e. per angle on unuque angle changes
+        // --->
+        // Out Of order rasterisation: Render Passes independently of each other + Simultaneous;y
+        // Overlapping rendering. Execution
+        //  reduce./Fix PipelineBuubles/Stores: Losses/Remove RasterisatioN Roder Bottlnecks/Stalls e./g/
+        // --->
+        // Pass 0 -> Sky+Backhground / Clear Pass:
+        //      No Deps: 0 -> 0: Per Region Local: Fully Async/Independent
+        //      Direct to SwapChain/Present Attachment
+        //      Swapchain Target avoids blending issues: all subapsess can be blended.layered.applied ontop: disregarding order
+        //      Overwrites SwapChain:  Replacess Attachment Clear
+        //      Render per-Tick
+        // -
+        // Pass 1 -> Heavy pass: terrain : FrameBuffer0
+        //      Ext -> 0 : depnd on prior terrain
+        // -
+        // pass 2 -> light-Aux No-Z GUI pass : FrameBuffer1
+        //      Ext -> 1
+        //      nODept clears, disparent render can allow Dpetht o be ignored/pverrwirtten e.g.
+        //      NO Depth: can just be overlapped Blended onTop
+        // -
+        // pass 3 -> Final Blend.Composite/CCombine./Mereg Pass
+        //      ext 0 -> 2: Depends on all Composites
+        //      Blend Attachments: Framebuffer Blending / LogicOP
+        // ---
+        // Issues:
+        // * Ponential for OIT: Seems too easy/good to be true: poisbel Clear Colout Contamination + and.or BlendOp perf Killer(s)...
+        //  back ground.Colour Clear Contamination:
+        //      Use UnDefined Values...
+        //      Mask out background...
+        // * Blend Constant Colour: Replace Attachment Clear...
+        //      Mask Out Contaminants
+        // * FrameBuffer Blending
+        //  Unknown if possible.fesible:
+        //      is Clear Colour Contamination
+        //      is Perf Overeahd from Attahcment blending...
+        //      is Wastes Bandwidth...
+        // * Bandiwidth Overehad:
+        //  Do we have enough bandwidth for concurrent streaming...
+        //      nSight is approx 15% rasterisation max iirc: https://developer.nvidia.com/blog/advanced-api-performance-async-compute-and-overlap/
+        //      Potential Unused/Untapped Rasterisatiom Perf/Resoruces/potneital.coap[bilties...
+        //      Forward+
+        // Vk_EXT_FRAGMENT_SHADER_INTERLOCK
+
+
+        Subpass SubExecDepPass = new Subpass(0,
+                VK_SUBPASS_EXTERNAL,
+                0,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                0,
+                0,
+                Subpass.subStatesModifiers.COLOR,
+                Subpass.subStatesModifiers.DISABLED,
+                Subpass.subStatesModifiers.DEPTH);
+
+        Subpass SubExecDepPass1 = new Subpass(1,
                 VK_SUBPASS_EXTERNAL,
                 0,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -54,8 +120,8 @@ public class DefaultMainPass implements MainPass {
                 Subpass.subStatesModifiers.DISABLED,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.DEPTH);
-
-        Subpass subpassReference2 = new Subpass(1,
+        //TODO: Evict to VRAM flush:... Confirm....
+        Subpass subpassReference2 = new Subpass(2,
                 1,
                 1,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -65,7 +131,7 @@ public class DefaultMainPass implements MainPass {
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.INPUT,
                 Subpass.subStatesModifiers.DISABLED);
-        this.mainRenderPass = new RenderPass2(new Subpass[]{subpassReference, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        this.mainRenderPass = new RenderPass2(new Subpass[]{SubExecDepPass, SubExecDepPass1, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
@@ -99,17 +165,21 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void end(VkCommandBuffer commandBuffer) {
 
-        mainRenderPass.nextSubPass(commandBuffer);
+        boolean a = mainRenderPass.getCurrentSubpassIndex()==0;
+        mainRenderPass.nextSubPass(commandBuffer, 2);
 
-        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
+       if(!a) {
+           final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
 //        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
-        VTextureSelector.bindTexture(0, attachment.getVkImage());
+           VTextureSelector.bindTexture(0, attachment.getVkImage());
 //        VTextureSelector.bindTexture(1, attachment1.getVkImage());
 
-        DrawUtil.fastBlit2();
+           DrawUtil.fastBlit2();
+       }
 
 
         vkCmdEndRenderPass(commandBuffer);
+        mainRenderPass.resetSubpassState();
 
         int result = vkEndCommandBuffer(commandBuffer);
         if(result != VK_SUCCESS) {

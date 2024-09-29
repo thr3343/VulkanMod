@@ -24,6 +24,7 @@ public class RenderPass2 {
     final AttachmentTypes presentKey;
     final Subpass[] subpassReferences;
     public final long renderPass;
+    private int subpassIndex;
 
 
     //RenderPasses exist completely separately from resolution and VkImages + Allowing them to be fully independent of any form of Framebuffer + allows for Abstraction/Modularity
@@ -161,11 +162,15 @@ public class RenderPass2 {
     }
 
     //Framebuffer can use different renderPasses if compatible: SubPassState is mutually exclusive to the Framebuffer
-    public void nextSubPass(VkCommandBuffer vkCommandBuffer)
+    public void nextSubPass(VkCommandBuffer vkCommandBuffer, int targetSubPass)
     {
         if(subpassReferences.length==1) return;
-        vkCmdNextSubpass(vkCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-//        this.subpassIndex++;
+        while(targetSubPass>this.subpassIndex)
+        {
+            //Cycle subPasses until the target subPassID/index is reached
+            vkCmdNextSubpass(vkCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+            this.subpassIndex++;
+        }
     }
     public int getFormat(AttachmentTypes attachmentTypes) {
         return this.attachment.get(attachmentTypes).format;
@@ -174,5 +179,11 @@ public class RenderPass2 {
     public void cleanUp() { vkDestroyRenderPass(getVkDevice(), this.renderPass, null); }
 
 
+    public int getCurrentSubpassIndex() {
+        return this.subpassIndex;
+    }
 
+    public void resetSubpassState() {
+        this.subpassIndex=0;
+    }
 }

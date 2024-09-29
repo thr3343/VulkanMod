@@ -2,10 +2,8 @@ package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.RenderPass2;
-import net.vulkanmod.vulkan.pass.DefaultMainPass;
 
 import java.util.Objects;
 
@@ -18,7 +16,7 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass());
+    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), Renderer.getInstance().getMainPass().getMainRenderPass(), 0);
 
     public static PipelineState currentState = DEFAULT;
 
@@ -29,10 +27,12 @@ public class PipelineState {
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
 
-        if(currentState.checkEquals(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass))
+        final int currentSubpassIndex = renderPass.getCurrentSubpassIndex();
+
+        if(currentState.checkEquals(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass, currentSubpassIndex))
             return currentState;
         else
-            return currentState = new PipelineState(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass);
+            return currentState = new PipelineState(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass, currentSubpassIndex);
     }
 
     public static int getBlendState() {
@@ -72,7 +72,9 @@ public class PipelineState {
     int colorMask_i;
     int logicOp_i;
 
-    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
+    int subpassIndex;
+
+    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass, int subpassIndex) {
         this.renderPass = renderPass;
 
         this.assemblyRasterState = assemblyRasterState;
@@ -80,13 +82,14 @@ public class PipelineState {
         this.depthState_i = depthState;
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
+        this.subpassIndex = subpassIndex;
     }
 
-    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass) {
+    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass2 renderPass, int subpassIndex) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
                 && (assemblyRasterState == this.assemblyRasterState)
-                && colorMask == this.colorMask_i;
+                && colorMask == this.colorMask_i && subpassIndex == this.subpassIndex;
     }
 
     @Override
@@ -100,12 +103,12 @@ public class PipelineState {
         return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
                 && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
                 && this.assemblyRasterState == that.assemblyRasterState
-                && this.colorMask_i == that.colorMask_i;
+                && this.colorMask_i == that.colorMask_i && this.subpassIndex == that.subpassIndex;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, colorMask_i, renderPass);
+        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, colorMask_i, renderPass, subpassIndex);
     }
 
     public static BlendInfo defaultBlendInfo() {

@@ -13,6 +13,6 @@ void main() {
     //vec3 color = subpassLoad(Color).rgb;
     //float depth = subpassLoad(Depth).r;
 
-    fragColor = vec4(subpassLoad(Color).rgb, 1.0);
+    fragColor = subpassLoad(Color);
 
 }

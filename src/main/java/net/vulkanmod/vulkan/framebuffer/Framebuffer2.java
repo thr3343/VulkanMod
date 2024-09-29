@@ -136,6 +136,7 @@ public class Framebuffer2 {
 //Clear Color value is ignored if Load Op is Not set to Clear
         for(var a : renderPass2.attachment.values()) {
             if(!a.type.color) clearValues.get(a.BindingID).depthStencil().set(1.0f, 0);
+            if(a.type.present) clearValues.get(a.BindingID).color().float32(VRenderSystem.clearColor);
 
             longs.put(a.BindingID, a.getVkImage().getImageView());
         }
