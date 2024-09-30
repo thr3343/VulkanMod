@@ -657,10 +657,6 @@ public class Renderer {
         }
     }
 
-    public static void setInvertedViewport(int x, int y, int width, int height) {
-        setViewport(x, y + height, width, -height);
-    }
-
     public static void setViewport(int x, int y, int width, int height) {
         try (MemoryStack stack = stackPush()) {
             setViewport(x, y, width, height, stack);
@@ -673,9 +669,9 @@ public class Renderer {
 
         VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
         viewport.x(x);
-        viewport.y(height + y);
+        viewport.y(y);
         viewport.width(width);
-        viewport.height(-height);
+        viewport.height(height);
         viewport.minDepth(0.0f);
         viewport.maxDepth(1.0f);
 
@@ -689,9 +685,9 @@ public class Renderer {
 
             VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
             viewport.x(0.0f);
-            viewport.y(height);
+            viewport.y(0.0f);
             viewport.width(width);
-            viewport.height(-height);
+            viewport.height(height);
             viewport.minDepth(0.0f);
             viewport.maxDepth(1.0f);
 
