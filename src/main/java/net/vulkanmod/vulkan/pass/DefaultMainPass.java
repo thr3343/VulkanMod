@@ -1,7 +1,5 @@
 package net.vulkanmod.vulkan.pass;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
@@ -23,14 +21,12 @@ public class DefaultMainPass implements MainPass {
         return new DefaultMainPass();
     }
 
-    private RenderTarget mainTarget;
     private final Framebuffer mainFramebuffer;
 
     private RenderPass mainRenderPass;
     private RenderPass auxRenderPass;
 
     DefaultMainPass() {
-        this.mainTarget = Minecraft.getInstance().getMainRenderTarget();
         this.mainFramebuffer = Vulkan.getSwapChain();
 
         createRenderPasses();
