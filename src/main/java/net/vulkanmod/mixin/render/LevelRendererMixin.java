@@ -4,21 +4,23 @@ import com.google.gson.JsonSyntaxException;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.vulkan.Renderer;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
 
@@ -35,11 +37,10 @@ public abstract class LevelRendererMixin {
 
     
     
-    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V"))
-    private void setSuBPass(Camera camera, FogRenderer.FogMode fogMode, float f, boolean bl, float g, Operation<Void> original)
+    @Inject(method = "renderLevel", at = @At(value = "RETURN"))
+    private void setSuBPass(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
     {
-//        Renderer.getInstance().getMainPass().getMainRenderPass().nextSubPass(Renderer.getCommandBuffer(), 1);
-        original.call(camera, fogMode, f, bl, g);
+        Renderer.getInstance().getMainPass().getMainRenderPass().nextSubPass(Renderer.getCommandBuffer(), 1);
     }
 //    /**
 //     * @author
