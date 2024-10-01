@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +17,7 @@ import java.nio.ByteBuffer;
 public class TerrainBufferBuilder {
     private static final Logger LOGGER = Initializer.LOGGER;
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
-    private static final int minHostAlignment = 4096;
+    private static final int minHostAlignment = Vulkan.getDevice().getHostPointerAlignment();
 
     private int capacity;
     protected long bufferPtr;

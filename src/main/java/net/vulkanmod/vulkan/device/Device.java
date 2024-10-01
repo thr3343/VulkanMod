@@ -1,10 +1,7 @@
 package net.vulkanmod.vulkan.device;
 
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
 
 import java.nio.IntBuffer;
 import java.util.HashSet;
@@ -20,7 +17,7 @@ import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
 
 public class Device {
     final VkPhysicalDevice physicalDevice;
-    final VkPhysicalDeviceProperties properties;
+    final VkPhysicalDeviceProperties2 properties;
 
     private final int vendorId;
     public final String vendorIdString;
@@ -30,6 +27,7 @@ public class Device {
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
+    private final int HostPointerAlignment;
 
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
@@ -38,15 +36,18 @@ public class Device {
 
     public Device(VkPhysicalDevice device) {
         this.physicalDevice = device;
+        VkPhysicalDeviceExternalMemoryHostPropertiesEXT a = VkPhysicalDeviceExternalMemoryHostPropertiesEXT.calloc().sType$Default();
 
-        properties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, properties);
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
+        properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(a);
+        VK11.vkGetPhysicalDeviceProperties2(physicalDevice, properties);
+
+        this.vendorId = properties.properties().vendorID();
+        this.vendorIdString = decodeVendor(properties.properties().vendorID());
+        this.deviceName = properties.properties().deviceNameString();
+        this.driverVersion = decodeDvrVersion(properties.properties().driverVersion(), properties.properties().vendorID());
         this.vkVersion = decDefVersion(getVkVer());
+        this.HostPointerAlignment = (int) a.minImportedHostPointerAlignment();
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -61,7 +62,7 @@ public class Device {
 //        this.availableFeatures11.pNext(this.availableFeatures13.address());
 //
 //        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
-
+        a.free();
         vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
 
         if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
@@ -144,6 +145,10 @@ public class Device {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public int getHostPointerAlignment() {
+        return HostPointerAlignment;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:

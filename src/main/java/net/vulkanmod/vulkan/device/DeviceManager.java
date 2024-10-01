@@ -4,7 +4,8 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.queue.*;
+import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -103,7 +104,7 @@ public abstract class DeviceManager {
             QueueFamilyIndices.findQueueFamilies(physicalDevice = DeviceManager.device.physicalDevice);
 
             // Get device properties
-            deviceProperties = device.properties;
+            deviceProperties = device.properties.properties();
 
             memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
@@ -122,7 +123,7 @@ public abstract class DeviceManager {
         for (Device device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties.properties().deviceType();
             if (deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
@@ -214,6 +215,14 @@ public abstract class DeviceManager {
 
             vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
         }
+    }
+
+    private static int getVkMemoryHostPointerPropertiesEXT(MemoryStack stack, long pHostPointer) {
+        VkMemoryHostPointerPropertiesEXT vkMemoryHostPointerPropertiesEXT = VkMemoryHostPointerPropertiesEXT.calloc(stack)
+                .sType$Default();
+
+        EXTExternalMemoryHost.vkGetMemoryHostPointerPropertiesEXT(vkDevice, EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT, pHostPointer, vkMemoryHostPointerPropertiesEXT);
+        return vkMemoryHostPointerPropertiesEXT.memoryTypeBits();
     }
 
     private static PointerBuffer getRequiredExtensions() {
