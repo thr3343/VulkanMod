@@ -105,7 +105,7 @@ public abstract class DeviceManager {
             QueueFamilyIndices.findQueueFamilies(physicalDevice = DeviceManager.device.physicalDevice);
 
             // Get device properties
-            deviceProperties = device.properties;
+            deviceProperties = device.properties.properties();
 
             memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
@@ -124,7 +124,7 @@ public abstract class DeviceManager {
         for (Device device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties.properties().deviceType();
             if (deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
@@ -215,7 +215,20 @@ public abstract class DeviceManager {
             Vulkan.checkResult(res, "Failed to create logical device");
 
             vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+
+
+//            Initializer.LOGGER.info("VkMemoryHostPointerPropertiesEXT {}", getVkMemoryHostPointerPropertiesEXT(stack, pDevice, VK11.VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT));
+//            Initializer.LOGGER.info("VkMemoryHostPointerPropertiesEXT {}", getVkMemoryHostPointerPropertiesEXT(stack, pDevice, EXTExternalMemoryDmaBuf.VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT));
+            Initializer.LOGGER.info("VkMemoryHostPointerPropertiesEXT {}", getVkMemoryHostPointerPropertiesEXT(stack, device.availableFeatures.address()));
         }
+    }
+
+    private static int getVkMemoryHostPointerPropertiesEXT(MemoryStack stack, long pHostPointer) {
+        VkMemoryHostPointerPropertiesEXT vkMemoryHostPointerPropertiesEXT =VkMemoryHostPointerPropertiesEXT.calloc(stack)
+                        .sType$Default();
+
+        EXTExternalMemoryHost.vkGetMemoryHostPointerPropertiesEXT(vkDevice, EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT, pHostPointer, vkMemoryHostPointerPropertiesEXT);
+        return vkMemoryHostPointerPropertiesEXT.memoryTypeBits();
     }
 
     private static PointerBuffer getRequiredExtensions() {
