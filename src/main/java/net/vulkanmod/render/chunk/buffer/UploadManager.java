@@ -49,16 +49,18 @@ public class UploadManager {
 
         if (!this.dstBuffers.add(buffer.getId())) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
+                VkBufferMemoryBarrier.Buffer barrier = VkBufferMemoryBarrier.calloc(1, stack);
                 barrier.sType$Default();
+                barrier.buffer(buffer.getId());
                 barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
                 barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.size(bufferSize);
 
                 vkCmdPipelineBarrier(commandBuffer,
                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                         0,
-                        barrier,
                         null,
+                        barrier,
                         null);
             }
 
