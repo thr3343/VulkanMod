@@ -313,6 +313,8 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
         VRenderSystem.depthMask(terrainRenderType != TerrainRenderType.TRANSLUCENT);
+        if (terrainRenderType != TerrainRenderType.TRANSLUCENT) VRenderSystem.disableBlend();
+        else VRenderSystem.enableBlend();
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(terrainRenderType)) {
