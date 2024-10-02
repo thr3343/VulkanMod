@@ -1,19 +1,20 @@
 package net.vulkanmod.mixin.texture.image;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
@@ -45,9 +46,39 @@ public abstract class MNativeImage {
 
     private ByteBuffer buffer;
 
+
+    @WrapOperation(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage$Format;IIZ)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/system/MemoryUtil;nmemAlloc(J)J"))
+    private long setAlign(long size, Operation<Long> original)
+    {
+//        if(size>4096)
+        {
+            return MemoryUtil.nmemAlignedAlloc(4096, this.size);
+        }
+//        else return original.call(size);
+
+    }
+//
+//    @WrapOperation(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage$Format;IIZ)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/system/MemoryUtil;nmemCalloc(JJ)J"))
+//    private long setAlign2(long num, long size, Operation<Long> original)
+//    {
+//        if(size>4096)
+//        {
+//            return MemoryUtil.nmemAlignedAlloc(4096, this.size);
+//        }
+//        else return original.call(num, size);
+//
+//    }
+
     @Inject(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage$Format;IIZ)V", at = @At("RETURN"))
     private void constr(NativeImage.Format format, int width, int height, boolean useStb, CallbackInfo ci) {
         if(this.pixels != 0) {
+//           if(/*(size&4095)==0  && */(this.pixels&4095)!=0)
+//           {
+//               //TODO: preAlign
+//               MemoryUtil.nmemFree(this.pixels);
+//               this.pixels=MemoryUtil.nmemAlignedAlloc(4096, this.size);
+//           }
+
             buffer = MemoryUtil.memByteBuffer(this.pixels, (int)this.size);
         }
     }
@@ -55,6 +86,14 @@ public abstract class MNativeImage {
     @Inject(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage$Format;IIZJ)V", at = @At("RETURN"))
     private void constr(NativeImage.Format format, int width, int height, boolean useStb, long pixels, CallbackInfo ci) {
         if(this.pixels != 0) {
+            if(/*size&4095)==0  &&*/ (this.pixels&4095)!=0)
+            {
+                //TODO: PreAlign FileHandle/Buffer to avoid pointless memcpys
+                long pixels1 = this.pixels;
+                this.pixels=MemoryUtil.nmemAlignedAlloc(4096, this.size);
+                MemoryUtil.memCopy(pixels1, this.pixels, this.size);
+                MemoryUtil.nmemFree(pixels1);
+            }
             buffer = MemoryUtil.memByteBuffer(this.pixels, (int)this.size);
         }
     }

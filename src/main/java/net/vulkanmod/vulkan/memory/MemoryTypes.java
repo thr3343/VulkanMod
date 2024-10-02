@@ -19,8 +19,9 @@ public enum MemoryTypes {
 
     private final long maxSize;
     private long usedBytes;
-    private final int flags;
+    public final int flags;
     final int heapIndex;
+    final int typeIndex;
 
     MemoryTypes(boolean useVRAM, int... optimalFlags) {
 
@@ -32,6 +33,7 @@ public enum MemoryTypes {
         //Some devices don't have a separate RAM only/Non-Device local heap
         final int VRAMFlag = useVRAM ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : hasHeapFlag(0) ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         for (int optimalFlagMask : optimalFlags) {
+            int typeIndex = 0;
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
                 VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
@@ -44,6 +46,7 @@ public enum MemoryTypes {
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
                     this.heapIndex = memoryType.heapIndex();
+                    this.typeIndex = typeIndex;
 
                     Initializer.LOGGER.info(this.name()+"\n"
                             + "     Memory Heap Index/Bank: "+ memoryType.heapIndex() +"\n"
@@ -55,6 +58,7 @@ public enum MemoryTypes {
 
                     return;
                 }
+                typeIndex++;
             }
 //            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }

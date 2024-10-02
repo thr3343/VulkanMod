@@ -4,8 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
-import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -18,6 +17,8 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.texture.SamplerManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -211,6 +212,28 @@ public class VulkanImage {
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+    }
+
+    public void uploadSubTextureAsyncExt(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer mappedBuffer) {
+        //TODO: use DMA Queue
+        long extMappedBuffer =
+                MemoryManager.getInstance().importBuffer(mappedBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM.flags);
+
+        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getCommandBuffer();
+        try (MemoryStack stack = stackPush()) {
+            transferDstLayout(stack, commandBuffer.getHandle());
+        }
+
+        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), extMappedBuffer, id, mipLevel, width, height, xOffset, yOffset,
+                (int) ((unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+
+        long fence = GraphicsQueue.endIfNeeded(commandBuffer);
+        if (fence != VK_NULL_HANDLE)
+//            Synchronization.INSTANCE.addFence(fence);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
+//        extMappedBuffer.freeBuffer();
+
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
