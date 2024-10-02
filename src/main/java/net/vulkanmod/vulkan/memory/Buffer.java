@@ -51,9 +51,9 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType()); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType(), this.type.mappable() && data==null); }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type, boolean isExt) {
 
     }
 }
