@@ -51,12 +51,7 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public boolean isExt()
-    {
-        return this.type.equals(MemoryTypes.HOST_MEM) && data==null;
-    }
-
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type, this.type.mappable() && data==null); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type, this.type.equals(MemoryTypes.HOST_MEM) && data==null); }
 
     public record BufferInfo(long id, long allocation, long bufferSize, MemoryTypes type, boolean isExt) {
 
