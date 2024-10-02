@@ -10,16 +10,8 @@ public class ExtBuffer extends Buffer{
     }
 
 
-    public void createBufferExt(ByteBuffer bufferSize) {
-        this.data= MemoryUtil.memAllocPointer(1);
-        //Ignoring Budgeting+size checks as these are temp Buffers for steutemp setu[.uplaods e.g.
-        this.data.put(0, bufferSize); //recycle pData for the File handle/Contents e.g.
+    public void createBufferExt(ByteBuffer mappedBuffer) {
 
-        MemoryManager.getInstance().createBuffer(this, bufferSize.capacity(), usage, this.type.flags);
-    }
-
-    @Override
-    public void freeBuffer() {
-        super.freeBuffer();
+        MemoryManager.getInstance().importBuffer(this, mappedBuffer, this.usage, MemoryTypes.HOST_MEM.flags);
     }
 }

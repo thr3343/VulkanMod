@@ -123,7 +123,7 @@ public class MemoryManager {
     }
 
 
-    public long importBuffer(ByteBuffer mappedBuffer, int usage, int flags) {
+    public void importBuffer(ExtBuffer dstBuffer, ByteBuffer mappedBuffer, int usage, int flags) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -131,17 +131,23 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             LongBuffer pAllocation = stack.longs(VK_NULL_HANDLE);
 
+
+            importExtBuffer(usage, 0, pBuffer, pAllocation, mappedBuffer);
+
 //            if(buffer instanceof ExtBuffer)
 //                this.importExtBuffer(size, usage, properties, pBuffer, pAllocation, buffer.data);
 //            else
 
+            dstBuffer.setId(pBuffer.get(0));
+            dstBuffer.setAllocation(pAllocation.get(0));
 
 
-            return importExtBuffer(usage, 0, pBuffer, pAllocation, mappedBuffer);
+            buffers.putIfAbsent(dstBuffer.getId(), dstBuffer);
+
         }
     }
 
-    public long importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload) {
+    public void importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload) {
         try (MemoryStack stack = stackPush()) {
 
             final long value = MemoryUtil.memAddress(payload);
@@ -191,8 +197,6 @@ public class MemoryManager {
 //            vkGetBufferMemoryRequirements(Vulkan.getVkDevice(), pBuffer.get(0), vkMemoryRequirements);
 
             vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), 0);
-
-            return pBuffer.get(0);
 
         }
     }
@@ -277,7 +281,13 @@ public class MemoryManager {
     }
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
-        vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
+        //VMA does not support Importing memory (i.e.VK_EXT_external_memory_host):
+        // Therefore forced to avoid/bypass VMA, and MUST free manually
+        if(bufferInfo.isExt()) {
+            vkFreeMemory(Vulkan.getVkDevice(), bufferInfo.allocation(), null);
+            vkDestroyBuffer(Vulkan.getVkDevice(), bufferInfo.id(), null);
+        }
+        else vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
         bufferInfo.type().updateSize( bufferInfo.bufferSize());
 

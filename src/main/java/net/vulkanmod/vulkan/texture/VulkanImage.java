@@ -216,15 +216,16 @@ public class VulkanImage {
 
     public void uploadSubTextureAsyncExt(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer mappedBuffer) {
         //TODO: use DMA Queue
-        long extMappedBuffer =
-                MemoryManager.getInstance().importBuffer(mappedBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM.flags);
+        ExtBuffer extMappedBuffer =
+                new ExtBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        extMappedBuffer.createBufferExt(mappedBuffer);
 
         CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
             transferDstLayout(stack, commandBuffer.getHandle());
         }
 
-        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), extMappedBuffer, id, mipLevel, width, height, xOffset, yOffset,
+        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), extMappedBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) ((unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
         long fence = GraphicsQueue.endIfNeeded(commandBuffer);
@@ -232,7 +233,7 @@ public class VulkanImage {
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-//        extMappedBuffer.freeBuffer();
+        extMappedBuffer.freeBuffer();
 
     }
 
