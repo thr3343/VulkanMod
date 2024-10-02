@@ -22,18 +22,5 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-//        if (Renderer.skipRendering)
-//            return;
-//
-//        //Debug D
-//        if (SpriteUtil.shouldUpload())
-//            DeviceManager.getGraphicsQueue().startRecording();
-//        for (Tickable tickable : this.tickableTextures) {
-//            tickable.tick();
-//        }
-//        if (SpriteUtil.shouldUpload()) {
-//            SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
-//            DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
-//        }
     }
 }

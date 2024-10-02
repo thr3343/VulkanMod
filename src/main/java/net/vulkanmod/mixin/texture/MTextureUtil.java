@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.texture;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -10,6 +11,9 @@ import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,28 +33,6 @@ public class MTextureUtil {
         RenderSystem.assertOnRenderThreadOrInit();
         return GlTexture.genTextureId();
     }
-
-/*    *//**
-     * @author
-     * @reason
-     *//*
-    @Overwrite(remap = false)
-    private static ByteBuffer readResource(ReadableByteChannel readableByteChannel, int i) throws IOException {
-        ByteBuffer byteBuffer = MemoryUtil.memAlignedAlloc(4096, i);
-
-        try {
-            while (readableByteChannel.read(byteBuffer) != -1) {
-                if (!byteBuffer.hasRemaining()) {
-                    byteBuffer = MemoryUtil.memRealloc(byteBuffer, byteBuffer.capacity() * 2);
-                }
-            }
-
-            return byteBuffer;
-        } catch (IOException var4) {
-            MemoryUtil.memFree(byteBuffer);
-            throw var4;
-        }
-    }*/
 
     /**
      * @author
