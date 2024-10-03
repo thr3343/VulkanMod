@@ -88,11 +88,11 @@ public abstract class MNativeImage {
         if(this.pixels != 0) {
             if(/*size&4095)==0  &&*/ (this.pixels&4095)!=0)
             {
-                //TODO: PreAlign FileHandle/Buffer to avoid pointless memcpys
-                long pixels1 = this.pixels;
-                this.pixels=MemoryUtil.nmemAlignedAlloc(4096, this.size);
-                MemoryUtil.memCopy(pixels1, this.pixels, this.size);
-                MemoryUtil.nmemFree(pixels1);
+//                //TODO: PreAlign FileHandle/Buffer to avoid pointless memcpys
+//                long pixels1 = this.pixels;
+//                this.pixels=MemoryUtil.nmemAlignedAlloc(4096, this.size);
+//                MemoryUtil.memCopy(pixels1, this.pixels, this.size);
+//                MemoryUtil.nmemFree(pixels1);
             }
             buffer = MemoryUtil.memByteBuffer(this.pixels, (int)this.size);
         }

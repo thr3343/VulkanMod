@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.Pair;
+import net.vulkanmod.vulkan.util.VUtil;
 import net.vulkanmod.vulkan.util.VkResult;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
@@ -153,12 +154,13 @@ public class MemoryManager {
     public void importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload) {
         try (MemoryStack stack = stackPush()) {
 
-            final long value = MemoryUtil.memAddress(payload);
+            final long l = MemoryUtil.memAddress(payload);
+            final long value = l - (l & 0xfff);
 
-            if((value & 4095)!=0)
-            {
-                throw new RuntimeException("Bad Alignment: "+ (value & 4095));
-            }
+//            if((value & 4095)!=0)
+//            {
+//                throw new RuntimeException("Bad Alignment: "+ (value & 4095));
+//            }
             VkImportMemoryHostPointerInfoEXT vkImportMemoryHostPointerInfoEXT = VkImportMemoryHostPointerInfoEXT.calloc(stack)
                     .sType$Default()
                     .pNext(0)
@@ -169,7 +171,7 @@ public class MemoryManager {
                     .sType$Default()
                     .pNext(vkImportMemoryHostPointerInfoEXT)
                     .memoryTypeIndex(HOST_MEM.memoryTypeIndex)
-                    .allocationSize(payload.remaining());
+                    .allocationSize(payload.remaining()+ VUtil.align((int) (l & 4095), 4096));
 
 //            VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.calloc(stack);
 //
@@ -199,7 +201,7 @@ public class MemoryManager {
 //
 //            vkGetBufferMemoryRequirements(Vulkan.getVkDevice(), pBuffer.get(0), vkMemoryRequirements);
 
-            vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), 0);
+            vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), (l & 4095));
 
         }
     }
