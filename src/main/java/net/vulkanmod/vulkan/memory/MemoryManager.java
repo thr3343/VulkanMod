@@ -15,13 +15,14 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.util.vma.VmaBudget;
-import org.lwjgl.vulkan.VkBufferCreateInfo;
-import org.lwjgl.vulkan.VkImageCreateInfo;
+import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static net.vulkanmod.vulkan.memory.MemoryTypes.HOST_MEM;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -124,6 +125,81 @@ public class MemoryManager {
         }
     }
 
+
+    public long importBuffer(ByteBuffer mappedBuffer, int usage) {
+
+        try (MemoryStack stack = stackPush()) {
+
+
+            LongBuffer pBuffer = stack.mallocLong(1);
+            LongBuffer pAllocation = stack.longs(VK_NULL_HANDLE);
+
+//            if(buffer instanceof ExtBuffer)
+//                this.importExtBuffer(size, usage, properties, pBuffer, pAllocation, buffer.data);
+//            else
+
+
+
+            return importExtBuffer(usage, 0, pBuffer, pAllocation, mappedBuffer);
+        }
+    }
+
+    public long importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload) {
+        try (MemoryStack stack = stackPush()) {
+
+            final long value = MemoryUtil.memAddress(payload);
+
+            if((value & 4095)!=0)
+            {
+                throw new RuntimeException("Bad Alignment: "+ (value & 4095));
+            }
+            VkImportMemoryHostPointerInfoEXT vkImportMemoryHostPointerInfoEXT = VkImportMemoryHostPointerInfoEXT.calloc(stack)
+                    .sType$Default()
+                    .pNext(0)
+                    .handleType(EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT)
+                    .pHostPointer(value);
+
+            VkMemoryAllocateInfo vkMemoryAllocateInfo =VkMemoryAllocateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(vkImportMemoryHostPointerInfoEXT)
+                    .memoryTypeIndex(HOST_MEM.memoryTypeIndex)
+                    .allocationSize(payload.remaining());
+
+//            VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.calloc(stack);
+//
+//            vkGetBufferMemoryRequirements();
+
+            vkAllocateMemory(Vulkan.getVkDevice(), vkMemoryAllocateInfo, null, pBufferMemory);
+
+
+            VkExternalMemoryBufferCreateInfo vkExternalMemoryBufferCreateInfo = VkExternalMemoryBufferCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .handleTypes(EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT);
+
+
+            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
+            bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+            bufferInfo.pNext(vkExternalMemoryBufferCreateInfo);
+            bufferInfo.size(payload.remaining());
+            bufferInfo.usage(usage);
+
+
+            int result = vkCreateBuffer(Vulkan.getVkDevice(), bufferInfo, null, pBuffer);
+            if (result != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create buffer: %s".formatted(VkResult.decode(result)));
+            }
+
+//            VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.calloc(stack);
+//
+//            vkGetBufferMemoryRequirements(Vulkan.getVkDevice(), pBuffer.get(0), vkMemoryRequirements);
+
+            vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), 0);
+
+            return pBuffer.get(0);
+
+        }
+    }
+
     public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
 
         try (MemoryStack stack = stackPush()) {
@@ -132,7 +208,10 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
+//            if(buffer instanceof ExtBuffer)
+//                this.importExtBuffer(size, usage, properties, pBuffer, pAllocation, buffer.data);
+//            else
+                this.createBuffer(size, usage, properties, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));

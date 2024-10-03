@@ -15,19 +15,18 @@ public class MemoryTypes {
     public static MemoryType HOST_MEM;
 
     public static void createMemoryTypes() {
-
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
+        for (int MemoryTypeIndex = 0; MemoryTypeIndex < DeviceManager.memoryProperties.memoryTypeCount(); ++MemoryTypeIndex) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(MemoryTypeIndex);
             VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
             //GPU only Memory
             if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+                GPU_MEM = new DeviceLocalMemory(memoryType, heap, MemoryTypeIndex);
 
             }
 
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
-                HOST_MEM = new HostLocalCachedMemory(memoryType, heap);
+                HOST_MEM = new HostLocalCachedMemory(memoryType, heap, MemoryTypeIndex);
             }
         }
 
@@ -35,17 +34,17 @@ public class MemoryTypes {
             return;
 
         // Could not find 1 or more MemoryTypes, need to use fallback
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
+        for (int MemoryTypeIndex = 0; MemoryTypeIndex < DeviceManager.memoryProperties.memoryTypeCount(); ++MemoryTypeIndex) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(MemoryTypeIndex);
             VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
             // GPU mappable memory
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
-                GPU_MEM = new DeviceMappableMemory(memoryType, heap);
+                GPU_MEM = new DeviceMappableMemory(memoryType, heap, MemoryTypeIndex);
             }
 
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                HOST_MEM = new HostLocalFallbackMemory(memoryType, heap);
+                HOST_MEM = new HostLocalFallbackMemory(memoryType, heap, MemoryTypeIndex);
             }
 
             if (GPU_MEM != null && HOST_MEM != null)
@@ -58,8 +57,8 @@ public class MemoryTypes {
 
     public static class DeviceLocalMemory extends MemoryType {
 
-        DeviceLocalMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+        DeviceLocalMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap, memoryTypeIndex);
         }
 
         @Override
@@ -98,8 +97,8 @@ public class MemoryTypes {
 
     static abstract class MappableMemory extends MemoryType {
 
-        MappableMemory(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(type, vkMemoryType, vkMemoryHeap);
+        MappableMemory(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+            super(type, vkMemoryType, vkMemoryHeap, memoryTypeIndex);
         }
 
         @Override
@@ -120,8 +119,8 @@ public class MemoryTypes {
 
     static class HostLocalCachedMemory extends MappableMemory {
 
-        HostLocalCachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
+        HostLocalCachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap, memoryTypeIndex);
         }
 
         @Override
@@ -146,8 +145,8 @@ public class MemoryTypes {
 
     static class HostLocalFallbackMemory extends MappableMemory {
 
-        HostLocalFallbackMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
+        HostLocalFallbackMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap, memoryTypeIndex);
         }
 
         @Override
@@ -160,8 +159,8 @@ public class MemoryTypes {
 
     static class DeviceMappableMemory extends MappableMemory {
 
-        DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+        DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap, memoryTypeIndex);
         }
 
         @Override
