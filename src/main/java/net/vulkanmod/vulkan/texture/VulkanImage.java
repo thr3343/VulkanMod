@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.framebuffer.Attachment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -410,6 +411,37 @@ public class VulkanImage {
         transitionLayout(stack, commandBuffer, image, 0, oldLayout, newLayout,
                 sourceStage, srcAccessMask, destinationStage, dstAccessMask);
     }
+
+    public void transitionLayout2(MemoryStack stack, VkCommandBuffer commandBuffer, int baseLevel) {
+
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(this.currentLayout);
+        barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        barrier.srcQueueFamilyIndex(Queue.TransferQueue.familyIndex);
+        barrier.dstQueueFamilyIndex(Queue.TransferQueue.familyIndex);
+        barrier.image(this.getId());
+
+        barrier.subresourceRange().baseMipLevel(baseLevel);
+        barrier.subresourceRange().levelCount(VK_REMAINING_MIP_LEVELS);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(VK_REMAINING_ARRAY_LAYERS);
+
+        barrier.subresourceRange().aspectMask(this.aspect);
+
+        barrier.srcAccessMask(0);
+        barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+        vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                null,
+                null,
+                barrier);
+
+        this.currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    }
+
 
     public static void transitionLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int baseLevel, int oldLayout, int newLayout,
                                         int sourceStage, int srcAccessMask, int destinationStage, int dstAccessMask) {
