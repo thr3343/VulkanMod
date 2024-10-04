@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -354,8 +355,8 @@ public class VulkanImage {
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
         barrier.oldLayout(this.currentLayout);
         barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        barrier.srcQueueFamilyIndex(1);
-        barrier.dstQueueFamilyIndex(1);
+        barrier.srcQueueFamilyIndex(Queue.TransferQueue.familyIndex);
+        barrier.dstQueueFamilyIndex(Queue.TransferQueue.familyIndex);
         barrier.image(this.getId());
 
         barrier.subresourceRange().baseMipLevel(baseLevel);

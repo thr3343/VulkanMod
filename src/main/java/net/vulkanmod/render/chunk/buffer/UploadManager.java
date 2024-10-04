@@ -7,8 +7,6 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -16,6 +14,7 @@ import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class UploadManager {
@@ -25,7 +24,6 @@ public class UploadManager {
         INSTANCE = new UploadManager();
     }
 
-    Queue queue = DeviceManager.getTransferQueue();
     CommandPool.CommandBuffer commandBuffer;
 
     LongOpenHashSet dstBuffers = new LongOpenHashSet();
@@ -34,7 +32,7 @@ public class UploadManager {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
+        TransferQueue.submitCommands(this.commandBuffer);
 
         Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
@@ -113,7 +111,7 @@ public class UploadManager {
 
     private void beginCommands() {
         if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+            this.commandBuffer = DeviceManager.getTransferQueue().beginCommands();
     }
 
 }
