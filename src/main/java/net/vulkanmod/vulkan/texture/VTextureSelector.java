@@ -20,6 +20,7 @@ public abstract class VTextureSelector {
     private static final VulkanImage whiteTexture = VulkanImage.createWhiteTexture();
 
     private static int activeTexture = 0;
+    private static boolean enableImports = true;
 
     public static void bindTexture(VulkanImage texture) {
         boundTextures[0] = texture;
@@ -51,7 +52,9 @@ public abstract class VTextureSelector {
         if(texture == null)
             throw new NullPointerException("Texture is null at index: " + activeTexture);
 
-       {
+        if (enableImports && (buffer.capacity() & 4095)==0) {
+            texture.uploadSubTextureAsyncExt(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
+        } else {
             texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
         }
     }
@@ -106,6 +109,10 @@ public abstract class VTextureSelector {
         }
 
         VTextureSelector.activeTexture = activeTexture;
+    }
+
+    public static void setEnableImports(boolean enableImports) {
+        VTextureSelector.enableImports = enableImports;
     }
 
     public static VulkanImage getBoundTexture(int i) { return boundTextures[i]; }

@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.texture.Tickable;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -27,13 +28,17 @@ public abstract class MTextureManager {
 
         //Debug D
         if (SpriteUtil.shouldUpload())
+        {
+            VTextureSelector.setEnableImports(false);
             DeviceManager.getGraphicsQueue().startRecording();
+        }
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
         if (SpriteUtil.shouldUpload()) {
             SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
             DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
+            VTextureSelector.setEnableImports(true);
         }
     }
 }
