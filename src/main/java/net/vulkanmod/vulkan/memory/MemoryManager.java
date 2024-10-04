@@ -6,6 +6,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.buffer.AreaBuffer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.Pair;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -127,7 +128,7 @@ public class MemoryManager {
     }
 
 
-    public void importBuffer(ExtBuffer dstBuffer, ByteBuffer mappedBuffer, int usage, int flags) {
+    public void importBuffer(ExtBuffer dstBuffer, ByteBuffer mappedBuffer, int usage, int flags, int width, int height, int memoryOffset) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -136,7 +137,7 @@ public class MemoryManager {
             LongBuffer pAllocation = stack.longs(VK_NULL_HANDLE);
 
 
-            importExtBuffer(usage, 0, pBuffer, pAllocation, mappedBuffer);
+            importExtBuffer(usage, 0, pBuffer, pAllocation, mappedBuffer, width, height, memoryOffset);
 
 //            if(buffer instanceof ExtBuffer)
 //                this.importExtBuffer(size, usage, properties, pBuffer, pAllocation, buffer.data);
@@ -151,7 +152,7 @@ public class MemoryManager {
         }
     }
 
-    public void importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload) {
+    public void importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, ByteBuffer payload, int width, int height, int memoryOffset) {
         try (MemoryStack stack = stackPush()) {
 
             final long l = MemoryUtil.memAddress(payload);
@@ -180,19 +181,28 @@ public class MemoryManager {
             vkAllocateMemory(Vulkan.getVkDevice(), vkMemoryAllocateInfo, null, pBufferMemory);
 
 
-            VkExternalMemoryBufferCreateInfo vkExternalMemoryBufferCreateInfo = VkExternalMemoryBufferCreateInfo.calloc(stack)
+            VkExternalMemoryImageCreateInfo vkExternalMemoryBufferCreateInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
                     .sType$Default()
                     .handleTypes(EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT);
 
 
-            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
-            bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+            VkImageCreateInfo bufferInfo = VkImageCreateInfo.calloc(stack);
+            bufferInfo.sType$Default();
             bufferInfo.pNext(vkExternalMemoryBufferCreateInfo);
-            bufferInfo.size(payload.remaining());
-            bufferInfo.usage(usage);
+            bufferInfo.imageType(VK_IMAGE_TYPE_2D);
+            bufferInfo.extent().set(width, height, 1);
+            bufferInfo.mipLevels(1);
+            bufferInfo.usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+            bufferInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+            bufferInfo.format(VK_FORMAT_R8G8B8A8_UNORM);
+            bufferInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            bufferInfo.arrayLayers(1);
+            bufferInfo.tiling(VK_IMAGE_TILING_LINEAR);
+            bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            bufferInfo.pQueueFamilyIndices(stack.ints(Queue.TransferQueue.familyIndex));
 
 
-            int result = vkCreateBuffer(Vulkan.getVkDevice(), bufferInfo, null, pBuffer);
+            int result = vkCreateImage(Vulkan.getVkDevice(), bufferInfo, null, pBuffer);
             if (result != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create buffer: %s".formatted(VkResult.decode(result)));
             }
@@ -201,7 +211,7 @@ public class MemoryManager {
 //
 //            vkGetBufferMemoryRequirements(Vulkan.getVkDevice(), pBuffer.get(0), vkMemoryRequirements);
 
-            vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), (l & 4095));
+            vkBindImageMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), (l & 4095) + memoryOffset);
 
         }
     }
@@ -295,7 +305,7 @@ public class MemoryManager {
         // Therefore forced to avoid/bypass VMA, and MUST free manually
         if(bufferInfo.isExt()) {
             vkFreeMemory(Vulkan.getVkDevice(), bufferInfo.allocation(), null);
-            vkDestroyBuffer(Vulkan.getVkDevice(), bufferInfo.id(), null);
+            vkDestroyImage(Vulkan.getVkDevice(), bufferInfo.id(), null);
         }
         else vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 

@@ -196,7 +196,7 @@ public class VulkanImage {
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            transitionLayout2(stack, commandBuffer.getHandle(), 0);
+            transferDstLayout(stack, commandBuffer.getHandle());
         }
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
@@ -215,17 +215,21 @@ public class VulkanImage {
 
     public void uploadSubTextureAsyncExt(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer mappedBuffer) {
         //TODO: use DMA Queue
+
+        final int bufferOffset = ((unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize);
+
         ExtBuffer extMappedBuffer =
-                new ExtBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
-        extMappedBuffer.createBufferExt(mappedBuffer);
+                new ExtBuffer(VK_IMAGE_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        extMappedBuffer.createBufferExt(mappedBuffer, unpackRowLength, height, bufferOffset);
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            transitionLayout2(stack, commandBuffer.getHandle(), 0);
+            transitionLayout2(stack, commandBuffer.getHandle(), 0, extMappedBuffer.getId());
         }
 
-        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), extMappedBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) ((unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+
+        ImageUtil.copyImageCmd(commandBuffer.getHandle(), extMappedBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset
+        );
 
         long fence = DeviceManager.getTransferQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -285,7 +289,7 @@ public class VulkanImage {
         int sourceStage, srcAccessMask, destinationStage, dstAccessMask = 0;
 
         switch (image.currentLayout) {
-            case VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
+            case VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
                 srcAccessMask = 0;
                 sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
             }
@@ -349,32 +353,36 @@ public class VulkanImage {
                 sourceStage, srcAccessMask, destinationStage, dstAccessMask);
     }
 
-    public void transitionLayout2(MemoryStack stack, VkCommandBuffer commandBuffer, int baseLevel) {
+    public void transitionLayout2(MemoryStack stack, VkCommandBuffer commandBuffer, int baseLevel, long srcId) {
 
-        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
-        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        barrier.oldLayout(this.currentLayout);
-        barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        barrier.srcQueueFamilyIndex(Queue.TransferQueue.familyIndex);
-        barrier.dstQueueFamilyIndex(Queue.TransferQueue.familyIndex);
-        barrier.image(this.getId());
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(2, stack);
+        int i =0;
+        for(VkImageMemoryBarrier vkImageMemoryBarrier : barrier) {
+            vkImageMemoryBarrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            vkImageMemoryBarrier.oldLayout(i != 0 ? this.currentLayout : VK_IMAGE_LAYOUT_UNDEFINED);
+            vkImageMemoryBarrier.newLayout(i != 0 ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            vkImageMemoryBarrier.srcQueueFamilyIndex(Queue.TransferQueue.familyIndex);
+            vkImageMemoryBarrier.dstQueueFamilyIndex(Queue.TransferQueue.familyIndex);
+            vkImageMemoryBarrier.image(i != 0 ? this.getId() : srcId);
 
-        barrier.subresourceRange().baseMipLevel(baseLevel);
-        barrier.subresourceRange().levelCount(VK_REMAINING_MIP_LEVELS);
-        barrier.subresourceRange().baseArrayLayer(0);
-        barrier.subresourceRange().layerCount(VK_REMAINING_ARRAY_LAYERS);
+            vkImageMemoryBarrier.subresourceRange().baseMipLevel(baseLevel);
+            vkImageMemoryBarrier.subresourceRange().levelCount(VK_REMAINING_MIP_LEVELS);
+            vkImageMemoryBarrier.subresourceRange().baseArrayLayer(0);
+            vkImageMemoryBarrier.subresourceRange().layerCount(VK_REMAINING_ARRAY_LAYERS);
 
-        barrier.subresourceRange().aspectMask(this.aspect);
+            vkImageMemoryBarrier.subresourceRange().aspectMask(this.aspect);
 
-        barrier.srcAccessMask(0);
-        barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            vkImageMemoryBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            vkImageMemoryBarrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            i++;
+        }
 
         vkCmdPipelineBarrier(commandBuffer,
                 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                 0,
                 null,
                 null,
-                barrier);
+                barrier.rewind());
 
         this.currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     }

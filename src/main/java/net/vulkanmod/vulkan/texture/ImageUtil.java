@@ -15,6 +15,22 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class ImageUtil {
 
+    public static void copyImageCmd(VkCommandBuffer commandBuffer, long srcImage, long image, int mipLevel, int width, int height, int xOffset, int yOffset) {
+
+        try (MemoryStack stack = stackPush()) {
+
+            VkImageCopy.Buffer region = VkImageCopy.calloc(1, stack);
+
+            region.srcOffset().set(0,0,0);
+            region.dstOffset().set(xOffset,yOffset,0);
+            region.extent().set(width, height, 1);
+            region.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT,0, 0, 1);
+            region.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT,mipLevel, 0, 1);
+
+
+            vkCmdCopyImage(commandBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+        }
+    }
     public static void copyBufferToImageCmd(VkCommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
         try (MemoryStack stack = stackPush()) {

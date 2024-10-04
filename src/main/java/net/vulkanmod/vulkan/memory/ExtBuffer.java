@@ -1,7 +1,5 @@
 package net.vulkanmod.vulkan.memory;
 
-import org.lwjgl.system.MemoryUtil;
-
 import java.nio.ByteBuffer;
 
 public class ExtBuffer extends Buffer{
@@ -10,8 +8,8 @@ public class ExtBuffer extends Buffer{
     }
 
 
-    public void createBufferExt(ByteBuffer mappedBuffer) {
+    public void createBufferExt(ByteBuffer mappedBuffer, int width, int height, int memoryOffset) {
 
-        MemoryManager.getInstance().importBuffer(this, mappedBuffer, this.usage, 0/*MemoryTypes.HOST_MEM.flags*/);
+        MemoryManager.getInstance().importBuffer(this, mappedBuffer, this.usage, 0, width, height, memoryOffset/*MemoryTypes.HOST_MEM.flags*/);
     }
 }
