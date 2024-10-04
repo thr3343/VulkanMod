@@ -9,14 +9,29 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkDevice;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class TransferQueue extends Queue {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
-
+    private static CommandPool.CommandBuffer currentCmdBuffer;
     public TransferQueue(MemoryStack stack, int familyIndex) {
         super(stack, familyIndex);
+    }
+
+    public CommandPool.CommandBuffer getCommandBuffer() {
+        if (currentCmdBuffer != null) {
+            return currentCmdBuffer;
+        } else {
+            return beginCommands();
+        }
+    }
+
+    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+        if (currentCmdBuffer != null) {
+            return VK_NULL_HANDLE;
+        } else {
+            return submitCommands(commandBuffer);
+        }
     }
 
     public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {

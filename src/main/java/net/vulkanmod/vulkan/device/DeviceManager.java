@@ -41,7 +41,7 @@ public abstract class DeviceManager {
     static GraphicsQueue graphicsQueue;
     static PresentQueue presentQueue;
     static TransferQueue transferQueue;
-    static ComputeQueue computeQueue;
+//    static ComputeQueue computeQueue;
 
     public static void init(VkInstance instance) {
         try {
@@ -225,7 +225,7 @@ public abstract class DeviceManager {
             graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
             transferQueue = new TransferQueue(stack, indices.transferFamily);
             presentQueue = new PresentQueue(stack, indices.presentFamily);
-            computeQueue = new ComputeQueue(stack, indices.computeFamily);
+//            computeQueue = new ComputeQueue(stack, indices.computeFamily);
 
 //            Initializer.LOGGER.info("VkMemoryHostPointerPropertiesEXT {}", getVkMemoryHostPointerPropertiesEXT(stack, pDevice, VK11.VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT));
 //            Initializer.LOGGER.info("VkMemoryHostPointerPropertiesEXT {}", getVkMemoryHostPointerPropertiesEXT(stack, pDevice, EXTExternalMemoryDmaBuf.VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT));
@@ -362,7 +362,7 @@ public abstract class DeviceManager {
     public static void destroy() {
         graphicsQueue.cleanUp();
         transferQueue.cleanUp();
-        computeQueue.cleanUp();
+//        computeQueue.cleanUp();
 
         vkDestroyDevice(vkDevice, null);
     }
@@ -379,9 +379,9 @@ public abstract class DeviceManager {
         return transferQueue;
     }
 
-    public static ComputeQueue getComputeQueue() {
-        return computeQueue;
-    }
+//    public static ComputeQueue getComputeQueue() {
+//        return computeQueue;
+//    }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
 
