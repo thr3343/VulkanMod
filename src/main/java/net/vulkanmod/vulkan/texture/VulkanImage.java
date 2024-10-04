@@ -194,9 +194,9 @@ public class VulkanImage {
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
-        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            transferDstLayout(stack, commandBuffer.getHandle());
+            transitionLayout2(stack, commandBuffer.getHandle(), 0);
         }
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
@@ -207,7 +207,7 @@ public class VulkanImage {
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
-        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+        long fence = DeviceManager.getTransferQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);

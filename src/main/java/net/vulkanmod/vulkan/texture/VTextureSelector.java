@@ -51,9 +51,7 @@ public abstract class VTextureSelector {
         if(texture == null)
             throw new NullPointerException("Texture is null at index: " + activeTexture);
 
-        if (/*(MemoryUtil.memAddress0(buffer) & 4095) == 0 && */(buffer.capacity() & 4095)==0) {
-            texture.uploadSubTextureAsyncExt(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
-        } else {
+       {
             texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
         }
     }
