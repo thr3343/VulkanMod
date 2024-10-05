@@ -172,8 +172,8 @@ public class SectionGraph {
                 continue;
 
             if (!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+
+                this.chunkAreaQueue.add(renderSection.test());
                 this.nonEmptyChunks++;
             }
 
@@ -254,8 +254,7 @@ public class SectionGraph {
                 continue;
 
             if (!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                this.chunkAreaQueue.add(renderSection.test());
                 this.nonEmptyChunks++;
             }
 
