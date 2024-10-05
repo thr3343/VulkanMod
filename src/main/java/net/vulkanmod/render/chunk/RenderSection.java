@@ -414,8 +414,8 @@ public class RenderSection {
         return this.lastFrame;
     }
 
-    public ChunkArea test() {
-        return this.chunkArea.test(this.drawParametersArray);
+    public void test() {
+        this.drawParametersArray.forEach((key, value) -> this.chunkArea.sectionQueue.get(key).add(value));
     }
 
     static class CompileStatus {

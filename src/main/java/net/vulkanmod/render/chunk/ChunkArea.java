@@ -155,11 +155,4 @@ public class ChunkArea {
         this.drawBuffers.releaseBuffers();
     }
 
-    public ChunkArea test(EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> drawParametersArray) {
-        for(var a : drawParametersArray.entrySet())
-        {
-            this.sectionQueue.get(a.getKey()).add(a.getValue());
-        }
-        return this;
-    }
 }
