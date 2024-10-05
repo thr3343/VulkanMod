@@ -110,7 +110,7 @@ public class DrawBuffers {
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -122,8 +122,7 @@ public class DrawBuffers {
             int drawCount = 0;
             for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
 
-                final RenderSection section = iterator.next();
-                final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+                final DrawParameters drawParameters = iterator.next();
 
                 if (drawParameters.indexCount <= 0)
                     continue;
@@ -149,16 +148,18 @@ public class DrawBuffers {
 
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType renderType) {
+    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType renderType) {
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
-            final RenderSection section = iterator.next();
-            final DrawParameters drawParameters = section.getDrawParameters(renderType);
 
-            if (drawParameters.indexCount <= 0)
-                continue;
+            final DrawParameters drawParameters = iterator.next();
+
+            if (drawParameters.indexCount <= 0) {
+
+                throw new RuntimeException();
+            }
 
             final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
@@ -211,8 +212,6 @@ public class DrawBuffers {
         int vertexOffset = -1;
         int baseInstance;
 
-        public DrawParameters() {}
-
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             AreaBuffer areaBuffer = chunkArea.getDrawBuffers().getAreaBuffer(r);
             if (areaBuffer != null && this.vertexOffset != -1) {
@@ -220,7 +219,7 @@ public class DrawBuffers {
                 areaBuffer.setSegmentFree(segmentOffset);
             }
 
-            this.indexCount = 0;
+//            this.indexCount = 0;
             this.firstIndex = -1;
             this.vertexOffset = -1;
         }
