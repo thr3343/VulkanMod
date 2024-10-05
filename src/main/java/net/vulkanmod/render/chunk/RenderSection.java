@@ -19,7 +19,6 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ public class RenderSection {
 
     public int xOffset, yOffset, zOffset;
 
-    private final EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> drawParametersArray = new EnumMap<>(TerrainRenderType.class);
+    private final DrawBuffers.DrawParameters[] drawParametersArray;
 
     // Graph-info
     public byte mainDir;
@@ -61,6 +60,11 @@ public class RenderSection {
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
+
+        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
+        for (int i = 0; i < this.drawParametersArray.length; ++i) {
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters();
+        }
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -294,7 +298,7 @@ public class RenderSection {
     }
 
     public DrawBuffers.DrawParameters getDrawParameters(TerrainRenderType renderType) {
-        return drawParametersArray.computeIfAbsent(renderType, terrainRenderType -> new DrawBuffers.DrawParameters());
+        return drawParametersArray[renderType.ordinal()];
     }
 
     public void setChunkArea(ChunkArea chunkArea) {
@@ -381,9 +385,9 @@ public class RenderSection {
         if (this.chunkArea == null)
             return;
 
-        this.drawParametersArray.forEach((key, value) -> value.reset(this.chunkArea, key));
-        this.drawParametersArray.clear();
-
+        for (TerrainRenderType r : TerrainRenderType.VALUES) {
+            this.getDrawParameters(r).reset(this.chunkArea, r);
+        }
     }
 
     public void setDirty(boolean playerChanged) {
@@ -412,10 +416,6 @@ public class RenderSection {
 
     public short getLastFrame() {
         return this.lastFrame;
-    }
-
-    public ChunkArea test() {
-        return this.chunkArea.test(this.drawParametersArray);
     }
 
     static class CompileStatus {
