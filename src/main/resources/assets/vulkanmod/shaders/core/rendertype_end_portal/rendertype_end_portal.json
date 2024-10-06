@@ -3,7 +3,7 @@
     "fragment": "rendertype_end_portal",
     "samplers": [
         { "name": "Sampler0" },
-        { "name": "Sampler1" }
+        { "name": "SamplerProj"}
     ],
     "UBOs": [
         { "type":  "vertex", "binding": 0, "fields": [
