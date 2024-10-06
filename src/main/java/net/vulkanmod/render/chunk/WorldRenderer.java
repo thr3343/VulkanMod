@@ -27,8 +27,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.RenderRegionBuilder;
-import net.vulkanmod.render.chunk.build.task.TaskDispatcher;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
+import net.vulkanmod.render.chunk.build.task.TaskDispatcher;
 import net.vulkanmod.render.chunk.graph.SectionGraph;
 import net.vulkanmod.render.profiling.BuildTimeProfiler;
 import net.vulkanmod.render.profiling.Profiler;
@@ -39,6 +39,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
@@ -93,7 +94,8 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
         TerrainRenderType.updateMapping();
-
+        addOnAllChangedCallback(Queue::trimCmdPools);
+        Renderer.getInstance().addOnResizeCallback(Queue::trimCmdPools);
         Renderer.getInstance().addOnResizeCallback(() -> {
             if (this.indirectBuffers.length != Renderer.getFramesNum())
                 allocateIndirectBuffers();
