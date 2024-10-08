@@ -106,6 +106,7 @@ public class DefaultMainPass implements MainPass {
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                 0,
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                Subpass.subStatesModifiers.DISABLED,
                 Subpass.subStatesModifiers.COLOR,
                 Subpass.subStatesModifiers.DEPTH);
 
@@ -117,8 +118,9 @@ public class DefaultMainPass implements MainPass {
                 0,
                 0,
                 Subpass.subStatesModifiers.COLOR,
-                Subpass.subStatesModifiers.INPUT_DEPTH);
-        this.mainRenderPass = new RenderPass2(new Subpass[]{SubExecDepPass}, AttachmentTypes.PRESENT, AttachmentTypes.DEPTH);
+                Subpass.subStatesModifiers.INPUT,
+                Subpass.subStatesModifiers.DISABLED);
+        this.mainRenderPass = new RenderPass2(new Subpass[]{SubExecDepPass, subpassReference2}, AttachmentTypes.PRESENT, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
 
         this.mainFramebuffer.bindRenderPass(mainRenderPass);
@@ -152,14 +154,14 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void end(VkCommandBuffer commandBuffer) {
 
-//        mainRenderPass.nextSubPass(commandBuffer, 1);
+        mainRenderPass.nextSubPass(commandBuffer, 1);
 
-//        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
-////        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
-//        VTextureSelector.bindTexture(0, attachment.getVkImage());
-////        VTextureSelector.bindTexture(1, attachment1.getVkImage());
-//
-//        DrawUtil.fastBlit2();
+        final Attachment attachment = mainRenderPass.attachment.get(AttachmentTypes.COLOR);
+//        final Attachment attachment1 = mainRenderPass.attachment.get(AttachmentTypes.DEPTH);
+        VTextureSelector.bindTexture(0, attachment.getVkImage());
+//        VTextureSelector.bindTexture(1, attachment1.getVkImage());
+
+        DrawUtil.fastBlit2();
 
 
         vkCmdEndRenderPass(commandBuffer);

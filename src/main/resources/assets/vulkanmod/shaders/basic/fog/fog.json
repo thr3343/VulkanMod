@@ -1,10 +1,5 @@
 {
     "inputs": [
         { "name": "Sampler0" }
-    ],
-    "UBOs": [
-        { "type":  "fragment", "binding": 0, "fields": [
-            { "name": "FogColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
-        ] }
     ]
 }
