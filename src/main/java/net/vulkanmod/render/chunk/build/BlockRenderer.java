@@ -106,6 +106,8 @@ public class BlockRenderer {
 
     private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace, int tilesWidth, int tilesHeight, int idx) {
         QuadLightData quadLightData = resources.quadLightData;
+        final float[] brightnessArr = quadLightData.br;
+        final int[] lights = quadLightData.lm;
 //        final int min = Math.min(quads.size() - 1, idx);
 //        final QuadView bakedQuad1 = (QuadView) quads.get(min);
 //        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(bakedQuad1.getU(idx), bakedQuad1.getV(idx), tilesWidth, tilesHeight);
@@ -114,11 +116,11 @@ public class BlockRenderer {
             QuadView quadView = (QuadView) bakedQuad;
             final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quadView.getU(idx), quadView.getV(idx), tilesWidth, tilesHeight);
             lightPipeline.calculate(quadView, blockPos, quadLightData, cullFace, bakedQuad.getDirection(), bakedQuad.isShade());
-            putQuadData(bufferBuilder, quadView, quadLightData, tilesWidth, tilesHeight, idx, baseArrayLayer);
+            putQuadData(bufferBuilder, quadView, tilesWidth, tilesHeight, idx, baseArrayLayer, brightnessArr, lights);
         }
     }
 
-    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData, int tilesWidth, int tilesHeight, int idx, int baseArrayLayer) {
+    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, int tilesWidth, int tilesHeight, int idx, int baseArrayLayer, float[] br, int[] lm) {
         float r, g, b;
         if (quadView.isTinted()) {
             int color = blockColors.getColor(blockState, resources.region, blockPos, quadView.getColorIndex());
@@ -132,15 +134,13 @@ public class BlockRenderer {
         }
 
 
-        putQuadData(bufferBuilder, pos, quadView, quadLightData, r, g, b, tilesWidth, tilesHeight, idx, baseArrayLayer);
+        putQuadData(bufferBuilder, pos, quadView, r, g, b, tilesWidth, tilesHeight, idx, baseArrayLayer, br, lm);
     }
 
-    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue, int tilesWidth, int tilesHeight, int baseIdx, int baseArrayLayer) {
+    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, float red, float green, float blue, int tilesWidth, int tilesHeight, int baseIdx, int baseArrayLayer, float[] brightnessArr, int[] lights) {
         Vec3i normal = quad.getFacingDirection().getNormal();
         int packedNormal = VertexUtil.packNormal(normal.getX(), normal.getY(), normal.getZ());
 
-        float[] brightnessArr = quadLightData.br;
-        int[] lights = quadLightData.lm;
         final float yy = 0.0009765625f;
         final float xx = 0.001953125f;
         // Rotate triangles if needed to fix AO anisotropy
