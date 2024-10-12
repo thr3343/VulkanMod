@@ -81,10 +81,10 @@ public class DrawBuffers {
     }
 
     private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
-        final int xOffset1 = (xOffset & 127);
-        final int zOffset1 = (zOffset & 127);
-        final int yOffset1 = (yOffset - this.minHeight & 127);
-        return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
+        final int xOffset1 = (xOffset & 127)/16;
+        final int zOffset1 = (zOffset & 127)/16;
+        final int yOffset1 = (yOffset - this.minHeight & 127)/16;
+        return yOffset1 << 8 | zOffset1 << 4 | xOffset1;
     }
 
     private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
