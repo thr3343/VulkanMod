@@ -20,7 +20,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
@@ -51,8 +50,8 @@ public class LiquidRenderer {
         this.resources = resources;
     }
 
-    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
-        tessellate(blockState, fluidState, blockPos, vertexConsumer, tilesWidth, tilesHeight);
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight, int iterationStartIdx2) {
+        tessellate(blockState, fluidState, blockPos, vertexConsumer, tilesWidth, tilesHeight, iterationStartIdx2);
     }
 
     public void setupSprites() {
@@ -100,8 +99,9 @@ public class LiquidRenderer {
         return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight) {
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer, int tilesWidth, int tilesHeight, int iterationStartIdx2) {
         BlockAndTintGetter region = this.resources.region;
+        // Rotate triangles if needed to fix AO anisotropy
 
         boolean bl = fluidState.is(FluidTags.LAVA);
         TextureAtlasSprite[] sprites = bl ? this.lavaIcons : this.waterIcons;
@@ -168,6 +168,7 @@ public class LiquidRenderer {
 
         modelQuad.setFlags(0);
 
+        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(modelQuad.getU(iterationStartIdx2), modelQuad.getV(iterationStartIdx2), tilesWidth, tilesHeight);
         if (rUf && !isFaceOccludedByState(region, Math.min(Math.min(nwHeight, swHeight), Math.min(seHeight, neHeight)), Direction.UP, blockPos, upState)) {
             float u0, u1, u2, u3;
             float v0, v1, v2, v3;
@@ -227,10 +228,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.UP);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight, baseArrayLayer, iterationStartIdx2);
 
             if (fluidState.shouldRenderBackwardUpFace(region, blockPos.above())) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight, baseArrayLayer, iterationStartIdx2);
             }
 
         }
@@ -253,7 +254,7 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.DOWN);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight, baseArrayLayer, iterationStartIdx2);
 
         }
 
@@ -359,10 +360,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, direction);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight);
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false, tilesWidth, tilesHeight, baseArrayLayer, iterationStartIdx2);
 
             if (sprite2 != this.waterOverlay) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight);
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true, tilesWidth, tilesHeight, baseArrayLayer, iterationStartIdx2);
             }
 
         }
@@ -424,17 +425,13 @@ public class LiquidRenderer {
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip, int tilesWidth, int tilesHeight) {
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip, int tilesWidth, int tilesHeight, int baseArrayLayer, int k) {
         QuadLightData quadLightData = resources.quadLightData;
 
-        // Rotate triangles if needed to fix AO anisotropy
-        int k = QuadUtils.getIterationStartIdx(quadLightData.br);
+
 
         bufferBuilder.ensureCapacity();
 
-
-
-        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(k), quad.getV(k), tilesWidth, tilesHeight);
 
         int i;
         for (int j = 0; j < 4; j++) {

@@ -134,7 +134,7 @@ public class BuildTask extends ChunkTask {
                         bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
                         bufferBuilder.setBlockAttributes(blockState);
 
-                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder, this.tileWidth, this.tileHeight);
+                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder, this.tileWidth, this.tileHeight, builderResources.iterationStartIdx2);
                     }
 
                     if (blockState.getRenderShape() == RenderShape.MODEL) {
