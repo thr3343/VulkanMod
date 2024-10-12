@@ -20,6 +20,7 @@ import net.vulkanmod.render.chunk.build.RenderRegion;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
+import net.vulkanmod.render.model.quad.QuadUtils;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.shader.descriptor.SubTextureAtlasManager;
@@ -143,7 +144,8 @@ public class BuildTask extends ChunkTask {
                         bufferBuilder.setBlockAttributes(blockState);
 
                         pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
-                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder, this.tileWidth, this.tileHeight);
+
+                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder, this.tileWidth, this.tileHeight, builderResources.iterationStartIdx);
                     }
                 }
             }

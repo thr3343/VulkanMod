@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -16,7 +17,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
@@ -35,6 +35,7 @@ public class BlockRenderer {
     private static BlockColors blockColors;
     //TODO: Make sure loading order/precedent is correct so this dosen't throw an invalid Index
     private static final int baseArrayTex = 0;//SubTexManager.getBaseOffset(TextureAtlas.LOCATION_PARTICLES);
+    private static final BlockRenderDispatcher blockRenderer = Minecraft.getInstance().getBlockRenderer();
 
     RandomSource randomSource = RandomSource.createNewThreadLocalInstance();
 
@@ -63,18 +64,17 @@ public class BlockRenderer {
         BlockRenderer.blockColors = blockColors;
     }
 
-    public void renderBatched(BlockState blockState, BlockPos blockPos, Vector3f pos, TerrainBufferBuilder bufferBuilder, int tilesWidth, int tilesHeight) {
+    public void renderBatched(BlockState blockState, BlockPos blockPos, Vector3f pos, TerrainBufferBuilder bufferBuilder, int tilesWidth, int tilesHeight, int iterationStartIdx) {
         this.pos = pos;
         this.blockPos = blockPos;
         this.blockState = blockState;
 
         long seed = blockState.getSeed(blockPos);
 
-        BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(blockState);
-        tessellateBlock(model, bufferBuilder, seed, tilesWidth, tilesHeight);
+        tessellateBlock(blockRenderer.getBlockModel(blockState), bufferBuilder, seed, tilesWidth, tilesHeight, iterationStartIdx);
     }
 
-    public void tessellateBlock(BakedModel bakedModel, TerrainBufferBuilder bufferBuilder, long seed, int tilesWidth, int tilesHeight) {
+    public void tessellateBlock(BakedModel bakedModel, TerrainBufferBuilder bufferBuilder, long seed, int tilesWidth, int tilesHeight, int iterationStartIdx) {
         Vec3 offset = blockState.getOffset(resources.region, blockPos);
 
         pos.add((float) offset.x, (float) offset.y, (float) offset.z);
@@ -92,7 +92,7 @@ public class BlockRenderer {
             if (!quads.isEmpty()) {
                 mutableBlockPos.setWithOffset(blockPos, direction);
                 if (shouldRenderFace(blockState, direction, mutableBlockPos)) {
-                    renderModelFace(bufferBuilder, quads, lightPipeline, direction, tilesWidth, tilesHeight);
+                    renderModelFace(bufferBuilder, quads, lightPipeline, direction, tilesWidth, tilesHeight, iterationStartIdx);
                 }
             }
         }
@@ -100,22 +100,25 @@ public class BlockRenderer {
         randomSource.setSeed(seed);
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, randomSource);
         if (!quads.isEmpty()) {
-            renderModelFace(bufferBuilder, quads, lightPipeline, null, tilesWidth, tilesHeight);
+            renderModelFace(bufferBuilder, quads, lightPipeline, null, tilesWidth, tilesHeight, iterationStartIdx);
         }
     }
 
-    private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace, int tilesWidth, int tilesHeight) {
+    private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace, int tilesWidth, int tilesHeight, int idx) {
         QuadLightData quadLightData = resources.quadLightData;
+//        final int min = Math.min(quads.size() - 1, idx);
+//        final QuadView bakedQuad1 = (QuadView) quads.get(min);
+//        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(bakedQuad1.getU(idx), bakedQuad1.getV(idx), tilesWidth, tilesHeight);
 
-        for (int i = 0; i < quads.size(); ++i) {
-            BakedQuad bakedQuad = quads.get(i);
+        for (BakedQuad bakedQuad : quads) {
             QuadView quadView = (QuadView) bakedQuad;
+            final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quadView.getU(idx), quadView.getV(idx), tilesWidth, tilesHeight);
             lightPipeline.calculate(quadView, blockPos, quadLightData, cullFace, bakedQuad.getDirection(), bakedQuad.isShade());
-            putQuadData(bufferBuilder, quadView, quadLightData, tilesWidth, tilesHeight);
+            putQuadData(bufferBuilder, quadView, quadLightData, tilesWidth, tilesHeight, idx, baseArrayLayer);
         }
     }
 
-    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData, int tilesWidth, int tilesHeight) {
+    private void putQuadData(TerrainBufferBuilder bufferBuilder, QuadView quadView, QuadLightData quadLightData, int tilesWidth, int tilesHeight, int idx, int baseArrayLayer) {
         float r, g, b;
         if (quadView.isTinted()) {
             int color = blockColors.getColor(blockState, resources.region, blockPos, quadView.getColorIndex());
@@ -128,10 +131,11 @@ public class BlockRenderer {
             b = 1.0F;
         }
 
-        putQuadData(bufferBuilder, pos, quadView, quadLightData, r, g, b, tilesWidth, tilesHeight);
+
+        putQuadData(bufferBuilder, pos, quadView, quadLightData, r, g, b, tilesWidth, tilesHeight, idx, baseArrayLayer);
     }
 
-    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue, int tilesWidth, int tilesHeight) {
+    public static void putQuadData(TerrainBufferBuilder bufferBuilder, Vector3f pos, QuadView quad, QuadLightData quadLightData, float red, float green, float blue, int tilesWidth, int tilesHeight, int baseIdx, int baseArrayLayer) {
         Vec3i normal = quad.getFacingDirection().getNormal();
         int packedNormal = VertexUtil.packNormal(normal.getX(), normal.getY(), normal.getZ());
 
@@ -142,13 +146,9 @@ public class BlockRenderer {
         // Rotate triangles if needed to fix AO anisotropy
 
 
-        int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
-
         bufferBuilder.ensureCapacity();
 
-
-        final int baseArrayLayer = QuadUtils.getBaseArrayLayer(quad.getU(idx), quad.getV(idx), tilesWidth, tilesHeight);
-
+        int idx = baseIdx;
 
 
         for (byte i = 0; i < 4; ++i) {

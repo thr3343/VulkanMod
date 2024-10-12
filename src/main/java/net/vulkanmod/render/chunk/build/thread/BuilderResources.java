@@ -13,6 +13,7 @@ import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.light.flat.FlatLightPipeline;
 import net.vulkanmod.render.chunk.build.light.smooth.NewSmoothLightPipeline;
 import net.vulkanmod.render.chunk.build.light.smooth.SmoothLightPipeline;
+import net.vulkanmod.render.model.quad.QuadUtils;
 
 public class BuilderResources {
     public final ThreadBuilderPack builderPack = new ThreadBuilderPack();
@@ -25,6 +26,7 @@ public class BuilderResources {
 
     public final ArrayLightDataCache lightDataCache = new ArrayLightDataCache();
     public final QuadLightData quadLightData = new QuadLightData();
+    public final int iterationStartIdx = QuadUtils.getIterationStartIdx(this.quadLightData.br, this.quadLightData.lm);
 
     public final LightPipeline smoothLightPipeline;
     public final LightPipeline flatLightPipeline;
