@@ -30,7 +30,7 @@ public class Device {
     //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp, hasWideLines, hasMinSampleShading;
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp, hasWideLines, hasMinSampleShading, hasBufferDeviceAddress;
 
     public Device(VkPhysicalDevice device) {
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -72,6 +72,7 @@ public class Device {
             this.hasLogicOp = availableFeatures.features().logicOp();
             this.hasWideLines = availableFeatures.features().wideLines();
             this.hasMinSampleShading = availableFeatures.features().sampleRateShading();
+            this.hasBufferDeviceAddress = availableFeatures12.bufferDeviceAddress();
             //TODO: Handle specific Mac drivers not supporting Subgroup Ballot
             //E.g. Macros/Spec Constant workarounds
             final int subGroupStages = subgroupProperties.supportedStages();
@@ -163,6 +164,10 @@ public class Device {
 
     public boolean isHasIndexedDescriptors() {
         return hasIndexedDescriptors;
+    }
+
+    public boolean isHasBufferDeviceAddress() {
+        return hasBufferDeviceAddress;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
