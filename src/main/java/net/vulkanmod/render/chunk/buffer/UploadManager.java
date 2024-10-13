@@ -42,7 +42,7 @@ public class UploadManager {
 
     public void recordUpload(long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
         if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+            this.commandBuffer = TransferQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
@@ -76,7 +76,7 @@ public class UploadManager {
 
     public void copyBuffer(Buffer src, int srcOffset, Buffer dst, int dstOffset, int size) {
         if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+            this.commandBuffer = TransferQueue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
