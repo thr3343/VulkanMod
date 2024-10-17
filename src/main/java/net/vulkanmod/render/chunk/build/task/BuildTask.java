@@ -148,11 +148,12 @@ public class BuildTask extends ChunkTask {
         }
 
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).end();
+            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).endCurrentBatch();
             if (renderedBuffer != null) {
                 UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
                 compileResult.renderedLayers.put(renderType, uploadBuffer);
-                renderedBuffer.release();
+                //TODO: replace w/ update/store...
+//                renderedBuffer.release();
             }
         }
 
@@ -164,7 +165,7 @@ public class BuildTask extends ChunkTask {
     private void setupBufferBuilders(ThreadBuilderPack builderPack) {
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
             TerrainBufferBuilder bufferBuilder = builderPack.builder(renderType);
-            bufferBuilder.begin();
+            bufferBuilder.beginNextBatch();
         }
     }
 

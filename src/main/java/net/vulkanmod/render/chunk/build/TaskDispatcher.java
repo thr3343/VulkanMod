@@ -135,6 +135,11 @@ public class TaskDispatcher {
     }
 
     public boolean updateSections() {
+        if(this.resources == null) return false;
+        for (BuilderResources resources : this.resources) {
+            resources.clear();
+        }
+
         CompileResult result;
         boolean flag = false;
         while((result = this.compileResults.poll()) != null) {

@@ -20,12 +20,12 @@ public class UploadBuffer {
         this.indexOnly = drawState.indexOnly();
 
         if (!this.indexOnly)
-            this.vertexBuffer = BufferUtil.clone(renderedBuffer.vertexBuffer());
+            this.vertexBuffer = (renderedBuffer.vertexBuffer());
         else
             this.vertexBuffer = null;
 
         if (!drawState.sequentialIndex())
-            this.indexBuffer = BufferUtil.clone(renderedBuffer.indexBuffer());
+            this.indexBuffer = (renderedBuffer.indexBuffer());
         else
             this.indexBuffer = null;
     }
@@ -43,9 +43,9 @@ public class UploadBuffer {
     }
 
     public void release() {
-        if (vertexBuffer != null)
-            MemoryUtil.memFree(vertexBuffer);
-        if (indexBuffer != null)
-            MemoryUtil.memFree(indexBuffer);
+//        if (vertexBuffer != null)
+//            MemoryUtil.memFree(vertexBuffer);
+//        if (indexBuffer != null)
+//            MemoryUtil.memFree(indexBuffer);
     }
 }

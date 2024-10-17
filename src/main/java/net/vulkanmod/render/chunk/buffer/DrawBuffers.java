@@ -35,7 +35,7 @@ public class DrawBuffers {
         this.origin = origin;
         this.minHeight = minHeight;
     }
-
+    //TODO: Threaded Copying: dstOffsets must be known per Thread
     public void upload(RenderSection section, UploadBuffer buffer, TerrainRenderType renderType) {
         DrawParameters drawParameters = section.getDrawParametersChecked(renderType);
         int vertexOffset = drawParameters.vertexOffset;

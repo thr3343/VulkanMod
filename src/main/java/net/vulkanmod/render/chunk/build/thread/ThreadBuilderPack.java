@@ -2,6 +2,8 @@ package net.vulkanmod.render.chunk.build.thread;
 
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -36,6 +38,7 @@ public class ThreadBuilderPack {
 
     public void clearAll() {
         this.builders.values().forEach(TerrainBufferBuilder::clear);
+//        this.builders.values().forEach(TerrainBufferBuilder::reset);
     }
 
 }

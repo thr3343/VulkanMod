@@ -4,10 +4,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
-import net.vulkanmod.render.util.SortUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -58,7 +56,7 @@ public class TerrainBufferBuilder {
 
     private void resize(int i) {
         this.bufferPtr = ALLOCATOR.realloc(this.bufferPtr, i);
-        LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
+        LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
         if (this.bufferPtr == 0L) {
             throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + i + " bytes");
         } else {
@@ -88,9 +86,9 @@ public class TerrainBufferBuilder {
         this.indexOnly = true;
     }
 
-    public void begin() {
+    public void beginNextBatch() {
         if (this.building) {
-            throw new IllegalStateException("Already building!");
+            Initializer.LOGGER.error("Already building!");
         } else {
             this.building = true;
         }
@@ -105,13 +103,13 @@ public class TerrainBufferBuilder {
     }
 
     @Nullable
-    public RenderedBuffer end() {
+    public RenderedBuffer endCurrentBatch() {
         this.ensureDrawing();
         if (this.isCurrentBatchEmpty()) {
             this.reset();
             return null;
         } else {
-            RenderedBuffer renderedBuffer = this.storeRenderedBuffer();
+            RenderedBuffer renderedBuffer = this.storeCurrentBatch();
             this.reset();
             return renderedBuffer;
         }
@@ -119,11 +117,11 @@ public class TerrainBufferBuilder {
 
     private void ensureDrawing() {
         if (!this.building) {
-            throw new IllegalStateException("Not building!");
+            Initializer.LOGGER.error("Not building!");
         }
     }
-
-    private RenderedBuffer storeRenderedBuffer() {
+    //TODO: Store Per size increments
+    private RenderedBuffer storeCurrentBatch() {
         int indexCount = this.vertexCount / 4 * 6;
         int vertexBufferSize = !this.indexOnly ? this.vertexCount * this.format.getVertexSize() : 0;
         VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
@@ -169,13 +167,14 @@ public class TerrainBufferBuilder {
     }
 
     public void clear() {
-        if (this.renderedBufferCount > 0) {
+        if (this.building) {
             LOGGER.warn("Clearing BufferBuilder with unused batches");
+            return;
         }
 
         this.discard();
     }
-
+    //TODO: Move to full clear/reset: only reset per Tick
     public void discard() {
         this.renderedBufferCount = 0;
         this.renderedBufferPointer = 0;
@@ -212,7 +211,7 @@ public class TerrainBufferBuilder {
         private final int pointer;
         private final DrawState drawState;
         private boolean released;
-
+        //TODO: Why isn't pointer retained: premature reset confirm
         RenderedBuffer(int pointer, DrawState drawState) {
             this.pointer = pointer;
             this.drawState = drawState;
@@ -223,7 +222,7 @@ public class TerrainBufferBuilder {
             int end = this.pointer + this.drawState.vertexBufferEnd();
             return MemoryUtil.memByteBuffer(TerrainBufferBuilder.this.bufferPtr + start, end - start);
         }
-
+        //TODO: Broken Index Sorting (Likely bad, outdated or desynced Offset)
         public ByteBuffer indexBuffer() {
             int start = this.pointer + this.drawState.indexBufferStart();
             int end = this.pointer + this.drawState.indexBufferEnd();
@@ -240,7 +239,7 @@ public class TerrainBufferBuilder {
 
         public void release() {
             if (this.released) {
-                throw new IllegalStateException("Buffer has already been released!");
+                Initializer.LOGGER.error("Buffer has already been released!");
             } else {
                 TerrainBufferBuilder.this.releaseRenderedBuffer();
                 this.released = true;
