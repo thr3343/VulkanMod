@@ -4,9 +4,11 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.libc.LibCString;
 
 import java.nio.ByteBuffer;
 
@@ -55,7 +57,12 @@ public class TerrainBufferBuilder {
     //TODO: Resize Desyncs
     private void resize(int i) {
         //TODO: Realloc does not preserve alignment: May use manual padding instead to avoid memcpys
-        this.bufferPtr = ALLOCATOR.realloc(this.bufferPtr, i);
+        final long prevPtr = this.bufferPtr;
+        final int oldSize = this.capacity;
+        this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, i);
+        LibCString.nmemcpy(this.bufferPtr, prevPtr, oldSize);
+        MemoryManager.getInstance().addFrameOp(() -> ALLOCATOR.aligned_free(prevPtr));
+
         LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
         if (this.bufferPtr == 0L) {
             throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + i + " bytes");
