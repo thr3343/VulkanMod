@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 public class TerrainBufferBuilder {
     private static final Logger LOGGER = Initializer.LOGGER;
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
+    private static final int minHostAlignment = 4096;
 
     private int capacity;
     protected long bufferPtr;
@@ -34,7 +35,7 @@ public class TerrainBufferBuilder {
     protected VertexBuilder vertexBuilder;
 
     public TerrainBufferBuilder(int size) {
-        this.bufferPtr = ALLOCATOR.malloc(size);
+        this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, size);
         this.capacity = size;
 
         this.format = PipelineManager.TERRAIN_VERTEX_FORMAT;
@@ -48,18 +49,21 @@ public class TerrainBufferBuilder {
 
     private void ensureCapacity(int size) {
         if (this.nextElementByte + size > this.capacity) {
-            int capacity = this.capacity;
-            int newSize = (capacity + size) * 2;
-            this.resize(newSize);
+            this.resize(this.capacity << 1);
         }
     }
-
+    //TODO: Resize Desyncs
     private void resize(int i) {
+        //TODO: Realloc does not preserve alignment: May use manual padding instead to avoid memcpys
         this.bufferPtr = ALLOCATOR.realloc(this.bufferPtr, i);
         LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
         if (this.bufferPtr == 0L) {
             throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + i + " bytes");
-        } else {
+        }
+//        else if ((this.bufferPtr & 4095) !=0 ) {
+//            throw new IllegalStateException("Bad Alignment!:" + (this.bufferPtr & 4095));
+//        }
+        else {
             this.capacity = i;
         }
     }
@@ -168,7 +172,6 @@ public class TerrainBufferBuilder {
 
     public void clear() {
         if (this.building) {
-            LOGGER.warn("Clearing BufferBuilder with unused batches");
             return;
         }
 
