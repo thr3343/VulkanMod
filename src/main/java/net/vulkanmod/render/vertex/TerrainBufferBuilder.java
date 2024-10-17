@@ -49,7 +49,7 @@ public class TerrainBufferBuilder {
 
     private void ensureCapacity(int size) {
         if (this.nextElementByte + size > this.capacity) {
-            this.resize(this.capacity << 1);
+            this.resize((this.nextElementByte + size)<< 1);
         }
     }
     //TODO: Resize Desyncs
