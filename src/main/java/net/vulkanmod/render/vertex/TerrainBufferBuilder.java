@@ -69,7 +69,7 @@ public class TerrainBufferBuilder {
             this.resize(i << 1);
         }
     }
-    //TODO: Resize Desyncs
+
     private void resize(int i) {
         //TODO: Realloc does not preserve alignment: May use manual padding instead to avoid memcpys
         final long prevPtr = this.bufferPtr;
@@ -216,6 +216,10 @@ public class TerrainBufferBuilder {
 
     public boolean building() {
         return this.building;
+    }
+
+    public void setBuilding() {
+        this.building = false;
     }
 
     public void endVertex() {

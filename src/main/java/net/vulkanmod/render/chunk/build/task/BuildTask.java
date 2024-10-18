@@ -154,7 +154,7 @@ public class BuildTask extends ChunkTask {
                 UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer, builder.getId());
                 compileResult.renderedLayers.put(renderType, uploadBuffer);
                 //TODO: replace w/ update/store...
-//                renderedBuffer.release();
+                builder.setBuilding();
             }
         }
 
