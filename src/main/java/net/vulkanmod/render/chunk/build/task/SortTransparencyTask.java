@@ -20,11 +20,11 @@ public class SortTransparencyTask extends ChunkTask {
         return "rend_chk_sort";
     }
 
-    public Result runTask(BuilderResources context) {
+    public void runTask(BuilderResources context) {
         ThreadBuilderPack builderPack = context.builderPack;
 
         if (this.cancelled.get()) {
-            return Result.CANCELLED;
+            return;
         }
 
         Vec3 vec3 = WorldRenderer.getCameraPos();
@@ -48,9 +48,8 @@ public class SortTransparencyTask extends ChunkTask {
         renderedBuffer.release();
 
         if (this.cancelled.get()) {
-            return Result.CANCELLED;
+            return;
         }
         taskDispatcher.scheduleSectionUpdate(compileResult);
-        return Result.SUCCESSFUL;
     }
 }

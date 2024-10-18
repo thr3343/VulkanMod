@@ -8,7 +8,7 @@ import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ChunkTask {
-    public static final boolean BENCH = true;
+    public static final boolean BENCH = false;
 
     protected static TaskDispatcher taskDispatcher;
 
@@ -26,7 +26,7 @@ public abstract class ChunkTask {
 
     public abstract String name();
 
-    public abstract Result runTask(BuilderResources builderResources);
+    public abstract void runTask(BuilderResources builderResources);
 
     public void cancel() {
         this.cancelled.set(true);

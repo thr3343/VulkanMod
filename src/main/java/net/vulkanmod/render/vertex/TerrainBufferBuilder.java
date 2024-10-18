@@ -85,7 +85,7 @@ public class TerrainBufferBuilder {
         prevBuffer.freeBuffer();
 
 
-        LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
+//        LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
         if (this.bufferPtr == 0L) {
             throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + i + " bytes");
         }

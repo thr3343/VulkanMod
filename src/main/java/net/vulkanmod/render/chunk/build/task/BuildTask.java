@@ -38,11 +38,11 @@ public class BuildTask extends ChunkTask {
         return "rend_chk_rebuild";
     }
 
-    public Result runTask(BuilderResources builderResources) {
-        long startTime = System.nanoTime();
+    public void runTask(BuilderResources builderResources) {
+        long startTime = BENCH ? System.nanoTime() : 0;
 
         if (this.cancelled.get()) {
-            return Result.CANCELLED;
+            return;
         }
 
         Vec3 vec3 = WorldRenderer.getCameraPos();
@@ -59,17 +59,15 @@ public class BuildTask extends ChunkTask {
 
         if (this.cancelled.get()) {
             compileResult.renderedLayers.values().forEach(UploadBuffer::release);
-            return Result.CANCELLED;
+            return;
         }
 
         taskDispatcher.scheduleSectionUpdate(compileResult);
 
-        float buildTime = (System.nanoTime() - startTime) * 0.000001f;
         if (BENCH) {
-            builderResources.updateBuildStats((int) buildTime);
+            builderResources.updateBuildStats((int) ((System.nanoTime() - startTime) * 0.000001f));
         }
 
-        return Result.SUCCESSFUL;
     }
 
     private CompileResult compile(float camX, float camY, float camZ, BuilderResources builderResources) {
