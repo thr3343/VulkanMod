@@ -107,7 +107,7 @@ public class WorldRenderer {
             Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
 
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
-
+        //Aligned to VkDrawIndirectCommand.SIZEOF == 20 bytes: Non-PoT Size, so won't align
         for (int i = 0; i < this.indirectBuffers.length; ++i) {
             this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
