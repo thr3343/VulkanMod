@@ -30,7 +30,7 @@ layout (location = 2) out vec2 texCoord0;
 #endif
 
 
-const float UV_INV = 1.0 / 32768.0;
+const float UV_INV = 1.0 / 65536.0;
 //const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
