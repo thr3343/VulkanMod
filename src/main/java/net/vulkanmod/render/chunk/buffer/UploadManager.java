@@ -35,25 +35,8 @@ public class UploadManager {
     public void recordUpload(Buffer buffer, long hostId, long srcOffset, long dstOffset, long bufferSize) {
         beginCommands();
 
-        VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
-
-
-        if (!this.dstBuffers.add(buffer.getId())) {
-            //Use BufferBarrier + granular QueueFamilyIndex
-            TransferQueue.BufferBarrier(commandBuffer,
-                    buffer.getId(),
-                    bufferSize,
-                    dstOffset,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-            this.dstBuffers.clear();
-        }
-
-        TransferQueue.uploadBufferCmd(commandBuffer, hostId, srcOffset, buffer.getId(), dstOffset, bufferSize);
+        TransferQueue.uploadBufferCmd(this.commandBuffer.getHandle(), hostId, srcOffset, buffer.getId(), dstOffset, bufferSize);
     }
 
     public void copyBuffer(Buffer src, Buffer dst) {
