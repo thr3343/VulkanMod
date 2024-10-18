@@ -50,7 +50,7 @@ public class DrawBuffers {
 
         if (!buffer.autoIndices) {
             if (this.indexBuffer == null)
-                this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 65536, INDEX_SIZE);
+                this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 60000, INDEX_SIZE);
 
             AreaBuffer.Segment segment = this.indexBuffer.upload(buffer, drawParameters.firstIndex, drawParameters);
             firstIndex = segment.offset / INDEX_SIZE;
@@ -67,9 +67,9 @@ public class DrawBuffers {
         this.allocated = true;
 
         int initialSize = switch (renderType) {
-            case SOLID, CUTOUT -> 131072;
-            case CUTOUT_MIPPED -> 262144;
-            case TRANSLUCENT, TRIPWIRE -> 65536;
+            case SOLID, CUTOUT -> 100000;
+            case CUTOUT_MIPPED -> 250000;
+            case TRANSLUCENT, TRIPWIRE -> 60000;
         };
 
         return this.vertexBuffers.computeIfAbsent(
