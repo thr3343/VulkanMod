@@ -6,10 +6,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
@@ -39,13 +36,12 @@ public class UploadManager {
         this.dstBuffers.clear();
     }
 
-    public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void recordUpload(Buffer buffer, long hostId, long srcOffset, long dstOffset, long bufferSize, ByteBuffer src) {
         beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-        stagingBuffer.copyBuffer((int) bufferSize, src);
+
 
         if (!this.dstBuffers.add(buffer.getId())) {
             //Use BufferBarrier + granular QueueFamilyIndex
@@ -60,7 +56,7 @@ public class UploadManager {
             this.dstBuffers.clear();
         }
 
-        TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
+        TransferQueue.uploadBufferCmd(commandBuffer, hostId, srcOffset, buffer.getId(), dstOffset, bufferSize);
     }
 
     public void copyBuffer(Buffer src, Buffer dst) {

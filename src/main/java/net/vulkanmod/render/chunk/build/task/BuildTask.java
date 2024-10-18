@@ -148,9 +148,10 @@ public class BuildTask extends ChunkTask {
         }
 
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).endCurrentBatch();
+            final TerrainBufferBuilder builder = bufferBuilders.builder(renderType);
+            TerrainBufferBuilder.RenderedBuffer renderedBuffer = builder.endCurrentBatch();
             if (renderedBuffer != null) {
-                UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
+                UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer, builder.getId());
                 compileResult.renderedLayers.put(renderType, uploadBuffer);
                 //TODO: replace w/ update/store...
 //                renderedBuffer.release();

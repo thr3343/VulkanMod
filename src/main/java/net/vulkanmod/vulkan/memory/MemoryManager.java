@@ -16,13 +16,14 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.util.vma.VmaBudget;
-import org.lwjgl.vulkan.VkBufferCreateInfo;
-import org.lwjgl.vulkan.VkImageCreateInfo;
+import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static net.vulkanmod.vulkan.memory.MemoryTypes.HOST_MEM;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -125,6 +126,85 @@ public class MemoryManager {
         }
     }
 
+
+    public void importBuffer(ExtBuffer dstBuffer, long mappedBuffer, int size, int usage, int flags, int memoryOffset) {
+
+        try (MemoryStack stack = stackPush()) {
+
+
+            LongBuffer pBuffer = stack.mallocLong(1);
+            LongBuffer pAllocation = stack.longs(VK_NULL_HANDLE);
+
+
+            importExtBuffer(usage, flags, pBuffer, pAllocation, size, mappedBuffer, memoryOffset);
+
+//            if(buffer instanceof ExtBuffer)
+//                this.importExtBuffer(size, usage, properties, pBuffer, pAllocation, buffer.data);
+//            else
+
+            dstBuffer.setId(pBuffer.get(0));
+            dstBuffer.setAllocation(pAllocation.get(0));
+
+
+            buffers.putIfAbsent(dstBuffer.getId(), dstBuffer);
+
+        }
+    }
+
+    public void importExtBuffer(int usage, int properties, LongBuffer pBuffer, LongBuffer pBufferMemory, int size, long payload, int memoryOffset) {
+        try (MemoryStack stack = stackPush()) {
+
+            final long value = payload & ~0xfff;
+
+            if((value & 0xfff)!=0)
+            {
+                throw new RuntimeException("Bad Alignment: "+ (value & 0xfff));
+            }
+            VkImportMemoryHostPointerInfoEXT vkImportMemoryHostPointerInfoEXT = VkImportMemoryHostPointerInfoEXT.calloc(stack)
+                    .sType$Default()
+                    .pNext(0)
+                    .handleType(EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT)
+                    .pHostPointer(value);
+
+            VkMemoryAllocateInfo vkMemoryAllocateInfo = VkMemoryAllocateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(vkImportMemoryHostPointerInfoEXT)
+                    .memoryTypeIndex(HOST_MEM.memoryTypeIndex)
+                    .allocationSize(size);
+
+//            VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.calloc(stack);
+//
+//            vkGetBufferMemoryRequirements();
+
+         Vulkan.checkResult(vkAllocateMemory(Vulkan.getVkDevice(), vkMemoryAllocateInfo, null, pBufferMemory), "Failed Payload Import");
+
+
+            VkExternalMemoryBufferCreateInfo vkExternalMemoryBufferCreateInfo = VkExternalMemoryBufferCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .handleTypes(EXTExternalMemoryHost.VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT);
+
+
+            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(vkExternalMemoryBufferCreateInfo)
+                    .flags(properties)
+                    .size(size)
+                    .usage(usage)
+                    .pQueueFamilyIndices(stack.ints(Queue.TransferQueue.familyIndex()));
+
+
+            Vulkan.checkResult(vkCreateBuffer(Vulkan.getVkDevice(), bufferInfo, null, pBuffer), "Failed Buffer Import");
+
+
+//            VkMemoryRequirements vkMemoryRequirements = VkMemoryRequirements.calloc(stack);
+//
+//            vkGetBufferMemoryRequirements(Vulkan.getVkDevice(), pBuffer.get(0), vkMemoryRequirements);
+
+            Vulkan.checkResult(vkBindBufferMemory(Vulkan.getVkDevice(), pBuffer.get(0), pBufferMemory.get(0), 0), "Failed Bind Import");
+
+        }
+    }
+
     public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
 
         try (MemoryStack stack = stackPush()) {
@@ -206,7 +286,13 @@ public class MemoryManager {
     }
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
-        vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
+        //VMA does not support Importing memory (i.e.VK_EXT_external_memory_host):
+        // Therefore forced to avoid/bypass VMA, and MUST free manually
+        if(bufferInfo.isExt()) {
+            vkFreeMemory(Vulkan.getVkDevice(), bufferInfo.allocation(), null);
+            vkDestroyBuffer(Vulkan.getVkDevice(), bufferInfo.id(), null);
+        }
+        else vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
         if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
             deviceMemory -= bufferInfo.bufferSize();

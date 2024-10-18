@@ -1,8 +1,6 @@
 package net.vulkanmod.render.chunk.build;
 
-import net.vulkanmod.render.chunk.util.BufferUtil;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
@@ -12,12 +10,18 @@ public class UploadBuffer {
     public final boolean indexOnly;
     private final ByteBuffer vertexBuffer;
     private final ByteBuffer indexBuffer;
+    private final long hostId;
+    private final int vtxOffset;
+    private final int idxOffset;
 
-    public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
+    public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer, long id) {
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
         this.indexCount = drawState.indexCount();
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
+        this.hostId = id;
+        this.vtxOffset= renderedBuffer.vtxOffset();
+        this.idxOffset= renderedBuffer.idxOffset();
 
         if (!this.indexOnly)
             this.vertexBuffer = (renderedBuffer.vertexBuffer());
@@ -28,6 +32,18 @@ public class UploadBuffer {
             this.indexBuffer = (renderedBuffer.indexBuffer());
         else
             this.indexBuffer = null;
+    }
+
+    public long getHostId() {
+        return hostId;
+    }
+
+    public int getVtxOffset() {
+        return vtxOffset;
+    }
+
+    public int getIdxOffset() {
+        return idxOffset;
     }
 
     public int indexCount() {

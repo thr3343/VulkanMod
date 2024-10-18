@@ -2,6 +2,7 @@ package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.memory.*;
 import org.apache.logging.log4j.Logger;
@@ -49,13 +50,15 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public Segment upload(ByteBuffer byteBuffer, int oldOffset, DrawBuffers.DrawParameters drawParameters) {
+    public Segment upload(UploadBuffer uploadBuffer, int oldOffset, DrawBuffers.DrawParameters drawParameters) {
         // Free old segment
         if (oldOffset != -1) {
             // Need to delay segment freeing since it might be still used by prev frames in flight
 //            this.setSegmentFree(oldOffset);
             MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
         }
+        final int srcVtxOffset = (this.usage == Usage.VERTEX.usage) ? uploadBuffer.getVtxOffset() : uploadBuffer.getIdxOffset();
+        ByteBuffer byteBuffer = (this.usage == Usage.VERTEX.usage) ? uploadBuffer.getVertexBuffer() : uploadBuffer.getIndexBuffer();
 
         int size = byteBuffer.remaining();
 
@@ -84,7 +87,8 @@ public class AreaBuffer {
         segment.drawParameters = drawParameters;
 
         Buffer dst = this.buffer;
-        UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
+
+        UploadManager.INSTANCE.recordUpload(dst, uploadBuffer.getHostId(), srcVtxOffset, segment.offset, size, byteBuffer);
 
         this.used += size;
 

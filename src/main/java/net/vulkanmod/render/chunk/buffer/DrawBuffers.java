@@ -42,7 +42,7 @@ public class DrawBuffers {
         int firstIndex = -1;
 
         if (!buffer.indexOnly) {
-            AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), vertexOffset, drawParameters);
+            AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(buffer, vertexOffset, drawParameters);
             vertexOffset = segment.offset / VERTEX_SIZE;
 
             drawParameters.baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
@@ -52,7 +52,7 @@ public class DrawBuffers {
             if (this.indexBuffer == null)
                 this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 60000, INDEX_SIZE);
 
-            AreaBuffer.Segment segment = this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.firstIndex, drawParameters);
+            AreaBuffer.Segment segment = this.indexBuffer.upload(buffer, drawParameters.firstIndex, drawParameters);
             firstIndex = segment.offset / INDEX_SIZE;
         }
 

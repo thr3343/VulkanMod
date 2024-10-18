@@ -5,12 +5,15 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.Device;
+import net.vulkanmod.vulkan.memory.ExtBuffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.libc.LibCString;
+import org.lwjgl.vulkan.VK10;
 
 import java.nio.ByteBuffer;
 
@@ -18,6 +21,7 @@ public class TerrainBufferBuilder {
     private static final Logger LOGGER = Initializer.LOGGER;
     private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
     private static final int minHostAlignment = Vulkan.getDevice().getHostPointerAlignment();
+    private ExtBuffer extBuffer;
 
     private int capacity;
     protected long bufferPtr;
@@ -39,7 +43,14 @@ public class TerrainBufferBuilder {
     protected VertexBuilder vertexBuilder;
 
     public TerrainBufferBuilder(int size) {
+
+        size = VUtil.align(size, minHostAlignment);
+
         this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, size);
+        this.extBuffer = new ExtBuffer(this.bufferPtr, size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+
+
+
         this.capacity = size;
 
         this.format = PipelineManager.TERRAIN_VERTEX_FORMAT;
@@ -52,8 +63,9 @@ public class TerrainBufferBuilder {
     }
 
     private void ensureCapacity(int size) {
-        if (this.nextElementByte + size > this.capacity) {
-            this.resize((this.nextElementByte + size)<< 1);
+        final int i = VUtil.align(this.nextElementByte + size, minHostAlignment);
+        if (i > this.capacity) {
+            this.resize(i << 1);
         }
     }
     //TODO: Resize Desyncs
@@ -63,7 +75,15 @@ public class TerrainBufferBuilder {
         final int oldSize = this.capacity;
         this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, i);
         LibCString.nmemcpy(this.bufferPtr, prevPtr, oldSize);
-        MemoryManager.getInstance().addFrameOp(() -> ALLOCATOR.aligned_free(prevPtr));
+
+        ExtBuffer prevBuffer = this.extBuffer;
+
+        this.extBuffer = new ExtBuffer(this.bufferPtr, i, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+
+
+        ALLOCATOR.aligned_free(prevPtr);
+        prevBuffer.freeBuffer();
+
 
         LOGGER.info("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
         if (this.bufferPtr == 0L) {
@@ -215,6 +235,10 @@ public class TerrainBufferBuilder {
         return this.bufferPtr + this.nextElementByte;
     }
 
+    public long getId() {
+        return this.extBuffer.getId();
+    }
+
     public int getVertexCount() {
         return vertexCount;
     }
@@ -222,7 +246,7 @@ public class TerrainBufferBuilder {
     public void free() {
         this.reset();
         this.discard();
-//        this.extBuffer.freeBuffer();
+        this.extBuffer.freeBuffer();
         ALLOCATOR.aligned_free(this.bufferPtr);
     }
 
@@ -236,6 +260,15 @@ public class TerrainBufferBuilder {
             this.drawState = drawState;
         }
 
+        public int vtxOffset()
+        {
+            return this.pointer + this.drawState.vertexBufferStart();
+        }
+
+        public int idxOffset()
+        {
+            return this.pointer + this.drawState.indexBufferStart();
+        }
         public ByteBuffer vertexBuffer() {
             int start = this.pointer + this.drawState.vertexBufferStart();
             int end = this.pointer + this.drawState.vertexBufferEnd();

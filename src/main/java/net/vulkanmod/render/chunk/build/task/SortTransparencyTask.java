@@ -43,7 +43,7 @@ public class SortTransparencyTask extends ChunkTask {
         TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilder.endCurrentBatch();
 
         CompileResult compileResult = new CompileResult(this.section, false);
-        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
+        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer, bufferBuilder.getId());
         compileResult.renderedLayers.put(TerrainRenderType.TRANSLUCENT, uploadBuffer);
         renderedBuffer.release();
 
