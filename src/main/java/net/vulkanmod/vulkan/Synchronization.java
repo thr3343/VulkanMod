@@ -24,12 +24,12 @@ public class Synchronization {
         this.fences = MemoryUtil.memAllocLong(allocSize);
     }
 
-    public synchronized void addCommandBuffer(CommandPool.CommandBuffer commandBuffer) {
+    public void addCommandBuffer(CommandPool.CommandBuffer commandBuffer) {
         this.addFence(commandBuffer.getFence());
         this.commandBuffers.add(commandBuffer);
     }
 
-    public synchronized void addFence(long fence) {
+    public void addFence(long fence) {
         if (idx == ALLOCATION_SIZE)
             waitFences();
 
@@ -37,7 +37,7 @@ public class Synchronization {
         idx++;
     }
 
-    public synchronized void waitFences() {
+    public void waitFences() {
         if (idx == 0)
             return;
 

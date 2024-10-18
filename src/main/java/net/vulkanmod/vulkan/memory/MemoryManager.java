@@ -81,7 +81,7 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void initFrame(int frame) {
+    public void initFrame(int frame) {
         this.setCurrentFrame(frame);
         this.freeBuffers(frame);
         this.doFrameOps(frame);
@@ -205,7 +205,7 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
+    public void createBuffer(Buffer buffer, int size, int usage, int properties) {
 
         try (MemoryStack stack = stackPush()) {
             buffer.setBufferSize(size);
@@ -228,7 +228,7 @@ public class MemoryManager {
         }
     }
 
-    public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
+    public static void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
                                                 LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
 
         try (MemoryStack stack = stackPush()) {
@@ -309,7 +309,7 @@ public class MemoryManager {
         images.remove(image);
     }
 
-    public synchronized void addToFreeable(Buffer buffer) {
+    public void addToFreeable(Buffer buffer) {
         Buffer.BufferInfo bufferInfo = buffer.getBufferInfo();
 
         checkBuffer(bufferInfo);
@@ -320,11 +320,11 @@ public class MemoryManager {
             stackTraces[currentFrame].add(new Throwable().getStackTrace());
     }
 
-    public synchronized void addToFreeable(VulkanImage image) {
+    public void addToFreeable(VulkanImage image) {
         freeableImages[currentFrame].add(image);
     }
 
-    public synchronized void addFrameOp(Runnable runnable) {
+    public void addFrameOp(Runnable runnable) {
         this.frameOps[currentFrame].add(runnable);
     }
 
