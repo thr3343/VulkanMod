@@ -219,6 +219,13 @@ public class TerrainBufferBuilder {
         return vertexCount;
     }
 
+    public void free() {
+        this.reset();
+        this.discard();
+//        this.extBuffer.freeBuffer();
+        ALLOCATOR.aligned_free(this.bufferPtr);
+    }
+
     public class RenderedBuffer {
         private final int pointer;
         private final DrawState drawState;

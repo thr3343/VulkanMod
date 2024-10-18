@@ -47,8 +47,9 @@ public class TaskDispatcher {
         this.stopThreads = false;
 
         if(this.resources != null) {
+            //Fix memory leak
             for (BuilderResources resources : this.resources) {
-                resources.clear();
+                resources.free();
             }
         }
 

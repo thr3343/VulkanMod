@@ -41,4 +41,7 @@ public class ThreadBuilderPack {
 //        this.builders.values().forEach(TerrainBufferBuilder::reset);
     }
 
+    public void freeAll() {
+        this.builders.values().forEach(TerrainBufferBuilder::free);
+    }
 }

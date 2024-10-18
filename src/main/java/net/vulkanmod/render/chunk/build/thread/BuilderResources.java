@@ -53,6 +53,10 @@ public class BuilderResources {
         builderPack.clearAll();
     }
 
+    public void free() {
+        builderPack.freeAll();
+    }
+
     public void updateBuildStats(int buildTime) {
         this.buildCount++;
         this.totalBuildTime += buildTime;
