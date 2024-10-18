@@ -58,9 +58,8 @@ public class AreaBuffer {
             MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
         }
         final int srcVtxOffset = (this.usage == Usage.VERTEX.usage) ? uploadBuffer.getVtxOffset() : uploadBuffer.getIdxOffset();
-        ByteBuffer byteBuffer = (this.usage == Usage.VERTEX.usage) ? uploadBuffer.getVertexBuffer() : uploadBuffer.getIndexBuffer();
 
-        int size = byteBuffer.remaining();
+        int size = ((this.usage == Usage.VERTEX.usage) ? uploadBuffer.getVertexBuffer() : uploadBuffer.getIndexBuffer());
 
         if (DEBUG && size % elementSize != 0)
             throw new RuntimeException("Unaligned buffer");
@@ -88,7 +87,7 @@ public class AreaBuffer {
 
         Buffer dst = this.buffer;
 
-        UploadManager.INSTANCE.recordUpload(dst, uploadBuffer.getHostId(), srcVtxOffset, segment.offset, size, byteBuffer);
+        UploadManager.INSTANCE.recordUpload(dst, uploadBuffer.getHostId(), srcVtxOffset, segment.offset, size);
 
         this.used += size;
 

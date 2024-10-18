@@ -2,13 +2,9 @@ package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.vulkan.VkCommandBuffer;
-
-import java.nio.ByteBuffer;
 
 import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
@@ -36,7 +32,7 @@ public class UploadManager {
         this.dstBuffers.clear();
     }
 
-    public void recordUpload(Buffer buffer, long hostId, long srcOffset, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void recordUpload(Buffer buffer, long hostId, long srcOffset, long dstOffset, long bufferSize) {
         beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
@@ -48,6 +44,7 @@ public class UploadManager {
             TransferQueue.BufferBarrier(commandBuffer,
                     buffer.getId(),
                     bufferSize,
+                    dstOffset,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -71,6 +68,7 @@ public class UploadManager {
         TransferQueue.BufferBarrier(commandBuffer,
                 src.getId(),
                 VK_WHOLE_SIZE,
+                0,
                 VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_ACCESS_TRANSFER_READ_BIT,
                 VK_PIPELINE_STAGE_TRANSFER_BIT,

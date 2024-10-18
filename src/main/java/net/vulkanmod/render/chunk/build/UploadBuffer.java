@@ -8,8 +8,8 @@ public class UploadBuffer {
     public final int indexCount;
     public final boolean autoIndices;
     public final boolean indexOnly;
-    private final ByteBuffer vertexBuffer;
-    private final ByteBuffer indexBuffer;
+    private final int vertexBufferSize;
+    private final int indexBufferSize;
     private final long hostId;
     private final int vtxOffset;
     private final int idxOffset;
@@ -24,14 +24,14 @@ public class UploadBuffer {
         this.idxOffset= renderedBuffer.idxOffset();
 
         if (!this.indexOnly)
-            this.vertexBuffer = (renderedBuffer.vertexBuffer());
+            this.vertexBufferSize = (drawState.vertexBufferSize());
         else
-            this.vertexBuffer = null;
+            this.vertexBufferSize = 0;
 
         if (!drawState.sequentialIndex())
-            this.indexBuffer = (renderedBuffer.indexBuffer());
+            this.indexBufferSize = (drawState.indexCount() * Short.BYTES);
         else
-            this.indexBuffer = null;
+            this.indexBufferSize = 0;
     }
 
     public long getHostId() {
@@ -50,12 +50,12 @@ public class UploadBuffer {
         return indexCount;
     }
 
-    public ByteBuffer getVertexBuffer() {
-        return vertexBuffer;
+    public int getVertexBuffer() {
+        return vertexBufferSize;
     }
 
-    public ByteBuffer getIndexBuffer() {
-        return indexBuffer;
+    public int getIndexBuffer() {
+        return indexBufferSize;
     }
 
     public void release() {
