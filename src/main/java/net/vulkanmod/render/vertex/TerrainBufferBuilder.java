@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.ExtBuffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +48,7 @@ public class TerrainBufferBuilder {
         size = VUtil.align(size, minHostAlignment);
 
         this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, size);
-        this.extBuffer = new ExtBuffer(this.bufferPtr, size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        this.extBuffer = new ExtBuffer(this.bufferPtr, size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK10.VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryTypes.HOST_MEM);
 
 
 
@@ -74,11 +75,11 @@ public class TerrainBufferBuilder {
         final long prevPtr = this.bufferPtr;
         final int oldSize = this.capacity;
         this.bufferPtr = ALLOCATOR.aligned_alloc(minHostAlignment, i);
-        LibCString.nmemcpy(this.bufferPtr, prevPtr, oldSize);
 
         ExtBuffer prevBuffer = this.extBuffer;
+        this.extBuffer = new ExtBuffer(this.bufferPtr, i, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK10.VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryTypes.HOST_MEM);
+        Queue.TransferQueue.uploadBufferImmediate(prevBuffer.getId(), 0, this.extBuffer.getId(), 0, oldSize);
 
-        this.extBuffer = new ExtBuffer(this.bufferPtr, i, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
 
 
         ALLOCATOR.aligned_free(prevPtr);
