@@ -108,11 +108,17 @@ public enum Queue {
         currentCmdBuffer = beginCommands();
     }
 
-    public void endRecordingAndSubmit() {
-        long fence = submitCommands(currentCmdBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+    public CommandPool.CommandBuffer beginIfNeeded() {
+        return currentCmdBuffer == null ? currentCmdBuffer = beginCommands() : currentCmdBuffer;
+    }
 
-        currentCmdBuffer = null;
+    public void endRecordingAndSubmit() {
+        if(currentCmdBuffer != null) {
+            long fence = submitCommands(currentCmdBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+
+            currentCmdBuffer = null;
+        }
     }
 
     public CommandPool.CommandBuffer getCommandBuffer() {

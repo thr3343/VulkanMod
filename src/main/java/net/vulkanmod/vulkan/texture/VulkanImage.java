@@ -7,6 +7,8 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -45,6 +47,10 @@ public class VulkanImage {
     private final int usage;
 
     private int currentLayout;
+    private static final int minAlignWidth = QueueFamilyIndices.minTransferGranularityWidth;// 0x7;
+    private static final int minAlignHeight = QueueFamilyIndices.minTransferGranularityHeight;// 0x7;
+    private static final int minAlignDepth = QueueFamilyIndices.minTransferGranularityDepth;// 0x7;
+    private static final boolean noAlign = minAlignWidth * minAlignHeight * minAlignDepth <=1;
 
     //Used for swap chain images
     public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
@@ -192,13 +198,18 @@ public class VulkanImage {
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
+        final boolean dma = noAlign || checkGranularity(width, height, xOffset, yOffset);
         long imageSize = buffer.limit();
-
-        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        //TODO: Disseminate between Once-Only uploads and persistently mapped/ Animations (i.e. Texture Streaming)
+        // If Once only use Imports / Pinned Memory to bypass Staging Resizing == Out of memory Errors
+        final Queue queue = dma ? DeviceManager.getTransferQueue() : DeviceManager.getGraphicsQueue();
+        CommandPool.CommandBuffer commandBuffer = queue.getCommandBuffer();
         try (MemoryStack stack = stackPush()) {
-            transferDstLayout(stack, commandBuffer.getHandle());
+            transitionImageLayout(stack, commandBuffer.getHandle(), this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dma);
         }
-
+        //TODO: update LightTexture with VkCmdUpdateBuffer
+        // use VkCmdUpdateBuffer + Texel buffers for < 4 byte aligned updates
+        // or Manual<Padding + offset hacks
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.align(this.formatSize);
 
@@ -206,31 +217,34 @@ public class VulkanImage {
 
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+        //TODO: Batch Copy Commands
 
-        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
+        long fence = queue.endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
-    private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
-        transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    private static boolean checkGranularity(int width, int height, int xOffset, int yOffset) {
+        //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkQueueFamilyProperties.html#_description
+        return ((xOffset + width) % minAlignWidth) == 0 | ((yOffset + height) % minAlignHeight) == 0;
     }
+
 
     public void readOnlyLayout() {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
-        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getTransferQueue().getCommandBuffer();
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            readOnlyLayout(stack, commandBuffer.getHandle());
+            readOnlyLayout(stack, commandBuffer.getHandle(), true);
         }
-        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+        DeviceManager.getTransferQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
-    public void readOnlyLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
-        transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    public void readOnlyLayout(MemoryStack stack, VkCommandBuffer commandBuffer, boolean dma) {
+        transitionImageLayout(stack, commandBuffer, this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dma);
     }
 
     public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmaps) {
@@ -250,10 +264,10 @@ public class VulkanImage {
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
-        transitionImageLayout(stack, commandBuffer, this, newLayout);
+        transitionImageLayout(stack, commandBuffer, this, newLayout, false);
     }
 
-    public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int newLayout) {
+    public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int newLayout, boolean dma) {
         if (image.currentLayout == newLayout) {
 //            System.out.println("new layout is equal to current layout");
             return;
@@ -275,8 +289,8 @@ public class VulkanImage {
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
-                srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                srcAccessMask = dma ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_SHADER_READ_BIT;
+                sourceStage = dma ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
                 srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -299,8 +313,8 @@ public class VulkanImage {
                 destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
-                dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                dstAccessMask = dma ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_SHADER_READ_BIT;
+                destinationStage = dma ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
                 dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;

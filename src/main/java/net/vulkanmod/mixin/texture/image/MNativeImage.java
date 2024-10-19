@@ -42,7 +42,8 @@ public abstract class MNativeImage {
     @Shadow public abstract int getPixelRGBA(int i, int j);
 
     @Shadow protected abstract void checkAllocated();
-
+    //TODO: Replace with reduced/Small GPU-side Image Object instead
+    // or TexelBuffer
     private ByteBuffer buffer;
 
     @Inject(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage$Format;IIZ)V", at = @At("RETURN"))

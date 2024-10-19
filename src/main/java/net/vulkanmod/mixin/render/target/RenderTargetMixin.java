@@ -78,7 +78,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             GlTexture.getBoundTexture().getVulkanImage()
-                    .readOnlyLayout(stack, Renderer.getCommandBuffer());
+                    .readOnlyLayout(stack, Renderer.getCommandBuffer(), false);
         }
     }
 

@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkExtent3D;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
@@ -85,6 +87,14 @@ public class QueueFamilyIndices {
                 }
             }
 
+            if(transferFamily != VK_QUEUE_FAMILY_IGNORED) {
+                final VkExtent3D vkExtent3D = queueFamilies.get(transferFamily).minImageTransferGranularity();
+                final int width = vkExtent3D.width(), height = vkExtent3D.height(), depth = vkExtent3D.depth();
+                Initializer.LOGGER.info("minImageTransferGranularity: {} + {} + {}", width, height, depth);
+                minTransferGranularityWidth = width;
+                minTransferGranularityHeight = height;
+                minTransferGranularityDepth = depth;
+            }
 
 
             hasDedicatedTransferQueue = graphicsFamily != transferFamily;
@@ -109,6 +119,7 @@ public class QueueFamilyIndices {
     public static int graphicsFamily = VK_QUEUE_FAMILY_IGNORED, presentFamily = VK_QUEUE_FAMILY_IGNORED, transferFamily = VK_QUEUE_FAMILY_IGNORED;
 
     public static boolean hasDedicatedTransferQueue = false;
+    public static int minTransferGranularityWidth, minTransferGranularityHeight, minTransferGranularityDepth = 0;
 
     public static boolean isComplete() {
         return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED;
