@@ -419,6 +419,7 @@ public class Renderer {
         drawer.resetBuffers(currentFrame);
 
         Vulkan.getStagingBuffer().reset();
+        Vulkan.getChunkStaging().reset();
 
         WorldRenderer.getInstance().uploadSections();
         UploadManager.INSTANCE.submitUploads();

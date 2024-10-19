@@ -11,8 +11,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class StagingBuffer extends Buffer {
 
-    public StagingBuffer(int bufferSize) {
-        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+    public StagingBuffer(int bufferSize, MemoryType memoryType) {
+        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memoryType);
         this.usedBytes = 0;
         this.offset = 0;
 

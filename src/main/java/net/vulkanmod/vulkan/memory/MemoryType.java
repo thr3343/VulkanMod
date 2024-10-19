@@ -30,6 +30,7 @@ public abstract class MemoryType {
 
     public enum Type {
         DEVICE_LOCAL,
+        BAR_LOCAL,
         HOST_LOCAL
     }
 }

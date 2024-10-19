@@ -12,6 +12,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryTypes {
     public static MemoryType GPU_MEM;
+    public static MemoryType BAR_MEM;
     public static MemoryType HOST_MEM;
 
     public static void createMemoryTypes() {
@@ -26,34 +27,40 @@ public class MemoryTypes {
 
             }
 
-            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
-                HOST_MEM = new HostLocalCachedMemory(memoryType, heap);
+            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                BAR_MEM = new DeviceMappableMemory(memoryType, heap);
+
+            }
+
+            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                HOST_MEM = new HostLocalUncachedMemory(memoryType, heap);
             }
         }
 
-        if (GPU_MEM != null && HOST_MEM != null)
+        if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
             return;
 
         // Could not find 1 or more MemoryTypes, need to use fallback
+        // (Likely when ReBAR is supported)
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
             VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
             // GPU mappable memory
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
-                GPU_MEM = new DeviceMappableMemory(memoryType, heap);
+                GPU_MEM = BAR_MEM = new DeviceMappableMemory(memoryType, heap);
             }
 
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
                 HOST_MEM = new HostLocalFallbackMemory(memoryType, heap);
             }
 
-            if (GPU_MEM != null && HOST_MEM != null)
+            if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
                 return;
         }
 
         // Could not find device memory, fallback to host memory
-        GPU_MEM = HOST_MEM;
+        GPU_MEM = BAR_MEM = HOST_MEM;
     }
 
     public static class DeviceLocalMemory extends MemoryType {
@@ -118,9 +125,9 @@ public class MemoryTypes {
         }
     }
 
-    static class HostLocalCachedMemory extends MappableMemory {
+    static class HostLocalUncachedMemory extends MappableMemory {
 
-        HostLocalCachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+        HostLocalUncachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
             super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
         }
 
@@ -129,7 +136,7 @@ public class MemoryTypes {
 
             MemoryManager.getInstance().createBuffer(buffer, size,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
 
         void copyToBuffer(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer byteBuffer) {
@@ -161,14 +168,14 @@ public class MemoryTypes {
     static class DeviceMappableMemory extends MappableMemory {
 
         DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+            super(Type.BAR_LOCAL, vkMemoryType, vkMemoryHeap);
         }
 
         @Override
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
     }
 }
