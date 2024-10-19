@@ -199,7 +199,7 @@ public class VulkanImage {
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         final boolean dma = noAlign || checkGranularity(width, height, xOffset, yOffset);
-        long imageSize = buffer.limit();
+        int imageSize = buffer.limit();
         //TODO: Disseminate between Once-Only uploads and persistently mapped/ Animations (i.e. Texture Streaming)
         // If Once only use Imports / Pinned Memory to bypass Staging Resizing == Out of memory Errors
         final Queue queue = dma ? DeviceManager.getTransferQueue() : DeviceManager.getGraphicsQueue();
