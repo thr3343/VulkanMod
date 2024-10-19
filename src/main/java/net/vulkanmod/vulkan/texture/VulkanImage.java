@@ -65,7 +65,7 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
 
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0);
+        this.sampler = SamplerManager.getTextureSampler((byte) 0);
     }
 
     private VulkanImage(Builder builder) {
@@ -84,7 +84,7 @@ public class VulkanImage {
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
 
-        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
+        image.sampler = SamplerManager.getTextureSampler(builder.samplerFlags);
 
         if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -213,7 +213,7 @@ public class VulkanImage {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.align(this.formatSize);
 
-        stagingBuffer.copyBuffer((int) imageSize, buffer);
+        stagingBuffer.copyBuffer(imageSize, buffer);
 
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
@@ -256,11 +256,7 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(byte flags) {
-        updateTextureSampler(this.mipLevels - 1, flags);
-    }
-
-    public void updateTextureSampler(int maxLod, byte flags) {
-        this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags);
+        this.sampler = SamplerManager.getTextureSampler(flags);
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {

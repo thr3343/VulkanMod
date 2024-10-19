@@ -21,6 +21,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import net.vulkanmod.vulkan.util.VkResult;
@@ -502,6 +503,8 @@ public class Renderer {
 
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
+        SamplerManager.cleanUp();
+
     }
 
     private void destroySyncObjects() {
@@ -653,10 +656,6 @@ public class Renderer {
 
             vkCmdClearAttachments(INSTANCE.currentCmdBuffer, pAttachments, pRect);
         }
-    }
-
-    public static void setInvertedViewport(int x, int y, int width, int height) {
-        setViewport(x, y + height, width, -height);
     }
 
     public static void setViewport(int x, int y, int width, int height) {

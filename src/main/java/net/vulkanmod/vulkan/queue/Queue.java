@@ -42,6 +42,8 @@ public enum Queue {
 
     public VkQueue queue() { return this.queue; }
 
+    public int familyIndex() { return familyIndex; }
+
     public void cleanUp() {
         if(commandPool != null)
             commandPool.cleanUp();
@@ -52,7 +54,7 @@ public enum Queue {
     }
 
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public long copyBufferCmd(long srcBuffer, int srcOffset, long dstBuffer, long dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -72,7 +74,7 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void uploadBufferImmediate(long srcBuffer, int srcOffset, long dstBuffer, int dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
             CommandPool.CommandBuffer commandBuffer = this.beginCommands();
@@ -91,7 +93,7 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, int srcOffset, long dstBuffer, int dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -108,17 +110,11 @@ public enum Queue {
         currentCmdBuffer = beginCommands();
     }
 
-    public CommandPool.CommandBuffer beginIfNeeded() {
-        return currentCmdBuffer == null ? currentCmdBuffer = beginCommands() : currentCmdBuffer;
-    }
-
     public void endRecordingAndSubmit() {
-        if(currentCmdBuffer != null) {
-            long fence = submitCommands(currentCmdBuffer);
-            Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+        long fence = submitCommands(currentCmdBuffer);
+        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
 
-            currentCmdBuffer = null;
-        }
+        currentCmdBuffer = null;
     }
 
     public CommandPool.CommandBuffer getCommandBuffer() {
@@ -146,7 +142,7 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int offset, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)
@@ -156,7 +152,8 @@ public enum Queue {
                     .dstQueueFamilyIndex(this.familyIndex)
                     .srcAccessMask(srcAccess)
                     .dstAccessMask(dstAccess)
-                    .size(size_t);
+                    .size(size_t)
+                    .offset(offset);
 
             vkCmdPipelineBarrier(commandBuffer,
                     srcStage, dstStage,
