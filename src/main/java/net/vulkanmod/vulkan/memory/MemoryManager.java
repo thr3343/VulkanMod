@@ -22,7 +22,6 @@ import java.nio.LongBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static net.vulkanmod.vulkan.memory.MemoryType.Type.BAR_LOCAL;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -103,7 +102,7 @@ public class MemoryManager {
 //        images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+    public void createBuffer(long size, int usage, int properties, MemoryType type, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
         try (MemoryStack stack = stackPush()) {
 
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
@@ -113,6 +112,9 @@ public class MemoryManager {
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(properties);
+            allocationInfo.memoryTypeBits(1<<type.memoryTypeIndex);
+            final int flag = type.type == MemoryType.Type.BAR_LOCAL ? VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT : 0;
+            allocationInfo.flags(flag);
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
@@ -134,7 +136,7 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
+            this.createBuffer(size, usage, properties, buffer.type, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));

@@ -9,11 +9,12 @@ public abstract class MemoryType {
     final Type type;
     public final VkMemoryType vkMemoryType;
     public final VkMemoryHeap vkMemoryHeap;
-
-    MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+    public final int memoryTypeIndex;
+    MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
         this.type = type;
         this.vkMemoryType = vkMemoryType;
         this.vkMemoryHeap = vkMemoryHeap;
+        this.memoryTypeIndex = memoryTypeIndex;
     }
 
     abstract void createBuffer(Buffer buffer, int size);
