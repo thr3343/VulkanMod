@@ -136,7 +136,7 @@ public class BlockRenderer {
         int[] lights = quadLightData.lm;
 
         // Rotate triangles if needed to fix AO anisotropy
-        int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
+        int idx = 0;//QuadUtils.getIterationStartIdx(brightnessArr, lights);
 
         bufferBuilder.ensureCapacity();
 

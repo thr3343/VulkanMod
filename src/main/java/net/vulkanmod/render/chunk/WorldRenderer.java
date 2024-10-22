@@ -50,6 +50,8 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.*;
 
+import static org.lwjgl.opengl.GL11C.GL_LESS;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -309,6 +311,8 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(modelView, projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
+        VRenderSystem.depthMask(terrainRenderType!=TerrainRenderType.TRANSLUCENT);
+        VRenderSystem.depthFunc(GL_LESS);
 
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
@@ -323,7 +327,7 @@ public class WorldRenderer {
 
             VTextureSelector.bindShaderTextures(pipeline);
 
-            IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
+            IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer2().getIndexBuffer();
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
             Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer);
 

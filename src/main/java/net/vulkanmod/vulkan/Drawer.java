@@ -24,6 +24,7 @@ public class Drawer {
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer quadsIndexBuffer2;
     private final AutoIndexBuffer quadsIntIndexBuffer;
     private final AutoIndexBuffer linesIndexBuffer;
     private final AutoIndexBuffer debugLineStripIndexBuffer;
@@ -35,7 +36,8 @@ public class Drawer {
 
     public Drawer() {
         // Index buffers
-        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.QUAD_U16_MAX_VERTEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
+        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.U16_MAX_INDEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
+        this.quadsIndexBuffer2 = new AutoIndexBuffer(AutoIndexBuffer.QUAD_U16_MAX_VERTEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
         this.quadsIntIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
         this.linesIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.LINES);
         this.debugLineStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.DEBUG_LINE_STRIP);
@@ -163,6 +165,10 @@ public class Drawer {
 
     public AutoIndexBuffer getQuadsIndexBuffer() {
         return this.quadsIndexBuffer;
+    }
+
+    public AutoIndexBuffer getQuadsIndexBuffer2() {
+        return quadsIndexBuffer2;
     }
 
     public AutoIndexBuffer getLinesIndexBuffer() {

@@ -427,7 +427,7 @@ public class LiquidRenderer {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
-        int k = QuadUtils.getIterationStartIdx(quadLightData.br);
+        int k = 0;//QuadUtils.getIterationStartIdx(quadLightData.br);
 
         bufferBuilder.ensureCapacity();
 

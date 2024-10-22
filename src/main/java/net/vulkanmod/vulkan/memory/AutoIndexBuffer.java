@@ -29,8 +29,12 @@ public class AutoIndexBuffer {
 
         switch (this.drawType) {
             case QUADS -> {
-                if (vertexCount <= QUAD_U16_MAX_VERTEX_COUNT)
+                if (vertexCount <= U16_MAX_INDEX_COUNT)
                     buffer = genQuadIndices(vertexCount);
+                else if(vertexCount == QUAD_U16_MAX_VERTEX_COUNT)
+                {
+                    buffer = genQuadIndices2(vertexCount);
+                }
                 else {
                     indexType = IndexBuffer.IndexType.INT;
                     buffer = genIntQuadIndices(vertexCount);
@@ -78,6 +82,45 @@ public class AutoIndexBuffer {
 
             j += 6;
         }
+
+        return buffer;
+    }
+
+    public static ByteBuffer genQuadIndices2(int vertexCount) {
+        int indexCount = vertexCount * 3 / 2;
+        indexCount = roundUpToDivisible(indexCount, 6);
+
+        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
+        ShortBuffer idxs = buffer.asShortBuffer();
+        //TODO: Align WaveFront to Vertex Post-Rransform Cache
+        // + Reuse adjacent regions
+        // PostranformreuseSis.eraneg paramater (Posit tarnform Cacheloclaity...ReusePsTranspfr)
+        // Cutouts will be a proble due to non Quad/Integer/.PoT Vertices: (ie.. intersecting Vertices)
+        // amy end to sue seperate Cutouts After all
+        // -
+        // SubMesh - meshlet index Buffer regions: align waveFronts per region
+        // Amplification Step - broadCast Mesh - Locality indices
+        // N Cntentsin - Bank Conflicts: Invoctaiosn shudl nto step/cross SubGroup/WveFront.ehslet range e.g.i.e..le..etc.Msic..Vis.Eva.et.al.e.g.x.e.vav
+
+        int j = 0;
+        for(int i = 0; i < vertexCount; i += 8) {
+            idxs.put(j + 0, (short) i);
+            idxs.put(j + 1, (short) (i + 1));
+            idxs.put(j + 2, (short) (i + 2));
+            idxs.put(j + 3, (short) i);
+            idxs.put(j + 4, (short) (i + 2));
+            idxs.put(j + 5, (short) (i + 3));
+
+            idxs.put(j + 0+6, (short) (i + 4));
+            idxs.put(j + 1+6, (short) (i + 0));
+            idxs.put(j + 2+6, (short) (i + 3));
+            idxs.put(j + 3+6, (short) (i + 4));
+            idxs.put(j + 4+6, (short) (i + 3));
+            idxs.put(j + 5+6, (short) (i + 7));
+
+            j += 12;
+        }
+
 
         return buffer;
     }
