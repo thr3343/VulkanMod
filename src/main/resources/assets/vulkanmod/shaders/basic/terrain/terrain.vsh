@@ -20,11 +20,11 @@ layout (location = 2) out vec2 texCoord0;
 
 //Compressed Vertex
 #ifndef GCN_FIX
-    layout (location = 0) in ivec4 Position;
+    layout (location = 0) in vec4 Position;
     layout (location = 1) in vec4 Color;
     layout (location = 2) in uvec2 UV0;
 #else
-    layout (location = 0) in ivec4 Position;
+    layout (location = 0) in vec4 Position;
     layout (location = 1) in vec4 Color;
     layout (location = 2) in uint UV0;
 #endif
@@ -41,7 +41,7 @@ void main() {
     gl_Position = MVP * pos;
 
     vertexDistance = fog_distance(pos.xyz, 0);
-    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
+    vertexColor = Color * sample_lightmap2(Sampler2, floatBitsToUint(Position.a)>>16);
 
     #ifndef GCN_FIX
         texCoord0 = UV0 * UV_INV;

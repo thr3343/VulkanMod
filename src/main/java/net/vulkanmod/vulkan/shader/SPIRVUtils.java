@@ -28,7 +28,7 @@ import static org.lwjgl.util.shaderc.Shaderc.shaderc_compile_options_set_optimiz
 
 public class SPIRVUtils {
     private static final boolean use4ByteAlignFormat = Vulkan.getDevice().isAMD();
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
     private static final boolean OPTIMIZATIONS = true;
 
     private static long compiler;

@@ -2,6 +2,8 @@ package net.vulkanmod.render.vertex;
 
 import org.lwjgl.system.MemoryUtil;
 
+import static java.lang.Float.floatToFloat16;
+
 public interface VertexBuilder {
     void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal);
 
@@ -42,9 +44,11 @@ public interface VertexBuilder {
         public static final float UV_CONV_MUL = 65536.f;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET_CONV);
+            final short sX = (floatToFloat16(x * POS_CONV_MUL));
+            final short sY = (floatToFloat16(y * POS_CONV_MUL));
+            final short sZ = (floatToFloat16(z * POS_CONV_MUL));
+
+
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);

@@ -95,9 +95,9 @@ public class DrawBuffers {
     public static final float POS_OFFSET = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? 4.0f : 0.0f;
 
     private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
-        float xOffset = (float) ((this.origin.x) + POS_OFFSET - camX);
-        float yOffset = (float) ((this.origin.y) + POS_OFFSET - camY);
-        float zOffset = (float) ((this.origin.z) + POS_OFFSET - camZ);
+        float xOffset = (float) ((this.origin.x) - camX);
+        float yOffset = (float) ((this.origin.y) - camY);
+        float zOffset = (float) ((this.origin.z) - camZ);
 
         ByteBuffer byteBuffer = stack.malloc(12);
 

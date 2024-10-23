@@ -29,12 +29,8 @@ public class AutoIndexBuffer {
 
         switch (this.drawType) {
             case QUADS -> {
-                if (vertexCount <= U16_MAX_INDEX_COUNT)
+                if (vertexCount <= QUAD_U16_MAX_VERTEX_COUNT)
                     buffer = genQuadIndices(vertexCount);
-                else if(vertexCount == QUAD_U16_MAX_VERTEX_COUNT)
-                {
-                    buffer = genQuadIndices2(vertexCount);
-                }
                 else {
                     indexType = IndexBuffer.IndexType.INT;
                     buffer = genIntQuadIndices(vertexCount);
