@@ -301,7 +301,7 @@ public class WorldRenderer {
         TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
         renderType.setupRenderState();
 
-        this.sortTranslucentSections(camX, camY, camZ);
+//        this.sortTranslucentSections(camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);

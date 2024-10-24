@@ -128,28 +128,11 @@ public class TerrainBufferBuilder {
         int vertexBufferSize = !this.indexOnly ? this.vertexCount * this.format.getVertexSize() : 0;
         VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
 
-        boolean sequentialIndexing;
-        int size;
-
-        if (this.needsSorting) {
-            int indexBufferSize = indexCount * indexType.bytes;
-            this.ensureCapacity(indexBufferSize);
-
-            this.quadSorter.putSortedQuadIndices(this, indexType);
-
-            sequentialIndexing = false;
-            this.nextElementByte += indexBufferSize;
-            size = vertexBufferSize + indexBufferSize;
-        } else {
-            sequentialIndexing = true;
-            size = vertexBufferSize;
-        }
-
         int ptr = this.renderedBufferPointer;
-        this.renderedBufferPointer += size;
+        this.renderedBufferPointer += vertexBufferSize;
         ++this.renderedBufferCount;
 
-        DrawState drawState = new DrawState(this.format.getVertexSize(), this.vertexCount, indexCount, indexType, this.indexOnly, sequentialIndexing);
+        DrawState drawState = new DrawState(this.format.getVertexSize(), this.vertexCount, indexCount, indexType, this.indexOnly, true);
         return new RenderedBuffer(ptr, drawState);
     }
 

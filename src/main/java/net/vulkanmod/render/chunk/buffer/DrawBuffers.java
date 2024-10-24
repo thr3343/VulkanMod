@@ -163,9 +163,9 @@ public class DrawBuffers {
             updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
         }
 
-        if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
+//        if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
+//            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+//        }
 
     }
 
