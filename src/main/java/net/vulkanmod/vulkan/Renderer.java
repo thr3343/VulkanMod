@@ -654,6 +654,10 @@ public class Renderer {
         }
     }
 
+    public static void setInvertedViewport(int x, int y, int width, int height) {
+        setViewport(x, y + height, width, -height);
+    }
+
     public static void setViewport(int x, int y, int width, int height) {
         try (MemoryStack stack = stackPush()) {
             setViewport(x, y, width, height, stack);
