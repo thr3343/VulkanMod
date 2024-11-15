@@ -4,17 +4,16 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import net.vulkanmod.vulkan.queue.Queue;
+import org.spongepowered.asm.mixin.*;
 
 import java.util.Set;
 
 @Mixin(TextureManager.class)
 public abstract class MTextureManager {
-
+    @Unique private static final Queue defaultTransferQueue = Vulkan.getDevice().isNvidia() ? DeviceManager.getTransferQueue() : DeviceManager.getGraphicsQueue();
     @Shadow @Final private Set<Tickable> tickableTextures;
 
     /**
@@ -27,13 +26,13 @@ public abstract class MTextureManager {
 
         //Debug D
         if (SpriteUtil.shouldUpload())
-            DeviceManager.getGraphicsQueue().startRecording();
+            defaultTransferQueue.startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
         if (SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
-            DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
+            SpriteUtil.transitionLayouts(defaultTransferQueue.getCommandBuffer().getHandle());
+            defaultTransferQueue.endRecordingAndSubmit();
         }
     }
 }

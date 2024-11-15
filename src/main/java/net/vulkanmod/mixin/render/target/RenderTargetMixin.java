@@ -8,6 +8,7 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryStack;
@@ -73,7 +74,7 @@ public abstract class RenderTargetMixin {
         applyClear();
 
         GlTexture.bindTexture(this.colorTextureId);
-
+        //TODO: Check Sync Hazards
         try (MemoryStack stack = MemoryStack.stackPush()) {
             GlTexture.getBoundTexture().getVulkanImage()
                     .readOnlyLayout(stack, Renderer.getCommandBuffer());
