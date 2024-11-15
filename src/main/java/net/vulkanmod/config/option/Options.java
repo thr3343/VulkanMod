@@ -265,6 +265,11 @@ public abstract class Options {
                                 },
                                 () -> config.backFaceCulling)
                                 .setTooltip(Component.translatable("vulkanmod.options.backfaceCulling.tooltip")),
+                        new SwitchOption(Component.nullToEmpty("animations"),
+                                value -> {
+                                    config.animations = value;
+                                },
+                                () -> config.animations),
                         new SwitchOption(Component.translatable("vulkanmod.options.indirectDraw"),
                                 value -> config.indirectDraw = value,
                                 () -> config.indirectDraw)

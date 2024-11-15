@@ -2,6 +2,8 @@ package net.vulkanmod.mixin.render;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -10,8 +12,11 @@ import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
 import net.fabricmc.fabric.impl.client.rendering.FabricShaderProgram;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.vulkanmod.render.chunk.buffer.UploadManager;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -368,6 +373,16 @@ public abstract class GameRendererMixin {
     public float getDepthFar() {
 //        return this.getRenderDistance() * 4.0F;
         return Float.POSITIVE_INFINITY;
+    }
+
+
+
+    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LightTexture;updateLightTexture(F)V"))
+    private void tst2(LightTexture instance, float f, Operation<Void> original)
+    {            Synchronization.INSTANCE.waitFences();
+        original.call(instance, f);
+
+        UploadManager.INSTANCE.submitUploads();
     }
 
 }

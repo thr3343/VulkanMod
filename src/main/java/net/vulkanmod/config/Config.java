@@ -28,6 +28,7 @@ public class Config {
     public int ambientOcclusion = 1;
 
     public boolean backFaceCulling = true;
+    public boolean animations = true;
 
     public void write() {
 
