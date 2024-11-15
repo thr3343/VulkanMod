@@ -125,7 +125,7 @@ public class VBO {
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
-            VTextureSelector.bindShaderTextures(pipeline);
+            VTextureSelector.bindShaderTextures(pipeline.getImageDescriptors());
             renderer.uploadAndBindUBOs(pipeline);
 
             if (this.indexBuffer != null)

@@ -314,7 +314,7 @@ public class WorldRenderer {
         GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
         renderer.bindGraphicsPipeline(pipeline);
 
-        VTextureSelector.bindShaderTextures(pipeline);
+        VTextureSelector.bindShaderTextures(pipeline.getImageDescriptors());
 
         IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
         Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer);

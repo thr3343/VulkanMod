@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 public abstract class VTextureSelector {
     public static final int SIZE = 12;
@@ -67,21 +68,17 @@ public abstract class VTextureSelector {
         };
     }
 
-    public static void bindShaderTextures(Pipeline pipeline) {
-        var imageDescriptors = pipeline.getImageDescriptors();
+    //TODO; Maybe OpenGl Style: checkDescriptorState(): Decouple Descriptors from pipelines
+    public static void bindShaderTextures(List<ImageDescriptor> imageDescriptors) {
 
         for (ImageDescriptor state : imageDescriptors) {
+            //TODO: N/A; but may be more optimal to use texture 0 instead for uninitialised Descriptors
+            // I.e. Mojang uses 0 for uninitialised textureIds
             final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
-            GlTexture texture = GlTexture.getTexture(shaderTexture);
+            VulkanImage vulkanImage = GlTexture.getTexture(shaderTexture != 0 ? shaderTexture : MissingTextureAtlasSprite.getTexture().getId()).getVulkanImage();
 
-            if (texture != null && texture.getVulkanImage() != null) {
-                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
-            }
-            else {
-                 texture = GlTexture.getTexture(MissingTextureAtlasSprite.getTexture().getId());
-                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
-            }
+            VTextureSelector.bindTexture(state.imageIdx, vulkanImage);
         }
     }
 

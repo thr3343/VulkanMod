@@ -54,7 +54,7 @@ public class BufferUploaderM {
 
             VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
             renderer.bindGraphicsPipeline(pipeline);
-            VTextureSelector.bindShaderTextures(pipeline);
+            VTextureSelector.bindShaderTextures(pipeline.getImageDescriptors());
             renderer.uploadAndBindUBOs(pipeline);
 
             Renderer.getDrawer().draw(meshData.vertexBuffer(), meshData.indexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
