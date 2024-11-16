@@ -31,19 +31,19 @@ public class Synchronization {
 
     public synchronized void addFence(long fence) {
         if (idx == ALLOCATION_SIZE)
-            waitFences();
+            recycleCmdBuffers();
 
         fences.put(idx, fence);
         idx++;
     }
 
-    public synchronized void waitFences() {
+    public synchronized void recycleCmdBuffers() {
         if (idx == 0)
             return;
 
-        VkDevice device = Vulkan.getVkDevice();
-
-        fences.limit(idx);
+//        VkDevice device = Vulkan.getVkDevice();
+//
+//        fences.limit(idx);
 
 //        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 

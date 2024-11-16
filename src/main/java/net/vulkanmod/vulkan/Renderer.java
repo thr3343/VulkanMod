@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -290,16 +291,16 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
+            Queue transferQueue = DeviceManager.getTransferQueue();
+            Queue graphicsQueue = DeviceManager.getGraphicsQueue();
             int vkResult;
-            long tmSemaphore = DeviceManager.getTransferQueue().getTmSemaphore();
-            long tmSemaphore1 = DeviceManager.getGraphicsQueue().getTmSemaphore();
+            long tmSemaphore = transferQueue.getTmSemaphore();
+            long tmSemaphore1 = graphicsQueue.getTmSemaphore();
 
             VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
-                    .pWaitSemaphoreValues(stack.longs(DeviceManager.getGraphicsQueue().getPending().get(), DeviceManager.getTransferQueue().getPending().get(), 0))
-                    .waitSemaphoreValueCount(3)
-                    .pSignalSemaphoreValues(stack.longs(0))
-                    .signalSemaphoreValueCount(0);
+                    .pWaitSemaphoreValues(stack.longs(graphicsQueue.getPending().get(), transferQueue.getPending().get(), 0))
+                    .waitSemaphoreValueCount(3);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -307,7 +308,7 @@ public class Renderer {
 
             submitInfo.waitSemaphoreCount(3);
             submitInfo.pWaitSemaphores(stack.longs(tmSemaphore1, tmSemaphore, imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
 
@@ -323,9 +324,9 @@ public class Renderer {
 //
 //            VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
 
-//            Synchronization.INSTANCE.waitFences();
+            Synchronization.INSTANCE.recycleCmdBuffers();
 
-            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if ((vkResult = vkQueueSubmit(graphicsQueue.queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
@@ -373,7 +374,7 @@ public class Renderer {
 
             vkResetFences(device, inFlightFences.get(currentFrame));
 
-            Synchronization.INSTANCE.waitFences();
+            Synchronization.INSTANCE.recycleCmdBuffers();
 
             if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));
@@ -430,7 +431,7 @@ public class Renderer {
         // runTick might be called recursively,
         // this check forces sync to avoid upload corruption
         if (lastReset == currentFrame) {
-            Synchronization.INSTANCE.waitFences();
+            Synchronization.INSTANCE.recycleCmdBuffers();
         }
         lastReset = currentFrame;
 
@@ -478,7 +479,7 @@ public class Renderer {
 
     @SuppressWarnings("UnreachableCode")
     private void recreateSwapChain() {
-        Synchronization.INSTANCE.waitFences();
+        Synchronization.INSTANCE.recycleCmdBuffers();
         Vulkan.waitIdle();
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
