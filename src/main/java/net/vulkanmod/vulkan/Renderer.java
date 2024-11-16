@@ -291,13 +291,23 @@ public class Renderer {
 
         try (MemoryStack stack = stackPush()) {
             int vkResult;
+            long tmSemaphore = DeviceManager.getTransferQueue().getTmSemaphore();
+            long tmSemaphore1 = DeviceManager.getGraphicsQueue().getTmSemaphore();
+
+            VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pWaitSemaphoreValues(stack.longs(DeviceManager.getGraphicsQueue().getPending().get(), DeviceManager.getTransferQueue().getPending().get(), 0))
+                    .waitSemaphoreValueCount(3)
+                    .pSignalSemaphoreValues(stack.longs(0))
+                    .signalSemaphoreValueCount(0);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pNext(mainSemaphoreSubmitInfo);
 
-            submitInfo.waitSemaphoreCount(1);
-            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.waitSemaphoreCount(3);
+            submitInfo.pWaitSemaphores(stack.longs(tmSemaphore1, tmSemaphore, imageAvailableSemaphores.get(currentFrame)));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
 
@@ -305,7 +315,15 @@ public class Renderer {
 
             vkResetFences(device, inFlightFences.get(currentFrame));
 
-            Synchronization.INSTANCE.waitFences();
+//            VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
+//                            .sType$Default()
+//                            .semaphoreCount(1)
+//                            .pSemaphores(stack.longs(tmSemaphore))
+//                            .pValues(stack.longs(DeviceManager.getTransferQueue().getPending().get()));
+//
+//            VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
+
+//            Synchronization.INSTANCE.waitFences();
 
             if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));

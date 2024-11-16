@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -54,7 +55,9 @@ public abstract class ImageUtil {
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
+            //TODO:!
+            Vulkan.waitIdle();
+//            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
                     (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) imageSize), ptr)

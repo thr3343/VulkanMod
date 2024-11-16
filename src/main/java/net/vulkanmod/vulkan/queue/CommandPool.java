@@ -53,16 +53,16 @@ public class CommandPool {
 
                 PointerBuffer pCommandBuffer = stack.mallocPointer(size);
                 vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
-
-                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-                fenceInfo.sType$Default();
-                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+//
+//                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
+//                fenceInfo.sType$Default();
+//                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
                 for (int i = 0; i < size; ++i) {
-                    LongBuffer pFence = stack.mallocLong(size);
-                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
+//                    LongBuffer pFence = stack.mallocLong(size);
+//                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()), pFence.get(0));
+                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()), 0/*pFence.get(0)*/);
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -83,22 +83,32 @@ public class CommandPool {
         }
     }
 
-    public long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
+    public long submitCommands(CommandBuffer commandBuffer, Queue queue) {
 
         try (MemoryStack stack = stackPush()) {
-            long fence = commandBuffer.fence;
+            boolean b = queue == Queue.TransferQueue;
+//            long fence = b ? 0 : commandBuffer.fence;
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-            vkResetFences(Vulkan.getVkDevice(), commandBuffer.fence);
+//            if(!b) vkResetFences(Vulkan.getVkDevice(), commandBuffer.fence);
 
+            VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pSignalSemaphoreValues(stack.longs(queue.getPending().incrementAndGet()))
+                    .signalSemaphoreValueCount(1);
+
+            //TODO: No Wait,just Submit
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pNext(timelineSemaphoreSubmitInfo);
+            submitInfo.pSignalSemaphores(stack.longs(queue.getTmSemaphore()));
+            submitInfo.pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)); //Clarify its no wait
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            vkQueueSubmit(queue.queue(), submitInfo, 0);
 
-            return fence;
+            return 0;
         }
     }
 

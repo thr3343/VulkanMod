@@ -379,10 +379,12 @@ public abstract class GameRendererMixin {
 
     @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LightTexture;updateLightTexture(F)V"))
     private void tst2(LightTexture instance, float f, Operation<Void> original)
-    {            Synchronization.INSTANCE.waitFences();
+    {
+        //TODO: No SubChannel Switches...
+//        Synchronization.INSTANCE.waitFences();
         original.call(instance, f);
 
-        UploadManager.INSTANCE.submitUploads();
+//        UploadManager.INSTANCE.submitUploads();
     }
 
 }

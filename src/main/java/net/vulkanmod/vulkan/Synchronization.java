@@ -25,7 +25,7 @@ public class Synchronization {
     }
 
     public synchronized void addCommandBuffer(CommandPool.CommandBuffer commandBuffer) {
-        this.addFence(commandBuffer.getFence());
+//        this.addFence(commandBuffer.getFence());
         this.commandBuffers.add(commandBuffer);
     }
 
@@ -45,7 +45,7 @@ public class Synchronization {
 
         fences.limit(idx);
 
-        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
+//        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
