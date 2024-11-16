@@ -117,30 +117,30 @@ public class CommandPool {
     }
 
     public void cleanUp() {
-        for (CommandBuffer commandBuffer : commandBuffers) {
-            vkDestroyFence(Vulkan.getVkDevice(), commandBuffer.fence, null);
-        }
+//        for (CommandBuffer commandBuffer : commandBuffers) {
+//            vkDestroyFence(Vulkan.getVkDevice(), commandBuffer.fence, null);
+//        }
         vkResetCommandPool(Vulkan.getVkDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
     }
 
     public class CommandBuffer {
         final VkCommandBuffer handle;
-        final long fence;
+        int submitId; //Emulates fence Functionality:
         boolean submitted;
         boolean recording;
 
         public CommandBuffer(VkCommandBuffer handle, long fence) {
             this.handle = handle;
-            this.fence = fence;
+            this.submitId = 0;
         }
 
         public VkCommandBuffer getHandle() {
             return handle;
         }
 
-        public long getFence() {
-            return fence;
+        public long getSubmitId() {
+            return submitId;
         }
 
         public boolean isSubmitted() {
