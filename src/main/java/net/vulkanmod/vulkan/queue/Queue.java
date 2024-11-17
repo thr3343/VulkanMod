@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -26,7 +25,6 @@ public enum Queue {
     private final long tmSemaphore;
 
     private final AtomicInteger pending = new AtomicInteger(0); //completed
-    private final AtomicInteger complete = new AtomicInteger(0);
 
     public CommandPool.CommandBuffer beginCommands() {
         return this.commandPool.beginCommands();
@@ -264,12 +262,8 @@ public enum Queue {
 
     }
 
-    public AtomicInteger getPending() {
+    public AtomicInteger submitCount() {
         return pending;
-    }
-
-    public AtomicInteger getComplete() {
-        return complete;
     }
 
     public long getTmSemaphore() {

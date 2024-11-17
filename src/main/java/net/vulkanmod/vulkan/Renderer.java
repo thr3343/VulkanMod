@@ -295,7 +295,7 @@ public class Renderer {
 
             VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
-                    .pWaitSemaphoreValues(stack.longs(0, DeviceManager.getGraphicsQueue().getPending().get()))
+                    .pWaitSemaphoreValues(stack.longs(0, Queue.GraphicsQueue.submitCount().get()))
                     .waitSemaphoreValueCount(2);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
@@ -303,7 +303,7 @@ public class Renderer {
             submitInfo.pNext(mainSemaphoreSubmitInfo);
 
             submitInfo.waitSemaphoreCount(2);
-            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), DeviceManager.getGraphicsQueue().getTmSemaphore()));
+            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), Queue.GraphicsQueue.getTmSemaphore()));
             submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT));
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
@@ -316,13 +316,13 @@ public class Renderer {
                             .sType$Default()
                             .semaphoreCount(1)
                             .pSemaphores(stack.longs(DeviceManager.getTransferQueue().getTmSemaphore()))
-                            .pValues(stack.longs(DeviceManager.getTransferQueue().getPending().get()));
-
+                            .pValues(stack.longs(DeviceManager.getTransferQueue().submitCount().get()));
+            //Wait Async Transfers on host to avoid invalid frees (Destroy Buffer during use)
             VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
 
             Synchronization.INSTANCE.recycleCmdBuffers();
 
-            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if ((vkResult = vkQueueSubmit(Queue.GraphicsQueue.queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }

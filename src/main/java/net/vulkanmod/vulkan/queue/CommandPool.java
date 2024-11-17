@@ -86,17 +86,14 @@ public class CommandPool {
     public long submitCommands(CommandBuffer commandBuffer, Queue queue) {
 
         try (MemoryStack stack = stackPush()) {
-            boolean b = queue == Queue.TransferQueue;
-//            long fence = b ? 0 : commandBuffer.fence;
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-//            if(!b) vkResetFences(Vulkan.getVkDevice(), commandBuffer.fence);
+            int submitId = queue.submitCount().incrementAndGet(); //Has same function as individual fence
 
             VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
-                    .pSignalSemaphoreValues(stack.longs(queue.getPending().incrementAndGet()))
-                    .signalSemaphoreValueCount(1);
+                    .pSignalSemaphoreValues(stack.longs(submitId));
 
             //TODO: No Wait,just Submit
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
@@ -107,6 +104,8 @@ public class CommandPool {
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
             vkQueueSubmit(queue.queue(), submitInfo, 0);
+
+            commandBuffer.submitId = submitId;
 
             return 0;
         }
