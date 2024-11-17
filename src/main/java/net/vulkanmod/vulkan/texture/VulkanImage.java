@@ -207,8 +207,7 @@ public class VulkanImage {
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
-        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
-        if (fence != VK_NULL_HANDLE)
+        if (DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer))
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }

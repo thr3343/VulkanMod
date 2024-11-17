@@ -62,8 +62,8 @@ public enum Queue {
         }
     }
 
-    public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        return this.commandPool.submitCommands(commandBuffer, this);
+    public void submitCommands(CommandPool.CommandBuffer commandBuffer) {
+        this.commandPool.submitCommands(commandBuffer, this);
     }
 
     public VkQueue queue() { return this.queue; }
@@ -80,7 +80,7 @@ public enum Queue {
     }
 
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -93,9 +93,8 @@ public enum Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            long a = this.submitCommands(commandBuffer);
+            this.submitCommands(commandBuffer);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
-            return a;
 
         }
     }
@@ -137,7 +136,7 @@ public enum Queue {
     }
 
     public void endRecordingAndSubmit() {
-        long fence = submitCommands(currentCmdBuffer);
+        submitCommands(currentCmdBuffer);
         Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
 
         currentCmdBuffer = null;
@@ -147,8 +146,11 @@ public enum Queue {
         return currentCmdBuffer != null ? currentCmdBuffer : beginCommands();
     }
 
-    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
-        return currentCmdBuffer != null ? VK_NULL_HANDLE : submitCommands(commandBuffer);
+    public boolean endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+
+        boolean b = currentCmdBuffer != null;
+        if(!b) submitCommands(commandBuffer);
+        return !b;
     }
 
     public void trimCmdPool()

@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -64,7 +63,7 @@ public class CommandPool {
 //                    LongBuffer pFence = stack.mallocLong(size);
 //                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()), 0/*pFence.get(0)*/);
+                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()) /*pFence.get(0)*/);
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -85,7 +84,7 @@ public class CommandPool {
         }
     }
 
-    public long submitCommands(CommandBuffer commandBuffer, Queue queue) {
+    public void submitCommands(CommandBuffer commandBuffer, Queue queue) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -108,8 +107,6 @@ public class CommandPool {
             vkQueueSubmit(queue.queue(), submitInfo, 0);
 
             commandBuffer.submitId = submitId;
-
-            return 0;
         }
     }
 
@@ -131,7 +128,7 @@ public class CommandPool {
         boolean submitted;
         boolean recording;
 
-        public CommandBuffer(VkCommandBuffer handle, long fence) {
+        public CommandBuffer(VkCommandBuffer handle) {
             this.handle = handle;
             this.submitId = 0;
         }

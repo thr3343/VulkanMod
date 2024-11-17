@@ -4,6 +4,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -54,7 +55,7 @@ public abstract class ImageUtil {
             copyImageToBuffer(commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width, image.height, 0, 0, 0, 0, 0);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
-            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
             commandBuffer.wait(DeviceManager.getGraphicsQueue());
 //            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
 
@@ -186,9 +187,9 @@ public abstract class ImageUtil {
 
             image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
 
-            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
+            commandBuffer.wait(Queue.GraphicsQueue);
         }
     }
 }
