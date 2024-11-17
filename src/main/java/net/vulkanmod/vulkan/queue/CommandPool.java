@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.queue;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -148,6 +150,21 @@ public class CommandPool {
 
         public boolean isRecording() {
             return recording;
+        }
+
+        //Emulates functionality of vkWaitForFences()
+        public void wait(Queue queue) {
+
+           try(MemoryStack stack = MemoryStack.stackPush()) {
+               VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                       .sType$Default()
+                       .semaphoreCount(1)
+                       .pSemaphores(stack.longs(queue.getTmSemaphore()))
+                       .pValues(stack.longs(this.submitId));
+
+
+               VK12.vkWaitSemaphores(Vulkan.getVkDevice(), vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
+           }
         }
 
         public void reset() {

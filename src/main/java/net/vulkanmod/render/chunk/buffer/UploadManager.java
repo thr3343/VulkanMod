@@ -107,6 +107,8 @@ public class UploadManager {
 
     public void syncUploads() {
         submitUploads();
+        if (this.commandBuffer != null)
+            this.commandBuffer.wait(queue);
 
         Synchronization.INSTANCE.recycleCmdBuffers();
     }

@@ -114,7 +114,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            Vulkan.waitIdle(); //TODO:!
+            commandBuffer.wait(this);
             commandBuffer.reset();
         }
     }

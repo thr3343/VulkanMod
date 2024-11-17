@@ -55,8 +55,7 @@ public abstract class ImageUtil {
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-            //TODO:!
-            Vulkan.waitIdle();
+            commandBuffer.wait(DeviceManager.getGraphicsQueue());
 //            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
