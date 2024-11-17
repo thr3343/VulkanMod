@@ -291,24 +291,20 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-            Queue transferQueue = DeviceManager.getTransferQueue();
-            Queue graphicsQueue = DeviceManager.getGraphicsQueue();
             int vkResult;
-            long tmSemaphore = transferQueue.getTmSemaphore();
-            long tmSemaphore1 = graphicsQueue.getTmSemaphore();
 
             VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                     .sType$Default()
-                    .pWaitSemaphoreValues(stack.longs(graphicsQueue.getPending().get(), transferQueue.getPending().get(), 0))
-                    .waitSemaphoreValueCount(3);
+                    .pWaitSemaphoreValues(stack.longs(0, DeviceManager.getGraphicsQueue().getPending().get()))
+                    .waitSemaphoreValueCount(2);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pNext(mainSemaphoreSubmitInfo);
 
-            submitInfo.waitSemaphoreCount(3);
-            submitInfo.pWaitSemaphores(stack.longs(tmSemaphore1, tmSemaphore, imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.waitSemaphoreCount(2);
+            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), DeviceManager.getGraphicsQueue().getTmSemaphore()));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT));
 
             submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
 
@@ -316,17 +312,17 @@ public class Renderer {
 
             vkResetFences(device, inFlightFences.get(currentFrame));
 
-//            VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
-//                            .sType$Default()
-//                            .semaphoreCount(1)
-//                            .pSemaphores(stack.longs(tmSemaphore))
-//                            .pValues(stack.longs(DeviceManager.getTransferQueue().getPending().get()));
-//
-//            VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
+            VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                            .sType$Default()
+                            .semaphoreCount(1)
+                            .pSemaphores(stack.longs(DeviceManager.getTransferQueue().getTmSemaphore()))
+                            .pValues(stack.longs(DeviceManager.getTransferQueue().getPending().get()));
+
+            VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
 
             Synchronization.INSTANCE.recycleCmdBuffers();
 
-            if ((vkResult = vkQueueSubmit(graphicsQueue.queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
