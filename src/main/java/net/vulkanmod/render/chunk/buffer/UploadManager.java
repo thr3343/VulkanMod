@@ -36,7 +36,7 @@ public class UploadManager {
 
         this.queue.submitCommands(this.commandBuffer);
 
-//        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
+        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
         this.commandBuffer = null;
         this.dstBuffers.clear();

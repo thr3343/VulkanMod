@@ -15,25 +15,25 @@ public class Synchronization {
 
     public static final Synchronization INSTANCE = new Synchronization(ALLOCATION_SIZE);
 
-    private final LongBuffer fences;
+    private final LongBuffer submitIds;
     private int idx = 0;
 
-    private ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
+    private final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
 
     Synchronization(int allocSize) {
-        this.fences = MemoryUtil.memAllocLong(allocSize);
+        this.submitIds = MemoryUtil.memAllocLong(allocSize);
     }
 
     public synchronized void addCommandBuffer(CommandPool.CommandBuffer commandBuffer) {
-//        this.addFence(commandBuffer.getFence());
+//        this.addSubmitId(commandBuffer.getSubmitId());
         this.commandBuffers.add(commandBuffer);
     }
 
-    public synchronized void addFence(long fence) {
+    public synchronized void addSubmitId(long submitId) {
         if (idx == ALLOCATION_SIZE)
             recycleCmdBuffers();
 
-        fences.put(idx, fence);
+        submitIds.put(idx, submitId);
         idx++;
     }
 
@@ -50,7 +50,7 @@ public class Synchronization {
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
 
-        fences.limit(ALLOCATION_SIZE);
+        submitIds.limit(ALLOCATION_SIZE);
         idx = 0;
     }
 

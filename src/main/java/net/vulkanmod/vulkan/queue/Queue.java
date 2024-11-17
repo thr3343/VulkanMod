@@ -116,7 +116,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(DeviceManager.vkDevice, commandBuffer.fence, true, VUtil.UINT64_MAX);
+            Vulkan.waitIdle(); //TODO:!
             commandBuffer.reset();
         }
     }
