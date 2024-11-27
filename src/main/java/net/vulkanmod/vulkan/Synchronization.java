@@ -23,7 +23,7 @@ public class Synchronization {
     Synchronization(int allocSize) {
         this.submitIds = MemoryUtil.memAllocLong(allocSize);
     }
-
+    //TODO: Too Many cmdBuffers generated due to no ALLOCATION_SIZE waits
     public synchronized void addCommandBuffer(CommandPool.CommandBuffer commandBuffer) {
 //        this.addSubmitId(commandBuffer.getSubmitId());
         this.commandBuffers.add(commandBuffer);

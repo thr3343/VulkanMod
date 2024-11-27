@@ -58,7 +58,7 @@ public class CommandPool {
 //                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
 //                fenceInfo.sType$Default();
 //                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
+                //TODO: Too Many cmdBuffers generated due to no ALLOCATION_SIZE waits
                 for (int i = 0; i < size; ++i) {
 //                    LongBuffer pFence = stack.mallocLong(size);
 //                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);

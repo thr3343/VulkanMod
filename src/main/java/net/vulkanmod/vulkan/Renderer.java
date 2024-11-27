@@ -171,19 +171,13 @@ public class Renderer {
             VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack);
             semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
             LongBuffer pImageAvailableSemaphore = stack.mallocLong(1);
             LongBuffer pRenderFinishedSemaphore = stack.mallocLong(1);
-            LongBuffer pFence = stack.mallocLong(1);
 
             for (int i = 0; i < framesNum; i++) {
 
                 if (vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS
-                        || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
-                        || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
+                        || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS) {
 
                     throw new RuntimeException("Failed to create synchronization objects for the frame: " + i);
                 }
@@ -243,6 +237,7 @@ public class Renderer {
                     .pSemaphores(stack.longs(DeviceManager.getGraphicsQueue().getTmSemaphore()))
                     .pValues(stack.longs(submitIds[currentFrame]));
             //Testing using Graphics Timeline as a substitute for inFlightFences
+            //Aggregate frame fences and Graphics Queue fences together as one
             VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
 
             p.pop();
@@ -376,7 +371,7 @@ public class Renderer {
 
             currentFrame = (currentFrame + 1) % framesNum;
 
-            submitIds[currentFrame] = submitId;
+            submitIds[currentFrame] = submitId; //TODO: frameQueue length
         }
     }
 
