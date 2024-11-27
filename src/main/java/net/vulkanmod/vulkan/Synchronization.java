@@ -38,8 +38,8 @@ public class Synchronization {
     }
 
     public synchronized void recycleCmdBuffers() {
-        if (idx == 0)
-            return;
+//        if (idx == 0)
+//            return;
 
 //        VkDevice device = Vulkan.getVkDevice();
 //

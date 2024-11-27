@@ -39,76 +39,36 @@ public class CommandPool {
         }
     }
 
-    public CommandBuffer beginCommands() {
+    public CommandBuffer getCommandBuffer(MemoryStack stack) {
+        if (availableCmdBuffers.isEmpty()) {
+            allocateCommandBuffers(stack);
+        }
 
-        try (MemoryStack stack = stackPush()) {
-            final int size = 10;
+        CommandBuffer commandBuffer = availableCmdBuffers.poll();
+        return commandBuffer;
+    }
 
-            if (availableCmdBuffers.isEmpty()) {
+    private void allocateCommandBuffers(MemoryStack stack) {
+        final int size = 10;
 
-                VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
-                allocInfo.sType$Default();
-                allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-                allocInfo.commandPool(id);
-                allocInfo.commandBufferCount(size);
+        VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
+        allocInfo.sType$Default();
+        allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        allocInfo.commandPool(id);
+        allocInfo.commandBufferCount(size);
 
-                PointerBuffer pCommandBuffer = stack.mallocPointer(size);
-                vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
-//
-//                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-//                fenceInfo.sType$Default();
-//                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-                //TODO: Too Many cmdBuffers generated due to no ALLOCATION_SIZE waits
-                for (int i = 0; i < size; ++i) {
-//                    LongBuffer pFence = stack.mallocLong(size);
-//                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
+        PointerBuffer pCommandBuffer = stack.mallocPointer(size);
+        vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()) /*pFence.get(0)*/);
-                    commandBuffers.add(commandBuffer);
-                    availableCmdBuffers.add(commandBuffer);
-                }
-
-            }
-
-            CommandBuffer commandBuffer = availableCmdBuffers.poll();
-
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-            vkBeginCommandBuffer(commandBuffer.handle, beginInfo);
-
-//            current++;
-
-            return commandBuffer;
+        for (int i = 0; i < size; ++i) {
+            VkCommandBuffer vkCommandBuffer = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
+            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer);
+            commandBuffers.add(commandBuffer);
+            availableCmdBuffers.add(commandBuffer);
         }
     }
 
-    public void submitCommands(CommandBuffer commandBuffer, Queue queue) {
 
-        try (MemoryStack stack = stackPush()) {
-
-            vkEndCommandBuffer(commandBuffer.handle);
-
-            int submitId = queue.submitCount().incrementAndGet(); //Has same function as individual fence
-
-            VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
-                    .sType$Default()
-                    .pSignalSemaphoreValues(stack.longs(submitId));
-
-            //TODO: No Wait,just Submit
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pNext(timelineSemaphoreSubmitInfo);
-            submitInfo.pSignalSemaphores(stack.longs(queue.getTmSemaphore()));
-            submitInfo.pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)); //Clarify its no wait
-            submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
-
-            vkQueueSubmit(queue.queue(), submitInfo, 0);
-
-            commandBuffer.submitId = submitId;
-        }
-    }
 
     public void addToAvailable(CommandBuffer commandBuffer) {
         this.availableCmdBuffers.add(commandBuffer);
@@ -122,13 +82,20 @@ public class CommandPool {
         vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
     }
 
-    public class CommandBuffer {
-        final VkCommandBuffer handle;
-        int submitId; //Emulates fence Functionality:
+    public long getId() {
+        return id;
+    }
+
+    public static class CommandBuffer {
+        public final CommandPool commandPool;
+        public final VkCommandBuffer handle;
+        public int submitId; //Emulates fence Functionality:
+
         boolean submitted;
         boolean recording;
 
-        public CommandBuffer(VkCommandBuffer handle) {
+        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle) {
+            this.commandPool = commandPool;
             this.handle = handle;
             this.submitId = 0;
         }
@@ -141,6 +108,21 @@ public class CommandPool {
             return submitId;
         }
 
+        //Emulates functionality of vkWaitForFences()
+        public void wait(Queue queue) {
+
+            try(MemoryStack stack = MemoryStack.stackPush()) {
+                VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                        .sType$Default()
+                        .semaphoreCount(1)
+                        .pSemaphores(stack.longs(queue.getTmSemaphore()))
+                        .pValues(stack.longs(this.submitId));
+
+
+                VK12.vkWaitSemaphores(Vulkan.getVkDevice(), vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
+            }
+        }
+
         public boolean isSubmitted() {
             return submitted;
         }
@@ -149,25 +131,49 @@ public class CommandPool {
             return recording;
         }
 
-        //Emulates functionality of vkWaitForFences()
-        public void wait(Queue queue) {
+        public void begin(MemoryStack stack) {
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
+            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-           try(MemoryStack stack = MemoryStack.stackPush()) {
-               VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
-                       .sType$Default()
-                       .semaphoreCount(1)
-                       .pSemaphores(stack.longs(queue.getTmSemaphore()))
-                       .pValues(stack.longs(this.submitId));
+            vkBeginCommandBuffer(this.handle, beginInfo);
 
-
-               VK12.vkWaitSemaphores(Vulkan.getVkDevice(), vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
-           }
+            this.recording = true;
         }
+
+        public void submitCommands(MemoryStack stack, Queue queue) {
+
+            vkEndCommandBuffer(this.handle);
+
+            int submitId = queue.submitCount().incrementAndGet(); //Has same function as individual fence
+
+            VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pSignalSemaphoreValues(stack.longs(submitId));
+
+            //TODO: No Wait,just Submit
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pNext(timelineSemaphoreSubmitInfo);
+            submitInfo.pSignalSemaphores(stack.longs(queue.getTmSemaphore()));
+            submitInfo.pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)); //Clarify its no wait
+            submitInfo.pCommandBuffers(stack.pointers(this.handle));
+
+            vkQueueSubmit(queue.queue(), submitInfo, 0);
+
+            this.recording = false;
+            this.submitted = true;
+
+
+            this.submitId = submitId;
+        }
+
+
 
         public void reset() {
             this.submitted = false;
             this.recording = false;
-            addToAvailable(this);
+            this.commandPool.addToAvailable(this);
         }
     }
 }

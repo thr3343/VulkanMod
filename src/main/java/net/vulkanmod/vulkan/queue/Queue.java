@@ -26,8 +26,13 @@ public enum Queue {
 
     private final AtomicInteger pending = new AtomicInteger(0); //completed
 
-    public CommandPool.CommandBuffer beginCommands() {
-        return this.commandPool.beginCommands();
+    public synchronized CommandPool.CommandBuffer beginCommands() {
+        try (MemoryStack stack = stackPush()) {
+            CommandPool.CommandBuffer commandBuffer = this.commandPool.getCommandBuffer(stack);
+            commandBuffer.begin(stack);
+
+            return commandBuffer;
+        }
     }
     //We don't use the Compute Queue: will skip creating it to save driver resources
     Queue(int familyIndex, boolean initCommandPool) {
@@ -62,8 +67,10 @@ public enum Queue {
         }
     }
 
-    public void submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        this.commandPool.submitCommands(commandBuffer, this);
+    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
+        try (MemoryStack stack = stackPush()) {
+            commandBuffer.submitCommands(stack, this);
+        }
     }
 
     public VkQueue queue() { return this.queue; }
