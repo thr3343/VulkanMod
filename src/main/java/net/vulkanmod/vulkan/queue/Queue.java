@@ -272,5 +272,9 @@ public enum Queue {
     public long getTmSemaphore() {
         return this.tmSemaphore;
     }
+
+    public int getFamilyIndex() {
+        return familyIndex;
+    }
 }
 

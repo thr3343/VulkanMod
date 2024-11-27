@@ -61,7 +61,7 @@ public class UploadManager {
     }
 
     public void copyBuffer(Buffer src, Buffer dst) {
-        copyBuffer(src, 0, dst, 0, src.getBufferSize());
+        copyBuffer(src, 0, dst, 0, (int) src.getBufferSize());
     }
 
     public void copyBuffer(Buffer src, int srcOffset, Buffer dst, int dstOffset, int size) {

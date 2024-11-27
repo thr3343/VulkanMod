@@ -29,7 +29,7 @@ public abstract class SpriteUpdateUtil {
             return;
         }
 
-        VkCommandBuffer commandBuffer = ImageUploadHelper.INSTANCE.getOrStartCommandBuffer().handle;
+        VkCommandBuffer commandBuffer = ImageUploadHelper.INSTANCE.getOrStartCommandBuffer().getHandle();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             transitionedLayouts.forEach(image -> image.readOnlyLayout(stack, commandBuffer));

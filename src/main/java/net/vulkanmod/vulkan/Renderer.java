@@ -310,7 +310,7 @@ public class Renderer {
 
         // Make sure there are no uploads/transitions scheduled
         ImageUploadHelper.INSTANCE.submitCommands();
-        Synchronization.INSTANCE.waitFences();
+        Synchronization.INSTANCE.recycleCmdBuffers();
         Vulkan.getStagingBuffer().reset();
 
         submitFrame();

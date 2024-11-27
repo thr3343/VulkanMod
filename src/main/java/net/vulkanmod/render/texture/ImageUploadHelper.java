@@ -1,7 +1,6 @@
 package net.vulkanmod.render.texture;
 
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 
@@ -9,19 +8,14 @@ public class ImageUploadHelper {
 
     public static final ImageUploadHelper INSTANCE = new ImageUploadHelper();
 
-    final Queue queue;
     private CommandPool.CommandBuffer currentCmdBuffer;
-
-    public ImageUploadHelper() {
-        queue = DeviceManager.getGraphicsQueue();
-    }
 
     public void submitCommands() {
         if (this.currentCmdBuffer == null) {
             return;
         }
 
-        long fence = queue.submitCommands(this.currentCmdBuffer);
+        Queue.GraphicsQueue.submitCommands(this.currentCmdBuffer);
         Synchronization.INSTANCE.addCommandBuffer(this.currentCmdBuffer);
 
         this.currentCmdBuffer = null;
@@ -29,7 +23,7 @@ public class ImageUploadHelper {
 
     public CommandPool.CommandBuffer getOrStartCommandBuffer() {
         if (this.currentCmdBuffer == null) {
-            this.currentCmdBuffer = this.queue.beginCommands();
+            this.currentCmdBuffer = Queue.GraphicsQueue.beginCommands();
         }
 
         return this.currentCmdBuffer;
