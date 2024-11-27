@@ -595,13 +595,18 @@ public abstract class Pipeline {
                 uniformInfo.setupSupplier();
 
                 if (!uniformInfo.hasSupplier()) {
-                    var uniformSupplier = this.uniformSupplierGetter.apply(uniformInfo);
+                    if (this.uniformSupplierGetter != null) {
+                        var uniformSupplier = this.uniformSupplierGetter.apply(uniformInfo);
 
-                    if (uniformSupplier == null) {
+                        if (uniformSupplier == null) {
+                            throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type2, name));
+                        }
+
+                        uniformInfo.setBufferSupplier(uniformSupplier);
+                    }
+                    else {
                         throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type2, name));
                     }
-
-                    uniformInfo.setBufferSupplier(this.uniformSupplierGetter.apply(uniformInfo));
                 }
 
                 builder.addUniformInfo(uniformInfo);
@@ -640,13 +645,16 @@ public abstract class Pipeline {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
             for (JsonElement jsonelement : jsonArray) {
-                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PushConstants");
 
                 String name = GsonHelper.getAsString(jsonobject2, "name");
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
-                int j = GsonHelper.getAsInt(jsonobject2, "count");
+                int count = GsonHelper.getAsInt(jsonobject2, "count");
 
-                builder.addUniformInfo(type2, name, j);
+                Uniform.Info uniformInfo = Uniform.createUniformInfo(type2, name, count);
+                uniformInfo.setupSupplier();
+
+                builder.addUniformInfo(uniformInfo);
             }
 
             this.pushConstants = builder.buildPushConstant();

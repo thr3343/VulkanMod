@@ -16,7 +16,7 @@ public abstract class MemoryType {
         this.vkMemoryHeap = vkMemoryHeap;
     }
 
-    abstract void createBuffer(Buffer buffer, int size);
+    abstract void createBuffer(Buffer buffer, long size);
 
     abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
 

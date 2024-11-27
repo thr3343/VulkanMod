@@ -123,12 +123,7 @@ public class ChunkAreaManager {
                 int z1 = (zAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
                 for (int yRel = 0; yRel < this.ySize; ++yRel) {
-                    int y1 = this.minHeight + (yRel << (AREA_SH_Y + SEC_SH));
-                    ChunkArea chunkArea = this.chunkAreasArr[this.getAreaIndex(xRelativeIndex, yRel, zRelativeIndex)];
-
-                    chunkArea.setPosition(x1, y1, z1);
-                    chunkArea.releaseBuffers();
-
+                    this.moveArea(xRelativeIndex, yRel, zRelativeIndex, x1, z1);
                 }
             }
         }
@@ -146,18 +141,21 @@ public class ChunkAreaManager {
                 int z1 = (zAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
                 for (int yRel = 0; yRel < this.ySize; ++yRel) {
-                    int y1 = this.minHeight + (yRel << (AREA_SH_Y + SEC_SH));
-                    ChunkArea chunkArea = this.chunkAreasArr[this.getAreaIndex(xRelativeIndex, yRel, zRelativeIndex)];
-
-                    chunkArea.setPosition(x1, y1, z1);
-                    chunkArea.releaseBuffers();
-
+                    this.moveArea(xRelativeIndex, yRel, zRelativeIndex, x1, z1);
                 }
             }
         }
 
         this.prevX = xS;
         this.prevZ = zS;
+    }
+
+    private void moveArea(int xRelativeIndex, int yRel, int zRelativeIndex, int x1, int z1) {
+        int y1 = this.minHeight + (yRel << (AREA_SH_Y + SEC_SH));
+        ChunkArea chunkArea = this.chunkAreasArr[this.getAreaIndex(xRelativeIndex, yRel, zRelativeIndex)];
+
+        chunkArea.setPosition(x1, y1, z1);
+        chunkArea.releaseBuffers();
     }
 
     public ChunkArea getChunkArea(RenderSection section, int x, int y, int z) {
@@ -197,9 +195,9 @@ public class ChunkAreaManager {
         return (z * this.ySize + y) * this.xzSize + x;
     }
 
-    public void releaseAllBuffers() {
+    public void freeAllBuffers() {
         for (ChunkArea chunkArea : this.chunkAreasArr) {
-            chunkArea.releaseBuffers();
+            chunkArea.free();
         }
     }
 
@@ -231,11 +229,12 @@ public class ChunkAreaManager {
             }
         }
 
-        vbSize /= 1024 * 1024;
-        vbUsed /= 1024 * 1024;
-        ibSize /= 1024 * 1024;
-        ibUsed /= 1024 * 1024;
-        frag /= 1024 * 1024;
+        final int div = 1024 * 1024;
+        vbSize /= div;
+        vbUsed /= div;
+        ibSize /= div;
+        ibUsed /= div;
+        frag   /= div;
 
         return new String[]{
                 String.format("Vertex Buffers: %d/%d MB", vbUsed, vbSize),

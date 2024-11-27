@@ -3,8 +3,8 @@ package net.vulkanmod.mixin.render.clouds;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.sky.CloudRenderer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -18,7 +18,6 @@ public abstract class LevelRendererM {
 
     @Shadow private int ticks;
     @Shadow private @Nullable ClientLevel level;
-    @Shadow @Final protected static ResourceLocation CLOUDS_LOCATION;
 
     @Unique
     private CloudRenderer cloudRenderer;
@@ -26,24 +25,25 @@ public abstract class LevelRendererM {
     @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
     public void renderClouds(PoseStack poseStack, Matrix4f modelView, Matrix4f projection, float partialTicks, double camX, double camY, double camZ, CallbackInfo ci) {
         if (this.cloudRenderer == null) {
-            this.cloudRenderer = new CloudRenderer(CLOUDS_LOCATION);
+            this.cloudRenderer = new CloudRenderer();
         }
 
         this.cloudRenderer.renderClouds(this.level, poseStack, modelView, projection, this.ticks, partialTicks, camX, camY, camZ);
+        Profiler.getMainProfiler().pop();
         ci.cancel();
     }
 
     @Inject(method = "allChanged", at = @At("RETURN"))
     private void onAllChanged(CallbackInfo ci) {
         if (this.cloudRenderer != null) {
-            this.cloudRenderer.reset();
+            this.cloudRenderer.resetBuffer();
         }
     }
 
     @Inject(method = "onResourceManagerReload", at = @At("RETURN"))
     private void onReload(ResourceManager resourceManager, CallbackInfo ci) {
         if (this.cloudRenderer != null) {
-            this.cloudRenderer.loadTexture(CLOUDS_LOCATION);
+            this.cloudRenderer.loadTexture();
         }
     }
 

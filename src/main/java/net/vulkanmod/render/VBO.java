@@ -49,7 +49,7 @@ public class VBO {
     private void uploadVertexBuffer(MeshData.DrawState parameters, ByteBuffer data) {
         if (data != null) {
             if (this.vertexBuffer != null)
-                this.vertexBuffer.freeBuffer();
+                this.vertexBuffer.scheduleFree();
 
             this.vertexBuffer = new VertexBuffer(data.remaining(), this.memoryType);
             this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
@@ -85,7 +85,7 @@ public class VBO {
             }
 
             if (this.indexBuffer != null && !this.autoIndexed)
-                this.indexBuffer.freeBuffer();
+                this.indexBuffer.scheduleFree();
 
             if (autoIndexBuffer != null) {
                 autoIndexBuffer.checkCapacity(this.vertexCount);
@@ -96,7 +96,7 @@ public class VBO {
 
         } else {
             if (this.indexBuffer != null)
-                this.indexBuffer.freeBuffer();
+                this.indexBuffer.scheduleFree();
 
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
             this.indexBuffer.copyBuffer(data);
@@ -154,11 +154,11 @@ public class VBO {
         if (this.vertexCount <= 0)
             return;
 
-        this.vertexBuffer.freeBuffer();
+        this.vertexBuffer.scheduleFree();
         this.vertexBuffer = null;
 
         if (!this.autoIndexed) {
-            this.indexBuffer.freeBuffer();
+            this.indexBuffer.scheduleFree();
             this.indexBuffer = null;
         }
 

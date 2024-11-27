@@ -1,11 +1,10 @@
-package net.vulkanmod.mixin.texture;
+package net.vulkanmod.mixin.texture.update;
 
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
+import net.vulkanmod.render.texture.SpriteUpdateUtil;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -27,14 +26,10 @@ public abstract class MTextureManager {
             return;
 
         //Debug D
-        if (SpriteUtil.shouldUpload())
-            DeviceManager.getGraphicsQueue().startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
-        if (SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
-            DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
-        }
+
+        SpriteUpdateUtil.transitionLayouts();
     }
 }

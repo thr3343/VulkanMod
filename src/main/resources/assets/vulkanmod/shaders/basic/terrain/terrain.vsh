@@ -8,15 +8,15 @@ layout (binding = 0) uniform UniformBufferObject {
 };
 
 layout (push_constant) uniform pushConstant {
-    vec3 ChunkOffset;
+    vec3 ModelOffset;
 };
 
 layout (binding = 3) uniform sampler2D Sampler2;
 
 
-layout (location = 0) out float vertexDistance;
-layout (location = 1) out vec4 vertexColor;
-layout (location = 2) out vec2 texCoord0;
+layout (location = 0) out vec4 vertexColor;
+layout (location = 1) out vec2 texCoord0;
+layout (location = 2) out float vertexDistance;
 
 #define COMPRESSED_VERTEX
 
@@ -40,7 +40,7 @@ vec4 getVertexPosition() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
 
     #ifdef COMPRESSED_VERTEX
-        return vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
+        return vec4(fma(Position.xyz, POSITION_INV, ModelOffset + baseOffset), 1.0);
     #else
         return vec4(Position.xyz + baseOffset, 1.0);
     #endif

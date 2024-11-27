@@ -79,6 +79,11 @@ public abstract class ShaderLoadUtil {
     }
 
     public static JsonObject getJsonConfig(String path, String rendertype) {
+        // Check for external shader
+        if (rendertype.contains(String.valueOf(ResourceLocation.NAMESPACE_SEPARATOR))) {
+            return null;
+        }
+
         String basePath = "%s/shaders/%s".formatted(RESOURCES_PATH, path);
         String configPath = "%s/%s/%s.json".formatted(basePath, rendertype, rendertype);
 

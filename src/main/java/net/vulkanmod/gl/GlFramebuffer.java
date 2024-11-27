@@ -39,6 +39,7 @@ public class GlFramebuffer {
         VRenderSystem.disableCull();
 
         boundId = glFramebuffer.id;
+        boundFramebuffer = glFramebuffer;
     }
 
     public static int genFramebufferId() {
@@ -91,7 +92,7 @@ public class GlFramebuffer {
         if (boundFramebuffer == null)
             throw new NullPointerException("bound framebuffer is null");
 
-        boundFramebuffer.cleanUp();
+        boundFramebuffer.cleanUp(true);
         boundFramebuffer = null;
     }
 
@@ -105,6 +106,9 @@ public class GlFramebuffer {
         if (level != 0) {
             throw new UnsupportedOperationException();
         }
+
+        if (boundFramebuffer == null)
+            System.nanoTime();
 
         boundFramebuffer.setAttachmentTexture(attachment, texture);
     }
@@ -208,7 +212,7 @@ public class GlFramebuffer {
             return;
 
         if (this.framebuffer != null) {
-            this.cleanUp();
+            this.cleanUp(false);
         }
 
         boolean hasDepthImage = this.depthAttachment != null;
@@ -237,8 +241,8 @@ public class GlFramebuffer {
         return renderPass;
     }
 
-    void cleanUp() {
-        this.framebuffer.cleanUp(false);
+    void cleanUp(boolean freeAttachments) {
+        this.framebuffer.cleanUp(freeAttachments);
         this.renderPass.cleanUp();
 
         this.framebuffer = null;

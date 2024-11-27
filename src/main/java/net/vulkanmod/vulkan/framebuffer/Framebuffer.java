@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.framebuffer;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -34,9 +33,7 @@ public class Framebuffer {
     private VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
 
-    private final ObjectArrayList<RenderPass> renderPasses = new ObjectArrayList<>();
-
-    private final Reference2LongArrayMap<RenderPass> framebufferIds = new Reference2LongArrayMap<>();
+    private final Reference2LongArrayMap<RenderPass> renderpassToFramebufferMap = new Reference2LongArrayMap<>();
 
     //SwapChain
     protected Framebuffer() {}
@@ -57,10 +54,6 @@ public class Framebuffer {
             this.colorAttachment = builder.colorAttachment;
             this.depthAttachment = builder.depthAttachment;
         }
-    }
-
-    public void addRenderPass(RenderPass renderPass) {
-        this.renderPasses.add(renderPass);
     }
 
     public void createImages() {
@@ -138,7 +131,7 @@ public class Framebuffer {
     }
 
     protected long getFramebufferId(RenderPass renderPass) {
-        return this.framebufferIds.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
+        return this.renderpassToFramebufferMap.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {
@@ -175,7 +168,7 @@ public class Framebuffer {
         }
 
         final VkDevice device = Vulkan.getVkDevice();
-        final var ids = framebufferIds.values().toLongArray();
+        final var ids = renderpassToFramebufferMap.values().toLongArray();
 
         MemoryManager.getInstance().addFrameOp(
                 () -> Arrays.stream(ids).forEach(id ->
@@ -183,7 +176,7 @@ public class Framebuffer {
         );
 
 
-        framebufferIds.clear();
+        renderpassToFramebufferMap.clear();
     }
 
     public long getDepthImageView() {

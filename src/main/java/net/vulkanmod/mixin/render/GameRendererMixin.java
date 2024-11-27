@@ -209,9 +209,13 @@ public abstract class GameRendererMixin {
             pairs.add(
                     Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY),
                     (shaderInstance) -> rendertypeEyesShader = shaderInstance));
+            var energySwirlShader = new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY);
             pairs.add(
-                    Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY),
+                    Pair.of(energySwirlShader,
                     (shaderInstance) -> rendertypeEnergySwirlShader = shaderInstance));
+            pairs.add(
+                    Pair.of(energySwirlShader,
+                            (shaderInstance) -> rendertypeBreezeWindShader = shaderInstance));
             pairs.add(
                     Pair.of(new ShaderInstance(provider, "rendertype_leash", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP),
                     (shaderInstance) -> rendertypeLeashShader = shaderInstance));
@@ -298,9 +302,6 @@ public abstract class GameRendererMixin {
             pairs.add(
                     Pair.of(positionColor,
                     (shaderInstance) -> rendertypeGuiGhostRecipeOverlayShader = shaderInstance));
-            pairs.add(
-                    Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY),
-                    (shaderInstance) -> rendertypeBreezeWindShader = shaderInstance));
 
             // FRAPI shader loading
             CoreShaderRegistrationCallback.RegistrationContext context = (id, vertexFormat, loadCallback) -> {

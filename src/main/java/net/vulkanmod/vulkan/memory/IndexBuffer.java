@@ -31,7 +31,7 @@ public class IndexBuffer extends Buffer {
         usedBytes += size;
     }
 
-    private void resizeBuffer(int newSize) {
+    private void resizeBuffer(long newSize) {
         MemoryManager.getInstance().addToFreeable(this);
         this.createBuffer(newSize);
     }

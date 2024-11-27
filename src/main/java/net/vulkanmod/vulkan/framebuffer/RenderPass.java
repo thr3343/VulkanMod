@@ -34,8 +34,6 @@ public class RenderPass {
         this.attachmentCount = count;
 
         if (!Vulkan.DYNAMIC_RENDERING) {
-            framebuffer.addRenderPass(this);
-
             createRenderPass();
         }
 

@@ -22,10 +22,7 @@ import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -38,7 +35,6 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -60,9 +56,9 @@ public class EffectInstanceM {
     @Shadow @Final private Map<String, IntSupplier> samplerMap;
 
     @Shadow @Final private String name;
-    private static GraphicsPipeline lastPipeline;
 
-    private GraphicsPipeline pipeline;
+    @Unique private static GraphicsPipeline lastPipeline;
+    @Unique private GraphicsPipeline pipeline;
 
     @Inject(method = "<init>",
             at = @At(value = "INVOKE",
@@ -86,13 +82,11 @@ public class EffectInstanceM {
      */
     @Overwrite
     public void close() {
-
         for (com.mojang.blaze3d.shaders.Uniform uniform : this.uniforms) {
             uniform.close();
         }
 
-        //TODO
-//        ProgramManager.releaseProgram(this);
+        this.pipeline.scheduleCleanUp();
     }
 
     private void createShaders(ResourceProvider resourceManager, String vertexShader, String fragShader) {
@@ -110,14 +104,13 @@ public class EffectInstanceM {
             inputStream = resource.open();
             String fshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
-            //TODO
             GlslConverter converter = new GlslConverter();
 
             converter.process(vshSrc, fshSrc);
             UBO ubo = converter.createUBO();
             this.setUniformSuppliers(ubo);
 
-            Pipeline.Builder builder = new Pipeline.Builder(DefaultVertexFormat.POSITION);
+            Pipeline.Builder builder = new Pipeline.Builder(DefaultVertexFormat.POSITION, this.name);
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 

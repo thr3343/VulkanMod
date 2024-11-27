@@ -101,16 +101,13 @@ public class WorldRenderer {
 
     private void allocateIndirectBuffers() {
         if (this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::freeBuffer);
+            Arrays.stream(this.indirectBuffers).forEach(Buffer::scheduleFree);
 
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < this.indirectBuffers.length; ++i) {
             this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
         }
-
-//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
@@ -197,7 +194,6 @@ public class WorldRenderer {
         }
 
         this.indirectBuffers[Renderer.getCurrentFrame()].reset();
-//        this.uniformBuffers.reset();
 
         this.minecraft.getProfiler().pop();
         profiler.pop();
@@ -240,7 +236,7 @@ public class WorldRenderer {
 
             this.renderDistance = this.minecraft.options.getEffectiveRenderDistance();
             if (this.sectionGrid != null) {
-                this.sectionGrid.releaseAllBuffers();
+                this.sectionGrid.freeAllBuffers();
             }
 
             this.taskDispatcher.clearBatchQueue();
@@ -276,7 +272,7 @@ public class WorldRenderer {
             this.allChanged();
         } else {
             if (this.sectionGrid != null) {
-                this.sectionGrid.releaseAllBuffers();
+                this.sectionGrid.freeAllBuffers();
                 this.sectionGrid = null;
             }
 
@@ -350,7 +346,7 @@ public class WorldRenderer {
 
         //Need to reset push constants in case the pipeline will still be used for rendering
         if (!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
+            VRenderSystem.setModelOffset(0, 0, 0);
             renderer.pushConstants(pipeline);
         }
 
@@ -466,7 +462,7 @@ public class WorldRenderer {
 
     public void cleanUp() {
         if (indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::freeBuffer);
+            Arrays.stream(indirectBuffers).forEach(Buffer::scheduleFree);
     }
 
 }
