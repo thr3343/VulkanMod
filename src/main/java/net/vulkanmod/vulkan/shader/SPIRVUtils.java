@@ -24,7 +24,7 @@ import static org.lwjgl.util.shaderc.Shaderc.*;
 import static org.lwjgl.util.shaderc.Shaderc.shaderc_compile_options_set_optimization_level;
 
 public class SPIRVUtils {
-    private static final boolean use4ByteAlignFormat = Vulkan.getDevice().isAMD();
+    private static final boolean use4ByteAlignFormat = !Vulkan.getDevice().isShaderFloat16Supported();
     private static final boolean DEBUG = false;
     private static final boolean OPTIMIZATIONS = true;
 
@@ -54,7 +54,10 @@ public class SPIRVUtils {
         if (options == NULL) {
             throw new RuntimeException("Failed to create compiler options");
         }
-        //Use the optimal most performant vertex format based on architecture: 4 byte alignment if on AMD GCN, otherwise defaults to 2 Bytes (including Nvidia)
+        //Using the wrong alignment can cause performance problems on some architectures
+        // Force Alignment to 4 bytes for AMD GCN and Old Nvidia (Pascal or Older)
+        // Otherwise defaults to 2 Bytes for AMD RDNA and Nvidia Turing+
+        // (using shaderFloat16 avoids forcing the override on RDNA cards: which are unaffected by the GCN issue)
         if(use4ByteAlignFormat)
             shaderc_compile_options_add_macro_definition(options, "GCN_FIX", null);
 

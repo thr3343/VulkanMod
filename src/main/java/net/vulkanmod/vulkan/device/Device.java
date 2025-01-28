@@ -29,12 +29,11 @@ public class Device {
     public final String vkVersion;
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
 
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    final private boolean drawIndirectSupported, shaderFloat16;
 
     public Device(VkPhysicalDevice device) {
         this.physicalDevice = device;
@@ -42,30 +41,30 @@ public class Device {
         properties = VkPhysicalDeviceProperties.malloc();
         vkGetPhysicalDeviceProperties(physicalDevice, properties);
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            //Using memoryStack to avoid polluting the Off-heap with unused allocations
 
-        this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-        this.availableFeatures.sType$Default();
+            this.vendorId = properties.vendorID();
+            this.vendorIdString = decodeVendor(properties.vendorID());
+            this.deviceName = properties.deviceNameString();
+            this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
+            this.vkVersion = decDefVersion(getVkVer());
 
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+            this.availableFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            this.availableFeatures.sType$Default();
 
-        //Vulkan 1.3
-//        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
-//        this.availableFeatures13.sType$Default();
-//        this.availableFeatures11.pNext(this.availableFeatures13.address());
-//
-//        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
+            VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc(stack);
+            availableFeatures11.sType$Default();
 
-        vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+            VkPhysicalDeviceVulkan12Features availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc(stack);
+            availableFeatures12.sType$Default();
+            this.availableFeatures.pNext(availableFeatures11).pNext(availableFeatures12);
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+            vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+
+            this.drawIndirectSupported = this.availableFeatures.features().multiDrawIndirect() & availableFeatures11.shaderDrawParameters();
+            this.shaderFloat16 = availableFeatures12.shaderFloat16();
+        }
 
     }
 
@@ -144,6 +143,10 @@ public class Device {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public boolean isShaderFloat16Supported() {
+        return shaderFloat16;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:

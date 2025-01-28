@@ -8,7 +8,7 @@ public class CustomVertexFormat {
 
     public static final VertexFormatElement ELEMENT_POSITION = new VertexFormatElement(0, 0,VertexFormatElement.Type.SHORT, VertexFormatElement.Usage.POSITION, 4);
     public static final VertexFormatElement ELEMENT_COLOR = new VertexFormatElement(1, 0, VertexFormatElement.Type.UBYTE, VertexFormatElement.Usage.COLOR, 4);
-    public static final VertexFormatElement ELEMENT_UV0 = Vulkan.getDevice().isAMD() ? new VertexFormatElement(2, 0, VertexFormatElement.Type.UINT, VertexFormatElement.Usage.UV, 1) : new VertexFormatElement(2, 0, VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.UV, 2);
+    public static final VertexFormatElement ELEMENT_UV0 = Vulkan.getDevice().isShaderFloat16Supported() ? new VertexFormatElement(2, 0, VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.UV, 2) : new VertexFormatElement(2, 0, VertexFormatElement.Type.UINT, VertexFormatElement.Usage.UV, 1);
 
     public static final VertexFormat COMPRESSED_TERRAIN = VertexFormat.builder()
             .add("Position", ELEMENT_POSITION)
