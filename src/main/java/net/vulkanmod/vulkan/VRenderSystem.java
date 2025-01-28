@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -46,7 +45,7 @@ public abstract class VRenderSystem {
     public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer MVP = new MappedBuffer(16 * 4);
 
-    public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
+    public static MappedBuffer modelOffset = new MappedBuffer(3 * 4);
     public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
     public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
 
@@ -79,8 +78,8 @@ public abstract class VRenderSystem {
         VRenderSystem.window = window;
     }
 
-    public static ByteBuffer getChunkOffset() {
-        return ChunkOffset.buffer;
+    public static ByteBuffer getModelOffset() {
+        return modelOffset.buffer;
     }
 
     public static int maxSupportedTextureSize() {
@@ -95,7 +94,6 @@ public abstract class VRenderSystem {
 
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.get(modelViewMatrix.buffer.asFloatBuffer());
-        //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
@@ -129,11 +127,11 @@ public abstract class VRenderSystem {
         return MVP;
     }
 
-    public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = ChunkOffset.ptr;
-        VUtil.UNSAFE.putFloat(ptr, f1);
-        VUtil.UNSAFE.putFloat(ptr + 4, f2);
-        VUtil.UNSAFE.putFloat(ptr + 8, f3);
+    public static void setModelOffset(float x, float y, float z) {
+        long ptr = modelOffset.ptr;
+        VUtil.UNSAFE.putFloat(ptr, x);
+        VUtil.UNSAFE.putFloat(ptr + 4, y);
+        VUtil.UNSAFE.putFloat(ptr + 8, z);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {

@@ -9,10 +9,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -22,6 +19,7 @@ import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    private final MemoryType memoryType;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
 
@@ -31,7 +29,9 @@ public class VBO {
 
     private boolean autoIndexed = false;
 
-    public VBO() {}
+    public VBO(com.mojang.blaze3d.vertex.VertexBuffer.Usage usage) {
+       this.memoryType = usage == com.mojang.blaze3d.vertex.VertexBuffer.Usage.STATIC ? MemoryTypes.GPU_MEM : MemoryTypes.HOST_MEM;
+    }
 
     public void upload(MeshData meshData) {
         MeshData.DrawState parameters = meshData.drawState();
@@ -49,9 +49,9 @@ public class VBO {
     private void uploadVertexBuffer(MeshData.DrawState parameters, ByteBuffer data) {
         if (data != null) {
             if (this.vertexBuffer != null)
-                this.vertexBuffer.freeBuffer();
+                this.vertexBuffer.scheduleFree();
 
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.vertexBuffer = new VertexBuffer(data.remaining(), this.memoryType);
             this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
         }
     }
@@ -85,7 +85,7 @@ public class VBO {
             }
 
             if (this.indexBuffer != null && !this.autoIndexed)
-                this.indexBuffer.freeBuffer();
+                this.indexBuffer.scheduleFree();
 
             if (autoIndexBuffer != null) {
                 autoIndexBuffer.checkCapacity(this.vertexCount);
@@ -96,7 +96,7 @@ public class VBO {
 
         } else {
             if (this.indexBuffer != null)
-                this.indexBuffer.freeBuffer();
+                this.indexBuffer.scheduleFree();
 
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
             this.indexBuffer.copyBuffer(data);
@@ -154,11 +154,11 @@ public class VBO {
         if (this.vertexCount <= 0)
             return;
 
-        this.vertexBuffer.freeBuffer();
+        this.vertexBuffer.scheduleFree();
         this.vertexBuffer = null;
 
         if (!this.autoIndexed) {
-            this.indexBuffer.freeBuffer();
+            this.indexBuffer.scheduleFree();
             this.indexBuffer = null;
         }
 

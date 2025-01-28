@@ -31,7 +31,7 @@ public class DefaultMainPass implements MainPass {
 
     DefaultMainPass() {
         this.mainTarget = Minecraft.getInstance().getMainRenderTarget();
-        this.mainFramebuffer = Vulkan.getSwapChain();
+        this.mainFramebuffer = Renderer.getInstance().getSwapChain();
 
         createRenderPasses();
     }
@@ -55,7 +55,7 @@ public class DefaultMainPass implements MainPass {
 
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        SwapChain framebuffer = Vulkan.getSwapChain();
+        SwapChain framebuffer = Renderer.getInstance().getSwapChain();
 
         VulkanImage colorAttachment = framebuffer.getColorAttachment();
         colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -74,7 +74,7 @@ public class DefaultMainPass implements MainPass {
         Renderer.getInstance().endRenderPass(commandBuffer);
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            SwapChain framebuffer = Vulkan.getSwapChain();
+            SwapChain framebuffer = Renderer.getInstance().getSwapChain();
             framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         }
 
@@ -84,8 +84,14 @@ public class DefaultMainPass implements MainPass {
         }
     }
 
+    @Override
+    public void cleanUp() {
+        this.mainRenderPass.cleanUp();
+        this.auxRenderPass.cleanUp();
+    }
+
     public void rebindMainTarget() {
-        SwapChain swapChain = Vulkan.getSwapChain();
+        SwapChain swapChain = Renderer.getInstance().getSwapChain();
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         // Do not rebind if the framebuffer is already bound
@@ -103,7 +109,7 @@ public class DefaultMainPass implements MainPass {
 
     @Override
     public void bindAsTexture() {
-        SwapChain swapChain = Vulkan.getSwapChain();
+        SwapChain swapChain = Renderer.getInstance().getSwapChain();
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         // Check if render pass is using the framebuffer
@@ -119,7 +125,7 @@ public class DefaultMainPass implements MainPass {
     }
 
     public int getColorAttachmentGlId() {
-        SwapChain swapChain = Vulkan.getSwapChain();
+        SwapChain swapChain = Renderer.getInstance().getSwapChain();
         return swapChain.getColorAttachmentGlId();
     }
 }

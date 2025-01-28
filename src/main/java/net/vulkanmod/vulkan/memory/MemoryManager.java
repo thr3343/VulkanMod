@@ -6,6 +6,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.buffer.AreaBuffer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.Pair;
 import net.vulkanmod.vulkan.util.VkResult;
@@ -43,11 +44,11 @@ public class MemoryManager {
 
     private int currentFrame = 0;
 
-    private ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers = new ObjectArrayList[Frames];
-    private ObjectArrayList<VulkanImage>[] freeableImages = new ObjectArrayList[Frames];
+    private final ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers = new ObjectArrayList[Frames];
+    private final ObjectArrayList<VulkanImage>[] freeableImages = new ObjectArrayList[Frames];
 
-    private ObjectArrayList<Runnable>[] frameOps = new ObjectArrayList[Frames];
-    private ObjectArrayList<Pair<AreaBuffer, Integer>>[] segmentsToFree = new ObjectArrayList[Frames];
+    private final ObjectArrayList<Runnable>[] frameOps = new ObjectArrayList[Frames];
+    private final ObjectArrayList<Pair<AreaBuffer, Integer>>[] segmentsToFree = new ObjectArrayList[Frames];
 
     //debug
     private ObjectArrayList<StackTraceElement[]>[] stackTraces;
@@ -82,6 +83,7 @@ public class MemoryManager {
     public synchronized void initFrame(int frame) {
         this.setCurrentFrame(frame);
         this.freeBuffers(frame);
+        this.freeImages(frame);
         this.doFrameOps(frame);
         this.freeSegments(frame);
     }
@@ -94,6 +96,7 @@ public class MemoryManager {
     public void freeAllBuffers() {
         for (int frame = 0; frame < Frames; ++frame) {
             this.freeBuffers(frame);
+            this.freeImages(frame);
             this.doFrameOps(frame);
         }
 
@@ -124,8 +127,7 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
-
+    public synchronized void createBuffer(Buffer buffer, long size, int usage, int properties) {
         try (MemoryStack stack = stackPush()) {
             buffer.setBufferSize(size);
 
@@ -137,9 +139,10 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
 
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0) {
+            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
                 deviceMemory += size;
-            } else {
+            }
+            else {
                 nativeMemory += size;
             }
 
@@ -147,11 +150,11 @@ public class MemoryManager {
         }
     }
 
-    public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
-                                                LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+    public void createImage(int width, int height, int mipLevels, int format, int tiling, int usage,
+                                         int memProperties,
+                                         LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
 
         try (MemoryStack stack = stackPush()) {
-
             VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack);
             imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
             imageInfo.imageType(VK_IMAGE_TYPE_2D);
@@ -166,19 +169,26 @@ public class MemoryManager {
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            // TODO hardcoded queue family indices
-            imageInfo.pQueueFamilyIndices(stack.ints(0, 1));
+            imageInfo.pQueueFamilyIndices(
+                    stack.ints(Queue.getQueueFamilies().graphicsFamily, Queue.getQueueFamilies().computeFamily));
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(memProperties);
 
-            vmaCreateImage(ALLOCATOR, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+            int result = vmaCreateImage(ALLOCATOR, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+            if (result != VK_SUCCESS) {
+                Initializer.LOGGER.info(String.format("Failed to create image with size: %dx%d", width, height));
+
+                throw new RuntimeException("Failed to create image: %s".formatted(VkResult.decode(result)));
+            }
 
         }
     }
 
     public static void addImage(VulkanImage image) {
         images.putIfAbsent(image.getId(), image);
+
+        deviceMemory += image.size;
     }
 
     public static void MapAndCopy(long allocation, Consumer<PointerBuffer> consumer) {
@@ -210,17 +220,19 @@ public class MemoryManager {
 
         if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
             deviceMemory -= bufferInfo.bufferSize();
-        } else {
+        }
+        else {
             nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());
     }
 
-    public static void freeImage(long image, long allocation) {
-        vmaDestroyImage(ALLOCATOR, image, allocation);
+    public static void freeImage(long imageId, long allocation) {
+        vmaDestroyImage(ALLOCATOR, imageId, allocation);
 
-        images.remove(image);
+        VulkanImage image = images.remove(imageId);
+        deviceMemory -= image.size;
     }
 
     public synchronized void addToFreeable(Buffer buffer) {
@@ -261,12 +273,10 @@ public class MemoryManager {
 
         if (DEBUG)
             stackTraces[frame].clear();
-
-        this.freeImages();
     }
 
-    private void freeImages() {
-        List<VulkanImage> bufferList = freeableImages[currentFrame];
+    private void freeImages(int frame) {
+        List<VulkanImage> bufferList = freeableImages[frame];
         for (VulkanImage image : bufferList) {
 
             image.doFree();

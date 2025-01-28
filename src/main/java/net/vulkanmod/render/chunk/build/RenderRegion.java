@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk.build;
 
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -16,6 +17,8 @@ import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.levelgen.DebugLevelSource;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import net.vulkanmod.render.chunk.build.biome.BiomeData;
+import net.vulkanmod.render.chunk.build.color.TintCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +26,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
-public class RenderRegion implements BlockAndTintGetter {
+public class RenderRegion implements BlockAndTintGetter, RenderAttachedBlockView {
     public static final int WIDTH = 3;
     public static final int SIZE = WIDTH * WIDTH * WIDTH;
 
@@ -43,13 +46,15 @@ public class RenderRegion implements BlockAndTintGetter {
     private final BlockState[] blockData;
     private final DataLayer[][] lightData;
 
+    private BiomeData biomeData;
     private TintCache tintCache;
 
     private final Map<BlockPos, BlockEntity> blockEntityMap;
 
     private final Function<BlockPos, BlockState> blockStateGetter;
 
-    RenderRegion(Level level, int x, int y, int z, PalettedContainer<BlockState>[] blockData, DataLayer[][] lightData, Map<BlockPos, BlockEntity> blockEntityMap) {
+    RenderRegion(Level level, int x, int y, int z, PalettedContainer<BlockState>[] blockData, DataLayer[][] lightData,
+                 BiomeData biomeData, Map<BlockPos, BlockEntity> blockEntityMap) {
         this.level = level;
 
         this.minSecX = x - 1;
@@ -64,6 +69,7 @@ public class RenderRegion implements BlockAndTintGetter {
 
         this.blockDataContainers = blockData;
         this.lightData = lightData;
+        this.biomeData = biomeData;
         this.blockEntityMap = blockEntityMap;
 
         this.blockData = new BlockState[BLOCK_COUNT];
@@ -76,14 +82,14 @@ public class RenderRegion implements BlockAndTintGetter {
     public void loadBlockStates() {
         Arrays.fill(blockData, Blocks.AIR.defaultBlockState());
 
-        for(int x = 0; x <= 2; ++x) {
-            for(int z = 0; z <= 2; ++z) {
-                for(int y = 0; y <= 2; ++y) {
+        for (int x = 0; x <= 2; ++x) {
+            for (int z = 0; z <= 2; ++z) {
+                for (int y = 0; y <= 2; ++y) {
                     final int idx = getSectionIdx(x, y, z);
 
                     PalettedContainer<BlockState> container = blockDataContainers[idx];
 
-                    if(container == null)
+                    if (container == null)
                         continue;
 
                     int absBlockX = (x + minSecX) << 4;
@@ -99,8 +105,8 @@ public class RenderRegion implements BlockAndTintGetter {
                     int tMaxZ = Math.min(maxZ, absBlockZ + 16);
 
                     loadSectionBlockStates(container, blockData,
-                            tMinX, tMinY, tMinZ, tMaxX, tMaxY, tMaxZ);
-                    
+                                           tMinX, tMinY, tMinZ, tMaxX, tMaxY, tMaxZ);
+
                 }
             }
         }
@@ -124,7 +130,7 @@ public class RenderRegion implements BlockAndTintGetter {
 
     public void initTintCache(TintCache tintCache) {
         this.tintCache = tintCache;
-        this.tintCache.init(blendRadius, minSecX + 1, minSecY + 1, minSecZ + 1);
+        this.tintCache.init(biomeData, blendRadius, minSecX + 1, minSecY + 1, minSecZ + 1);
     }
 
     public BlockState getBlockState(BlockPos blockPos) {

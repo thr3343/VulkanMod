@@ -9,10 +9,11 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -99,8 +100,8 @@ public class GlStateManagerM {
     /**
      * @author
      */
-    @Overwrite(remap = false)
-    public static void _viewport(int x, int y, int width, int height) {
+    @Redirect(method = "_viewport", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glViewport(IIII)V"), remap = false)
+    private static void _viewport(int x, int y, int width, int height) {
         Renderer.setViewport(x, y, width, height);
     }
 
@@ -126,6 +127,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable IntBuffer pixels) {
+        RenderSystem.assertOnRenderThreadOrInit();
         GlTexture.texImage2D(target, level, internalFormat, width, height, border, format, type, pixels != null ? MemoryUtil.memByteBuffer(pixels) : null);
     }
 
@@ -134,7 +136,8 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _texSubImage2D(int target, int level, int offsetX, int offsetY, int width, int height, int format, int type, long pixels) {
-
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlTexture.texSubImage2D(target, level, offsetX, offsetY, width, height, format, type, pixels);
     }
 
     /**
@@ -175,6 +178,8 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
         //Used during upload to set copy offsets
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlTexture.pixelStoreI(pname, param);
     }
 
     /**

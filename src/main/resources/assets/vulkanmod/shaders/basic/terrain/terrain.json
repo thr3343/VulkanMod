@@ -1,25 +1,9 @@
 {
-    "blend": {
-        "func": "add",
-        "srcrgb": "srcalpha",
-        "dstrgb": "1-srcalpha"
-    },
-    "vertex": "rendertype_solid",
-    "fragment": "rendertype_solid",
-    "attributes": [
-        "Position",
-        "Color",
-        "UV0"
-    ],
+    "vertex": "terrain",
+    "fragment": "terrain",
     "samplers": [
         { "name": "Sampler0" },
         { "name": "Sampler2" }
-    ],
-    "uniforms": [
-        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
-        { "name": "FogStart", "type": "float", "count": 1, "values": [ 0.0 ] },
-        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 1.0 ] },
-        { "name": "FogColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
     ],
     "UBOs": [
         { "type":  "vertex", "binding": 0, "fields": [
@@ -33,6 +17,6 @@
         ] }
     ],
     "PushConstants": [
-        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
+        { "name": "ModelOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
     ]
 }

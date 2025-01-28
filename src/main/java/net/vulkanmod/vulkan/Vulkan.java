@@ -9,7 +9,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -125,8 +125,6 @@ public class Vulkan {
     private static long debugMessenger;
     private static long surface;
 
-    private static SwapChain swapChain;
-
     private static long commandPool;
     private static VkCommandBuffer immediateCmdBuffer;
     private static long immediateFence;
@@ -149,12 +147,9 @@ public class Vulkan {
         MemoryTypes.createMemoryTypes();
 
         createCommandPool();
-        allocateImmediateCmdBuffer();
 
         setupDepthFormat();
-        createSwapChain();
         Renderer.initRenderer();
-
     }
 
     static void createStagingBuffers() {
@@ -165,16 +160,12 @@ public class Vulkan {
         stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
+            stagingBuffers[i] = new StagingBuffer();
         }
     }
 
     static void setupDepthFormat() {
         DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat(use24BitsDepthFormat);
-    }
-
-    private static void createSwapChain() {
-        swapChain = new SwapChain();
     }
 
     public static void waitIdle() {
@@ -189,7 +180,6 @@ public class Vulkan {
         Pipeline.destroyPipelineCache();
 
         Renderer.getInstance().cleanUpResources();
-        swapChain.cleanUp();
 
         freeStagingBuffers();
 
@@ -201,6 +191,7 @@ public class Vulkan {
 
         vmaDestroyAllocator(allocator);
 
+        SamplerManager.cleanUp();
         DeviceManager.destroy();
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
@@ -208,7 +199,7 @@ public class Vulkan {
     }
 
     private static void freeStagingBuffers() {
-        Arrays.stream(stagingBuffers).forEach(Buffer::freeBuffer);
+        Arrays.stream(stagingBuffers).forEach(Buffer::scheduleFree);
     }
 
     private static void createInstance() {
@@ -361,58 +352,6 @@ public class Vulkan {
         }
     }
 
-    private static void allocateImmediateCmdBuffer() {
-        try (MemoryStack stack = stackPush()) {
-
-            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
-            allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-            allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-            allocInfo.commandPool(commandPool);
-            allocInfo.commandBufferCount(1);
-
-            PointerBuffer pCommandBuffer = stack.mallocPointer(1);
-            vkAllocateCommandBuffers(DeviceManager.vkDevice, allocInfo, pCommandBuffer);
-            immediateCmdBuffer = new VkCommandBuffer(pCommandBuffer.get(0), DeviceManager.vkDevice);
-
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
-            LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(DeviceManager.vkDevice, fenceInfo, null, pFence);
-            vkResetFences(DeviceManager.vkDevice, pFence.get(0));
-
-            immediateFence = pFence.get(0);
-        }
-    }
-
-    public static VkCommandBuffer beginImmediateCmd() {
-        try (MemoryStack stack = stackPush()) {
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-
-            vkBeginCommandBuffer(immediateCmdBuffer, beginInfo);
-        }
-        return immediateCmdBuffer;
-    }
-
-    public static void endImmediateCmd() {
-        try (MemoryStack stack = stackPush()) {
-            vkEndCommandBuffer(immediateCmdBuffer);
-
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
-
-            vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, immediateFence);
-
-            vkWaitForFences(DeviceManager.vkDevice, immediateFence, true, VUtil.UINT64_MAX);
-            vkResetFences(DeviceManager.vkDevice, immediateFence);
-            vkResetCommandBuffer(immediateCmdBuffer, 0);
-        }
-
-    }
-
     private static PointerBuffer getRequiredInstanceExtensions() {
 
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
@@ -440,6 +379,7 @@ public class Vulkan {
     }
 
     public static void setVsync(boolean b) {
+        SwapChain swapChain = Renderer.getInstance().getSwapChain();
         if (swapChain.isVsync() != b) {
             Renderer.scheduleSwapChainUpdate();
             swapChain.setVsync(b);
@@ -452,10 +392,6 @@ public class Vulkan {
 
     public static long getSurface() {
         return surface;
-    }
-
-    public static SwapChain getSwapChain() {
-        return swapChain;
     }
 
     public static long getCommandPool() {

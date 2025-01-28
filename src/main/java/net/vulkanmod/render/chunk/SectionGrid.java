@@ -23,6 +23,10 @@ public class SectionGrid {
     private int prevSecX;
     private int prevSecZ;
 
+    private final CircularIntList xList;
+    private final CircularIntList zList;
+    private final CircularIntList.RangeIterator xComplIterator;
+
     public SectionGrid(Level level, int viewDistance) {
         this.level = level;
         this.setViewDistance(viewDistance);
@@ -31,6 +35,10 @@ public class SectionGrid {
 
         this.prevSecX = Integer.MIN_VALUE;
         this.prevSecZ = Integer.MIN_VALUE;
+
+        this.xList = new CircularIntList(this.gridWidth);
+        this.zList = new CircularIntList(this.gridWidth);
+        this.xComplIterator = this.xList.createRangeIterator();
     }
 
     protected void createChunks() {
@@ -53,8 +61,8 @@ public class SectionGrid {
         }
     }
 
-    public void releaseAllBuffers() {
-        this.chunkAreaManager.releaseAllBuffers();
+    public void freeAllBuffers() {
+        this.chunkAreaManager.freeAllBuffers();
     }
 
     private int getChunkIndex(int x, int y, int z) {
@@ -86,8 +94,11 @@ public class SectionGrid {
         int zAbsChunkIndex = secZ - this.gridWidth / 2;
         int zStart = Math.floorMod(zAbsChunkIndex, this.gridWidth);
 
-        CircularIntList xList = new CircularIntList(this.gridWidth, xStart);
-        CircularIntList zList = new CircularIntList(this.gridWidth, zStart);
+        CircularIntList xList = this.xList;
+        CircularIntList zList = this.zList;
+        xList.updateStartIdx(xStart);
+        zList.updateStartIdx(zStart);
+
         CircularIntList.OwnIterator xIterator = xList.iterator();
         CircularIntList.OwnIterator zIterator = zList.iterator();
 
@@ -117,9 +128,10 @@ public class SectionGrid {
             zRangeEnd = -dz - 1;
         }
 
-        CircularIntList.RangeIterator xRangeIterator = xList.rangeIterator(xRangeStart, xRangeEnd);
-        CircularIntList.RangeIterator xComplIterator = xList.rangeIterator(xComplStart, xComplEnd);
-        CircularIntList.RangeIterator zRangeIterator = zList.rangeIterator(zRangeStart, zRangeEnd);
+        CircularIntList.RangeIterator xRangeIterator = xList.getRangeIterator(xRangeStart, xRangeEnd);
+        CircularIntList.RangeIterator zRangeIterator = zList.getRangeIterator(zRangeStart, zRangeEnd);
+        CircularIntList.RangeIterator xComplIterator = this.xComplIterator;
+        xComplIterator.update(xComplStart, xComplEnd);
 
         xAbsChunkIndex = secX - (this.gridWidth >> 1) + xRangeStart;
         for (int xRelativeIndex; xRangeIterator.hasNext(); xAbsChunkIndex++) {
@@ -133,19 +145,9 @@ public class SectionGrid {
                 zRelativeIndex = zIterator.next();
                 int z1 = (zAbsChunkIndex << 4);
 
-                for (int yRel = 0;
-                     yRel < this.gridHeight; ++yRel) {
-                    int y1 = this.level.getMinBuildHeight() + (yRel << 4);
-                    RenderSection renderSection = this.sections[this.getChunkIndex(xRelativeIndex, yRel, zRelativeIndex)];
-
-                    renderSection.setOrigin(x1, y1, z1);
-
-                    this.unsetNeighbours(renderSection);
-
-                    this.setNeighbours(renderSection, xList, zList, xRangeIterator.getCurrentIndex(), zIterator.getCurrentIndex(),
-                            xRelativeIndex, yRel, zRelativeIndex);
-
-                    this.setChunkArea(renderSection, x1, y1, z1);
+                for (int yRel = 0; yRel < this.gridHeight; ++yRel) {
+                    moveSection(xRelativeIndex, yRel, zRelativeIndex, x1, z1,
+                                xList, zList, xRangeIterator.getCurrentIndex(), zIterator.getCurrentIndex());
                 }
             }
         }
@@ -162,26 +164,45 @@ public class SectionGrid {
                 zRelativeIndex = zRangeIterator.next();
                 int z1 = (zAbsChunkIndex << 4);
 
-                for (int yRel = 0;
-                     yRel < this.gridHeight; ++yRel) {
-                    int y1 = this.level.getMinBuildHeight() + (yRel << 4);
-                    RenderSection renderSection = this.sections[this.getChunkIndex(xRelativeIndex, yRel, zRelativeIndex)];
-
-                    renderSection.setOrigin(x1, y1, z1);
-
-                    this.unsetNeighbours(renderSection);
-
-                    this.setNeighbours(renderSection, xList, zList, xComplIterator.getCurrentIndex(), zRangeIterator.getCurrentIndex(),
-                            xRelativeIndex, yRel, zRelativeIndex);
-
-                    this.setChunkArea(renderSection, x1, y1, z1);
-
+                for (int yRel = 0; yRel < this.gridHeight; ++yRel) {
+                    moveSection(xRelativeIndex, yRel, zRelativeIndex, x1, z1,
+                                xList, zList, xComplIterator.getCurrentIndex(), zRangeIterator.getCurrentIndex());
                 }
             }
         }
 
         this.prevSecX = secX;
         this.prevSecZ = secZ;
+    }
+
+    private void moveSection(int xRelativeIndex, int yRel, int zRelativeIndex,
+                             int x1, int z1,
+                             CircularIntList xList, CircularIntList zList,
+                             int xCurrentIdx, int zCurrentIdx) {
+
+        int y1 = this.level.getMinBuildHeight() + (yRel << 4);
+        RenderSection renderSection = this.sections[this.getChunkIndex(xRelativeIndex, yRel, zRelativeIndex)];
+
+        this.unsetNeighbours(renderSection);
+
+        renderSection.setOrigin(x1, y1, z1);
+
+        this.setNeighbours(renderSection, xList, zList, xCurrentIdx, zCurrentIdx,
+                           xRelativeIndex, yRel, zRelativeIndex);
+
+        ChunkArea oldArea = renderSection.getChunkArea();
+
+        if (oldArea != null) {
+            oldArea.removeSection();
+        }
+
+        ChunkArea chunkArea = this.chunkAreaManager.getChunkArea(renderSection, x1, y1, z1);
+        chunkArea.addSection();
+        renderSection.setChunkArea(chunkArea);
+
+        renderSection.inAreaIndex = (short) (((x1 - chunkArea.position.x()) >> 4) +
+                (((z1 - chunkArea.position.z()) >> 4) * 8 + ((y1 - chunkArea.position.y()) >> 4)) * 8);
+
     }
 
     private void setNeighbours(RenderSection section, CircularIntList xList, CircularIntList zList,

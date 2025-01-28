@@ -14,8 +14,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.function.Consumer;
 
@@ -29,13 +27,15 @@ public abstract class RenderSystemMixin {
     @Shadow @Final private static Matrix4fStack modelViewStack;
     @Shadow private static Matrix4f modelViewMatrix;
     @Shadow private static Matrix4f textureMatrix;
-    @Shadow @Final private static int[] shaderTextures;
+
     @Shadow @Final private static float[] shaderColor;
     @Shadow @Final private static Vector3f[] shaderLightDirections;
-
     @Shadow @Final private static float[] shaderFogColor;
 
     @Shadow private static @Nullable Thread renderThread;
+
+    @Shadow public static VertexSorting vertexSorting;
+    @Shadow private static VertexSorting savedVertexSorting;
 
     @Shadow
     public static void assertOnRenderThread() {
@@ -134,18 +134,6 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     public static void clearDepth(double d) {
         VRenderSystem.clearDepth(d);
-    }
-
-    @Redirect(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapBuffers(J)V"), remap = false)
-    private static void removeSwapBuffers(long window) {
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
-    public static void viewport(int x, int y, int width, int height) {
-        Renderer.setViewport(x, y, width, height);
     }
 
     /**
@@ -288,9 +276,9 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void polygonMode(final int i, final int j) {
+    public static void polygonMode(final int face, final int mode) {
         assertOnRenderThread();
-        VRenderSystem.setPolygonModeGL(i);
+        VRenderSystem.setPolygonModeGL(mode);
     }
 
     /**
@@ -372,12 +360,14 @@ public abstract class RenderSystemMixin {
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
                 RenderSystemMixin.projectionMatrix = matrix4f;
+                RenderSystem.vertexSorting = vertexSorting;
 
                 VRenderSystem.applyProjectionMatrix(matrix4f);
                 VRenderSystem.calculateMVP();
             });
         } else {
             RenderSystemMixin.projectionMatrix = matrix4f;
+            RenderSystem.vertexSorting = vertexSorting;
 
             VRenderSystem.applyProjectionMatrix(matrix4f);
             VRenderSystem.calculateMVP();
@@ -443,6 +433,7 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     private static void _restoreProjectionMatrix() {
         projectionMatrix = savedProjectionMatrix;
+        vertexSorting = savedVertexSorting;
 
         VRenderSystem.applyProjectionMatrix(projectionMatrix);
         VRenderSystem.calculateMVP();

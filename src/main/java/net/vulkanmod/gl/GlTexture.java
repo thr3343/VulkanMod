@@ -23,6 +23,10 @@ public class GlTexture {
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
 
+    private static int unpackRowLength;
+    private static int unpackSkipRows;
+    private static int unpackSkipPixels;
+
     public static void bindIdToImage(int id, VulkanImage vulkanImage) {
         GlTexture texture = map.get(id);
         texture.vulkanImage = vulkanImage;
@@ -79,7 +83,9 @@ public class GlTexture {
         if (checkParams(level, width, height))
             return;
 
-        boundTexture.allocateIfNeeded(width, height, internalFormat, type);
+        boundTexture.updateParams(level, width, height, internalFormat, type);
+        boundTexture.allocateIfNeeded();
+
         VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
 
         texSubImage2D(target, level, 0, 0, width, height, format, type, pixels);
@@ -89,7 +95,9 @@ public class GlTexture {
         if (checkParams(level, width, height))
             return;
 
-        boundTexture.allocateIfNeeded(width, height, internalFormat, type);
+        boundTexture.updateParams(level, width, height, internalFormat, type);
+        boundTexture.allocateIfNeeded();
+
         VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
 
         texSubImage2D(target, level, 0, 0, width, height, format, type, pixels);
@@ -99,11 +107,6 @@ public class GlTexture {
         if (width == 0 || height == 0)
             return true;
 
-        // TODO: levels
-        if (level != 0) {
-//            throw new UnsupportedOperationException();
-            return true;
-        }
         return false;
     }
 
@@ -127,14 +130,16 @@ public class GlTexture {
         }
 
         if (src != null)
-            boundTexture.uploadSubImage(xOffset, yOffset, width, height, format, src);
+            boundTexture.uploadSubImage(level, xOffset, yOffset, width, height, format, src);
     }
 
     private static ByteBuffer getByteBuffer(int width, int height, long pixels) {
         ByteBuffer src;
         // TODO: hardcoded format size
         int formatSize = 4;
-        src = MemoryUtil.memByteBuffer(pixels, width * height * formatSize);
+        int rowLength = unpackRowLength != 0 ? unpackRowLength : width;
+        int offset = (unpackSkipRows * rowLength + unpackSkipPixels) * formatSize;
+        src = MemoryUtil.memByteBuffer(pixels + offset, (rowLength * height - unpackSkipPixels) * formatSize);
         return src;
     }
 
@@ -157,12 +162,15 @@ public class GlTexture {
         }
 
         if (src != null)
-            boundTexture.uploadSubImage(xOffset, yOffset, width, height, format, src);
+            boundTexture.uploadSubImage(level, xOffset, yOffset, width, height, format, src);
     }
 
     public static void texParameteri(int target, int pName, int param) {
         if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
+
+        if (boundTexture == null)
+            return;
 
         switch (pName) {
             case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
@@ -195,6 +203,14 @@ public class GlTexture {
 
             default -> -1;
         };
+    }
+
+    public static void pixelStoreI(int pName, int value) {
+        switch (pName) {
+            case GL11.GL_UNPACK_ROW_LENGTH -> unpackRowLength = value;
+            case GL11.GL_UNPACK_SKIP_ROWS -> unpackSkipRows = value;
+            case GL11.GL_UNPACK_SKIP_PIXELS -> unpackSkipPixels = value;
+        }
     }
 
     public static void generateMipmap(int target) {
@@ -234,7 +250,9 @@ public class GlTexture {
 
     final int id;
     VulkanImage vulkanImage;
-    int internalFormat;
+
+    int width, height;
+    int vkFormat;
 
     boolean needsUpdate = false;
     int maxLevel = 0;
@@ -247,14 +265,27 @@ public class GlTexture {
         this.id = id;
     }
 
-    void allocateIfNeeded(int width, int height, int internalFormat, int type) {
-        this.internalFormat = internalFormat;
-        int vkFormat = GlUtil.vulkanFormat(internalFormat, type);
+    void updateParams(int level, int width, int height, int internalFormat, int type) {
+        if (level > this.maxLevel) {
+            this.maxLevel = level;
 
-        needsUpdate |= vulkanImage == null ||
-                vulkanImage.width != width || vulkanImage.height != height ||
-                vkFormat != vulkanImage.format;
+            this.needsUpdate = true;
+        }
 
+        if (level == 0) {
+            int vkFormat = GlUtil.vulkanFormat(internalFormat, type);
+
+            if (this.vulkanImage == null || this.width != width || this.height != height || vkFormat != vulkanImage.format) {
+                this.width = width;
+                this.height = height;
+                this.vkFormat = vkFormat;
+
+                this.needsUpdate = true;
+            }
+        }
+    }
+
+    void allocateIfNeeded() {
         if (needsUpdate) {
             allocateImage(width, height, vkFormat);
             updateSampler();
@@ -267,17 +298,19 @@ public class GlTexture {
         if (this.vulkanImage != null)
             this.vulkanImage.free();
 
-        if (VulkanImage.isDepthFormat(vkFormat))
-            this.vulkanImage = VulkanImage.createDepthImage(vkFormat,
-                    width, height,
+        if (VulkanImage.isDepthFormat(vkFormat)) {
+            this.vulkanImage = VulkanImage.createDepthImage(
+                    vkFormat, width, height,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                     false, true);
-        else
+        }
+        else {
             this.vulkanImage = new VulkanImage.Builder(width, height)
                     .setMipLevels(maxLevel + 1)
                     .setFormat(vkFormat)
                     .addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                     .createVulkanImage();
+        }
     }
 
     void updateSampler() {
@@ -297,7 +330,7 @@ public class GlTexture {
         vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
-    private void uploadSubImage(int xOffset, int yOffset, int width, int height, int format, ByteBuffer pixels) {
+    private void uploadSubImage(int level, int xOffset, int yOffset, int width, int height, int format, ByteBuffer pixels) {
         ByteBuffer src;
         if (format == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
             src = GlUtil.RGBtoRGBA_buffer(pixels);
@@ -307,7 +340,7 @@ public class GlTexture {
             src = pixels;
         }
 
-        this.vulkanImage.uploadSubTextureAsync(0, width, height, xOffset, yOffset, 0, 0, 0, src);
+        this.vulkanImage.uploadSubTextureAsync(level, width, height, xOffset, yOffset, 0, 0, unpackRowLength, src);
 
         if (src != pixels) {
             MemoryUtil.memFree(src);

@@ -43,7 +43,7 @@ public class IndirectBuffer extends Buffer {
 
     private void resizeBuffer() {
         MemoryManager.getInstance().addToFreeable(this);
-        int newSize = this.bufferSize + (this.bufferSize >> 1);
+        long newSize = this.bufferSize + (this.bufferSize >> 1);
         this.createBuffer(newSize);
         this.usedBytes = 0;
     }
@@ -57,8 +57,4 @@ public class IndirectBuffer extends Buffer {
         commandBuffer = null;
     }
 
-    //debug
-    public ByteBuffer getByteBuffer() {
-        return this.data.getByteBuffer(0, this.bufferSize);
-    }
 }

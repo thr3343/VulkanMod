@@ -5,10 +5,8 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.interfaces.ExtendedRenderTarget;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
-import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.opengl.GL30;
@@ -20,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RenderTarget.class)
-public abstract class RenderTargetMixin implements ExtendedRenderTarget {
+public abstract class RenderTargetMixin {
 
     @Shadow public int viewWidth;
     @Shadow public int viewHeight;
@@ -140,16 +138,6 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Inject(method = "getColorTextureId", at = @At("HEAD"))
     private void injClear(CallbackInfoReturnable<Integer> cir) {
         applyClear();
-    }
-
-    @Override
-    public boolean isBound() {
-        return bound;
-    }
-
-    @Override
-    public RenderPass getRenderPass() {
-        return GlFramebuffer.getFramebuffer(this.frameBufferId).getRenderPass();
     }
 
     @Unique

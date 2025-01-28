@@ -28,12 +28,12 @@ public class UniformBuffer extends Buffer {
         usedBytes += alignedSize;
     }
 
-    private void resizeBuffer(int newSize) {
+    private void resizeBuffer(long newSize) {
         MemoryManager.getInstance().addToFreeable(this);
         createBuffer(newSize);
     }
 
     public long getPointer() {
-        return this.data.get(0) + usedBytes;
+        return this.dataPtr + usedBytes;
     }
 }

@@ -14,8 +14,12 @@ public class Vec1i extends Uniform {
         super(info);
     }
 
-    void setSupplier() {
-        this.intSupplier = Uniforms.vec1i_uniformMap.get(this.info.name);
+    protected void setupSupplier() {
+        if (this.info.intSupplier != null) {
+            this.intSupplier = this.info.intSupplier;
+        } else {
+            this.setSupplier(this.info.bufferSupplier);
+        }
     }
 
     @Override

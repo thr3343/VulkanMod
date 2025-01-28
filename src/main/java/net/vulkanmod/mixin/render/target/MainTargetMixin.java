@@ -21,6 +21,8 @@ public class MainTargetMixin extends RenderTarget {
      */
     @Overwrite
     private void createFrameBuffer(int width, int height) {
+        this.frameBufferId = 0;
+
         this.viewWidth = width;
         this.viewHeight = height;
         this.width = width;

@@ -44,11 +44,11 @@ public class Util {
         return log;
     }
 
-    public static int align(int i, int alignment) {
+    public static long align(long l, int alignment) {
         if (alignment == 0)
-            return i;
+            return l;
 
-        int r = i % alignment;
-        return r != 0 ? i + alignment - r : i;
+        long r = l % alignment;
+        return r != 0 ? l + alignment - r : l;
     }
 }

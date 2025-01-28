@@ -8,6 +8,7 @@ import net.vulkanmod.config.Platform;
 import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.config.option.Options;
 import net.vulkanmod.config.video.VideoModeSet;
+import net.vulkanmod.config.video.WindowMode;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
@@ -163,7 +164,7 @@ public abstract class WindowMixin {
                 this.wasOnFullscreen = true;
             }
         }
-        else if (config.windowedFullscreen) {
+        else if (config.windowMode == WindowMode.WINDOWED_FULLSCREEN.mode) {
             VideoModeSet.VideoMode videoMode = VideoModeManager.getOsVideoMode();
 
             if (!this.wasOnFullscreen) {

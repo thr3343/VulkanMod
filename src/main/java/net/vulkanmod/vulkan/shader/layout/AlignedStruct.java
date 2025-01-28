@@ -13,18 +13,17 @@ public abstract class AlignedStruct {
     protected AlignedStruct(List<Uniform.Info> infoList, int size) {
         this.size = size;
 
-        if(infoList == null)
+        if (infoList == null)
             return;
 
-        for(Uniform.Info info : infoList) {
-
+        for (Uniform.Info info : infoList) {
             Uniform uniform = Uniform.createField(info);
             this.uniforms.add(uniform);
         }
     }
 
     public void update(long ptr) {
-        for(Uniform uniform : this.uniforms) {
+        for (Uniform uniform : this.uniforms) {
             uniform.update(ptr);
         }
     }
@@ -39,33 +38,36 @@ public abstract class AlignedStruct {
 
     public static class Builder {
 
-        final List<Uniform.Info> uniformsInfo = new ArrayList<>();
+        final List<Uniform.Info> uniforms = new ArrayList<>();
         protected int currentOffset = 0;
 
         public void addUniformInfo(String type, String name, int count) {
             Uniform.Info info = Uniform.createUniformInfo(type, name, count);
-
-            this.currentOffset = info.computeAlignmentOffset(this.currentOffset);
-            this.currentOffset += info.size;
-            this.uniformsInfo.add(info);
+            addUniformInfo(info);
         }
 
         public void addUniformInfo(String type, String name) {
             Uniform.Info info = Uniform.createUniformInfo(type, name);
+            addUniformInfo(info);
+        }
 
-            this.currentOffset = info.computeAlignmentOffset(this.currentOffset);
-            this.currentOffset += info.size;
-            this.uniformsInfo.add(info);
+        public void addUniformInfo(Uniform.Info uniformInfo) {
+            this.currentOffset = uniformInfo.computeAlignmentOffset(this.currentOffset);
+            this.currentOffset += uniformInfo.size;
+            this.uniforms.add(uniformInfo);
         }
 
         public UBO buildUBO(int binding, int stages) {
             //offset is expressed in floats/ints
-            return new UBO(binding, stages, this.currentOffset * 4, this.uniformsInfo);
+            return new UBO(binding, stages, this.currentOffset * 4, this.uniforms);
         }
 
         public PushConstants buildPushConstant() {
-            if(this.uniformsInfo.isEmpty()) return null;
-            return new PushConstants(this.uniformsInfo, this.currentOffset * 4);
+            if (this.uniforms.isEmpty()) {
+                return null;
+            }
+
+            return new PushConstants(this.uniforms, this.currentOffset * 4);
         }
 
     }

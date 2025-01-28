@@ -25,11 +25,21 @@ public class ArrayLightDataCache extends LightDataAccess {
     }
 
     public void reset(BlockAndTintGetter blockAndTintGetter, int x, int y, int z) {
-        this.world = blockAndTintGetter;
+        this.region = blockAndTintGetter;
 
         this.xOffset = x - NEIGHBOR_BLOCK_RADIUS;
         this.yOffset = y - NEIGHBOR_BLOCK_RADIUS;
         this.zOffset = z - NEIGHBOR_BLOCK_RADIUS;
+
+        Arrays.fill(this.light, 0);
+    }
+
+    public void reset(BlockAndTintGetter blockAndTintGetter, BlockPos origin) {
+        this.region = blockAndTintGetter;
+
+        this.xOffset = origin.getX() - NEIGHBOR_BLOCK_RADIUS;
+        this.yOffset = origin.getY() - NEIGHBOR_BLOCK_RADIUS;
+        this.zOffset = origin.getZ() - NEIGHBOR_BLOCK_RADIUS;
 
         Arrays.fill(this.light, 0);
     }

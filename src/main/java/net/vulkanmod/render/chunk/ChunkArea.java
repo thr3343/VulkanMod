@@ -11,11 +11,11 @@ import java.util.Arrays;
 
 public class ChunkArea {
     public final int index;
+    final DrawBuffers drawBuffers;
     final Vector3i position;
     final byte[] frustumBuffer = new byte[64];
-    int sectionsContained = 0;
 
-    DrawBuffers drawBuffers;
+    int sectionsContained = 0;
 
     //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
     public final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
@@ -142,11 +142,15 @@ public class ChunkArea {
         this.sectionsContained--;
 
         if (this.sectionsContained == 0) {
-            this.releaseBuffers();
+            this.drawBuffers.releaseBuffers();
         }
     }
 
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
+    }
+
+    public void free() {
+        this.drawBuffers.free();
     }
 }

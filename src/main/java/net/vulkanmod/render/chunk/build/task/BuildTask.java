@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk.build.task;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.core.BlockPos;
@@ -13,13 +12,14 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.chunk.build.BlockRenderer;
-import net.vulkanmod.render.chunk.build.LiquidRenderer;
+import net.vulkanmod.render.chunk.build.renderer.BlockRenderer;
+import net.vulkanmod.render.chunk.build.renderer.FluidRenderer;
 import net.vulkanmod.render.chunk.build.RenderRegion;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
-import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
+import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -94,7 +94,7 @@ public class BuildTask extends ChunkTask {
 
         BlockRenderer blockRenderer = builderResources.blockRenderer;
 
-        LiquidRenderer liquidRenderer = builderResources.liquidRenderer;
+        FluidRenderer fluidRenderer = builderResources.fluidRenderer;
 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 
@@ -116,44 +116,34 @@ public class BuildTask extends ChunkTask {
                     }
 
                     FluidState fluidState = blockState.getFluidState();
-                    TerrainRenderType renderType;
-                    TerrainBufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
-                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState));
-
-                        bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
-                        bufferBuilder.setBlockAttributes(blockState);
-
-                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder);
+                        fluidRenderer.renderLiquid(blockState, fluidState, blockPos);
                     }
 
                     if (blockState.getRenderShape() == RenderShape.MODEL) {
-                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState));
-
-                        bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
-                        bufferBuilder.setBlockAttributes(blockState);
-
                         pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
-                        blockRenderer.renderBlock(blockState, blockPos, pos, bufferBuilder);
+                        blockRenderer.renderBlock(blockState, blockPos, pos);
                     }
                 }
             }
         }
 
-        TerrainBufferBuilder translucentBufferBuilder = bufferBuilders.builder(TerrainRenderType.TRANSLUCENT);
-        if (!translucentBufferBuilder.isCurrentBatchEmpty()) {
-            translucentBufferBuilder.setupQuadSortingPoints();
-            translucentBufferBuilder.setupQuadSorting(camX - (float) startBlockPos.getX(), camY - (float) startBlockPos.getY(), camZ - (float) startBlockPos.getZ());
-            compileResult.transparencyState = translucentBufferBuilder.getSortState();
+        TerrainBuilder trasnlucentTerrainBuilder = bufferBuilders.builder(TerrainRenderType.TRANSLUCENT);
+        if (trasnlucentTerrainBuilder.getBufferBuilder(QuadFacing.UNDEFINED.ordinal()).getVertices() > 0) {
+            trasnlucentTerrainBuilder.setupQuadSortingPoints();
+            trasnlucentTerrainBuilder.setupQuadSorting(camX - (float) startBlockPos.getX(), camY - (float) startBlockPos.getY(), camZ - (float) startBlockPos.getZ());
+            compileResult.transparencyState = trasnlucentTerrainBuilder.getSortState();
         }
 
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).end();
-            if (renderedBuffer != null) {
-                UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                compileResult.renderedLayers.put(renderType, uploadBuffer);
-                renderedBuffer.release();
-            }
+            TerrainBuilder builder = bufferBuilders.builder(renderType);
+
+            TerrainBuilder.DrawState drawState = builder.endDrawing();
+
+            UploadBuffer uploadBuffer = new UploadBuffer(builder, drawState);
+            compileResult.renderedLayers.put(renderType, uploadBuffer);
+
+            builder.clear();
         }
 
         compileResult.visibilitySet = visGraph.resolve();
@@ -163,12 +153,12 @@ public class BuildTask extends ChunkTask {
 
     private void setupBufferBuilders(ThreadBuilderPack builderPack) {
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            TerrainBufferBuilder bufferBuilder = builderPack.builder(renderType);
+            TerrainBuilder bufferBuilder = builderPack.builder(renderType);
             bufferBuilder.begin();
         }
     }
 
-    private TerrainBufferBuilder getBufferBuilder(ThreadBuilderPack bufferBuilders, TerrainRenderType renderType) {
+    private TerrainBuilder getTerrainBuilder(ThreadBuilderPack bufferBuilders, TerrainRenderType renderType) {
         renderType = compactRenderTypes(renderType);
         return bufferBuilders.builder(renderType);
     }

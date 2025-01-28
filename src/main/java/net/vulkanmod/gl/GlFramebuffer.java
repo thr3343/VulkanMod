@@ -7,6 +7,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -15,46 +16,42 @@ import static org.lwjgl.vulkan.VK11.VK_ATTACHMENT_LOAD_OP_LOAD;
 import static org.lwjgl.vulkan.VK11.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 public class GlFramebuffer {
-    private static int ID_COUNTER = 1;
+    private static int idCounter = 1;
+
     private static final Int2ReferenceOpenHashMap<GlFramebuffer> map = new Int2ReferenceOpenHashMap<>();
-    private static int boundId = 0;
     private static GlFramebuffer boundFramebuffer;
+    private static GlFramebuffer readFramebuffer;
 
     public static void resetBoundFramebuffer() {
         boundFramebuffer = null;
-        boundId = 0;
     }
 
     public static void beginRendering(GlFramebuffer glFramebuffer) {
-        Renderer.getInstance().beginRendering(glFramebuffer.renderPass, glFramebuffer.framebuffer);
+        boolean begunRendering = glFramebuffer.beginRendering();
 
-        Framebuffer framebuffer = glFramebuffer.framebuffer;
-        int viewWidth = framebuffer.getWidth();
-        int viewHeight = framebuffer.getHeight();
+        if (begunRendering) {
+            Framebuffer framebuffer = glFramebuffer.framebuffer;
+            int viewWidth = framebuffer.getWidth();
+            int viewHeight = framebuffer.getHeight();
 
-        Renderer.setInvertedViewport(0, 0, viewWidth, viewHeight);
-        Renderer.setScissor(0, 0, viewWidth, viewHeight);
+            Renderer.setInvertedViewport(0, 0, viewWidth, viewHeight);
+            Renderer.setScissor(0, 0, viewWidth, viewHeight);
 
-        // TODO: invert cull instead of disabling
-        VRenderSystem.disableCull();
+            // TODO: invert cull instead of disabling
+            VRenderSystem.disableCull();
+        }
 
-        boundId = glFramebuffer.id;
+        boundFramebuffer = glFramebuffer;
     }
 
     public static int genFramebufferId() {
-        int id = ID_COUNTER;
+        int id = idCounter;
         map.put(id, new GlFramebuffer(id));
-        ID_COUNTER++;
+        idCounter++;
         return id;
     }
 
     public static void bindFramebuffer(int target, int id) {
-        // target
-        // 36160 GL_FRAMEBUFFER
-        // 36161 GL_RENDERBUFFER
-
-        if (boundId == id)
-            return;
 
         if (id == 0) {
             Renderer.getInstance().endRenderPass();
@@ -65,7 +62,6 @@ public class GlFramebuffer {
             }
 
             boundFramebuffer = null;
-            boundId = 0;
             return;
         }
 
@@ -74,11 +70,19 @@ public class GlFramebuffer {
         if (glFramebuffer == null)
             throw new NullPointerException("No Framebuffer with ID: %d ".formatted(id));
 
-        if (glFramebuffer.framebuffer != null) {
-            beginRendering(glFramebuffer);
+        switch (target) {
+            case GL30.GL_DRAW_FRAMEBUFFER , GL30.GL_FRAMEBUFFER -> {
+                if (glFramebuffer.framebuffer != null) {
+                    beginRendering(glFramebuffer);
+                }
+
+                boundFramebuffer = glFramebuffer;
+            }
+            case GL30.GL_READ_FRAMEBUFFER -> {
+                readFramebuffer = glFramebuffer;
+            }
         }
 
-        boundFramebuffer = glFramebuffer;
     }
 
     public static void deleteFramebuffer(int id) {
@@ -91,7 +95,7 @@ public class GlFramebuffer {
         if (boundFramebuffer == null)
             throw new NullPointerException("bound framebuffer is null");
 
-        boundFramebuffer.cleanUp();
+        boundFramebuffer.cleanUp(true);
         boundFramebuffer = null;
     }
 
@@ -114,6 +118,11 @@ public class GlFramebuffer {
             return;
 
         boundFramebuffer.setAttachmentRenderbuffer(attachment, renderbuffer);
+    }
+
+    public static void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+        // TODO: add missing parameters
+        ImageUtil.blitFramebuffer(boundFramebuffer.colorAttachment, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1);
     }
 
     public static int glCheckFramebufferStatus(int target) {
@@ -154,9 +163,8 @@ public class GlFramebuffer {
             return;
 
         switch (attachment) {
-            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(glTexture);
-
-            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(glTexture);
+            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(glTexture.getVulkanImage());
+            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(glTexture.getVulkanImage());
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
@@ -172,33 +180,21 @@ public class GlFramebuffer {
             return;
 
         switch (attachment) {
-            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(renderbuffer);
-
-            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(renderbuffer);
+            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(renderbuffer.getVulkanImage());
+            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(renderbuffer.getVulkanImage());
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
     }
 
-    void setColorAttachment(GlTexture texture) {
-        this.colorAttachment = texture.vulkanImage;
+    void setColorAttachment(VulkanImage image) {
+        this.colorAttachment = image;
         createAndBind();
     }
 
-    void setDepthAttachment(GlTexture texture) {
+    void setDepthAttachment(VulkanImage image) {
         //TODO check if texture is in depth format
-        this.depthAttachment = texture.vulkanImage;
-        createAndBind();
-    }
-
-    void setColorAttachment(GlRenderbuffer texture) {
-        this.colorAttachment = texture.vulkanImage;
-        createAndBind();
-    }
-
-    void setDepthAttachment(GlRenderbuffer texture) {
-        //TODO check if texture is in depth format
-        this.depthAttachment = texture.vulkanImage;
+        this.depthAttachment = image;
         createAndBind();
     }
 
@@ -208,7 +204,7 @@ public class GlFramebuffer {
             return;
 
         if (this.framebuffer != null) {
-            this.cleanUp();
+            this.cleanUp(false);
         }
 
         boolean hasDepthImage = this.depthAttachment != null;
@@ -237,8 +233,8 @@ public class GlFramebuffer {
         return renderPass;
     }
 
-    void cleanUp() {
-        this.framebuffer.cleanUp(false);
+    void cleanUp(boolean freeAttachments) {
+        this.framebuffer.cleanUp(freeAttachments);
         this.renderPass.cleanUp();
 
         this.framebuffer = null;

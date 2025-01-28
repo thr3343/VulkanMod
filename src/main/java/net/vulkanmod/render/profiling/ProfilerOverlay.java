@@ -104,11 +104,20 @@ public class ProfilerOverlay {
 
         this.updateResults();
 
-        if (lastResults == null)
+        if (lastResults == null) {
             return list;
+        }
+
+        var partialResults = lastResults.getPartialResults();
+        if (partialResults.size() < 2) {
+            return list;
+        }
 
         int fps = Math.round(1000.0f / frametime);
         list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
+        list.add("");
+
+        list.add(String.format("CPU fence wait time: %.3f", partialResults.get(1).value));
         list.add("");
 
         for (Profiler.Result result : lastResults.getPartialResults()) {
@@ -123,8 +132,9 @@ public class ProfilerOverlay {
         list.add("");
         list.add(String.format("Build time: %.0fms", BuildTimeProfiler.getDeltaTime()));
 
-        if (ChunkTask.BENCH)
+        if (ChunkTask.BENCH) {
             list.add(buildStats);
+        }
 
         return list;
     }

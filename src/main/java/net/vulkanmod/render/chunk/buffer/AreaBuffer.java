@@ -49,7 +49,7 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public Segment upload(ByteBuffer byteBuffer, int oldOffset, DrawBuffers.DrawParameters drawParameters) {
+    public Segment upload(ByteBuffer byteBuffer, int oldOffset, long paramsPtr) {
         // Free old segment
         if (oldOffset != -1) {
             // Need to delay segment freeing since it might be still used by prev frames in flight
@@ -81,7 +81,7 @@ public class AreaBuffer {
         segment.free = false;
         this.usedSegments.put(segment.offset, segment);
 
-        segment.drawParameters = drawParameters;
+        segment.paramsPtr = paramsPtr;
 
         Buffer dst = this.buffer;
         UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
@@ -115,7 +115,7 @@ public class AreaBuffer {
         int oldSize = this.size;
 
         int minIncrement = this.size >> 3;
-        minIncrement = Util.align(minIncrement, this.elementSize);
+        minIncrement = (int) Util.align(minIncrement, this.elementSize);
 
         int increment = Math.max(minIncrement, uploadSize << 1);
 
@@ -132,7 +132,7 @@ public class AreaBuffer {
         // TODO: moving only used segments causes corruption
 //        moveUsedSegments(dst);
 
-        this.buffer.freeBuffer();
+        this.buffer.scheduleFree();
         this.buffer = dst;
 
         if (last.isFree()) {
@@ -227,7 +227,7 @@ public class AreaBuffer {
         this.used -= segment.size;
 
         segment.free = true;
-        segment.drawParameters = null;
+        segment.paramsPtr = -1;
 
         Segment next = segment.next;
         if (next != null && next.isFree()) {
@@ -254,13 +254,11 @@ public class AreaBuffer {
     }
 
     private void updateDrawParams(Segment segment) {
-        DrawBuffers.DrawParameters params = segment.drawParameters;
-
         int elementOffset = segment.offset / elementSize;
         if (this.usage == Usage.VERTEX.usage) {
-            params.vertexOffset = elementOffset;
+            DrawParametersBuffer.setVertexOffset(segment.paramsPtr, elementOffset);
         } else {
-            params.firstIndex = elementOffset;
+            DrawParametersBuffer.setFirstIndex(segment.paramsPtr, elementOffset);
         }
     }
 
@@ -269,7 +267,7 @@ public class AreaBuffer {
     }
 
     public void freeBuffer() {
-        this.buffer.freeBuffer();
+        this.buffer.scheduleFree();
     }
 
     public int fragmentation() {
@@ -351,7 +349,7 @@ public class AreaBuffer {
     public static class Segment {
         int offset, size;
         boolean free = true;
-        DrawBuffers.DrawParameters drawParameters;
+        long paramsPtr;
 
         Segment next, prev;
 

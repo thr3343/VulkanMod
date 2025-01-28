@@ -4,6 +4,7 @@ import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlRenderbuffer;
 import net.vulkanmod.gl.GlTexture;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL30C;
 import org.lwjgl.system.NativeType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -74,6 +75,15 @@ public class GL30M {
     @NativeType("GLenum")
     public static int glCheckFramebufferStatus(@NativeType("GLenum") int target) {
         return GlFramebuffer.glCheckFramebufferStatus(target);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glBlitFramebuffer(@NativeType("GLint") int srcX0, @NativeType("GLint") int srcY0, @NativeType("GLint") int srcX1, @NativeType("GLint") int srcY1, @NativeType("GLint") int dstX0, @NativeType("GLint") int dstY0, @NativeType("GLint") int dstX1, @NativeType("GLint") int dstY1, @NativeType("GLbitfield") int mask, @NativeType("GLenum") int filter) {
+        GlFramebuffer.glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
     }
 
     //RENDER BUFFER

@@ -30,7 +30,7 @@ public class VertexBuffer extends Buffer {
 
     }
 
-    private void resizeBuffer(int newSize) {
+    private void resizeBuffer(long newSize) {
         MemoryManager.getInstance().addToFreeable(this);
         this.createBuffer(newSize);
 

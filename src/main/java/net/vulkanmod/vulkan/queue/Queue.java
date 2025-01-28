@@ -18,15 +18,20 @@ import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class Queue {
-    private static VkDevice DEVICE;
-
+    private static VkDevice device;
     private static QueueFamilyIndices queueFamilyIndices;
-    protected CommandPool commandPool;
 
     private final VkQueue queue;
 
+    protected CommandPool commandPool;
+
     public synchronized CommandPool.CommandBuffer beginCommands() {
-        return this.commandPool.beginCommands();
+        try (MemoryStack stack = stackPush()) {
+            CommandPool.CommandBuffer commandBuffer = this.commandPool.getCommandBuffer(stack);
+            commandBuffer.begin(stack);
+
+            return commandBuffer;
+        }
     }
 
     Queue(MemoryStack stack, int familyIndex) {
@@ -43,7 +48,9 @@ public abstract class Queue {
     }
 
     public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        return this.commandPool.submitCommands(commandBuffer, queue);
+        try (MemoryStack stack = stackPush()) {
+            return commandBuffer.submitCommands(stack, queue, false);
+        }
     }
 
     public VkQueue queue() {
@@ -59,6 +66,10 @@ public abstract class Queue {
         vkQueueWaitIdle(queue);
     }
 
+    public CommandPool getCommandPool() {
+        return commandPool;
+    }
+
     public enum Family {
         Graphics,
         Transfer,
@@ -66,17 +77,16 @@ public abstract class Queue {
     }
 
     public static QueueFamilyIndices getQueueFamilies() {
-        if (DEVICE == null)
-            DEVICE = Vulkan.getVkDevice();
+        if (device == null)
+            device = Vulkan.getVkDevice();
 
         if (queueFamilyIndices == null) {
-            queueFamilyIndices = findQueueFamilies(DEVICE.getPhysicalDevice());
+            queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
         }
         return queueFamilyIndices;
     }
 
     public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-
         QueueFamilyIndices indices = new QueueFamilyIndices();
 
         try (MemoryStack stack = stackPush()) {
