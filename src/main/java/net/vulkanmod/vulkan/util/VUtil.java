@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.util;
 
-import net.vulkanmod.vulkan.memory.Buffer;
+import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;

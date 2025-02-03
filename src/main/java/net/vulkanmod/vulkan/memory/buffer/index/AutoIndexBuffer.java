@@ -1,6 +1,8 @@
-package net.vulkanmod.vulkan.memory;
+package net.vulkanmod.vulkan.memory.buffer.index;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -8,8 +10,8 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
-    public static final int U16_MAX_INDEX_COUNT = 65536;
-    public static final int QUAD_U16_MAX_VERTEX_COUNT = U16_MAX_INDEX_COUNT * 3 / 2;
+    public static final int U16_MAX_VERTEX_COUNT = 65536;
+    public static final int QUAD_U16_MAX_INDEX_COUNT = U16_MAX_VERTEX_COUNT * 3 / 2;
 
     int vertexCount;
     DrawType drawType;
@@ -25,14 +27,19 @@ public class AutoIndexBuffer {
         this.vertexCount = vertexCount;
         ByteBuffer buffer;
 
-        IndexBuffer.IndexType indexType = IndexBuffer.IndexType.SHORT;
+        IndexBuffer.IndexType indexType = IndexBuffer.IndexType.UINT16;
+
+        if (vertexCount > U16_MAX_VERTEX_COUNT &&
+            (this.drawType == DrawType.QUADS || this.drawType == DrawType.LINES))
+        {
+            indexType = IndexBuffer.IndexType.UINT32;
+        }
 
         switch (this.drawType) {
             case QUADS -> {
-                if (vertexCount <= QUAD_U16_MAX_VERTEX_COUNT)
+                if (indexType == IndexBuffer.IndexType.UINT16)
                     buffer = genQuadIndices(vertexCount);
                 else {
-                    indexType = IndexBuffer.IndexType.INT;
                     buffer = genIntQuadIndices(vertexCount);
                 }
             }
@@ -50,21 +57,6 @@ public class AutoIndexBuffer {
         MemoryUtil.memFree(buffer);
     }
 
-    public int getIndexCount(int vertexCount) {
-        switch (this.drawType) {
-            case QUADS, LINES -> {
-                return vertexCount * 3 / 2;
-            }
-			case TRIANGLE_FAN, TRIANGLE_STRIP -> {
-                return (vertexCount - 2) * 3;
-            }
-			case DEBUG_LINE_STRIP -> {
-                return (vertexCount - 1) * 2;
-            }
-            default -> throw new RuntimeException(String.format("unknown drawMode: %s", this.drawType));
-        }
-    }
-
     public void checkCapacity(int vertexCount) {
         if(vertexCount > this.vertexCount) {
             int newVertexCount = this.vertexCount * 2;
@@ -73,6 +65,38 @@ public class AutoIndexBuffer {
             this.indexBuffer.scheduleFree();
             createIndexBuffer(newVertexCount);
         }
+    }
+
+    public IndexBuffer getIndexBuffer() { return this.indexBuffer; }
+
+    public void freeBuffer() {
+        this.indexBuffer.scheduleFree();
+    }
+    public int getIndexCount(int vertexCount) {
+        return getIndexCount(this.drawType, vertexCount);
+    }
+
+    public static int getIndexCount(DrawType drawType, int vertexCount) {
+        switch (drawType) {
+            case QUADS, LINES -> {
+                return vertexCount * 3 / 2;
+            }
+            case TRIANGLE_FAN, TRIANGLE_STRIP -> {
+                return (vertexCount - 2) * 3;
+            }
+            case DEBUG_LINE_STRIP -> {
+                return (vertexCount - 1) * 2;
+            }
+            default -> throw new RuntimeException(String.format("unknown drawMode: %s", drawType));
+        }
+    }
+
+    public static int maxVertexCount(DrawType drawType, int maxIndexCount) {
+        return switch (drawType) {
+            case QUADS, LINES -> maxIndexCount * 3 / 2;
+
+            default -> maxIndexCount;
+        };
     }
 
     public static ByteBuffer genQuadIndices(int vertexCount) {
@@ -195,12 +219,6 @@ public class AutoIndexBuffer {
 
     public static int roundUpToDivisible(int n, int d) {
         return ((n + d - 1) / d) * d;
-    }
-
-    public IndexBuffer getIndexBuffer() { return this.indexBuffer; }
-
-    public void freeBuffer() {
-        this.indexBuffer.scheduleFree();
     }
 
     public enum DrawType {

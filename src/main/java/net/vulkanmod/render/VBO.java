@@ -10,6 +10,9 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
+import net.vulkanmod.vulkan.memory.buffer.VertexBuffer;
+import net.vulkanmod.vulkan.memory.buffer.index.AutoIndexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -27,6 +30,7 @@ public class VBO {
     private int vertexCount;
     private VertexFormat.Mode mode;
 
+    AutoIndexBuffer autoIndexBuffer;
     private boolean autoIndexed = false;
 
     public VBO(com.mojang.blaze3d.vertex.VertexBuffer.Usage usage) {
@@ -84,12 +88,13 @@ public class VBO {
                 default -> throw new IllegalStateException("Unexpected draw mode: %s".formatted(this.mode));
             }
 
-            if (this.indexBuffer != null && !this.autoIndexed)
+            if (this.indexBuffer != null && !this.autoIndexed) {
                 this.indexBuffer.scheduleFree();
+            }
 
             if (autoIndexBuffer != null) {
                 autoIndexBuffer.checkCapacity(this.vertexCount);
-                this.indexBuffer = autoIndexBuffer.getIndexBuffer();
+                this.autoIndexBuffer = autoIndexBuffer;
             }
 
             this.autoIndexed = true;
@@ -128,10 +133,19 @@ public class VBO {
             VTextureSelector.bindShaderTextures(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
-            if (this.indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
-            else
+            IndexBuffer indexBuffer;
+            if (this.autoIndexBuffer != null) {
+                indexBuffer = this.autoIndexBuffer.getIndexBuffer();
+            } else {
+                indexBuffer = this.indexBuffer;
+            }
+
+            if (indexBuffer != null) {
+                Renderer.getDrawer().drawIndexed(this.vertexBuffer, indexBuffer, this.indexCount);
+            }
+            else {
                 Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
+            }
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 

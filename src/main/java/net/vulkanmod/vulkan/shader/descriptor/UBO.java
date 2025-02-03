@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
-import net.vulkanmod.vulkan.memory.UniformBuffer;
+import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 

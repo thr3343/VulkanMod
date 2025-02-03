@@ -20,9 +20,10 @@ public abstract class GuiRenderer {
     public static Font font;
     public static GuiGraphics guiGraphics;
     public static PoseStack pose;
-
     public static BufferBuilder bufferBuilder;
-    public static boolean batching = false;
+
+    private static boolean batching = false;
+    private static boolean drawing = false;
 
     public static void setPoseStack(PoseStack poseStack) {
         pose = poseStack;
@@ -61,16 +62,14 @@ public abstract class GuiRenderer {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        if (!batching)
-            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        setupBufferBuilder();
 
         bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(r, g, b, a);
         bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(r, g, b, a);
         bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(r, g, b, a);
         bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(r, g, b, a);
 
-        if (!batching)
-            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        submitIfNeeded();
     }
 
     public static void fillGradient(float x0, float y0, float x1, float y1, int color1, int color2) {
@@ -89,18 +88,14 @@ public abstract class GuiRenderer {
 
         Matrix4f matrix4f = pose.last().pose();
 
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        if (!batching)
-            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        setupBufferBuilder();
 
         bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(r1, g1, b1, a1);
         bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(r2, g2, b2, a2);
         bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(r2, g2, b2, a2);
         bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(r1, g1, b1, a1);
 
-        if (!batching)
-            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        submitIfNeeded();
     }
 
     public static void renderBoxBorder(float x0, float y0, float width, float height, float borderWidth, int color) {
@@ -147,13 +142,43 @@ public abstract class GuiRenderer {
         return maxWidth;
     }
 
-    public static void beginBatch(VertexFormat.Mode mode, VertexFormat format) {
-        bufferBuilder = Tesselator.getInstance().begin(mode, format);
+    public static void beginBatch() {
         batching = true;
     }
 
     public static void endBatch() {
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        MeshData meshData = bufferBuilder.build();
+
+        if (meshData != null) {
+            BufferUploader.drawWithShader(meshData);
+            meshData.close();
+        }
+
         batching = false;
+        drawing = false;
+    }
+
+    public static void flush() {
+        guiGraphics.flush();
+
+        if (batching) {
+            endBatch();
+        }
+    }
+
+    private static void setupBufferBuilder() {
+        if (!batching || !drawing) {
+            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            drawing = true;
+        }
+    }
+
+    private static void submitIfNeeded() {
+        if (!batching) {
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+            drawing = false;
+        }
     }
 }

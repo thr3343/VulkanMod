@@ -1,15 +1,18 @@
-package net.vulkanmod.vulkan.memory;
+package net.vulkanmod.vulkan.memory.buffer;
+
+import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryType;
 
 public abstract class Buffer {
+    public final MemoryType type;
+    public final int usage;
+
     protected long id;
     protected long allocation;
 
     protected long bufferSize;
     protected long usedBytes;
     protected long offset;
-
-    protected MemoryType type;
-    protected int usage;
 
     protected long dataPtr;
 
@@ -60,15 +63,15 @@ public abstract class Buffer {
         return dataPtr;
     }
 
-    protected void setBufferSize(long size) {
+    public void setBufferSize(long size) {
         this.bufferSize = size;
     }
 
-    protected void setId(long id) {
+    public void setId(long id) {
         this.id = id;
     }
 
-    protected void setAllocation(long allocation) {
+    public void setAllocation(long allocation) {
         this.allocation = allocation;
     }
 

@@ -10,7 +10,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.UniformBuffer;
+import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;

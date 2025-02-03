@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.buffer.Buffer;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
+import net.vulkanmod.vulkan.memory.buffer.VertexBuffer;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;

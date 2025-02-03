@@ -1,4 +1,8 @@
-package net.vulkanmod.vulkan.memory;
+package net.vulkanmod.vulkan.memory.buffer;
+
+import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryType;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 
 import java.nio.ByteBuffer;
 

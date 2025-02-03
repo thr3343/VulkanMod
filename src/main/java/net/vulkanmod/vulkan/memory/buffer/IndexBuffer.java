@@ -1,4 +1,7 @@
-package net.vulkanmod.vulkan.memory;
+package net.vulkanmod.vulkan.memory.buffer;
+
+import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryType;
 
 import java.nio.ByteBuffer;
 
@@ -9,7 +12,7 @@ public class IndexBuffer extends Buffer {
     public IndexType indexType;
 
     public IndexBuffer(int size, MemoryType type) {
-        this(size, type, IndexType.SHORT);
+        this(size, type, IndexType.UINT16);
     }
 
     public IndexBuffer(int size, MemoryType type, IndexType indexType) {
@@ -37,8 +40,8 @@ public class IndexBuffer extends Buffer {
     }
 
     public enum IndexType {
-        SHORT(2, VK_INDEX_TYPE_UINT16),
-        INT(4, VK_INDEX_TYPE_UINT32);
+        UINT16(2, VK_INDEX_TYPE_UINT16),
+        UINT32(4, VK_INDEX_TYPE_UINT32);
 
         public final int size;
         public final int type;

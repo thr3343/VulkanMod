@@ -33,6 +33,7 @@
     "debug.KeyboardHandlerM",
 
     "matrix.Matrix4fM",
+    "matrix.PoseAccessor",
 
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
@@ -68,7 +69,6 @@
     "render.vertex.FaceBakeryM",
     "render.vertex.IndexTypeMixin",
     "render.vertex.VertexBufferM",
-    "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
 
     "screen.ScreenM",

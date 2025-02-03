@@ -5,7 +5,7 @@ import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;

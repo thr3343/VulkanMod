@@ -68,7 +68,7 @@ public class ProfilerOverlay {
         Objects.requireNonNull(this.font);
 
         RenderSystem.enableBlend();
-        GuiRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        GuiRenderer.beginBatch();
 
         for (int i = 0; i < infoList.size(); ++i) {
             String line = infoList.get(i);

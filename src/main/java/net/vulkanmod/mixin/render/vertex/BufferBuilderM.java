@@ -1,13 +1,16 @@
 package net.vulkanmod.mixin.render.vertex;
 
 import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.core.Vec3i;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
+import net.vulkanmod.mixin.matrix.PoseAccessor;
+import net.vulkanmod.render.util.MathUtil;
 import net.vulkanmod.render.vertex.format.I32_SNorm;
+import net.vulkanmod.vulkan.util.ColorUtil;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderM
@@ -147,6 +150,60 @@ public abstract class BufferBuilderM
             MemoryUtil.memPutInt(ptr + i + 4, temp);
         } else {
             VertexConsumer.super.addVertex(x, y, z, color, u, v, overlay, light, normalX, normalY, normalZ);
+        }
+    }
+
+    @Override
+    public void putBulkData(PoseStack.Pose matrixEntry, BakedQuad quad, float[] brightness, float red, float green,
+                            float blue, float alpha, int[] lights, int overlay, boolean useQuadColorData) {
+        putQuadData(matrixEntry, quad, brightness, red, green, blue, alpha, lights, overlay, useQuadColorData);
+    }
+
+    @SuppressWarnings("UnreachableCode")
+    @Unique
+    private void putQuadData(PoseStack.Pose matrixEntry, BakedQuad quad, float[] brightness, float red, float green, float blue, float alpha, int[] lights, int overlay, boolean useQuadColorData) {
+        int[] quadData = quad.getVertices();
+        Vec3i vec3i = quad.getDirection().getNormal();
+        Matrix4f matrix4f = matrixEntry.pose();
+
+        boolean trustedNormals = ((PoseAccessor)(Object)matrixEntry).trustedNormals();
+        int normal = MathUtil.packTransformedNorm(matrixEntry.normal(), trustedNormals, vec3i.getX(), vec3i.getY(), vec3i.getZ());
+
+        for (int k = 0; k < 4; ++k) {
+            float r, g, b;
+
+            float quadR, quadG, quadB;
+
+            int i = k * 8;
+            float x = Float.intBitsToFloat(quadData[i]);
+            float y = Float.intBitsToFloat(quadData[i + 1]);
+            float z = Float.intBitsToFloat(quadData[i + 2]);
+
+            float tx = MathUtil.transformX(matrix4f, x, y, z);
+            float ty = MathUtil.transformY(matrix4f, x, y, z);
+            float tz = MathUtil.transformZ(matrix4f, x, y, z);
+
+            if (useQuadColorData) {
+                int color = quadData[i + 3];
+                quadR = ColorUtil.RGBA.unpackR(color);
+                quadG = ColorUtil.RGBA.unpackG(color);
+                quadB = ColorUtil.RGBA.unpackB(color);
+                r = quadR * brightness[k] * red;
+                g = quadG * brightness[k] * green;
+                b = quadB * brightness[k] * blue;
+            } else {
+                r = brightness[k] * red;
+                g = brightness[k] * green;
+                b = brightness[k] * blue;
+            }
+
+            int color = ColorUtil.RGBA.pack(r, g, b, alpha);
+
+            int light = lights[k];
+            float u = Float.intBitsToFloat(quadData[i + 4]);
+            float v = Float.intBitsToFloat(quadData[i + 5]);
+
+            this.vertex(tx, ty, tz, color, u, v, overlay, light, normal);
         }
     }
 
