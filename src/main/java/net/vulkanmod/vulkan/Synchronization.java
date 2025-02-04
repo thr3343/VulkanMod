@@ -5,16 +5,15 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 
 import java.nio.LongBuffer;
-import java.util.EnumMap;
-import java.util.Objects;
 
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Synchronization {
@@ -22,11 +21,22 @@ public class Synchronization {
 
     public static final Synchronization INSTANCE = new Synchronization();
 
-    private static final long tmSemaphore = DeviceManager.getTransferQueue().getTmSemaphore();
-    private static final long tmSemaphore2 = DeviceManager.getGraphicsQueue().getTmSemaphore();
+    private static final long pData = MemoryUtil.nmemAlignedAlloc(8, 32 + VkSemaphoreWaitInfo.SIZEOF);
+    private static final long pData2 = pData +16;
 
-    private final LongBuffer fences = MemoryUtil.memAllocLong(2);
+    private static final VkSemaphoreWaitInfo vkSemaphoreWaitInfo;
     private int idx;
+
+    static  {
+        VUtil.UNSAFE.putLong(pData, DeviceManager.getGraphicsQueue().getTmSemaphore());
+        VUtil.UNSAFE.putLong(pData+8, DeviceManager.getTransferQueue().getTmSemaphore());
+
+        vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.create(pData + 32)
+                .sType$Default()
+                .semaphoreCount(2);
+        memPutAddress(vkSemaphoreWaitInfo.address() + VkSemaphoreWaitInfo.PSEMAPHORES, pData);
+        memPutAddress(vkSemaphoreWaitInfo.address() + VkSemaphoreWaitInfo.PVALUES, pData+16);
+    }
 
     private final ObjectArrayList<CommandPool.CommandBuffer> commandBuffers = new ObjectArrayList<>();
 
@@ -37,8 +47,7 @@ public class Synchronization {
     public synchronized void addFence(long fence, Queue.Family queueType) {
         if (idx == ALLOCATION_SIZE)
             waitFences();
-
-        fences.put(queueType.ordinal(), fence);
+        VUtil.UNSAFE.putLong((queueType.ordinal() * Long.BYTES) + pData2, fence);
         idx++;
     }
 
@@ -48,22 +57,12 @@ public class Synchronization {
 
         VkDevice device = Vulkan.getVkDevice();
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-
-            VkSemaphoreWaitInfo vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack)
-                    .sType$Default()
-                    .semaphoreCount(2)
-                    .pSemaphores(stack.longs(tmSemaphore2, tmSemaphore))
-                    .pValues(fences);
-
-            VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
-
-        }
+        VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
 
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();
 
-        fences.put(0).put(0).rewind();
+//        MemoryUtil.memSet(pData, 0, Long.BYTES * 2);
         idx = 0;
     }
 
