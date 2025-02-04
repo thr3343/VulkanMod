@@ -5,6 +5,6 @@ import org.lwjgl.system.MemoryStack;
 public class PresentQueue extends Queue {
 
     public PresentQueue(MemoryStack stack, int familyIndex) {
-        super(stack, familyIndex, false);
+        super(stack, familyIndex, false, Family.Present);
     }
 }

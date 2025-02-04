@@ -5,15 +5,14 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueue;
-import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -22,8 +21,10 @@ public abstract class Queue {
     private static QueueFamilyIndices queueFamilyIndices;
 
     private final VkQueue queue;
-
-    protected CommandPool commandPool;
+    final long tmSemaphore;
+    final Family queueType;
+    protected final CommandPool commandPool;
+    long submits;
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
         try (MemoryStack stack = stackPush()) {
@@ -34,22 +35,39 @@ public abstract class Queue {
         }
     }
 
-    Queue(MemoryStack stack, int familyIndex) {
-        this(stack, familyIndex, true);
+    Queue(MemoryStack stack, int familyIndex, Family queueType) {
+        this(stack, familyIndex, true, queueType);
     }
 
-    Queue(MemoryStack stack, int familyIndex, boolean initCommandPool) {
+    Queue(MemoryStack stack, int familyIndex, boolean initCommandPool, Family queueType) {
         PointerBuffer pQueue = stack.mallocPointer(1);
         vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
         this.queue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
+        this.queueType = queueType;
+        this.commandPool = initCommandPool ? new CommandPool(familyIndex, queueType) : null;
 
-        if (initCommandPool)
-            this.commandPool = new CommandPool(familyIndex);
+        if (initCommandPool) {
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE)
+                    .initialValue(0);
+
+            VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(semaphoreTypeCreateInfo);
+
+            LongBuffer tmSemaphorePtr = stack.mallocLong(1);
+
+            VK12.vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, tmSemaphorePtr);
+
+            this.tmSemaphore = tmSemaphorePtr.get(0);
+        }
+        else this.tmSemaphore = VK_NULL_HANDLE;
     }
 
     public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            return commandBuffer.submitCommands(stack, queue, false);
+            return commandBuffer.submitCommands(stack, this);
         }
     }
 
@@ -58,8 +76,10 @@ public abstract class Queue {
     }
 
     public void cleanUp() {
-        if (commandPool != null)
+        if (commandPool != null) {
             commandPool.cleanUp();
+            vkDestroySemaphore(Vulkan.getVkDevice(), this.tmSemaphore, null);
+        }
     }
 
     public void waitIdle() {
@@ -70,10 +90,23 @@ public abstract class Queue {
         return commandPool;
     }
 
+    public long submitCount() {
+        return submits;
+    }
+
+    public long submitCountAdd() {
+        return ++submits;
+    }
+
+    public long getTmSemaphore() {
+        return this.tmSemaphore;
+    }
+
     public enum Family {
         Graphics,
         Transfer,
-        Compute
+        Compute,
+        Present
     }
 
     public static QueueFamilyIndices getQueueFamilies() {

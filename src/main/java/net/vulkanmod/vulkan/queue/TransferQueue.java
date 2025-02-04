@@ -16,10 +16,10 @@ public class TransferQueue extends Queue {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
 
     public TransferQueue(MemoryStack stack, int familyIndex) {
-        super(stack, familyIndex);
+        super(stack, familyIndex, Family.Transfer);
     }
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -35,7 +35,6 @@ public class TransferQueue extends Queue {
             this.submitCommands(commandBuffer);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            return commandBuffer.fence;
         }
     }
 
@@ -52,7 +51,7 @@ public class TransferQueue extends Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(DEVICE, commandBuffer.fence, true, VUtil.UINT64_MAX);
+            commandBuffer.wait(this);
             commandBuffer.reset();
         }
     }
