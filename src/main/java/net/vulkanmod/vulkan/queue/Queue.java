@@ -5,12 +5,11 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueue;
-import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -22,8 +21,10 @@ public abstract class Queue {
     private static QueueFamilyIndices queueFamilyIndices;
 
     private final VkQueue queue;
+    private final long tmSemaphore;
 
-    protected CommandPool commandPool;
+    protected final CommandPool commandPool;
+    final AtomicLong submits = new AtomicLong(0);
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
         try (MemoryStack stack = stackPush()) {
@@ -43,13 +44,29 @@ public abstract class Queue {
         vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
         this.queue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
 
-        if (initCommandPool)
-            this.commandPool = new CommandPool(familyIndex);
+        this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+
+        if (initCommandPool) {
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE);
+
+            VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(semaphoreTypeCreateInfo);
+
+            LongBuffer pPointer = stack.mallocLong(1);
+
+            VK12.vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pPointer);
+
+            this.tmSemaphore = pPointer.get(0);
+        }
+        else this.tmSemaphore = VK_NULL_HANDLE;
     }
 
-    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
+    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            return commandBuffer.submitCommands(stack, queue, false);
+            commandBuffer.submitCommands(stack, this);
         }
     }
 
@@ -58,8 +75,10 @@ public abstract class Queue {
     }
 
     public void cleanUp() {
-        if (commandPool != null)
+        if (commandPool != null) {
             commandPool.cleanUp();
+            vkDestroySemaphore(Vulkan.getVkDevice(), this.tmSemaphore, null);
+        }
     }
 
     public void waitIdle() {
@@ -68,6 +87,14 @@ public abstract class Queue {
 
     public CommandPool getCommandPool() {
         return commandPool;
+    }
+
+    public AtomicLong submitCount() {
+        return submits;
+    }
+
+    public long getTmSemaphore() {
+        return this.tmSemaphore;
     }
 
     public enum Family {
