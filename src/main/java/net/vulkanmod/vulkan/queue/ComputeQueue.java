@@ -5,6 +5,6 @@ import org.lwjgl.system.MemoryStack;
 public class ComputeQueue extends Queue {
 
     public ComputeQueue(MemoryStack stack, int familyIndex) {
-        super(stack, familyIndex, Family.Compute);
+        super(stack, familyIndex, false, Family.Compute);
     }
 }
