@@ -166,10 +166,16 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
-
+            VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack)
+                    .sType$Default()
+                    .synchronization2(true);
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
+
+            VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = VkPhysicalDeviceTimelineSemaphoreFeatures.calloc(stack);
+            timelineSemaphoreFeatures.sType$Default();
+            timelineSemaphoreFeatures.timelineSemaphore(true);
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
@@ -189,7 +195,7 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(timelineSemaphoreFeatures).pNext(physicalDeviceSynchronization2Features);
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);

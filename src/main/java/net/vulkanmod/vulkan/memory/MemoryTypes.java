@@ -84,12 +84,12 @@ public class MemoryTypes {
             // TODO
         }
 
-        public long copyBuffer(Buffer src, Buffer dst) {
+        public void copyBuffer(Buffer src, Buffer dst) {
             if (dst.getBufferSize() < src.getBufferSize()) {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 
-            return DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.getBufferSize());
+            DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.getBufferSize());
         }
 
         @Override

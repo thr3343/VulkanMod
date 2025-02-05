@@ -154,7 +154,7 @@ public class MLightTexture {
                         MemoryUtil.memPutInt(ptr + (((long) y * width + x) * 4L), 0xFF000000 | b << 16 | g << 8 | r);
                     }
                 }
-
+                //TODO: RAW Sync Hazards on Main Graphics Queue
                 CommandPool.CommandBuffer commandBuffer = ImageUploadHelper.INSTANCE.getOrStartCommandBuffer();
                 this.lightTexture.upload();
 
