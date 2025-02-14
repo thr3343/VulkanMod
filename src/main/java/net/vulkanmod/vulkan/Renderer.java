@@ -325,7 +325,18 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-            int vkResult;
+            final int vkResult;
+
+            Queue transferQueue = DeviceManager.getTransferQueue();
+            VkSemaphoreWaitInfo semaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack);
+            semaphoreWaitInfo.sType$Default();
+            semaphoreWaitInfo.semaphoreCount(1);
+            semaphoreWaitInfo.pSemaphores(stack.longs(transferQueue.getTmSemaphore()));
+            semaphoreWaitInfo.pValues(stack.longs(transferQueue.submitCount()));
+
+            VK12.vkWaitSemaphores(device, semaphoreWaitInfo, VUtil.UINT64_MAX);
+            //Wait Async Transfers on host to avoid invalid frees (Destroy Buffer during use)
+
             //Remove when Mojang Updates to LWJGL 3.3.4+: (Allowing Sync2 Support on macOS)
             final long submitId = sync2 ? getSubmitId(imageCopiesId, stack) : getSubmitId(stack);
 
@@ -359,10 +370,10 @@ public class Renderer {
     //Cannot be used on Nvidia as it destabilizes VSync
     private long getSubmitId(MemoryStack stack) {
         Queue graphicsQueue = DeviceManager.getGraphicsQueue();
-        Queue transferQueue = DeviceManager.getTransferQueue();
 
         final int vkResult;
         final long submitId = graphicsQueue.submitCount();
+
 
         VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                 .sType$Default()
@@ -377,14 +388,6 @@ public class Renderer {
         submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), graphicsQueue.getTmSemaphore()));
         submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-        VkSemaphoreWaitInfo semaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack);
-        semaphoreWaitInfo.sType$Default();
-        semaphoreWaitInfo.semaphoreCount(1);
-        semaphoreWaitInfo.pSemaphores(stack.longs(transferQueue.getTmSemaphore()));
-        semaphoreWaitInfo.pValues(stack.longs(transferQueue.submitCount()));
-
-        VK12.vkWaitSemaphores(device, semaphoreWaitInfo, VUtil.UINT64_MAX);
-
         if ((vkResult = vkQueueSubmit(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
             throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
         }
@@ -394,7 +397,6 @@ public class Renderer {
     //Used to Fix VSync stability on Nvidia
     private long getSubmitId(long imageCopiesId, MemoryStack stack) {
 
-        Queue transferQueue = DeviceManager.getTransferQueue();
         Queue graphicsQueue = DeviceManager.getGraphicsQueue();
         final int vkResult;
         final long submitId = graphicsQueue.submitCount();
@@ -404,18 +406,13 @@ public class Renderer {
                 .commandBuffer(currentCmdBuffer);
 
         //Nvidia; Replace fence waits with a submit barrier: restoring VSync stability on Nvidia
-        VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
+        VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
         waitSemaphoreSubmitInfo.get(0).sType$Default()
                 .semaphore(imageAvailableSemaphores.get(currentFrame))
                 .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) //Attachment Clears
                 .value(0);
 
         waitSemaphoreSubmitInfo.get(1).sType$Default()
-                .semaphore(transferQueue.getTmSemaphore())
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_COPY_BIT) //Async DMA Transfers
-                .value(transferQueue.submitCount());
-
-        waitSemaphoreSubmitInfo.get(2).sType$Default()
                 .semaphore(graphicsQueue.getTmSemaphore())
                 .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) //LightMap Sampler Transitions
                 .value(imageCopiesId); //Only wait on initial ImageUpload submit
