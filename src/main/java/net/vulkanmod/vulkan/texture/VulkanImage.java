@@ -14,6 +14,7 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -215,7 +216,13 @@ public class VulkanImage {
         try (MemoryStack stack = stackPush()) {
             transferDstLayout(stack, commandBuffer);
 
-            final int srcOffset = (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize);
+            int uploadOffset = (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize;
+
+            if (uploadOffset > uploadSize) {
+                throw new BufferOverflowException();
+            }
+
+            final int srcOffset = (int) (stagingBuffer.getOffset() + uploadOffset);
 
             ImageUtil.copyBufferToImageCmd(stack, commandBuffer, bufferId, this.id, mipLevel, width, height, xOffset, yOffset,
                                            srcOffset, unpackRowLength, height);

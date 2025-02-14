@@ -172,30 +172,33 @@ public abstract class Queue {
                 Initializer.LOGGER.warn("Using compute queue as present fallback");
             }
 
+            // In case there's no dedicated transfer queue, we need choose another one
+            // preferably a different one from the already selected queues
             if (indices.transferFamily == -1) {
 
-                int fallback = -1;
+                int transferIndex = -1;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
                     if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if (fallback == -1)
-                            fallback = i;
+                        if (transferIndex == -1)
+                            transferIndex = i;
 
                         if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
                             indices.transferFamily = i;
 
                             if (i != indices.computeFamily)
                                 break;
-                            fallback = i;
+
+                            transferIndex = i;
                         }
                     }
-
-                    if (fallback == -1)
-                        throw new RuntimeException("Failed to find queue family with transfer support");
-
-                    indices.transferFamily = fallback;
                 }
+
+                if (transferIndex == -1)
+                    throw new RuntimeException("Failed to find queue family with transfer support");
+
+                indices.transferFamily = transferIndex;
             }
 
             if (indices.computeFamily == -1) {
