@@ -12,6 +12,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
@@ -154,6 +155,17 @@ public abstract class DeviceManager {
     public static void createLogicalDevice() {
         try (MemoryStack stack = stackPush()) {
 
+            final Set<String> loadedExtensions = Vulkan.REQUIRED_EXTENSION;
+            for(var a : getAvailableExtension(stack, physicalDevice))
+            {
+                String extensionNameString = a.extensionNameString();
+                if (Vulkan.OPTIONAL_EXTENSION.contains(extensionNameString)) {
+                    loadedExtensions.add(extensionNameString);
+                }
+            }
+
+
+
             net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = indices.unique();
@@ -166,9 +178,7 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
-            VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack)
-                    .sType$Default()
-                    .synchronization2(true);
+
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
@@ -195,7 +205,16 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features).pNext(timelineSemaphoreFeatures).pNext(physicalDeviceSynchronization2Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(timelineSemaphoreFeatures);
+
+
+            if (loadedExtensions.contains(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)) {
+                VkPhysicalDeviceSynchronization2Features synchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack);
+                synchronization2Features.sType$Default();
+                synchronization2Features.synchronization2(true);
+
+                createInfo.pNext(synchronization2Features);
+            }
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
