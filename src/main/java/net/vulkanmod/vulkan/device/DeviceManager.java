@@ -156,9 +156,8 @@ public abstract class DeviceManager {
         try (MemoryStack stack = stackPush()) {
 
             final Set<String> loadedExtensions = Vulkan.REQUIRED_EXTENSION;
-            for(var a : getAvailableExtension(stack, physicalDevice))
-            {
-                String extensionNameString = a.extensionNameString();
+            for (var extensionProperties : getAvailableExtension(stack, physicalDevice)) {
+                String extensionNameString = extensionProperties.extensionNameString();
                 if (Vulkan.OPTIONAL_EXTENSION.contains(extensionNameString)) {
                     loadedExtensions.add(extensionNameString);
                 }
@@ -234,7 +233,7 @@ public abstract class DeviceManager {
 //                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
             }
 
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(loadedExtensions));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
