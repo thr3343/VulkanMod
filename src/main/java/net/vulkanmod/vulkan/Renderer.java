@@ -308,16 +308,16 @@ public class Renderer {
 
         mainPass.end(currentCmdBuffer);
 
-        waitFences();
+        long imageCopiesId = waitFences();
 
-        submitFrame();
+        submitFrame(imageCopiesId);
         recordingCmds = false;
 
         p.pop();
         p.push("Post_rendering");
     }
 
-    private void submitFrame() {
+    private void submitFrame(long imageCopiesId) {
         if (swapChainUpdate)
             return;
 
@@ -332,11 +332,11 @@ public class Renderer {
                     .sType$Default()
                     .commandBuffer(currentCmdBuffer);
 
-
+            //Nvidia; Replace fence waits with a submit barrier: restoring VSync stability on Nvidia
             VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
             waitSemaphoreSubmitInfo.get(0).sType$Default()
                     .semaphore(imageAvailableSemaphores.get(currentFrame))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT)
+                    .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) //Attachment Clears
                     .value(0);
 
             waitSemaphoreSubmitInfo.get(1).sType$Default()
@@ -346,8 +346,8 @@ public class Renderer {
 
             waitSemaphoreSubmitInfo.get(2).sType$Default()
                     .semaphore(graphicsQueue.getTmSemaphore())
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .value(graphicsQueue.submitCount()); //TODO: Use ImageUploadHelper SubmitId to Minimise Wait
+                    .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) //LightMap Sampler Transitions
+                    .value(imageCopiesId); //Only wait on initial ImageUpload submit
 
 
             VkSemaphoreSubmitInfo.Buffer mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
@@ -478,11 +478,12 @@ public class Renderer {
         usedPipelines.remove(pipeline);
     }
 
-    private void waitFences() {
+    private long waitFences() {
         // Make sure there are no uploads/transitions scheduled
-        ImageUploadHelper.INSTANCE.submitCommands();
+        long imageCopiesId = ImageUploadHelper.INSTANCE.submitCommands();
         Synchronization.INSTANCE.recycleCmdBuffers();
         Vulkan.getStagingBuffer().reset();
+        return imageCopiesId;
     }
 
     private void resetDescriptors() {
