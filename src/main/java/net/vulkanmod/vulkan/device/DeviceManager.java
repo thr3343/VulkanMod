@@ -163,8 +163,6 @@ public abstract class DeviceManager {
                 }
             }
 
-
-
             net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = indices.unique();
