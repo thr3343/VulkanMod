@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Platform;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.PipelineManager;
@@ -20,6 +21,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.queue.GraphicsQueue;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -56,6 +58,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private static final boolean sync2 = !Platform.isMacOS();
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -323,54 +326,8 @@ public class Renderer {
 
         try (MemoryStack stack = stackPush()) {
             int vkResult;
-
-            GraphicsQueue graphicsQueue = DeviceManager.getGraphicsQueue();
-            TransferQueue transferQueue = DeviceManager.getTransferQueue();
-            final long submitId = graphicsQueue.submitCount();
-
-            VkCommandBufferSubmitInfo.Buffer commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
-                    .sType$Default()
-                    .commandBuffer(currentCmdBuffer);
-
-            //Nvidia; Replace fence waits with a submit barrier: restoring VSync stability on Nvidia
-            VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
-            waitSemaphoreSubmitInfo.get(0).sType$Default()
-                    .semaphore(imageAvailableSemaphores.get(currentFrame))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) //Attachment Clears
-                    .value(0);
-
-            waitSemaphoreSubmitInfo.get(1).sType$Default()
-                    .semaphore(transferQueue.getTmSemaphore())
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COPY_BIT) //Async DMA Transfers
-                    .value(transferQueue.submitCount());
-
-            waitSemaphoreSubmitInfo.get(2).sType$Default()
-                    .semaphore(graphicsQueue.getTmSemaphore())
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) //LightMap Sampler Transitions
-                    .value(imageCopiesId); //Only wait on initial ImageUpload submit
-
-
-            VkSemaphoreSubmitInfo.Buffer mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
-            mainSemaphoreSubmitInfo.get(0).sType$Default()
-                    .semaphore(renderFinishedSemaphores.get(currentFrame))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
-                    .value(0);
-
-            mainSemaphoreSubmitInfo.get(1).sType$Default()
-                    .semaphore(graphicsQueue.getTmSemaphore())
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
-                    .value(graphicsQueue.submitCountAdd());
-
-            VkSubmitInfo2.Buffer submitInfo = VkSubmitInfo2.calloc(1, stack)
-                .sType$Default()
-                .pWaitSemaphoreInfos(waitSemaphoreSubmitInfo)
-                .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo)
-                .pWaitSemaphoreInfos(waitSemaphoreSubmitInfo)
-                .pCommandBufferInfos(commandBufferSubmitInfo);
-
-            if ((vkResult = KHRSynchronization2.vkQueueSubmit2KHR(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
-            }
+            //Remove when Mojang Updates to LWJGL 3.3.4+: (Allowing Sync2 Support on macOS)
+            final long submitId = sync2 ? getSubmitId(imageCopiesId, stack) : getSubmitId(stack);
 
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -396,6 +353,96 @@ public class Renderer {
             inFlightSubmits.set(currentFrame, submitId);
 
         }
+    }
+
+    //Used to fix macOS compatibility: Workaround for outdated MoltenVK Version in LWJGL 3.3.3, which doesn't support Sync2: (LWJGL 3.3.4 required for Sync2 on MoltenVK)
+    //Cannot be used on Nvidia as it destabilizes VSync
+    private long getSubmitId(MemoryStack stack) {
+        Queue graphicsQueue = DeviceManager.getGraphicsQueue();
+        Queue transferQueue = DeviceManager.getTransferQueue();
+
+        final int vkResult;
+        final long submitId = graphicsQueue.submitCount();
+
+        VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                .sType$Default()
+                .pSignalSemaphoreValues(stack.longs(0, graphicsQueue.submitCountAdd()));
+
+        VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+        submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+        submitInfo.pNext(mainSemaphoreSubmitInfo);
+        submitInfo.waitSemaphoreCount(1);
+        submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
+        submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+        submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), graphicsQueue.getTmSemaphore()));
+        submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+        VkSemaphoreWaitInfo semaphoreWaitInfo = VkSemaphoreWaitInfo.calloc(stack);
+        semaphoreWaitInfo.sType$Default();
+        semaphoreWaitInfo.semaphoreCount(1);
+        semaphoreWaitInfo.pSemaphores(stack.longs(transferQueue.getTmSemaphore()));
+        semaphoreWaitInfo.pValues(stack.longs(transferQueue.submitCount()));
+
+        VK12.vkWaitSemaphores(device, semaphoreWaitInfo, VUtil.UINT64_MAX);
+
+        if ((vkResult = vkQueueSubmit(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+        return submitId;
+    }
+
+    //Used to Fix VSync stability on Nvidia
+    private long getSubmitId(long imageCopiesId, MemoryStack stack) {
+
+        Queue transferQueue = DeviceManager.getTransferQueue();
+        Queue graphicsQueue = DeviceManager.getGraphicsQueue();
+        final int vkResult;
+        final long submitId = graphicsQueue.submitCount();
+
+        VkCommandBufferSubmitInfo.Buffer commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
+                .sType$Default()
+                .commandBuffer(currentCmdBuffer);
+
+        //Nvidia; Replace fence waits with a submit barrier: restoring VSync stability on Nvidia
+        VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
+        waitSemaphoreSubmitInfo.get(0).sType$Default()
+                .semaphore(imageAvailableSemaphores.get(currentFrame))
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) //Attachment Clears
+                .value(0);
+
+        waitSemaphoreSubmitInfo.get(1).sType$Default()
+                .semaphore(transferQueue.getTmSemaphore())
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_COPY_BIT) //Async DMA Transfers
+                .value(transferQueue.submitCount());
+
+        waitSemaphoreSubmitInfo.get(2).sType$Default()
+                .semaphore(graphicsQueue.getTmSemaphore())
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) //LightMap Sampler Transitions
+                .value(imageCopiesId); //Only wait on initial ImageUpload submit
+
+
+        VkSemaphoreSubmitInfo.Buffer mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
+        mainSemaphoreSubmitInfo.get(0).sType$Default()
+                .semaphore(renderFinishedSemaphores.get(currentFrame))
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
+                .value(0);
+
+        mainSemaphoreSubmitInfo.get(1).sType$Default()
+                .semaphore(graphicsQueue.getTmSemaphore())
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
+                .value(graphicsQueue.submitCountAdd());
+
+        VkSubmitInfo2.Buffer submitInfo = VkSubmitInfo2.calloc(1, stack)
+            .sType$Default()
+            .pWaitSemaphoreInfos(waitSemaphoreSubmitInfo)
+            .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo)
+            .pWaitSemaphoreInfos(waitSemaphoreSubmitInfo)
+            .pCommandBufferInfos(commandBufferSubmitInfo);
+
+        if ((vkResult = KHRSynchronization2.vkQueueSubmit2KHR(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+        return submitId;
     }
 
     /**
