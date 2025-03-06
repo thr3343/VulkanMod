@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.memory.buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import org.lwjgl.vulkan.VK12;
 
 import java.nio.ByteBuffer;
 
@@ -18,6 +19,11 @@ public class VertexBuffer extends Buffer {
         super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
         this.createBuffer(size);
 
+    }
+
+    public VertexBuffer(int size, MemoryType type, boolean pullMode) {
+        super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | (pullMode ? (VK12.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) : 0), type);
+        this.createBuffer(size);
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {

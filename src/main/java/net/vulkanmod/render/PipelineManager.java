@@ -39,8 +39,8 @@ public abstract class PipelineManager {
     }
 
     private static void createBasicPipelines() {
-        terrainShaderEarlyZ = createPipeline("terrain_earlyZ", terrainVertexFormat);
-        terrainShader = createPipeline("terrain", terrainVertexFormat);
+        terrainShaderEarlyZ = createPipeline("terrain_earlyZ", CustomVertexFormat.NONE);
+        terrainShader = createPipeline("terrain", CustomVertexFormat.NONE);
         fastBlitPipeline = createPipeline("blit", CustomVertexFormat.NONE);
         cloudsPipeline = createPipeline("clouds", DefaultVertexFormat.POSITION_COLOR);
     }

@@ -170,6 +170,15 @@ public abstract class DeviceManager {
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
+            deviceVulkan11Features.storageBuffer16BitAccess(true);
+
+
+            //TODO: TEMP TEST CODE! ONLY
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            //deviceVulkan12Features.descriptorBindingPartiallyBound(true); //TODO: Confirm Performance regressions.. (of Dynamic / Non-Static Descriptors)
+            deviceVulkan12Features.bufferDeviceAddress(true);
+            deviceVulkan12Features.scalarBlockLayout(true);
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
@@ -177,6 +186,7 @@ public abstract class DeviceManager {
             deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
             // TODO: Disable indirect draw option if unsupported.
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+            deviceFeatures.features().shaderInt16(true);
 
             // Must not set line width to anything other than 1.0 if this is not supported
             if (device.availableFeatures.features().wideLines()) {
@@ -189,7 +199,7 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);

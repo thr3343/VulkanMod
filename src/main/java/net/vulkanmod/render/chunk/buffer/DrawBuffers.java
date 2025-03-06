@@ -143,16 +143,16 @@ public class DrawBuffers {
     // TODO: refactor
     public static final float POS_OFFSET = PipelineManager.terrainVertexFormat == CustomVertexFormat.COMPRESSED_TERRAIN ? 4.0f : 0.0f;
 
-    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
+    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, long address, MemoryStack stack) {
         float xOffset = (float) ((this.origin.x) + POS_OFFSET - camX);
         float yOffset = (float) ((this.origin.y) + POS_OFFSET - camY);
         float zOffset = (float) ((this.origin.z) + POS_OFFSET - camZ);
 
-        ByteBuffer byteBuffer = stack.malloc(12);
-
-        byteBuffer.putFloat(0, xOffset);
-        byteBuffer.putFloat(4, yOffset);
-        byteBuffer.putFloat(8, zOffset);
+        ByteBuffer byteBuffer = stack.malloc(20);
+        byteBuffer.putLong(0, address);
+        byteBuffer.putFloat(8, xOffset);
+        byteBuffer.putFloat(12, yOffset);
+        byteBuffer.putFloat(16, zOffset);
 
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
@@ -369,8 +369,7 @@ public class DrawBuffers {
     public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
+            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, vertexBuffer.getBufferAddress(), stack);
         }
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {

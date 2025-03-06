@@ -45,11 +45,15 @@ public class AreaBuffer {
     private Buffer allocateBuffer() {
         Buffer buffer;
         if (this.usage == Usage.VERTEX.usage) {
-            buffer = new VertexBuffer(this.size, MEMORY_TYPE);
+            buffer = new VertexBuffer(this.size, MEMORY_TYPE, true);
         } else {
             buffer = new IndexBuffer(this.size, MEMORY_TYPE);
         }
         return buffer;
+    }
+
+    public long getBufferAddress() {
+        return buffer.getBDA();
     }
 
     public Segment upload(ByteBuffer byteBuffer, int oldOffset, long paramsPtr) {
