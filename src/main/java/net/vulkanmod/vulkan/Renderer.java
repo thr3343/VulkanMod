@@ -433,15 +433,35 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
+            int vkResult;
 
             this.endRenderPass(currentCmdBuffer);
             vkEndCommandBuffer(currentCmdBuffer);
 
+            DeviceManager.getTransferQueue().waitSubmits(stack);
+
+            Queue graphicsQueue = DeviceManager.getGraphicsQueue();
+
+            VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pWaitSemaphoreValues(stack.longs(graphicsQueue.submitCount()))
+                    .pSignalSemaphoreValues(stack.longs(graphicsQueue.submitCountAdd()));
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pNext(mainSemaphoreSubmitInfo);
+            submitInfo.waitSemaphoreCount(1);
+            submitInfo.pWaitSemaphores(stack.longs(graphicsQueue.getTmSemaphore()));
+            submitInfo.pSignalSemaphores(stack.longs(graphicsQueue.getTmSemaphore()));
+            submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
             submitPending();
 
-            final long submitId = sync2 ? getSubmitId2(stack) : getSubmitId(stack);
+            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, 0)) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+            }
 
-            DeviceManager.getGraphicsQueue().waitSubmits(stack, submitId);
+            graphicsQueue.waitSubmits(stack);
 
             this.beginRenderPass(stack);
         }
