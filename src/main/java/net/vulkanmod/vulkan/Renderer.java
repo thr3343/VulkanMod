@@ -356,18 +356,17 @@ public class Renderer {
 
         final long submitId = graphicsQueue.submitCount();
 
-        graphicsQueue.waitSubmits(stack);
-
         VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
                 .sType$Default()
+                .pWaitSemaphoreValues(stack.longs(0, graphicsQueue.submitCount()))
                 .pSignalSemaphoreValues(stack.longs(0, graphicsQueue.submitCountAdd()));
 
         VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
         submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
         submitInfo.pNext(mainSemaphoreSubmitInfo);
-        submitInfo.waitSemaphoreCount(1);
-        submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
-        submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+        submitInfo.waitSemaphoreCount(2);
+        submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame), graphicsQueue.getTmSemaphore()));
+        submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT)); //Vertex Bit used for LightMap Sampler Transitions
         submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), graphicsQueue.getTmSemaphore()));
         submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
@@ -378,9 +377,6 @@ public class Renderer {
         return submitId;
     }
 
-    /**
-     * Used to slightly reduce VSync stutter (if Sync2 is supported)
-     */
     private long getSubmitId2(MemoryStack stack) {
 
         Queue graphicsQueue = DeviceManager.getGraphicsQueue();
