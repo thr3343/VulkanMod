@@ -30,11 +30,12 @@ public class Device {
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
+    public final VkPhysicalDeviceVulkan12Features availableFeatures12;
 
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, isTimelineSemaphoreSupported;
 
     public Device(VkPhysicalDevice device) {
         this.physicalDevice = device;
@@ -53,7 +54,10 @@ public class Device {
 
         this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
         this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+
+        this.availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc();
+        this.availableFeatures12.sType$Default();
+        this.availableFeatures.pNext(this.availableFeatures11).pNext(this.availableFeatures12);
 
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
@@ -64,8 +68,9 @@ public class Device {
 
         vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+        this.drawIndirectSupported = this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters();
+
+        this.isTimelineSemaphoreSupported = availableFeatures12.timelineSemaphore();
 
     }
 
@@ -144,6 +149,10 @@ public class Device {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public boolean isTimelineSemaphoreSupported() {
+        return isTimelineSemaphoreSupported;
     }
 
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:

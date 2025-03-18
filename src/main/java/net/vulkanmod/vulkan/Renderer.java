@@ -19,6 +19,7 @@ import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -54,6 +55,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private static final boolean sync2 = DeviceManager.checkExt(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -88,7 +90,7 @@ public class Renderer {
     private List<VkCommandBuffer> commandBuffers;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
-    private ArrayList<Long> inFlightFences;
+    private ArrayList<Long> inFlightSubmits;
 
     private Framebuffer boundFramebuffer;
     private RenderPass boundRenderPass;
@@ -164,33 +166,27 @@ public class Renderer {
     private void createSyncObjects() {
         imageAvailableSemaphores = new ArrayList<>(framesNum);
         renderFinishedSemaphores = new ArrayList<>(framesNum);
-        inFlightFences = new ArrayList<>(framesNum);
+        inFlightSubmits = new ArrayList<>(framesNum);
 
         try (MemoryStack stack = stackPush()) {
 
             VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack);
             semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
             LongBuffer pImageAvailableSemaphore = stack.mallocLong(1);
             LongBuffer pRenderFinishedSemaphore = stack.mallocLong(1);
-            LongBuffer pFence = stack.mallocLong(1);
 
             for (int i = 0; i < framesNum; i++) {
 
                 if (vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS
-                    || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
-                    || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
+                        || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS) {
 
                     throw new RuntimeException("Failed to create synchronization objects for the frame: " + i);
                 }
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
                 renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
-                inFlightFences.add(pFence.get(0));
+                inFlightSubmits.add(0L);
 
             }
 
@@ -206,7 +202,7 @@ public class Renderer {
         // runTick might be called recursively,
         // this check forces sync to avoid upload corruption
         if (lastReset == currentFrame) {
-            waitFences();
+            submitPending();
         }
         lastReset = currentFrame;
 
@@ -238,20 +234,22 @@ public class Renderer {
         if (skipRendering || recordingCmds)
             return;
 
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
-
-        p.pop();
-        p.push("Begin_rendering");
-
-        MemoryManager.getInstance().initFrame(currentFrame);
-        drawer.setCurrentFrame(currentFrame);
-
-        resetDescriptors();
-
-        currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
-
         try (MemoryStack stack = stackPush()) {
+
+            DeviceManager.getGraphicsQueue().waitSubmits(stack, inFlightSubmits.get(currentFrame));
+            //Uses Graphics Timeline as a substitute for inFlightFences
+            //Aggregates frame fences and Graphics Queue fences together as one
+
+
+            p.pop();
+            p.push("Begin_rendering");
+
+            MemoryManager.getInstance().initFrame(currentFrame);
+            drawer.setCurrentFrame(currentFrame);
+
+            resetDescriptors();
+
+            currentCmdBuffer = commandBuffers.get(currentFrame);
 
             IntBuffer pImageIndex = stack.mallocInt(1);
 
@@ -303,7 +301,7 @@ public class Renderer {
 
         mainPass.end(currentCmdBuffer);
 
-        waitFences();
+        submitPending();
 
         submitFrame();
         recordingCmds = false;
@@ -317,23 +315,12 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-            int vkResult;
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            //Wait Async Transfers on host to avoid invalid frees (Destroy Buffer during use)
+            DeviceManager.getTransferQueue().waitSubmits(stack);
 
-            submitInfo.waitSemaphoreCount(1);
-            submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
-            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
-            submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, inFlightFences.get(currentFrame));
-
-            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, inFlightFences.get(currentFrame));
-                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
-            }
+            final long submitId = sync2 ? getSubmitId2(stack) : getSubmitId(stack);
 
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -345,7 +332,7 @@ public class Renderer {
 
             presentInfo.pImageIndices(stack.ints(imageIndex));
 
-            vkResult = vkQueuePresentKHR(DeviceManager.getPresentQueue().queue(), presentInfo);
+            final int vkResult = vkQueuePresentKHR(DeviceManager.getPresentQueue().queue(), presentInfo);
 
             if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
                 swapChainUpdate = true;
@@ -355,7 +342,87 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+
+            inFlightSubmits.set(currentFrame, submitId);
+
         }
+    }
+
+    /**
+     * Fallback if Sync2 is unsupported (macOS and some EOL Devices)
+     */
+    private long getSubmitId(MemoryStack stack) {
+        Queue graphicsQueue = DeviceManager.getGraphicsQueue();
+
+        final long submitId = graphicsQueue.submitCount();
+
+        graphicsQueue.waitSubmits(stack);
+
+        VkTimelineSemaphoreSubmitInfo mainSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                .sType$Default()
+                .pSignalSemaphoreValues(stack.longs(0, graphicsQueue.submitCountAdd()));
+
+        VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+        submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+        submitInfo.pNext(mainSemaphoreSubmitInfo);
+        submitInfo.waitSemaphoreCount(1);
+        submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
+        submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+        submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame), graphicsQueue.getTmSemaphore()));
+        submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+        final int vkResult;
+        if ((vkResult = vkQueueSubmit(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+        return submitId;
+    }
+
+    /**
+     * Used to slightly reduce VSync stutter (if Sync2 is supported)
+     */
+    private long getSubmitId2(MemoryStack stack) {
+
+        Queue graphicsQueue = DeviceManager.getGraphicsQueue();
+        final long submitId = graphicsQueue.submitCount();
+
+        VkCommandBufferSubmitInfo.Buffer commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
+                .sType$Default()
+                .commandBuffer(currentCmdBuffer);
+
+        VkSemaphoreSubmitInfo.Buffer waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
+        waitSemaphoreSubmitInfo.get(0).sType$Default()
+                .semaphore(imageAvailableSemaphores.get(currentFrame))
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT)
+                .value(0);
+
+        waitSemaphoreSubmitInfo.get(1).sType$Default()
+                .semaphore(graphicsQueue.getTmSemaphore())
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) //LightMap Sampler Transitions
+                .value(graphicsQueue.submitCount());
+        
+        VkSemaphoreSubmitInfo.Buffer mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
+        mainSemaphoreSubmitInfo.get(0).sType$Default()
+                .semaphore(renderFinishedSemaphores.get(currentFrame))
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
+                .value(0);
+
+        mainSemaphoreSubmitInfo.get(1).sType$Default()
+                .semaphore(graphicsQueue.getTmSemaphore())
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT)
+                .value(graphicsQueue.submitCountAdd());
+
+        VkSubmitInfo2.Buffer submitInfo = VkSubmitInfo2.calloc(1, stack)
+            .sType$Default()
+            .pWaitSemaphoreInfos(waitSemaphoreSubmitInfo)
+            .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo)
+            .pCommandBufferInfos(commandBufferSubmitInfo);
+
+        final int vkResult;
+        if ((vkResult = KHRSynchronization2.vkQueueSubmit2KHR(graphicsQueue.queue(), submitInfo, 0)) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+        return submitId;
     }
 
     /**
@@ -366,26 +433,15 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-            int vkResult;
 
             this.endRenderPass(currentCmdBuffer);
             vkEndCommandBuffer(currentCmdBuffer);
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitPending();
 
-            submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+            final long submitId = sync2 ? getSubmitId2(stack) : getSubmitId(stack);
 
-            vkResetFences(device, inFlightFences.get(currentFrame));
-
-            waitFences();
-
-            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, inFlightFences.get(currentFrame));
-                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
-            }
-
-            vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+            DeviceManager.getGraphicsQueue().waitSubmits(stack, submitId);
 
             this.beginRenderPass(stack);
         }
@@ -433,11 +489,10 @@ public class Renderer {
     public void removeUsedPipeline(Pipeline pipeline) {
         usedPipelines.remove(pipeline);
     }
-
-    private void waitFences() {
-        // Make sure there are no uploads/transitions scheduled
+    //Synchronization fences are merged into vkQueueSubmit2 submit Barrier, reducing sync overhead and improving frametime
+    private void submitPending() {
         ImageUploadHelper.INSTANCE.submitCommands();
-        Synchronization.INSTANCE.waitFences();
+        Synchronization.INSTANCE.recycleCmdBuffers();
         Vulkan.getStagingBuffer().reset();
     }
 
@@ -451,25 +506,9 @@ public class Renderer {
         boundPipelineHandle = 0;
     }
 
-    void waitForSwapChain() {
-        vkResetFences(device, inFlightFences.get(currentFrame));
-
-//        constexpr VkPipelineStageFlags t=VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            //Empty Submit
-            VkSubmitInfo info = VkSubmitInfo.calloc(stack)
-                                            .sType$Default()
-                                            .pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)))
-                                            .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
-
-            vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), info, inFlightFences.get(currentFrame));
-            vkWaitForFences(device, inFlightFences.get(currentFrame), true, -1);
-        }
-    }
-
     @SuppressWarnings("UnreachableCode")
     private void recreateSwapChain() {
-        waitFences();
+        submitPending();
         Vulkan.waitIdle();
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
@@ -518,7 +557,6 @@ public class Renderer {
 
     private void destroySyncObjects() {
         for (int i = 0; i < framesNum; ++i) {
-            vkDestroyFence(device, inFlightFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }

@@ -57,7 +57,7 @@ public class StagingBuffer extends Buffer {
         // Submit and wait all recorded uploads before resetting the buffer
         UploadManager.INSTANCE.submitUploads();
         ImageUploadHelper.INSTANCE.submitCommands();
-        Synchronization.INSTANCE.waitFences();
+        Synchronization.INSTANCE.recycleCmdBuffers();
 
         this.reset();
     }

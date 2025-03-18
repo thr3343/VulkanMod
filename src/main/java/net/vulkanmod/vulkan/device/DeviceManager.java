@@ -180,6 +180,10 @@ public abstract class DeviceManager {
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
 
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            deviceVulkan12Features.timelineSemaphore(device.isTimelineSemaphoreSupported());
+
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
             deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
@@ -198,7 +202,7 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
             
             //Using Extension version of Sync2 to avoid raising min req to VK13
             if (loadedExtensions.contains(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)) {
