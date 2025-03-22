@@ -41,6 +41,7 @@ public class MemoryManager {
     static int Frames;
 
     private static long deviceMemory = 0;
+    private static long barMemory = 0;
     private static long nativeMemory = 0;
 
     private int currentFrame = 0;
@@ -105,7 +106,7 @@ public class MemoryManager {
 //        images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+    public void createBuffer(MemoryType type, long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
         try (MemoryStack stack = stackPush()) {
 
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
@@ -115,6 +116,7 @@ public class MemoryManager {
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(properties);
+            allocationInfo.memoryTypeBits(type.typeBits); //Ensure correct Heap is used
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
@@ -133,17 +135,15 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
+            this.createBuffer(buffer.type, size, usage, properties, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
             buffer.setBufferSize(size);
-
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
-                deviceMemory += size;
-            }
-            else {
-                nativeMemory += size;
+            switch (buffer.type.type) {
+                case DEVICE_LOCAL -> deviceMemory += size;
+                case BAR_LOCAL -> barMemory += size;
+                case HOST_LOCAL -> nativeMemory += size;
             }
 
             buffers.putIfAbsent(buffer.getId(), buffer);
@@ -218,11 +218,10 @@ public class MemoryManager {
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
-        if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
-        }
-        else {
-            nativeMemory -= bufferInfo.bufferSize();
+        switch (bufferInfo.type()) {
+            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
+            case BAR_LOCAL -> barMemory -= bufferInfo.bufferSize();
+            case HOST_LOCAL -> nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());
@@ -308,12 +307,16 @@ public class MemoryManager {
         return bytesInMb(nativeMemory);
     }
 
+    public int getAllocatedBarMemoryMB() {
+         return bytesInMb(barMemory);
+    }
+
     public int getAllocatedDeviceMemoryMB() {
         return bytesInMb(deviceMemory);
     }
 
     public int getDeviceMemoryMB() {
-        return bytesInMb(MemoryTypes.GPU_MEM.vkMemoryHeap.size());
+        return bytesInMb(MemoryTypes.GPU_MEM.maxSize);
     }
 
     int bytesInMb(long bytes) {
