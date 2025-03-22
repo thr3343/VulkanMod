@@ -8,15 +8,17 @@ import java.nio.ByteBuffer;
 
 public abstract class MemoryType {
     final Type type;
-    public final VkMemoryType vkMemoryType;
+    public final int heapIndex;
     public final long maxSize;
     public final int typeBits;
+    public final int properties;
 
-    MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex) {
+    MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap, int memoryTypeIndex, int properties) {
         this.type = type;
-        this.vkMemoryType = vkMemoryType;
+        this.heapIndex = vkMemoryType.heapIndex();
         this.maxSize = vkMemoryHeap.size();
         this.typeBits = 1 << memoryTypeIndex;
+        this.properties = properties;
     }
 
     public abstract void createBuffer(Buffer buffer, long size);

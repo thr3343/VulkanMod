@@ -106,7 +106,7 @@ public class MemoryManager {
 //        images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(MemoryType type, long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+    public void createBuffer(MemoryType type, long size, int usage, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
         try (MemoryStack stack = stackPush()) {
 
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
@@ -115,7 +115,7 @@ public class MemoryManager {
             bufferInfo.usage(usage);
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
-            allocationInfo.requiredFlags(properties);
+            allocationInfo.requiredFlags(type.properties);
             allocationInfo.memoryTypeBits(type.typeBits); //Ensure correct Heap is used
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
@@ -130,12 +130,12 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void createBuffer(Buffer buffer, long size, int usage, int properties) {
+    public synchronized void createBuffer(Buffer buffer, long size, int usage) {
         try (MemoryStack stack = stackPush()) {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(buffer.type, size, usage, properties, pBuffer, pAllocation);
+            this.createBuffer(buffer.type, size, usage, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
@@ -329,7 +329,7 @@ public class MemoryManager {
 
             vmaGetHeapBudgets(ALLOCATOR, vmaBudgets);
 
-            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.vkMemoryType.heapIndex());
+            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.heapIndex);
             long usage = vmaBudget.usage();
             long budget = vmaBudget.budget();
 
