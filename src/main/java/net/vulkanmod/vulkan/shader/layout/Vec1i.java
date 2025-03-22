@@ -21,7 +21,9 @@ public class Vec1i extends Uniform {
             this.setSupplier(this.info.bufferSupplier);
         }
     }
-
+    public int getUniformHash() {
+        return intSupplier.get();
+    }
     @Override
     public void setSupplier(Supplier<MappedBuffer> supplier) {
         this.intSupplier = () -> supplier.get().getInt(0);

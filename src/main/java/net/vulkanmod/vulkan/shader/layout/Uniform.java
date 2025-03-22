@@ -25,6 +25,14 @@ public class Uniform {
         this.values = this.info.bufferSupplier;
     }
 
+    public int getUniformHash() {
+        return values.get().getCurrentHash();
+    }
+
+    public MappedBuffer getUniform() {
+        return values.get();
+    }
+
     public void setSupplier(Supplier<MappedBuffer> supplier) {
         this.values = supplier;
     }

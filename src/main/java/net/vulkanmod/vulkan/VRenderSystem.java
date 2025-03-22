@@ -71,8 +71,13 @@ public abstract class VRenderSystem {
     public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
 
-        screenSize.putFloat(0, (float) window.getWidth());
-        screenSize.putFloat(4, (float) window.getHeight());
+        float width = window.getWidth();
+        float height = window.getHeight();
+        screenSize.putFloat(0, width);
+        screenSize.putFloat(4, height);
+        int result = 31 + Float.floatToRawIntBits(width);
+        result = 31 * result + Float.floatToRawIntBits(height);
+        screenSize.updateHash(result);
     }
 
     public static void setWindow(long window) {
@@ -95,21 +100,26 @@ public abstract class VRenderSystem {
 
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.get(modelViewMatrix.buffer.asFloatBuffer());
+        modelViewMatrix.updateHash(mat.hashCode());
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
         mat.get(projectionMatrix.buffer.asFloatBuffer());
+        projectionMatrix.updateHash(mat.hashCode());
     }
 
     public static void calculateMVP() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
 
-        P.mul(MV).get(MVP.buffer);
+        Matrix4f mul = P.mul(MV);
+        mul.get(MVP.buffer);
+        MVP.updateHash(mul.hashCode());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
         mat.get(TextureMatrix.buffer.asFloatBuffer());
+        TextureMatrix.updateHash(mat.hashCode());
     }
 
     public static MappedBuffer getTextureMatrix() {
@@ -133,6 +143,10 @@ public abstract class VRenderSystem {
         VUtil.UNSAFE.putFloat(ptr, x);
         VUtil.UNSAFE.putFloat(ptr + 4, y);
         VUtil.UNSAFE.putFloat(ptr + 8, z);
+        int result = 31 + Float.floatToRawIntBits(x);
+        result = 31 * result + Float.floatToRawIntBits(y);
+        result = 31 * result + Float.floatToRawIntBits(z);
+        modelOffset.updateHash(result);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {

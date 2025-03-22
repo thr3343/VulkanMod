@@ -21,6 +21,13 @@ public abstract class AlignedStruct {
             this.uniforms.add(uniform);
         }
     }
+    public int getCurrentAggregateHash() {
+        int aggregateHash = 1;
+        for (Uniform uniform : uniforms) {
+            aggregateHash = aggregateHash * 31 + uniform.getUniformHash();
+        }
+        return aggregateHash;
+    }
 
     public void update(long ptr) {
         for (Uniform uniform : this.uniforms) {

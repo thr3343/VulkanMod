@@ -30,7 +30,7 @@ public class GraphicsPipeline extends Pipeline {
     private long fragShaderModule = 0;
 
     GraphicsPipeline(Builder builder) {
-        super(builder.shaderPath);
+        super(builder.shaderPath, builder.postFX);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
         this.imageDescriptors = builder.imageDescriptors;

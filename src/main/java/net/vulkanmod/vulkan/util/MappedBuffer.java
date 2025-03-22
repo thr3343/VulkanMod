@@ -7,7 +7,9 @@ import java.nio.ByteBuffer;
 public class MappedBuffer {
 
     public final ByteBuffer buffer;
+    private final int size;
     public final long ptr;
+    private int hash;
 
     public static MappedBuffer createFromBuffer(ByteBuffer buffer) {
         return new MappedBuffer(buffer, MemoryUtil.memAddress0(buffer));
@@ -15,11 +17,15 @@ public class MappedBuffer {
     MappedBuffer(ByteBuffer buffer, long ptr) {
         this.buffer = buffer;
         this.ptr = ptr;
+        this.size = buffer.capacity();
+        this.hash = buffer.hashCode();
     }
 
     public MappedBuffer(int size) {
         this.buffer = MemoryUtil.memAlloc(size);
+        this.size = size;
         this.ptr = MemoryUtil.memAddress0(this.buffer);
+        this.hash = buffer.hashCode();
     }
 
     public void putFloat(int idx, float f) {
@@ -36,5 +42,18 @@ public class MappedBuffer {
 
     public int getInt(int idx) {
         return VUtil.UNSAFE.getInt(ptr + idx);
+    }
+
+    //TODO: temp setup: better implementation...
+    public void updateHash(int newHash) {
+        this.hash = newHash;
+    }
+
+    public int getByteSize() {
+        return size;
+    }
+
+    public int getCurrentHash() {
+        return this.hash;
     }
 }

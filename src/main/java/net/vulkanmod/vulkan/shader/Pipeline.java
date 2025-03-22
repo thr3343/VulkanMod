@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -74,7 +76,7 @@ public abstract class Pipeline {
     }
 
     public final String name;
-
+    public final boolean postFX;
     protected long descriptorSetLayout;
     protected long pipelineLayout;
 
@@ -83,9 +85,16 @@ public abstract class Pipeline {
     protected ManualUBO manualUBO;
     protected List<ImageDescriptor> imageDescriptors;
     protected PushConstants pushConstants;
+    private static final Int2IntOpenHashMap uniformOffsets = new Int2IntOpenHashMap(Hash.DEFAULT_INITIAL_SIZE, Hash.VERY_FAST_LOAD_FACTOR);
 
-    public Pipeline(String name) {
+    public Pipeline(String name, boolean postFX) {
         this.name = name;
+        this.postFX = postFX;
+    }
+
+    public static void reset() {
+        uniformOffsets.trim(Hash.DEFAULT_INITIAL_SIZE); //Avoid wasting heap + memory leaks
+        uniformOffsets.clear();
     }
 
     protected void createDescriptorSetLayout() {
@@ -264,21 +273,33 @@ public abstract class Pipeline {
         private void updateUniforms(UniformBuffer globalUB) {
             int i = 0;
             for (UBO ubo : pipeline.buffers) {
-                boolean useOwnUB = ubo.getUniformBuffer() != null;
-                UniformBuffer ub = useOwnUB ? ubo.getUniformBuffer() : globalUB;
 
-                int currentOffset = (int) ub.getUsedBytes();
-                this.dynamicOffsets.put(i, currentOffset);
+                final int hash = ubo.getCurrentAggregateHash();
+                final int currentOffset;
+                //TODO: hashing only supported with Core Uniforms (Default Vanilla Uniforms)
+                // i.e. EffectInstance uniforms hashing is broken: using postFX bool as temp workaround
 
-                // TODO: non mappable memory
+               if(!pipeline.postFX && uniformOffsets.containsKey(hash)) {
+                   currentOffset = uniformOffsets.get(hash);
+               }
+               else {
+                   boolean useOwnUB = ubo.getUniformBuffer() != null;
+                   UniformBuffer ub = useOwnUB ? ubo.getUniformBuffer() : globalUB;
 
-                int alignedSize = UniformBuffer.getAlignedSize(ubo.getSize());
-                ub.checkCapacity(alignedSize);
 
-                if (!useOwnUB) {
-                    ubo.update(ub.getPointer());
-                    ub.updateOffset(alignedSize);
-                }
+                   currentOffset = (int) ub.getUsedBytes();
+                   this.dynamicOffsets.put(i, currentOffset);
+
+                   int alignedSize = UniformBuffer.getAlignedSize(ubo.getSize());
+                   ub.checkCapacity(alignedSize);
+
+                   if (!useOwnUB) {
+                       ubo.update(ub.getPointer());
+                       ub.updateOffset(alignedSize);
+                   }
+                   uniformOffsets.put(hash, currentOffset);
+               }
+                dynamicOffsets.put(i, currentOffset);
 
                 ++i;
             }
@@ -482,6 +503,7 @@ public abstract class Pipeline {
     public static class Builder {
         final VertexFormat vertexFormat;
         final String shaderPath;
+        public boolean postFX;
         List<UBO> UBOs;
         ManualUBO manualUBO;
         PushConstants pushConstants;
@@ -498,6 +520,13 @@ public abstract class Pipeline {
         public Builder(VertexFormat vertexFormat, String path) {
             this.vertexFormat = vertexFormat;
             this.shaderPath = path;
+            this.postFX = false;
+        }
+
+        public Builder(VertexFormat vertexFormat, String path, boolean postFX) {
+            this.vertexFormat = vertexFormat;
+            this.shaderPath = path;
+            this.postFX = postFX;
         }
 
         public Builder(VertexFormat vertexFormat) {

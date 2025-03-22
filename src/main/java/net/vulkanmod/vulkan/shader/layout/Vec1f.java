@@ -20,6 +20,10 @@ public class Vec1f extends Uniform {
         }
     }
 
+    public int getUniformHash() {
+        return Float.floatToRawIntBits(floatSupplier.get());
+    }
+
     @Override
     public void setSupplier(Supplier<MappedBuffer> supplier) {
         this.floatSupplier = () -> supplier.get().getFloat(0);

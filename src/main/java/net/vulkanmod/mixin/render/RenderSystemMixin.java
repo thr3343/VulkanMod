@@ -319,10 +319,14 @@ public abstract class RenderSystemMixin {
         VRenderSystem.lightDirection0.buffer.putFloat(0, dir0.x());
         VRenderSystem.lightDirection0.buffer.putFloat(4, dir0.y());
         VRenderSystem.lightDirection0.buffer.putFloat(8, dir0.z());
+        VRenderSystem.lightDirection0.updateHash(dir0.hashCode());
 
         VRenderSystem.lightDirection1.buffer.putFloat(0, dir1.x());
         VRenderSystem.lightDirection1.buffer.putFloat(4, dir1.y());
         VRenderSystem.lightDirection1.buffer.putFloat(8, dir1.z());
+        VRenderSystem.lightDirection1.buffer.putFloat(8, dir1.z());
+        VRenderSystem.lightDirection1.updateHash(dir1.hashCode());
+
     }
 
     /**

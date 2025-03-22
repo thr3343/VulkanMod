@@ -520,6 +520,7 @@ public class Renderer {
         usedPipelines.clear();
         boundPipeline = null;
         boundPipelineHandle = 0;
+        Pipeline.reset();
     }
 
     @SuppressWarnings("UnreachableCode")

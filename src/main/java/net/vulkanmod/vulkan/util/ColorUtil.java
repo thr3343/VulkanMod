@@ -89,6 +89,8 @@ public class ColorUtil {
 
     public static void setRGBA_Buffer(MappedBuffer buffer, float r, float g, float b, float a) {
         colorConsumer.setRGBA_Buffer(buffer, r, g, b, a);
+        int hash = 31 * (31 * (31 * (31 + Float.floatToRawIntBits(r)) + Float.floatToRawIntBits(g)) + Float.floatToRawIntBits(b)) + Float.floatToRawIntBits(a);
+        buffer.updateHash(hash);
     }
 
     public static void setRGBA_Buffer(FloatBuffer buffer, float r, float g, float b, float a) {
