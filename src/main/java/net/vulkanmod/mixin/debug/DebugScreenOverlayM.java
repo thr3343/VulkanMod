@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.SystemInfo;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.Device;
@@ -71,6 +72,7 @@ public abstract class DebugScreenOverlayM {
         strings.add("");
         strings.add("");
 
+        Collections.addAll(strings, Renderer.getDrawer().getStats());
         Collections.addAll(strings, WorldRenderer.getInstance().getChunkAreaManager().getStats());
 
         return strings;

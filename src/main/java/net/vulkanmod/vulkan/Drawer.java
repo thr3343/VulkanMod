@@ -206,4 +206,14 @@ public class Drawer {
             case TRIANGLES, DEBUG_LINES -> null;
 		};
     }
+
+    public String getStats() {
+        long ubSize = 0;
+        long ubUsed = 0;
+        for (var buffer : uniformBuffers) {
+            ubSize += buffer.getBufferSize();
+            ubUsed += buffer.getUsedBytes();
+        }
+        return String.format("Uniform Buffers: %d/%d B", ubUsed, ubSize);
+    }
 }
