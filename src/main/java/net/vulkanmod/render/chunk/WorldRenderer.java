@@ -44,6 +44,7 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.*;
 
@@ -70,15 +71,13 @@ public class WorldRenderer {
     private SectionGraph sectionGraph;
     private boolean graphNeedsUpdate;
 
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-
     private final TaskDispatcher taskDispatcher;
 
     private double xTransparentOld;
     private double yTransparentOld;
     private double zTransparentOld;
 
-    IndirectBuffer[] indirectBuffers;
+    private IndirectBuffer indirectBuffers;
 
     public RenderRegionBuilder renderRegionCache;
 
@@ -93,20 +92,16 @@ public class WorldRenderer {
         allocateIndirectBuffers();
         TerrainRenderType.updateMapping();
 
-        Renderer.getInstance().addOnResizeCallback(() -> {
-            if (this.indirectBuffers.length != Renderer.getFramesNum())
-                allocateIndirectBuffers();
-        });
+
     }
 
     private void allocateIndirectBuffers() {
         if (this.indirectBuffers != null)
-            Arrays.stream(this.indirectBuffers).forEach(Buffer::scheduleFree);
+            this.indirectBuffers.scheduleFree();
 
-        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
-        for (int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+         {
+            this.indirectBuffers = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
         }
     }
 
@@ -193,7 +188,7 @@ public class WorldRenderer {
             }
         }
 
-        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
+        this.indirectBuffers.reset();
 
         this.minecraft.getProfiler().pop();
         profiler.pop();
@@ -240,10 +235,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
-
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);
 
@@ -306,48 +297,41 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(modelView, projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
-        Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-        renderer.bindGraphicsPipeline(pipeline);
-
-        VTextureSelector.bindShaderTextures(pipeline);
-
-        IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
-        Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer);
-
-        int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(terrainRenderType)) {
+
+
+            //Moved inside allowedRenderTypes to avoid generating unused pipelines
+
             terrainRenderType.setCutoutUniform();
+            Renderer renderer = Renderer.getInstance();
+            GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
+            renderer.bindGraphicsPipeline(pipeline);
+
+            VTextureSelector.bindShaderTextures(pipeline);
+
+
+            final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+
+
+            renderer.uploadAndBindUBOs(pipeline);
+
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
                 DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
-                renderer.uploadAndBindUBOs(pipeline);
                 if (drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, terrainRenderType, camX, camY, camZ);
-                    renderer.uploadAndBindUBOs(pipeline);
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
                     if (indirectDraw)
-                        drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers, queue, terrainRenderType);
                     else
                         drawBuffers.buildDrawBatchesDirect(cameraPos, queue, terrainRenderType);
                 }
             }
-        }
-
-        if (terrainRenderType == TerrainRenderType.CUTOUT || terrainRenderType == TerrainRenderType.TRIPWIRE) {
-            indirectBuffers[currentFrame].submitUploads();
-//            uniformBuffers.submitUploads();
-        }
-
-        //Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setModelOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         this.minecraft.getProfiler().pop();
@@ -460,7 +444,7 @@ public class WorldRenderer {
 
     public void cleanUp() {
         if (indirectBuffers != null)
-            Arrays.stream(indirectBuffers).forEach(Buffer::scheduleFree);
+            indirectBuffers.scheduleFree();
     }
 
 }
