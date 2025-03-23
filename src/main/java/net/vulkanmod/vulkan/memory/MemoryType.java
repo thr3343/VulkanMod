@@ -1,12 +1,20 @@
 package net.vulkanmod.vulkan.memory;
 
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
+import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
+import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
 
-public abstract class MemoryType {
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+public class MemoryType {
     final Type type;
     public final int heapIndex;
     public final long maxSize;
@@ -21,13 +29,49 @@ public abstract class MemoryType {
         this.properties = properties;
     }
 
-    public abstract void createBuffer(Buffer buffer, long size);
+    public void createBuffer(Buffer buffer, long size) {
+        MemoryManager.getInstance().createBuffer(buffer, size,
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage
+        );
+    }
 
-    public abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
+    public void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer)
+    {
+       if(!this.mappable()) {
+           StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+           stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-    public abstract void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
+           DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), buffer.getUsedBytes(), bufferSize);
+       }
+       else {
+           VUtil.memcpy(byteBuffer, buffer, bufferSize);
+       }
 
-    public abstract boolean mappable();
+    }
+
+    public void copyBuffer(Buffer src, Buffer dst) {
+        if (dst.getBufferSize() < src.getBufferSize()) {
+            throw new IllegalArgumentException("dst size is less than src size.");
+        }
+
+        DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.getBufferSize());
+    }
+
+    public void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer){
+        if(this.mappable())
+        {
+            MemoryUtil.memCopy(buffer.getDataPtr(), MemoryUtil.memAddress(byteBuffer), bufferSize);
+            VUtil.memcpy(buffer, byteBuffer, bufferSize);
+        }
+        /* else {
+            //TODO:
+        }*/
+
+    }
+
+    public boolean mappable() {
+        return this.type != Type.DEVICE_LOCAL;
+    }
 
     public Type getType() {
        return this.type;
