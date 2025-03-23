@@ -134,6 +134,7 @@ public class Vulkan {
     private static long allocator;
 
     private static StagingBuffer[] stagingBuffers;
+    private static StagingBuffer[] chunkStaging;
 
     public static boolean use24BitsDepthFormat = true;
     private static int DEFAULT_DEPTH_FORMAT = 0;
@@ -162,7 +163,13 @@ public class Vulkan {
         stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer();
+            stagingBuffers[i] = new StagingBuffer(MemoryTypes.HOST_MEM);
+        }
+
+        chunkStaging = new StagingBuffer[Renderer.getFramesNum()];
+
+        for (int i = 0; i < chunkStaging.length; ++i) {
+            chunkStaging[i] = new StagingBuffer(1<<24, MemoryTypes.BAR_MEM);
         }
     }
 
@@ -202,6 +209,7 @@ public class Vulkan {
 
     private static void freeStagingBuffers() {
         Arrays.stream(stagingBuffers).forEach(Buffer::scheduleFree);
+        Arrays.stream(chunkStaging).forEach(Buffer::scheduleFree);
     }
 
     private static void createInstance() {
@@ -402,6 +410,10 @@ public class Vulkan {
 
     public static StagingBuffer getStagingBuffer() {
         return stagingBuffers[Renderer.getCurrentFrame()];
+    }
+
+    public static StagingBuffer getChunkStaging() {
+        return chunkStaging[Renderer.getCurrentFrame()];
     }
 
     public static Device getDevice() {

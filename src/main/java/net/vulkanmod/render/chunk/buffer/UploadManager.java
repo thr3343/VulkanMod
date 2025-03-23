@@ -43,7 +43,7 @@ public class UploadManager {
     }
 
     public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+        StagingBuffer stagingBuffer = Vulkan.getChunkStaging();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         beginCommands();

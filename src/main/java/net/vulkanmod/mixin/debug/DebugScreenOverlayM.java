@@ -60,9 +60,9 @@ public abstract class DebugScreenOverlayM {
         strings.add(String.format("Mem: % 2d%% %03d/%03dMB", usedMemory * 100L / maxMemory, bytesToMegabytes(usedMemory), bytesToMegabytes(maxMemory)));
         strings.add(String.format("Allocated: % 2d%% %03dMB", totalMemory * 100L / maxMemory, bytesToMegabytes(totalMemory)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
-        strings.add("NativeMemory: %dMB / %dMB".formatted(MemoryManager.getInstance().getNativeMemoryMB(), MemoryTypes.GPU_MEM.maxSize >> 20));
-        strings.add("StreamMemory: %dKB / %dKB".formatted(MemoryManager.getInstance().getAllocatedBarMemoryMB(), MemoryTypes.BAR_MEM.maxSize >> 10));
-        strings.add("DeviceMemory: %dMB / %dMB".formatted(MemoryManager.getInstance().getAllocatedDeviceMemoryMB(), MemoryTypes.HOST_MEM.maxSize >> 20));
+        strings.add("NativeMemory: %dMB / %dMB".formatted(MemoryManager.getInstance().getNativeMemoryMB(), MemoryTypes.HOST_MEM.maxSize >> 20));
+        strings.add("StreamMemory: %dMB / %dMB".formatted(MemoryManager.getInstance().getAllocatedBarMemoryMB(), MemoryTypes.BAR_MEM.maxSize >> 20));
+        strings.add("DeviceMemory: %dMB / %dMB".formatted(MemoryManager.getInstance().getAllocatedDeviceMemoryMB(), MemoryTypes.GPU_MEM.maxSize >> 20));
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + SystemInfo.cpuInfo);

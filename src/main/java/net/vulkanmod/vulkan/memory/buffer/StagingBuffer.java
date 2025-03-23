@@ -4,6 +4,7 @@ import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.lwjgl.system.MemoryUtil;
 
@@ -15,12 +16,12 @@ import static org.lwjgl.vulkan.VK10.*;
 public class StagingBuffer extends Buffer {
     private static final long DEFAULT_SIZE = 64 * 1024 * 1024;
 
-    public StagingBuffer() {
-        this(DEFAULT_SIZE);
+    public StagingBuffer(MemoryType hostMem) {
+        this(DEFAULT_SIZE, hostMem);
     }
 
-    public StagingBuffer(long size) {
-        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+    public StagingBuffer(long size, MemoryType hostMem) {
+        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, hostMem);
         this.usedBytes = 0;
         this.offset = 0;
 
@@ -55,9 +56,12 @@ public class StagingBuffer extends Buffer {
 
     private void submitUploads() {
         // Submit and wait all recorded uploads before resetting the buffer
-        UploadManager.INSTANCE.submitUploads();
-        ImageUploadHelper.INSTANCE.submitCommands();
-        Synchronization.INSTANCE.recycleCmdBuffers();
+        if(type.getType() == MemoryType.Type.BAR_LOCAL)
+            UploadManager.INSTANCE.submitUploads();
+        else {
+            ImageUploadHelper.INSTANCE.submitCommands();
+            Synchronization.INSTANCE.recycleCmdBuffers();
+        }
 
         this.reset();
     }

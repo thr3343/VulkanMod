@@ -510,6 +510,7 @@ public class Renderer {
         ImageUploadHelper.INSTANCE.submitCommands();
         Synchronization.INSTANCE.recycleCmdBuffers();
         Vulkan.getStagingBuffer().reset();
+        Vulkan.getChunkStaging().reset();
     }
 
     private void resetDescriptors() {

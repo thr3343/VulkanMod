@@ -5,6 +5,7 @@ import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.lwjgl.PointerBuffer;
@@ -203,7 +204,7 @@ public class VulkanImage {
         // Use a temporary staging buffer if the upload size is greater than
         // the default staging buffer
         if (uploadSize > stagingBuffer.getBufferSize()) {
-            stagingBuffer = new StagingBuffer(uploadSize);
+            stagingBuffer = new StagingBuffer(uploadSize, MemoryTypes.HOST_MEM);
             stagingBuffer.scheduleFree();
         }
 
