@@ -4,6 +4,7 @@ import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.lwjgl.system.MemoryUtil;
@@ -35,6 +36,10 @@ public class StagingBuffer extends Buffer {
 
         if (size > this.bufferSize - this.usedBytes) {
             submitUploads();
+            if(type.getType() == MemoryType.Type.BAR_LOCAL) {
+                resizeBuffer(this.bufferSize * 2);
+            }
+
         }
 
         nmemcpy(this.dataPtr + this.usedBytes, MemoryUtil.memAddress(byteBuffer), size);
@@ -42,6 +47,12 @@ public class StagingBuffer extends Buffer {
         this.offset = this.usedBytes;
         this.usedBytes += size;
     }
+
+    private void resizeBuffer(long newSize) {
+        MemoryManager.getInstance().addToFreeable(this);
+        this.createBuffer(newSize);
+    }
+
 
     public void align(int alignment) {
         long alignedOffset = Util.align(usedBytes, alignment);
