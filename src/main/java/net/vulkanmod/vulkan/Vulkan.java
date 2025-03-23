@@ -169,7 +169,7 @@ public class Vulkan {
         chunkStaging = new StagingBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < chunkStaging.length; ++i) {
-            chunkStaging[i] = new StagingBuffer(1<<24, MemoryTypes.BAR_MEM);
+            chunkStaging[i] = new StagingBuffer(1<<23, MemoryTypes.BAR_MEM);
         }
     }
 

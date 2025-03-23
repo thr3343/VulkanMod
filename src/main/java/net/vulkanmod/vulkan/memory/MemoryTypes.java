@@ -17,6 +17,7 @@ public class MemoryTypes {
     public static MemoryType GPU_MEM;
     public static MemoryType BAR_MEM;
     public static MemoryType HOST_MEM;
+    public static boolean reBAR;
 
     public static void createMemoryTypes() {
 
@@ -38,8 +39,10 @@ public class MemoryTypes {
             }
         }
 
-        if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
+        if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null) {
+            reBAR = GPU_MEM.maxSize == BAR_MEM.maxSize;
             return;
+        }
 
         // Could not find 1 or more MemoryTypes, need to use fallback
         for (int memoryTypeIndex = 0; memoryTypeIndex < DeviceManager.memoryProperties.memoryTypeCount(); ++memoryTypeIndex) {
@@ -55,8 +58,10 @@ public class MemoryTypes {
                 HOST_MEM = new MemoryType(MemoryType.Type.HOST_LOCAL, memoryType, heap, memoryTypeIndex, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             }
 
-            if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
+            if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null) {
+                reBAR = GPU_MEM.maxSize == BAR_MEM.maxSize;
                 return;
+            }
         }
 
         // Could not find device memory, fallback to host memory

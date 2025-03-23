@@ -15,7 +15,7 @@ public class AreaBuffer {
     private static final boolean DEBUG = false;
     private static final Logger LOGGER = Initializer.LOGGER;
 
-    private static final MemoryType MEMORY_TYPE = MemoryTypes.GPU_MEM;
+    private static final MemoryType MEMORY_TYPE = MemoryTypes.reBAR ? MemoryTypes.BAR_MEM : MemoryTypes.GPU_MEM;
 
     private final int usage;
     private final int elementSize;
@@ -87,7 +87,13 @@ public class AreaBuffer {
         segment.paramsPtr = paramsPtr;
 
         Buffer dst = this.buffer;
-        UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
+        //TODO: JIT Branch Elimination
+        if(MEMORY_TYPE == MemoryTypes.BAR_MEM) {
+            UploadManager.INSTANCE.uploadDirect(dst, segment.offset, byteBuffer);
+        }
+        else {
+            UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
+        }
 
         this.used += size;
 

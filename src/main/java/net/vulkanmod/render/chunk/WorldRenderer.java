@@ -77,7 +77,7 @@ public class WorldRenderer {
     private double yTransparentOld;
     private double zTransparentOld;
 
-    private IndirectBuffer indirectBuffers;
+    IndirectBuffer[] indirectBuffers;
 
     public RenderRegionBuilder renderRegionCache;
 
@@ -92,16 +92,20 @@ public class WorldRenderer {
         allocateIndirectBuffers();
         TerrainRenderType.updateMapping();
 
-
+        Renderer.getInstance().addOnResizeCallback(() -> {
+            if (this.indirectBuffers.length != Renderer.getFramesNum())
+                allocateIndirectBuffers();
+        });
     }
 
     private void allocateIndirectBuffers() {
         if (this.indirectBuffers != null)
-            this.indirectBuffers.scheduleFree();
+            Arrays.stream(this.indirectBuffers).forEach(Buffer::scheduleFree);
 
+        this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
-         {
-            this.indirectBuffers = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+        for (int i = 0; i < this.indirectBuffers.length; ++i) {
+            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
         }
     }
 
@@ -188,7 +192,7 @@ public class WorldRenderer {
             }
         }
 
-        this.indirectBuffers.reset();
+        this.indirectBuffers[Renderer.getCurrentFrame()].reset();
 
         this.minecraft.getProfiler().pop();
         profiler.pop();
@@ -316,7 +320,7 @@ public class WorldRenderer {
 
             renderer.uploadAndBindUBOs(pipeline);
 
-
+            final int currentFrame = Renderer.getCurrentFrame();
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
@@ -327,7 +331,7 @@ public class WorldRenderer {
                     drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
                     if (indirectDraw)
-                        drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers, queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, terrainRenderType);
                     else
                         drawBuffers.buildDrawBatchesDirect(cameraPos, queue, terrainRenderType);
                 }
@@ -444,7 +448,7 @@ public class WorldRenderer {
 
     public void cleanUp() {
         if (indirectBuffers != null)
-            indirectBuffers.scheduleFree();
+            Arrays.stream(indirectBuffers).forEach(Buffer::scheduleFree);
     }
 
 }

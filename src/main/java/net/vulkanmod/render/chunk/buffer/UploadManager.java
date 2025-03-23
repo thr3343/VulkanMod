@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.TransferQueue;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -42,8 +43,14 @@ public class UploadManager {
         this.dstBuffers.clear();
     }
 
+
+    public void uploadDirect(Buffer dst, long offset, ByteBuffer byteBuffer) {
+        VUtil.memcpy(byteBuffer, dst.getDataPtr() + offset);
+    }
+
+    //TODO: Upload Direct: Either ChunKStaging or AreaBufefr target Depending on Mode
     public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
-        StagingBuffer stagingBuffer = Vulkan.getChunkStaging();
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         beginCommands();
