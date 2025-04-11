@@ -1,7 +1,6 @@
 package net.vulkanmod.render.vertex;
 
 import net.minecraft.client.renderer.RenderType;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ExtendedRenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 
@@ -18,18 +17,8 @@ public enum TerrainRenderType {
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
-    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
     private static Function<TerrainRenderType, TerrainRenderType> remapper;
-
-    static {
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT);
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        SEMI_COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-
-        COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-    }
 
     public final float alphaCutout;
 
@@ -67,18 +56,10 @@ public enum TerrainRenderType {
     }
 
     public static void updateMapping() {
-        if (Initializer.CONFIG.uniqueOpaqueLayer) {
-            remapper = (renderType) -> switch (renderType) {
-                case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
-                case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
-            };
-        } else {
-            remapper = (renderType) -> switch (renderType) {
-                case SOLID, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
-                case CUTOUT -> TerrainRenderType.CUTOUT;
-                case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
-            };
-        }
+        remapper = (renderType) -> switch (renderType) {
+            case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
+            case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
+        };
     }
 
     public static TerrainRenderType getRemapped(TerrainRenderType renderType) {

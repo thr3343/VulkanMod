@@ -308,8 +308,7 @@ public class WorldRenderer {
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
 
-        Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
-        if (allowedRenderTypes.contains(terrainRenderType)) {
+        if (TerrainRenderType.COMPACT_RENDER_TYPES.contains(terrainRenderType)) {
 
             //Moved inside allowedRenderTypes to avoid generating unused pipelines
 

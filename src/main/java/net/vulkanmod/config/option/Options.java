@@ -250,14 +250,6 @@ public abstract class Options {
                                 value -> config.entityCulling = value,
                                 () -> config.entityCulling)
                                 .setTooltip(Component.translatable("vulkanmod.options.entityCulling.tooltip")),
-                        new SwitchOption(Component.translatable("vulkanmod.options.uniqueOpaqueLayer"),
-                                value -> {
-                                    config.uniqueOpaqueLayer = value;
-                                    TerrainRenderType.updateMapping();
-                                    minecraft.levelRenderer.allChanged();
-                                },
-                                () -> config.uniqueOpaqueLayer)
-                                .setTooltip(Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip")),
                         new SwitchOption(Component.translatable("vulkanmod.options.backfaceCulling"),
                                 value -> {
                                     config.backFaceCulling = value;
