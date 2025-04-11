@@ -1,7 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Sets;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -36,7 +34,6 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
-import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
@@ -71,15 +68,13 @@ public class WorldRenderer {
     private SectionGraph sectionGraph;
     private boolean graphNeedsUpdate;
 
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-
     private final TaskDispatcher taskDispatcher;
 
     private double xTransparentOld;
     private double yTransparentOld;
     private double zTransparentOld;
 
-    IndirectBuffer[] indirectBuffers;
+    private IndirectBuffer[] indirectBuffers;
 
     public RenderRegionBuilder renderRegionCache;
 
@@ -92,7 +87,6 @@ public class WorldRenderer {
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
-        TerrainRenderType.updateMapping();
 
         Renderer.getInstance().addOnResizeCallback(() -> {
             if (this.indirectBuffers.length != Renderer.getFramesNum())
@@ -241,9 +235,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);

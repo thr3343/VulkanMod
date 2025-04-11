@@ -32,21 +32,17 @@ import org.joml.Vector3f;
 public class BlockRenderer extends AbstractBlockRenderContext {
     private Vector3f pos;
 
-    private BuilderResources resources;
+    private final BuilderResources resources;
     private TerrainBuilder terrainBuilder;
 
     final boolean backFaceCulling = Initializer.CONFIG.backFaceCulling;
 
     private TerrainRenderType renderType;
 
-    public void setResources(BuilderResources resources) {
-        this.resources = resources;
-    }
-
-    public BlockRenderer(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline) {
+    public BlockRenderer(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline, BuilderResources BuilderResources) {
         super();
         this.setupLightPipelines(flatLightPipeline, smoothLightPipeline);
-
+        this.resources = BuilderResources;
         this.random = new SingleThreadedRandomSource(42L);
     }
 

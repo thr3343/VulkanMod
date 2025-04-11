@@ -38,20 +38,17 @@ public class FluidRenderer {
 
     private final ModelQuad modelQuad = new ModelQuad();
 
-    BuilderResources resources;
+    private final BuilderResources resources;
 
     private final LightPipeline smoothLightPipeline;
     private final LightPipeline flatLightPipeline;
 
     private final int[] quadColors = new int[4];
 
-    public FluidRenderer(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline) {
+    public FluidRenderer(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline, BuilderResources builderResources) {
         this.smoothLightPipeline = smoothLightPipeline;
         this.flatLightPipeline = flatLightPipeline;
-    }
-
-    public void setResources(BuilderResources resources) {
-        this.resources = resources;
+        this.resources = builderResources;
     }
 
     public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos) {

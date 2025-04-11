@@ -39,11 +39,8 @@ public class BuilderResources {
             smoothLightPipeline = new SmoothLightPipeline(lightDataCache);
         }
 
-        this.blockRenderer = new BlockRenderer(flatLightPipeline, smoothLightPipeline);
-        this.fluidRenderer = new FluidRenderer(flatLightPipeline, smoothLightPipeline);
-
-        this.blockRenderer.setResources(this);
-        this.fluidRenderer.setResources(this);
+        this.blockRenderer = new BlockRenderer(flatLightPipeline, smoothLightPipeline, this);
+        this.fluidRenderer = new FluidRenderer(flatLightPipeline, smoothLightPipeline, this);
     }
 
     public void update(RenderRegion region, RenderSection renderSection) {

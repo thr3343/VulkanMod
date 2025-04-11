@@ -18,7 +18,7 @@ public enum TerrainRenderType {
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 
-    private static Function<TerrainRenderType, TerrainRenderType> remapper;
+    private static final Function<TerrainRenderType, TerrainRenderType> remapper;
 
     public final float alphaCutout;
 
@@ -55,7 +55,7 @@ public enum TerrainRenderType {
         };
     }
 
-    public static void updateMapping() {
+    static {
         remapper = (renderType) -> switch (renderType) {
             case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
             case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
