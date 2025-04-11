@@ -1,5 +1,4 @@
 #version 450
-
 #include "light.glsl"
 #include "fog.glsl"
 
@@ -9,7 +8,6 @@ layout(binding = 1) uniform UBO {
     vec4 FogColor;
     float FogStart;
     float FogEnd;
-    float AlphaCutout;
 };
 
 layout(location = 0) in vec4 vertexColor;
@@ -19,9 +17,11 @@ layout(location = 2) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
-    if (color.a < AlphaCutout) {
+    vec4 color = texture(Sampler0, texCoord0);
+
+    if (color.a < 0.5f) {
         discard;
     }
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    //moving multiply after Alpha test seems to be more performant
+    fragColor = linear_fog(color * vertexColor, vertexDistance, FogStart, FogEnd, FogColor);
 }

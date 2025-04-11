@@ -11,6 +11,7 @@ import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Vector3i;
@@ -375,6 +376,10 @@ public class DrawBuffers {
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+        }
+        else {
+            IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
+            Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer);
         }
     }
 
