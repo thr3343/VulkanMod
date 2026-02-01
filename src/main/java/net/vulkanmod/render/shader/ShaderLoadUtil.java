@@ -17,19 +17,33 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class ShaderLoadUtil {
 
-    private static final String RESOURCES_PATH = SPIRVUtils.class.getResource("/assets/vulkanmod").toExternalForm();
+    public static final String RESOURCES_PATH = SPIRVUtils.class.getResource("/assets/vulkanmod").toExternalForm();
+    public static final String SHADERS_PATH = "%s/shaders/".formatted(RESOURCES_PATH);
 
     public static final Set<String> REMAPPED_SHADERS = Sets.newHashSet("core/screenquad.vsh","core/rendertype_item_entity_translucent_cull.vsh");
+
+    public static String resolveShaderPath(String path) {
+        return resolveShaderPath(SHADERS_PATH, path);
+    }
+
+    public static String resolveShaderPath(String shaderPath, String path) {
+        return "%s%s".formatted(shaderPath, path);
+    }
 
     public static void loadShaders(Pipeline.Builder pipelineBuilder, JsonObject config, String configName, String path) {
         String vertexShader = config.has("vertex") ? config.get("vertex").getAsString() : configName;
         String fragmentShader = config.has("fragment") ? config.get("fragment").getAsString() : configName;
+
+        if (vertexShader == null) {
+            vertexShader = configName;
+        }
+        if (fragmentShader == null) {
+            fragmentShader = configName;
+        }
 
         vertexShader = removeNameSpace(vertexShader);
         fragmentShader = removeNameSpace(fragmentShader);
@@ -50,9 +64,7 @@ public abstract class ShaderLoadUtil {
     }
 
     public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, String shaderName, SPIRVUtils.ShaderKind type) {
-        String basePath = "%s/shaders/%s".formatted(RESOURCES_PATH, path);
-
-        String source = getShaderSource(basePath, configName, shaderName, type);
+        String source = getShaderSource(path, configName, shaderName, type);
 
         SPIRVUtils.SPIRV spirv = SPIRVUtils.compileShader(shaderName, source, type);
 
@@ -91,7 +103,7 @@ public abstract class ShaderLoadUtil {
             return null;
         }
 
-        String basePath = "%s/shaders/%s".formatted(RESOURCES_PATH, path);
+        String basePath = path;
         String configPath = "%s/%s/%s.json".formatted(basePath, rendertype, rendertype);
 
         InputStream stream;
@@ -168,14 +180,17 @@ public abstract class ShaderLoadUtil {
         }
     }
 
-    public static String getShaderSource(String basePath, String rendertype, String shaderName, SPIRVUtils.ShaderKind type) {
+    public static String getShaderSource(String path, String configName, String shaderName, SPIRVUtils.ShaderKind type) {
         String shaderExtension = switch (type) {
             case VERTEX_SHADER -> ".vsh";
             case FRAGMENT_SHADER -> ".fsh";
+            case COMPUTE_SHADER -> ".comp";
             default -> throw new UnsupportedOperationException("shader type %s unsupported");
         };
 
-        String shaderPath = "/%s/%s".formatted(rendertype, rendertype);
+        String basePath = path;
+
+        String shaderPath = "/%s/%s".formatted(configName, configName);
         String shaderFile = "%s%s%s".formatted(basePath, shaderPath, shaderExtension);
 
         InputStream stream;
@@ -183,7 +198,13 @@ public abstract class ShaderLoadUtil {
             stream = getInputStream(shaderFile);
 
             if (stream == null) {
-                shaderPath = "/%s/%s".formatted(rendertype, shaderName);
+                shaderPath = "/%s".formatted(shaderName);
+                shaderFile = "%s%s%s".formatted(basePath, shaderPath, shaderExtension);
+                stream = getInputStream(shaderFile);
+            }
+
+            if (stream == null) {
+                shaderPath = "/%s/%s".formatted(configName, shaderName);
                 shaderFile = "%s%s%s".formatted(basePath, shaderPath, shaderExtension);
                 stream = getInputStream(shaderFile);
             }

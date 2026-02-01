@@ -48,10 +48,11 @@ public abstract class PipelineManager {
     private static GraphicsPipeline createPipeline(String configName, VertexFormat vertexFormat) {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, configName);
 
-        JsonObject config = ShaderLoadUtil.getJsonConfig("basic", configName);
+        final String path = ShaderLoadUtil.resolveShaderPath("basic");
+        JsonObject config = ShaderLoadUtil.getJsonConfig(path, configName);
         pipelineBuilder.parseBindings(config);
 
-        ShaderLoadUtil.loadShaders(pipelineBuilder, config, configName, "basic");
+        ShaderLoadUtil.loadShaders(pipelineBuilder, config, configName, path);
 
         var pipeline = pipelineBuilder.createGraphicsPipeline();
 
