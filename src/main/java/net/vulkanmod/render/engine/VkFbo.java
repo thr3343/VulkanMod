@@ -26,7 +26,7 @@ public class VkFbo {
         }
     }
 
-    protected void bind() {
+    public void bind() {
         VkGlFramebuffer.bindFramebuffer(GL33.GL_FRAMEBUFFER, this.glId);
         clearAttachments();
     }
