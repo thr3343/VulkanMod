@@ -217,7 +217,7 @@ public class VkCommandEncoder implements CommandEncoder {
                 ((VkGpuTexture) depthAttachment).setDepthClearValue((float) clearDepth);
 
                 Framebuffer boundFramebuffer = Renderer.getInstance().getBoundFramebuffer();
-                if (boundFramebuffer.getColorAttachment() == ((VkGpuTexture) colorAttachment).getVulkanImage()
+                if (boundFramebuffer != null && boundFramebuffer.getColorAttachment() == ((VkGpuTexture) colorAttachment).getVulkanImage()
                     && boundFramebuffer.getDepthAttachment() == ((VkGpuTexture) depthAttachment).getVulkanImage())
                 {
                     fbo.clearAttachments();
@@ -238,7 +238,7 @@ public class VkCommandEncoder implements CommandEncoder {
             y0 = framebufferHeight - height - y0;
 
             Framebuffer boundFramebuffer = Renderer.getInstance().getBoundFramebuffer();
-            if (boundFramebuffer.getColorAttachment() == ((VkGpuTexture) colorAttachment).getVulkanImage()
+            if (boundFramebuffer != null && boundFramebuffer.getColorAttachment() == ((VkGpuTexture) colorAttachment).getVulkanImage()
                 && boundFramebuffer.getDepthAttachment() == ((VkGpuTexture) depthAttachment).getVulkanImage())
             {
                 Renderer.clearAttachments(0x4100, x0, y0, width, height);
@@ -257,7 +257,7 @@ public class VkCommandEncoder implements CommandEncoder {
         }
         else {
             Framebuffer boundFramebuffer = Renderer.getInstance().getBoundFramebuffer();
-            if (boundFramebuffer.getDepthAttachment() == ((VkGpuTexture) depthAttachment).getVulkanImage()) {
+            if (boundFramebuffer != null && boundFramebuffer.getDepthAttachment() == ((VkGpuTexture) depthAttachment).getVulkanImage()) {
                 VRenderSystem.clearDepth(clearDepth);
                 Renderer.clearAttachments(0x100);
             }
