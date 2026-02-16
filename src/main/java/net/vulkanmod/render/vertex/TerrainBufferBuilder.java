@@ -72,6 +72,10 @@ public class TerrainBufferBuilder implements VertexConsumer {
         this.vertices = 0;
     }
 
+    public void free() {
+        ALLOCATOR.free(this.bufferPtr);
+    }
+
     public ByteBuffer getBuffer() {
         return MemoryUtil.memByteBuffer(this.bufferPtr, this.vertices * this.vertexSize);
     }

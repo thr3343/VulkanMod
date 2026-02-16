@@ -7,10 +7,9 @@ import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
-import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
+import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Queue;
@@ -38,15 +37,15 @@ public class TaskDispatcher {
     }
 
     public void createThreads(int n) {
-        if(!this.stopThreads) {
+        if (!this.stopThreads) {
             this.stopThreads();
         }
 
         this.stopThreads = false;
 
-        if(this.resources != null) {
+        if (this.resources != null) {
             for (BuilderResources resources : this.resources) {
-                resources.clear();
+                resources.free();
             }
         }
 
@@ -61,7 +60,7 @@ public class TaskDispatcher {
         for (int i = 0; i < n; i++) {
             BuilderResources builderResources = new BuilderResources();
             Thread thread = new Thread(() -> runTaskThread(builderResources),
-                    "Builder-" + i);
+                                       "Builder-" + i);
             thread.setPriority(Thread.NORM_PRIORITY);
 
             this.threads[i] = thread;
@@ -71,10 +70,10 @@ public class TaskDispatcher {
     }
 
     private void runTaskThread(BuilderResources builderResources) {
-        while(!this.stopThreads) {
+        while (!this.stopThreads) {
             ChunkTask task = this.pollTask();
 
-            if(task == null)
+            if (task == null)
                 synchronized (this) {
                     try {
                         this.idleThreads++;
@@ -85,7 +84,7 @@ public class TaskDispatcher {
                     this.idleThreads--;
                 }
 
-            if(task == null)
+            if (task == null)
                 continue;
 
             task.runTask(builderResources);
@@ -93,12 +92,13 @@ public class TaskDispatcher {
     }
 
     public void schedule(ChunkTask chunkTask) {
-        if(chunkTask == null)
+        if (chunkTask == null)
             return;
 
         if (chunkTask.highPriority) {
             this.highPriorityTasks.offer(chunkTask);
-        } else {
+        }
+        else {
             this.lowPriorityTasks.offer(chunkTask);
         }
 
@@ -111,14 +111,14 @@ public class TaskDispatcher {
     private ChunkTask pollTask() {
         ChunkTask task = this.highPriorityTasks.poll();
 
-        if(task == null)
+        if (task == null)
             task = this.lowPriorityTasks.poll();
 
         return task;
     }
 
     public void stopThreads() {
-        if(this.stopThreads)
+        if (this.stopThreads)
             return;
 
         this.stopThreads = true;
@@ -140,7 +140,7 @@ public class TaskDispatcher {
     public boolean updateSections() {
         CompileResult result;
         boolean flag = false;
-        while((result = this.compileResults.poll()) != null) {
+        while ((result = this.compileResults.poll()) != null) {
             flag = true;
             doSectionUpdate(result);
         }
@@ -159,17 +159,21 @@ public class TaskDispatcher {
 
         // Check if area has been dismissed before uploading
         ChunkAreaManager chunkAreaManager = WorldRenderer.getInstance().getChunkAreaManager();
-        if (chunkAreaManager.getChunkArea(renderArea.index) != renderArea)
+        if (chunkAreaManager.getChunkArea(renderArea.index) != renderArea) {
+            compileResult.renderedLayers.values()
+                                        .forEach(UploadBuffer::release);
             return;
+        }
 
-        if(compileResult.fullUpdate) {
+        if (compileResult.fullUpdate) {
             var renderLayers = compileResult.renderedLayers;
-            for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
+            for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
                 UploadBuffer uploadBuffer = renderLayers.get(renderType);
 
-                if(uploadBuffer != null) {
+                if (uploadBuffer != null) {
                     drawBuffers.upload(section, uploadBuffer, renderType);
-                } else {
+                }
+                else {
                     section.resetDrawParameters(renderType);
                 }
             }
@@ -182,17 +186,19 @@ public class TaskDispatcher {
         }
     }
 
-    public boolean isIdle() { return this.idleThreads == this.threads.length && this.compileResults.isEmpty(); }
+    public boolean isIdle() {
+        return this.idleThreads == this.threads.length && this.compileResults.isEmpty();
+    }
 
     public void clearBatchQueue() {
-        while(!this.highPriorityTasks.isEmpty()) {
+        while (!this.highPriorityTasks.isEmpty()) {
             ChunkTask chunkTask = this.highPriorityTasks.poll();
             if (chunkTask != null) {
                 chunkTask.cancel();
             }
         }
 
-        while(!this.lowPriorityTasks.isEmpty()) {
+        while (!this.lowPriorityTasks.isEmpty()) {
             ChunkTask chunkTask = this.lowPriorityTasks.poll();
             if (chunkTask != null) {
                 chunkTask.cancel();

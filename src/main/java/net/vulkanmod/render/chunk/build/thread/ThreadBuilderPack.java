@@ -34,8 +34,8 @@ public class ThreadBuilderPack {
         return this.builders.get(renderType);
     }
 
-    public void clearAll() {
-        this.builders.values().forEach(TerrainBuilder::clear);
+    public void freeAll() {
+        this.builders.values().forEach(TerrainBuilder::free);
     }
 
 }

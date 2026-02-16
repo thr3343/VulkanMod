@@ -17,7 +17,6 @@ public class TerrainBuilder {
     protected long indexBufferPtr;
 
     private int indexBufferCapacity;
-    protected long bufferPtr;
 
     private final VertexFormat format;
 
@@ -62,9 +61,9 @@ public class TerrainBuilder {
     }
 
     private void resizeIndexBuffer(int i) {
-        this.bufferPtr = ALLOCATOR.realloc(this.bufferPtr, i);
+        this.indexBufferPtr = ALLOCATOR.realloc(this.indexBufferPtr, i);
         LOGGER.debug("Needed to grow index buffer: Old size {} bytes, new size {} bytes.", this.indexBufferCapacity, i);
-        if (this.bufferPtr == 0L) {
+        if (this.indexBufferPtr == 0L) {
             throw new OutOfMemoryError("Failed to resize buffer from " + this.indexBufferCapacity + " bytes to " + i + " bytes");
         } else {
             this.indexBufferCapacity = i;
@@ -158,6 +157,14 @@ public class TerrainBuilder {
 
         for (TerrainBufferBuilder bufferBuilder : this.bufferBuilders) {
             bufferBuilder.clear();
+        }
+    }
+
+    public void free() {
+        ALLOCATOR.free(this.indexBufferPtr);
+
+        for (TerrainBufferBuilder bufferBuilder : this.bufferBuilders) {
+            bufferBuilder.free();
         }
     }
 

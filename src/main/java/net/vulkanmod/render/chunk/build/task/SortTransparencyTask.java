@@ -49,6 +49,7 @@ public class SortTransparencyTask extends ChunkTask {
         bufferBuilder.reset();
 
         if (this.cancelled.get()) {
+            compileResult.renderedLayers.values().forEach(UploadBuffer::release);
             return Result.CANCELLED;
         }
 

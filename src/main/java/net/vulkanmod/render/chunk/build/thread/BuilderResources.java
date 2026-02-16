@@ -53,8 +53,8 @@ public class BuilderResources {
         this.lightDataCache.reset(region, renderSection.xOffset(), renderSection.yOffset(), renderSection.zOffset());
     }
 
-    public void clear() {
-        builderPack.clearAll();
+    public void free() {
+        builderPack.freeAll();
     }
 
     public void updateBuildStats(int buildTime) {
