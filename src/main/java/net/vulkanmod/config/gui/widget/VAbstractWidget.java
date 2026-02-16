@@ -17,6 +17,13 @@ public abstract class VAbstractWidget extends GuiElement {
 
     protected Component message;
 
+    public void setDimensions(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
     public void render(double mX, double mY) {
         this.updateState(mX, mY);
         this.renderWidget(mX, mY);
@@ -32,6 +39,10 @@ public abstract class VAbstractWidget extends GuiElement {
     }
 
     protected void onDrag(double mX, double mY, double f, double g) {
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     protected void renderHovering(int xPadding, int yPadding) {

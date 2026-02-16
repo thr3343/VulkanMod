@@ -118,6 +118,7 @@ public class VOptionScreen extends Screen {
     private void buildLists(int left, int top, int listWidth, int listHeight, int itemHeight) {
         for (OptionPage page : this.optionPages) {
             page.createList(left, top, listWidth, listHeight, itemHeight);
+            page.updateOptionStates();
         }
     }
 
@@ -291,6 +292,12 @@ public class VOptionScreen extends Screen {
             modified |= page.optionChanged();
         }
 
+        if (modified) {
+            for (var page : this.optionPages) {
+                page.optionChanged();
+            }
+        }
+
         this.applyButton.active = modified;
     }
 
@@ -306,6 +313,7 @@ public class VOptionScreen extends Screen {
         List<OptionPage> pages = List.copyOf(this.optionPages);
         for (var page : pages) {
             page.applyOptionChanges();
+            page.updateOptionStates();
         }
 
         Initializer.CONFIG.write();

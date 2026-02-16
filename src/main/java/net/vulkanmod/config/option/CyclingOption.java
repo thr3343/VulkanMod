@@ -20,8 +20,8 @@ public class CyclingOption<E> extends Option<E> {
     }
 
     @Override
-    public OptionWidget<?> createOptionWidget(int x, int y, int width, int height) {
-        return new CyclingOptionWidget(this, x, y, width, height, this.name);
+    public OptionWidget<?> createWidget() {
+        return new CyclingOptionWidget(this, this.name);
     }
 
     public void updateOption(E[] values, Consumer<E> setter, Supplier<E> getter) {

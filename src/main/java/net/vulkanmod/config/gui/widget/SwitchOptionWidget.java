@@ -10,9 +10,8 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
     private boolean focused;
 
-    public SwitchOptionWidget(SwitchOption option, int x, int y, int width, int height, Component name) {
-        super(x, y, width, height, name);
-        this.option = option;
+    public SwitchOptionWidget(SwitchOption option, Component name) {
+        super(option, name);
         updateDisplayedValue();
     }
 

@@ -52,21 +52,12 @@ public class VOptionList extends GuiElement {
 
                 int margin = this.itemMargin;
 
-                this.addEntry(new Entry(option.createOptionWidget(x0, 0, width, height), margin));
+                final OptionWidget<?> optionWidget = option.getWidget();
+                optionWidget.setDimensions(x0, 0, width, height);
+                this.addEntry(new Entry(optionWidget, margin));
             }
 
             this.addEntry(new Entry(null, 12));
-        }
-    }
-
-    public void addAll(Option<?>[] options) {
-        for (Option<?> option : options) {
-            int x0 = this.x;
-            int width = this.itemWidth;
-            int height = this.itemHeight;
-
-            this.addEntry(new Entry(option.createOptionWidget(x0, 0, width, height), this.itemMargin));
-//            this.addEntry(new Entry(options[i].createOptionWidget(width / 2 - 155, 0, 200, 20)));
         }
     }
 

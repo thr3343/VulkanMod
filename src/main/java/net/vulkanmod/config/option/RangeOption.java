@@ -25,8 +25,8 @@ public class RangeOption extends Option<Integer> {
         this(name, min, max, step, (i) -> Component.literal(String.valueOf(i)), setter, getter);
     }
 
-    public OptionWidget<?> createOptionWidget(int x, int y, int width, int height) {
-        return new RangeOptionWidget(this, x, y, width, height, this.name);
+    public OptionWidget<?> createWidget() {
+        return new RangeOptionWidget(this, this.name);
     }
 
     public Component getName() {

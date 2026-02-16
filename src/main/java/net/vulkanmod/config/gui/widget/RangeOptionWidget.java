@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.option.RangeOption;
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.glfw.GLFW;
 
@@ -17,11 +16,9 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
     private boolean focused;
 
-    public RangeOptionWidget(RangeOption option, int x, int y, int width, int height, Component name) {
-        super(x, y, width, height, name);
-        this.setOption(option);
+    public RangeOptionWidget(RangeOption option, Component name) {
+        super(option, name);
         this.setValue(option.getScaledValue());
-
     }
 
     @Override
@@ -33,7 +30,7 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
     protected void renderControls(double mouseX, double mouseY) {
         int valueX = this.controlX + (int) (this.value * (this.controlWidth));
 
-        if (this.controlHovered) {
+        if (this.controlHovered && this.active) {
             int halfWidth = 2;
             int halfHeight = 4;
 
@@ -44,13 +41,14 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
             int color = ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f);
             GuiRenderer.renderBorder(valueX - halfWidth, y0 - halfHeight, valueX + halfWidth, y1 + halfHeight, 1, color);
-//            GuiRenderer.fill(valueX - halfWidth, y0 - 3.0f, valueX + halfWidth, y1 + 3.0f, color);
 
         } else {
             int y0 = (int) (this.y + this.height - 5.0f);
             int y1 = (int) (y0 + 1.5f);
             GuiRenderer.fill(this.controlX, y0, this.controlX + this.controlWidth, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f));
-            GuiRenderer.fill(this.controlX, y0, valueX, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.8f));
+
+            float alpha = this.active ? 0.8f : 0.3f;
+            GuiRenderer.fill(this.controlX, y0, valueX, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, alpha));
         }
 
         int color = this.active ? 0xFFFFFFFF : 0xFFA0A0A0;
@@ -58,7 +56,6 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
         var text = this.getDisplayedValue();
         int width = font.width(text);
         int x = this.controlX + this.controlWidth / 2 - width / 2;
-//        int x = (int) (this.x + 0.5f * width);
         int y = this.y + (this.height - 9) / 2;
         GuiRenderer.drawString(font, text.getVisualOrderText(), x, y, color);
     }

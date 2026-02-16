@@ -37,17 +37,16 @@ public class VButtonWidget extends VAbstractWidget {
             this.renderHovering(0, 0);
         }
 
-        int j = this.active ? 0xFFFFFF : 0xA0A0A0;
-        GuiRenderer.drawCenteredString(textRenderer, this.message, this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
-
-
-        if(this.selected) {
+        if (this.selected) {
             color = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 1.0f);
             GuiRenderer.fillBox(this.x, this.y, (int) 1.5f, this.height, color);
 
             color = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 0.2f);
             GuiRenderer.fillBox(this.x, this.y, this.width, this.height,  color);
         }
+
+        int j = this.active ? 0xFFFFFF : 0xA0A0A0;
+        GuiRenderer.drawCenteredString(textRenderer, this.message, this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
     }
 
     public void setSelected(boolean selected) {

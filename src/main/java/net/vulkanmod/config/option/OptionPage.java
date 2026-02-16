@@ -36,8 +36,17 @@ public class OptionPage {
     public void applyOptionChanges() {
         for (var block : this.optionBlocks) {
             for (var option : block.options()) {
-                if (option.isChanged())
+                if (option.isChanged()) {
                     option.apply();
+                }
+            }
+        }
+    }
+
+    public void updateOptionStates() {
+        for (var block : this.optionBlocks) {
+            for (var option : block.options()) {
+                option.updateActiveState();
             }
         }
     }
