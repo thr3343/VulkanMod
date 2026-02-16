@@ -3,7 +3,6 @@ package net.vulkanmod.interfaces.shader;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.vulkanmod.render.engine.EGlProgram;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 
 public interface ExtendedRenderPipeline {
 
@@ -15,7 +14,7 @@ public interface ExtendedRenderPipeline {
 
     void setProgram(EGlProgram program);
 
-    Pipeline getPipeline();
+    GraphicsPipeline getPipeline();
 
     EGlProgram getProgram();
 }

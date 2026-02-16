@@ -29,7 +29,7 @@ public abstract class RenderPipelineM implements ExtendedRenderPipeline {
     }
 
     @Override
-    public Pipeline getPipeline() {
+    public GraphicsPipeline getPipeline() {
         return this.pipeline;
     }
 }
