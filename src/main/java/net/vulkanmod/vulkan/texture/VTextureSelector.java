@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.VkGlTexture;
 import net.vulkanmod.render.engine.VkGpuTexture;
+import net.vulkanmod.render.texture.SpriteUpdateUtil;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import org.lwjgl.system.MemoryUtil;
@@ -59,6 +60,8 @@ public abstract class VTextureSelector {
 
         if (texture == null)
             throw new NullPointerException("Texture is null at index: " + activeTexture);
+
+        SpriteUpdateUtil.addTransitionedLayout(texture);
 
         texture.uploadSubTextureAsync(mipLevel, arrayLayer, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels,
                                       unpackRowLength, bufferPtr);
