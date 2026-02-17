@@ -200,7 +200,7 @@ public class WorldRenderer {
             //Debug
 //            this.graphNeedsUpdate = true;
 
-            if (this.graphNeedsUpdate) {
+            if (this.graphNeedsUpdate()) {
                 this.graphNeedsUpdate = false;
                 this.lastCameraX = cameraX;
                 this.lastCameraY = cameraY;
