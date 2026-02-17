@@ -13,6 +13,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.engine.*;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -93,6 +94,9 @@ public abstract class CompositeRenderTypeM {
                         VTextureSelector.bindTexture(i, vkGpuTexture.getVulkanImage());
                     }
                 }
+
+                VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
+                VRenderSystem.calculateMVP();
 
                 renderPass.setIndexBuffer(gpuBuffer2, indexType);
 

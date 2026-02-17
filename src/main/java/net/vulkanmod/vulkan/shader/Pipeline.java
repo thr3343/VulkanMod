@@ -163,7 +163,7 @@ public abstract class Pipeline {
 
     public abstract void cleanUp();
 
-    void destroyDescriptorSets() {
+    protected void destroyDescriptorSets() {
         for (DescriptorSets descriptorSets : this.descriptorSets) {
             descriptorSets.cleanUp();
         }
@@ -240,10 +240,8 @@ public abstract class Pipeline {
         this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
-    static long createShaderModule(ByteBuffer spirvCode) {
-
+    protected static long createShaderModule(ByteBuffer spirvCode) {
         try (MemoryStack stack = stackPush()) {
-
             VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);

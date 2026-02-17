@@ -793,10 +793,10 @@ public class VkCommandEncoder implements CommandEncoder {
 
             GpuBufferSlice gpuBufferSlice = renderPass.uniforms.get(uniformName);
 
-            // In case uniform buffer is not set, ignore it
+            // In case uniform buffer is not set, fallback to global buffer
             if (gpuBufferSlice == null) {
                 ubo.setUseGlobalBuffer(true);
-                ubo.setUpdate(false);
+                ubo.setUpdate(true);
                 continue;
             }
 
