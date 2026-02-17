@@ -541,8 +541,11 @@ public class VulkanImage {
             return switch (format) {
                 case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB,
                      VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
-                     VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_SINT -> 4;
+                     VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_SINT,
+                     VK_FORMAT_R32_SFLOAT -> 4;
+                case VK_FORMAT_R16_SFLOAT -> 2;
                 case VK_FORMAT_R8_UNORM -> 1;
+                case VK_FORMAT_R16G16B16A16_SFLOAT -> 8;
 
                 default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
             };

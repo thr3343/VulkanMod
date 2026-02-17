@@ -131,7 +131,7 @@ public class VkGpuTexture extends GlTexture {
 
     public static TextureFormat textureFormat(int format) {
         return switch (format) {
-            case VK10.VK_FORMAT_R8G8B8A8_UNORM, VK10.VK_FORMAT_B8G8R8A8_UNORM -> TextureFormat.RGBA8;
+            case VK10.VK_FORMAT_R8G8B8A8_UNORM, VK10.VK_FORMAT_B8G8R8A8_UNORM, VK10.VK_FORMAT_R8G8B8A8_SRGB -> TextureFormat.RGBA8;
             case VK10.VK_FORMAT_R8_UNORM -> TextureFormat.RED8;
             case VK10.VK_FORMAT_D32_SFLOAT -> TextureFormat.DEPTH32;
             default -> null;
