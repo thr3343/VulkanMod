@@ -117,8 +117,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         TerrainBufferBuilder bufferBuilder = terrainBuilder.getBufferBuilder(quadFacing.ordinal());
 
-        Vec3i normal = quad.getFacingDirection().getUnitVec3i();
-        int packedNormal = I32_SNorm.packNormal(normal.getX(), normal.getY(), normal.getZ());
+        int packedNormal = quad.getNormal();
 
         float[] brightnessArr = quadLightData.br;
         int[] lights = quadLightData.lm;
