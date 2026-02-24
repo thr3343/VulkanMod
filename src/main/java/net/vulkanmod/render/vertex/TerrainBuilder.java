@@ -5,6 +5,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.cull.QuadFacing;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
@@ -31,14 +32,12 @@ public class TerrainBuilder {
 
     private final TerrainBufferBuilder[] bufferBuilders;
 
-    public TerrainBuilder(int size) {
-        // TODO index buffer
+    public TerrainBuilder(int size, VertexBuilder vertexBuilder) {
+        this.indexBufferCapacity = size * IndexBuffer.IndexType.UINT32.size;
         this.indexBufferPtr = ALLOCATOR.malloc(size);
-        this.indexBufferCapacity = size;
 
         this.format = PipelineManager.terrainVertexFormat;
-        this.vertexBuilder = PipelineManager.terrainVertexFormat == CustomVertexFormat.COMPRESSED_TERRAIN
-                ? new VertexBuilder.CompressedVertexBuilder() : new VertexBuilder.DefaultVertexBuilder();
+        this.vertexBuilder = vertexBuilder;
 
         var bufferBuilders = new TerrainBufferBuilder[QuadFacing.COUNT];
         for (int i = 0; i < QuadFacing.COUNT; i++) {

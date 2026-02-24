@@ -1,7 +1,11 @@
 package net.vulkanmod.render.chunk.build.thread;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.render.vertex.VertexBuilder;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -12,7 +16,14 @@ public class ThreadBuilderPack {
     private static Function<TerrainRenderType, TerrainBuilder> terrainBuilderConstructor;
 
     public static void defaultTerrainBuilderConstructor() {
-        terrainBuilderConstructor = renderType -> new TerrainBuilder(TerrainRenderType.getLayer(renderType).bufferSize());
+        terrainBuilderConstructor = renderType -> {
+            int size = TerrainRenderType.getLayer(renderType)
+                                        .bufferSize() / DefaultVertexFormat.BLOCK.getVertexSize();
+
+            boolean compressedFormat = PipelineManager.terrainVertexFormat == CustomVertexFormat.COMPRESSED_TERRAIN;
+            VertexBuilder vertexBuilder = compressedFormat ? new VertexBuilder.CompressedVertexBuilder() : new VertexBuilder.DefaultVertexBuilder();
+            return new TerrainBuilder(size, vertexBuilder);
+        };
     }
 
     public static void setTerrainBuilderConstructor(Function<TerrainRenderType, TerrainBuilder> constructor) {
