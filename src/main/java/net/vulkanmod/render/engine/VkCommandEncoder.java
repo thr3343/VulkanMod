@@ -809,31 +809,16 @@ public class VkCommandEncoder implements CommandEncoder {
 
         for (ImageDescriptor imageDescriptor : pipeline.getImageDescriptors()) {
             String uniformName = imageDescriptor.name;
-
-            int samplerIndex;
-            switch (glProgram.getUniform(uniformName)) {
-                case Uniform.Sampler(int location, int samplerIndex1):
-                    samplerIndex = samplerIndex1;
-                    break;
-                case Uniform.Utb(
-                        int location, int samplerIndex1, com.mojang.blaze3d.textures.TextureFormat format, int texture
-                ):
-                    samplerIndex = samplerIndex1;
-                    break;
-                case null:
-                    continue;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + glProgram.getUniform(uniformName));
-            }
+            int samplerIndex = imageDescriptor.imageIdx;
 
             VkTextureView textureView = (VkTextureView) renderPass.samplers.get(uniformName);
             if (textureView == null) {
-                break;
+                continue;
             }
 
             VkGpuTexture gpuTexture = textureView.texture();
             if (gpuTexture.isClosed()) {
-                break;
+                continue;
             }
 
             GlStateManager._activeTexture(33984 + samplerIndex);
@@ -841,7 +826,7 @@ public class VkCommandEncoder implements CommandEncoder {
 
             GlStateManager._texParameter(GL11.GL_TEXTURE_2D, 33084, textureView.baseMipLevel());
             GlStateManager._texParameter(GL11.GL_TEXTURE_2D, 33085, textureView.baseMipLevel() + textureView.mipLevels() - 1);
-            gpuTexture.flushModeChanges(GL11.GL_TEXTURE_2D);
+            gpuTexture.flushModeChanges();
         }
 
     }
