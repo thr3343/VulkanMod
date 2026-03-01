@@ -52,13 +52,60 @@ public class AreaBuffer {
         return buffer;
     }
 
-    public Segment upload(ByteBuffer byteBuffer, int oldOffset, long paramsPtr) {
-        // Free old segment
-        if (oldOffset != -1) {
+    public Segment allocateSegment(int size) {
+        if (DEBUG && size % elementSize != 0)
+            throw new RuntimeException("Unaligned buffer");
+
+        Segment segment = findSegment(size);
+
+        if (segment.size - size > 0) {
+            Segment s1 = new Segment(segment.offset + size, segment.size - size);
+            segments++;
+
+            if (segment.next != null) {
+                s1.bindNext(segment.next);
+            } else
+                this.last = s1;
+
+            segment.bindNext(s1);
+
+            segment.size = size;
+        }
+
+        segment.free = false;
+        this.usedSegments.put(segment.offset, segment);
+
+        segment.paramsPtr = 0;
+
+        this.used += size;
+
+        return segment;
+    }
+
+    public void freeSegment(int offset) {
+        if (offset != -1) {
             // Need to delay segment freeing since it might be still used by prev frames in flight
 //            this.setSegmentFree(oldOffset);
-            MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
+            MemoryManager.getInstance().addToFreeSegment(this, offset);
         }
+    }
+
+    public void upload(Segment segment, ByteBuffer byteBuffer, int offset) {
+        int size = byteBuffer.remaining();
+
+        if (DEBUG && size % elementSize != 0)
+            throw new RuntimeException("Unaligned buffer");
+
+        if (size + offset > segment.size) {
+            throw new RuntimeException("trying to upload %d at offset %d, but segment size is %d".formatted(size, offset, segment.size));
+        }
+
+        Buffer dst = this.buffer;
+        UploadManager.INSTANCE.recordUpload(dst, segment.offset + offset, size, byteBuffer);
+    }
+
+    public Segment upload(ByteBuffer byteBuffer, int oldOffset, long paramsPtr) {
+        freeSegment(oldOffset);
 
         int size = byteBuffer.remaining();
 
@@ -120,7 +167,8 @@ public class AreaBuffer {
         int minIncrement = this.size >> 3;
         minIncrement = (int) Util.align(minIncrement, this.elementSize);
 
-        int increment = Math.max(minIncrement, uploadSize << 1);
+//        int increment = Math.max(minIncrement, uploadSize << 1);
+        int increment = Math.max(minIncrement, uploadSize);
 
         if (increment < uploadSize)
             throw new RuntimeException(String.format("Size increment %d < %d (Upload size)", increment, uploadSize));

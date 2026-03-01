@@ -7,12 +7,12 @@ import org.joml.Vector3f;
 
 public enum QuadFacing {
     X_POS,
-    X_NEG,
     Y_POS,
-    Y_NEG,
     Z_POS,
+    X_NEG,
     Z_NEG,
-    UNDEFINED;
+    UNDEFINED,
+    Y_NEG;
 
     public static final QuadFacing[] VALUES = QuadFacing.values();
     public static final int COUNT = VALUES.length;
