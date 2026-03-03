@@ -1,6 +1,7 @@
 package net.vulkanmod.config.gui;
 
 import com.google.common.collect.Lists;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -12,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.UpdateChecker;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.gui.widget.VAbstractWidget;
 import net.vulkanmod.config.gui.widget.VButtonWidget;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VOptionScreen extends Screen {
+    public final static int MARGIN = 20;
     public final static int RED = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 0.8f);
     final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath("vulkanmod", "vlogo_transparent.png");
 
@@ -88,15 +91,13 @@ public class VOptionScreen extends Screen {
         int bottom = 60;
         int itemHeight = 20;
 
-        int leftMargin = 100;
-//        int listWidth = (int) (this.width * 0.65f);
-        int listWidth = Math.min((int) (this.width * 0.65f), 420);
+        int leftMargin = MARGIN + 90;
+        int listWidth = Math.min(this.width - leftMargin - MARGIN, 420);
         int listHeight = this.height - top - bottom;
 
         this.buildLists(leftMargin, top, listWidth, listHeight, itemHeight);
 
         int x = leftMargin + listWidth + 10;
-//        int width = Math.min(this.width - this.tooltipX - 10, 200);
         int width = this.width - x - 10;
         int y = 50;
 
@@ -147,8 +148,7 @@ public class VOptionScreen extends Screen {
         this.pageButtons.clear();
         this.clearWidgets();
 
-//        this.addPageButtons(20, 6, 60, 20, false);
-        this.addPageButtons(10, 40, 80, 22, true);
+        this.addPageButtons(MARGIN, 40, 80, 22, true);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
         this.addWidget(currentList);
@@ -197,6 +197,19 @@ public class VOptionScreen extends Screen {
         this.addWidget(this.applyButton);
         this.addWidget(this.doneButton);
         this.addWidget(this.supportButton);
+
+        if (UpdateChecker.isUpdateAvailable()) {
+            buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.update_available")) + 10;
+            var updateButton = new VButtonWidget(
+                    x0 - buttonWidth - buttonMargin, 6,
+                    buttonWidth, buttonHeight,
+                    Component.translatable("vulkanmod.options.buttons.update_available").withStyle(ChatFormatting.UNDERLINE),
+                    button -> Util.getPlatform().openUri("https://modrinth.com/mod/vulkanmod")
+            );
+
+            this.buttons.add(updateButton);
+            this.addWidget(updateButton);
+        }
     }
 
     @Override
@@ -235,9 +248,8 @@ public class VOptionScreen extends Screen {
         GuiRenderer.guiGraphics = guiGraphics;
         VRenderSystem.enableBlend();
 
-        int size = minecraft.font.lineHeight * 4;
-
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ICON, 30, 4, 0f, 0f, size, size, size, size);
+        int size = 36;
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ICON, MARGIN + 40 - 18, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
         currentList.updateState(mouseX, mouseY);
