@@ -33,8 +33,9 @@ public class TerrainBuilder {
     private final TerrainBufferBuilder[] bufferBuilders;
 
     public TerrainBuilder(int size, VertexBuilder vertexBuilder) {
-        this.indexBufferCapacity = size * IndexBuffer.IndexType.UINT32.size;
-        this.indexBufferPtr = ALLOCATOR.malloc(size);
+        // FIXME: same size is used for both index and vertex buffers
+        this.indexBufferCapacity = size;
+        this.indexBufferPtr = ALLOCATOR.malloc(this.indexBufferCapacity);
 
         this.format = PipelineManager.terrainVertexFormat;
         this.vertexBuilder = vertexBuilder;
