@@ -91,13 +91,15 @@ public class DrawBuffers {
             }
         }
 
-        if (size == 0) {
-            return;
+        AreaBuffer areaBuffer = null;
+        AreaBuffer.Segment segment = null;
+        boolean doUpload = false;
+        if (size > 0) {
+            areaBuffer = this.getAreaBufferOrAlloc(renderType);
+            areaBuffer.freeSegment(oldOffset);
+            segment = areaBuffer.allocateSegment(size);
+            doUpload = true;
         }
-
-        AreaBuffer areaBuffer = this.getAreaBufferOrAlloc(renderType);
-        areaBuffer.freeSegment(oldOffset);
-        AreaBuffer.Segment segment = areaBuffer.allocateSegment(size);
 
         int baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
 
@@ -112,7 +114,7 @@ public class DrawBuffers {
             var vertexBuffer = vertexBuffers[i];
             int vertexCount = 0;
 
-            if (vertexBuffer != null) {
+            if (vertexBuffer != null && doUpload) {
                 areaBuffer.upload(segment, vertexBuffer, offset);
                 vertexOffset = (segment.offset + offset) / VERTEX_SIZE;
 
