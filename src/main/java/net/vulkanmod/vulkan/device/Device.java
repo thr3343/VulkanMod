@@ -72,9 +72,15 @@ public class Device {
     private static String decodeVendor(int i) {
         return switch (i) {
             case (0x10DE) -> "Nvidia";
-            // AMD has two deviceIds, apparently
-            case (0x1022), (0x1002) -> "AMD";
+            case (0x1022), (0x1002) -> "AMD"; // AMD has two deviceIds, apparently
             case (0x8086) -> "Intel";
+            case (0x1010) -> "Imagination Technologies";
+            case (0x13B5) -> "ARM";
+            case (0x5143) -> "Qualcomm";
+            case (0x106B) -> "Apple";
+            case (0x14E4) -> "Broadcom";
+            case (0x1AE0) -> "Google"; // Not sure about this, SwiftShader devices have this id
+            case (0x10005) -> "Mesa"; // Honeykrisp on Apple devices has this vendorId for some reason
             default -> "undef"; //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
         };
     }
