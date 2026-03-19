@@ -26,6 +26,7 @@
 
     "debug.crash_report.SystemReportM",
     "debug.DebugEntryMemoryM",
+    "debug.DebugEntrySystemSpecsM",
     "debug.DebugScreenEntriesM",
     "debug.KeyboardHandlerM",
 
