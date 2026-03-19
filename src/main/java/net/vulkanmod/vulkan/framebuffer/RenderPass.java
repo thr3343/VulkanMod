@@ -263,13 +263,16 @@ public class RenderPass {
         return framebuffer;
     }
 
+    public void setFramebuffer(Framebuffer framebuffer) {
+        this.framebuffer = framebuffer;
+    }
+
     public void cleanUp() {
-        //TODO
-
-        if (!Vulkan.DYNAMIC_RENDERING)
-            MemoryManager.getInstance().addFrameOp(
-                    () -> vkDestroyRenderPass(Vulkan.getVkDevice(), this.id, null));
-
+        if (!Vulkan.DYNAMIC_RENDERING) {
+            MemoryManager.getInstance()
+                         .addFrameOp(
+                                 () -> vkDestroyRenderPass(Vulkan.getVkDevice(), this.id, null));
+        }
     }
 
     public long getId() {
