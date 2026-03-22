@@ -66,9 +66,13 @@ public class Lexer {
 
         // Comment
         if (currentChar == '/') {
-            if (peek() == '/') {
-                advance(2);
-                return this.comment();
+            switch (peek()) {
+                case '/' -> {
+                    return this.lineComment();
+                }
+                case '*' -> {
+                    return this.multiLineComment();
+                }
             }
         }
 
@@ -157,7 +161,7 @@ public class Lexer {
         };
 
         if (token == null) {
-            if (Character.isLetter(currentChar)) {
+            if (Character.isJavaIdentifierStart(currentChar)) {
                 return identifier();
             }
 
@@ -179,13 +183,33 @@ public class Lexer {
         return token;
     }
 
-    private Token comment() {
+    private Token lineComment() {
         StringBuilder sb = new StringBuilder();
         sb.append("//");
+        this.advance(2);
+
         while (checkEOF() && currentChar != '\n') {
             sb.append(currentChar);
             advance();
         }
+        sb.append(currentChar);
+        advance();
+
+        String value = sb.toString();
+        return new Token(Token.TokenType.COMMENT, value);
+    }
+
+    private Token multiLineComment() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("/*");
+        this.advance(2);
+
+        while (checkEOF() && currentChar != '*' && this.peek() != '/') {
+            sb.append(currentChar);
+            advance();
+        }
+        sb.append(currentChar);
+        advance();
         sb.append(currentChar);
         advance();
 

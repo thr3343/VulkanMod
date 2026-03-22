@@ -254,6 +254,16 @@ public class GLSLParser {
     private void parseAttribute() {
         this.state = State.ATTRIBUTE;
 
+        Token prevToken = this.prevToken(true);
+
+        // Check if we are at the beginning of a statement
+        if (prevToken != null && prevToken.type != Token.TokenType.SPACING &&
+            prevToken.type != Token.TokenType.SEMICOLON && prevToken.type != Token.TokenType.RIGHT_BRACE &&
+            !(prevToken.type == Token.TokenType.IDENTIFIER && Objects.equals(prevToken.value, "flat")))
+        {
+            return;
+        }
+
         String ioType = this.currentToken.value;
 
         nextToken(true);
@@ -373,15 +383,44 @@ public class GLSLParser {
         }
     }
 
+    private Token prevToken(boolean skipSpace) {
+        int tokenIdx = this.currentTokenIdx - 1;
+        Token token;
+
+        if (tokenIdx == 0) {
+            return null;
+        }
+
+        tokenIdx--;
+        token = this.tokens.get(tokenIdx);
+
+        while (skipSpace && tokenIdx != 0 &&
+               (token.type == Token.TokenType.SPACING || token.type == Token.TokenType.PREPROCESSOR || token.type == Token.TokenType.COMMENT))
+        {
+            tokenIdx--;
+            token = this.tokens.get(tokenIdx);
+        }
+
+        if (skipSpace && (token.type == Token.TokenType.SPACING || token.type == Token.TokenType.COMMENT || token.type == Token.TokenType.PREPROCESSOR)) {
+            return null;
+        }
+
+        return token;
+    }
+
     private void appendToken(Token token) {
         this.appendNode(Node.fromToken(token));
     }
 
     private void appendNode(Node node) {
-        switch (this.stage) {
-            case VERTEX -> this.vsStream.add(node);
-            case FRAGMENT -> this.fsStream.add(node);
-        }
+        this.getNodeStream().add(node);
+    }
+
+    private LinkedList<Node> getNodeStream() {
+        return switch (this.stage) {
+            case VERTEX -> this.vsStream;
+            case FRAGMENT -> this.fsStream;
+        };
     }
 
     public String getOutput(Stage stage) {
