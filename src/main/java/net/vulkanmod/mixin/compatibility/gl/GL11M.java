@@ -4,6 +4,7 @@ import net.vulkanmod.gl.VkGlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeType;
 import org.spongepowered.asm.mixin.Mixin;
@@ -98,6 +99,11 @@ public class GL11M {
     @Overwrite(remap = false)
     public static void glClearColor(@NativeType("GLfloat") float red, @NativeType("GLfloat") float green, @NativeType("GLfloat") float blue, @NativeType("GLfloat") float alpha) {
         VRenderSystem.setClearColor(red, green, blue, alpha);
+    }
+
+    @Overwrite(remap = false)
+    public static void glDepthFunc(@NativeType("GLenum") int func) {
+        VRenderSystem.depthFunc(func);
     }
 
     /**

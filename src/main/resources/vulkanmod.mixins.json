@@ -21,6 +21,7 @@
     "chunk.VisibilitySetMixin",
 
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL14M",
     "compatibility.gl.GL15M",
     "compatibility.gl.GL30M",
 
