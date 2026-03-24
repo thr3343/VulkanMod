@@ -112,7 +112,7 @@ public class Drawer {
 
             if (autoIndexBuffer != null) {
                 int indexCount = autoIndexBuffer.getIndexCount(vertexCount);
-                autoIndexBuffer.checkCapacity(indexCount);
+                autoIndexBuffer.checkCapacity(vertexCount);
 
                 drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
             }

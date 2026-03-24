@@ -44,7 +44,13 @@ public class AutoIndexBuffer {
             }
             case TRIANGLE_FAN -> buffer = genTriangleFanIndices(vertexCount);
             case TRIANGLE_STRIP -> buffer = genTriangleStripIndices(vertexCount);
-            case LINES -> buffer = genLinesIndices(vertexCount);
+            case LINES -> {
+                if (indexType == IndexBuffer.IndexType.UINT16)
+                    buffer = genLinesIndices(vertexCount);
+                else {
+                    buffer = genIntLinesIndices(vertexCount);
+                }
+            }
             case DEBUG_LINE_STRIP -> buffer = genDebugLineStripIndices(vertexCount);
             default -> throw new IllegalArgumentException("Unsupported drawType: %s".formatted(this.drawType));
         }
@@ -160,6 +166,28 @@ public class AutoIndexBuffer {
             idxs.put(j + 3, (short) (i + 3));
             idxs.put(j + 4, (short) (i + 2));
             idxs.put(j + 5, (short) (i + 1));
+
+            j += 6;
+        }
+
+        return buffer;
+    }
+
+    public static ByteBuffer genIntLinesIndices(int vertexCount) {
+        int indexCount = vertexCount * 3 / 2;
+        indexCount = roundUpToDivisible(indexCount, 6);
+
+        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Integer.BYTES);
+        IntBuffer idxs = buffer.asIntBuffer();
+
+        int j = 0;
+        for (int i = 0; i < vertexCount; i += 4) {
+            idxs.put(j + 0, (i));
+            idxs.put(j + 1, (i + 1));
+            idxs.put(j + 2, (i + 2));
+            idxs.put(j + 3, (i + 3));
+            idxs.put(j + 4, (i + 2));
+            idxs.put(j + 5, (i + 1));
 
             j += 6;
         }
