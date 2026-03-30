@@ -32,25 +32,21 @@
     "debug.DebugScreenEntriesM",
     "debug.KeyboardHandlerM",
 
-    "fix.MainMixin",
-
     "matrix.Matrix4fM",
     "matrix.PoseAccessor",
 
-    "profiling.ClientMetricsSamplersProviderMixin",
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
     "profiling.LevelRendererMixin",
     "profiling.TimerQueryM",
 
-    "render.CompositeStateAccessor",
-    "render.CompositeRenderTypeM",
     "render.FogRendererMixin",
     "render.GameRendererMixin",
     "render.GuiRendererMixin",
     "render.GlStateManagerM",
     "render.MinecraftMixin",
     "render.PictureInPictureRendererM",
+    "render.RenderSetupAccessor",
     "render.RenderSystemMixin",
     "render.RenderTypeM",
     "render.biome.BiomeManagerM",
@@ -63,15 +59,15 @@
     "render.entity.model.ModelPartM",
     "render.frame.MinecraftMixin",
     "render.frame.RenderSystemMixin",
-    "render.frapi.BatchingRenderCommandQueueM",
-    "render.frapi.BlockModelRendererM",
     "render.frapi.BlockRenderDispatcherAccessor",
-    "render.frapi.BlockRenderManagerM",
+    "render.frapi.BlockRenderDispatcherMixin",
     "render.frapi.ItemFeatureRendererM",
     "render.frapi.ItemRendererAccessor",
-    "render.frapi.ItemRenderStateLayerRenderStateM",
-    "render.frapi.ItemRenderStateM",
-    "render.frapi.OrderedRenderCommandQueueImplM",
+    "render.frapi.ItemStackRenderStateLayerRenderStateM",
+    "render.frapi.ItemStackRenderStateMixin",
+    "render.frapi.ModelBlockRendererMixin",
+    "render.frapi.SubmitNodeCollectionMixin",
+    "render.frapi.SubmitNodeStorageMixin",
     "render.particle.QuadParticleGroupM",
     "render.particle.QuadParticleRenderStateM",
     "render.shader.RenderPipelineM",
@@ -80,17 +76,20 @@
     "render.target.RenderTargetMixin",
     "render.vertex.BufferBuilderM",
     "render.vertex.IndexTypeMixin",
+    "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
 
     "screen.ScreenM",
     "screen.OptionsScreenM",
 
-    "texture.mip.MipmapGeneratorM",
+    "texture.SpriteContentsAnimatedTextureM",
+    "texture.TextureAtlasSpriteMixin",
     "texture.image.NativeImageAccessor",
     "texture.update.MLightTexture",
     "texture.update.MTextureManager",
     "util.ScreenshotMixin",
 
+    "vertex.DefaultVertexFormatM",
     "vertex.EntityOutlineGeneratorM",
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
@@ -101,11 +100,10 @@
     "wayland.KeyboardHandlerM",
     "wayland.MinecraftMixin",
 
-    "texture.mip.MipmapGeneratorM",
-
     "compatibility.PostPassM",
 
-    "voxel.VoxelShapeMixin"
+    "voxel.VoxelShapeMixin",
+    "fix.MainMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -39,7 +39,7 @@
   "vulkanmod.options.backfaceCulling.tooltip": "Culls not visible block faces on the CPU improving GPU performance. To prevent increased CPU overhead enable Indirect Draw.",
 
   "vulkanmod.options.indirectDraw": "Indirect Draw",
-  "vulkanmod.options.indirectDraw.tooltip": "Reduces CPU overhead but might increases GPU overhead.",
+  "vulkanmod.options.indirectDraw.tooltip": "Reduces CPU overhead but might increase GPU overhead.",
 
   "vulkanmod.options.refreshRate": "Fullscreen Refresh Rate",
 

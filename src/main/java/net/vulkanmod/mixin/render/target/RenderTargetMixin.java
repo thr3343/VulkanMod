@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.render.target;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -37,21 +38,9 @@ public abstract class RenderTargetMixin {
                                                  .createRenderPass(() -> "Blit render target", gpuTextureView, OptionalInt.empty())) {
             renderPass.setPipeline(RenderPipelines.ENTITY_OUTLINE_BLIT);
             RenderSystem.bindDefaultUniforms(renderPass);
-            renderPass.bindSampler("InSampler", this.colorTextureView);
+            renderPass.bindTexture("InSampler", this.colorTextureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             renderPass.draw(0, 3);
         }
     }
 
-//    @Inject(method = "getColorTextureView", at = @At("HEAD"))
-//    private void injClear(CallbackInfoReturnable<GpuTextureView> cir) {
-//        applyClear();
-//    }
-//
-//    @Unique
-//    private void applyClear() {
-//        VkFbo fbo = ((VkGpuTexture) this.colorTexture).getFbo(this.depthTexture);
-//        if (fbo.needsClear()) {
-//            fbo.bind();
-//        }
-//    }
 }

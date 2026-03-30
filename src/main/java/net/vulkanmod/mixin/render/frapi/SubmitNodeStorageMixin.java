@@ -19,8 +19,8 @@ package net.vulkanmod.mixin.render.frapi;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MeshView;
 
+import net.fabricmc.fabric.api.renderer.v1.render.ItemRenderTypeGetter;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 
@@ -33,13 +33,25 @@ import org.spongepowered.asm.mixin.Mixin;
 import java.util.List;
 
 @Mixin(SubmitNodeStorage.class)
-abstract class OrderedRenderCommandQueueImplM implements SubmitNodeCollector, AccessRenderCommandQueue {
+abstract class SubmitNodeStorageMixin implements SubmitNodeCollector, AccessRenderCommandQueue {
     @Override
-    public void submitItem(PoseStack matrices, ItemDisplayContext displayContext, int light, int overlay, int outlineColors, int[] tintLayers, List<BakedQuad> quads, RenderType renderLayer, ItemStackRenderState.FoilType glintType, MeshView mesh) {
+    public void submitItem(
+            PoseStack matrices,
+            ItemDisplayContext displayContext,
+            int light,
+            int overlay,
+            int outlineColors,
+            int[] tintLayers,
+            List<BakedQuad> quads,
+            net.minecraft.client.renderer.rendertype.RenderType renderLayer,
+            ItemStackRenderState.FoilType glintType,
+            MeshView mesh,
+            ItemRenderTypeGetter renderTypeGetter
+    ) {
         OrderedSubmitNodeCollector queue = order(0);
 
         if (queue instanceof AccessRenderCommandQueue access) {
-            access.submitItem(matrices, displayContext, light, overlay, outlineColors, tintLayers, quads, renderLayer, glintType, mesh);
+            access.submitItem(matrices, displayContext, light, overlay, outlineColors, tintLayers, quads, renderLayer, glintType, mesh, renderTypeGetter);
         } else {
             queue.submitItem(matrices, displayContext, light, overlay, outlineColors, tintLayers, quads, renderLayer, glintType);
         }

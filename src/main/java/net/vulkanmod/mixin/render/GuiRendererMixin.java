@@ -2,6 +2,8 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.render.GuiRenderer;
@@ -26,6 +28,12 @@ public abstract class GuiRendererMixin {
     @Shadow @Final private GuiRenderState renderState;
     @Shadow private @Nullable GpuTextureView itemsAtlasView;
 
+//    // Debug
+//    @Redirect(method = "method_71055", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/item/TrackingItemStackRenderState;isAnimated()Z"))
+//    private boolean forceRender(TrackingItemStackRenderState instance) {
+//        return true;
+//    }
+
     @Inject(method = "submitBlitFromItemAtlas", at = @At("HEAD"), cancellable = true)
     private void submitBlitFromItemAtlas(GuiItemRenderState guiItemRenderState, float u, float v, int size, int atlasSize,
                                          CallbackInfo ci) {
@@ -36,7 +44,7 @@ public abstract class GuiRendererMixin {
                 .submitBlitToCurrentLayer(
                         new BlitRenderState(
                                 RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
-                                TextureSetup.singleTexture(this.itemsAtlasView),
+                                TextureSetup.singleTexture(this.itemsAtlasView, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST)),
                                 guiItemRenderState.pose(),
                                 guiItemRenderState.x(),
                                 guiItemRenderState.y(),

@@ -73,7 +73,7 @@ public class DescriptorSets {
             int offset;
             if (useOwnUB) {
                 BufferSlice bufferSlice = ubo.getBufferSlice();
-                offset = bufferSlice.getOffset();
+                offset = (int) bufferSlice.getOffset();
             }
             else {
                 offset = (int) globalUB.getUsedBytes();

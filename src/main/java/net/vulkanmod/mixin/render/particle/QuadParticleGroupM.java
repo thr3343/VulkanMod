@@ -1,5 +1,7 @@
 package net.vulkanmod.mixin.render.particle;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.client.particle.QuadParticleGroup;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.vulkanmod.render.chunk.RenderSection;
@@ -9,11 +11,12 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(QuadParticleGroup.class)
+@Mixin(value = QuadParticleGroup.class, priority = 999)
 public class QuadParticleGroupM {
 
-    @Redirect(method = "extractRenderState", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/culling/Frustum;pointInFrustum(DDD)Z"))
-    private boolean particleWithinSections(Frustum instance, double x, double y, double z) {
+    @WrapOperation(method = "extractRenderState",
+                   at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/culling/Frustum;pointInFrustum(DDD)Z"))
+    private boolean particleWithinSections(Frustum instance, double x, double y, double z, Operation<Boolean> original) {
         return !cull(WorldRenderer.getInstance(), x, y, z) && instance.pointInFrustum(x,y, z);
     }
 

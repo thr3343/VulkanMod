@@ -58,7 +58,7 @@ public class SectionGraph {
         Profiler profiler = Profiler.getMainProfiler();
         ProfilerFiller mcProfiler = net.minecraft.util.profiling.Profiler.get();
 
-        BlockPos blockpos = camera.getBlockPosition();
+        BlockPos blockpos = camera.blockPosition();
 
         mcProfiler.popPush("update");
 
@@ -88,8 +88,8 @@ public class SectionGraph {
     }
 
     private void initializeQueueForFullUpdate(Camera camera) {
-        Vec3 vec3 = camera.getPosition();
-        BlockPos blockpos = camera.getBlockPosition();
+        Vec3 vec3 = camera.position();
+        BlockPos blockpos = camera.blockPosition();
         RenderSection renderSection = this.sectionGrid.getSectionAtBlockPos(blockpos);
 
         if (renderSection == null) {

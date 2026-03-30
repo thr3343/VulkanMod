@@ -4,16 +4,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.gui.util.VGuiConstants;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 public class ModIconWidget extends VAbstractWidget {
     final FormattedText name;
-    final ResourceLocation icon;
+    final Identifier icon;
 
-    public ModIconWidget(FormattedText name, ResourceLocation icon, int x0, int y0, int width, int height) {
+    public ModIconWidget(FormattedText name, Identifier icon, int x0, int y0, int width, int height) {
         this.name = name;
         this.icon = icon;
         this.x = x0;

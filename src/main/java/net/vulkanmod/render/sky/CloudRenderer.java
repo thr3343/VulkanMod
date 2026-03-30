@@ -6,12 +6,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.render.VBO;
 import net.vulkanmod.vulkan.Renderer;
@@ -23,10 +21,9 @@ import org.joml.Matrix4fStack;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
-import java.util.Optional;
 
 public class CloudRenderer {
-    private static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("textures/environment/clouds.png");
+    private static final Identifier TEXTURE_LOCATION = Identifier.withDefaultNamespace("textures/environment/clouds.png");
 
     private static final int DIR_NEG_Y_BIT = 1 << 0;
     private static final int DIR_POS_Y_BIT = 1 << 1;
@@ -61,18 +58,12 @@ public class CloudRenderer {
         this.cloudGrid = createCloudGrid(TEXTURE_LOCATION);
     }
 
-    public void renderClouds(ClientLevel level, float ticks, float partialTicks, double camX, double camY, double camZ) {
-        Optional<Integer> optional = level.dimensionType().cloudHeight();
-
-        if (optional.isEmpty()) {
-            return;
-        }
-
+    public void renderClouds(float cloudHeight, int cloudColor, double camX, double camY, double camZ, long gameTime, float partialTicks) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        int cloudHeight = optional.get();
-        double timeOffset = (ticks + partialTicks) * 0.03F;
-        double centerX = (camX + timeOffset);
+        float timeOffset = (float)(gameTime % (this.cloudGrid.width * 400L)) + partialTicks;
+        double centerX = camX + timeOffset * 0.03F;
+
         double centerZ = camZ + 0.33F * CELL_WIDTH;
         double centerY = cloudHeight - (float) camY + 0.33F;
 
@@ -137,9 +128,10 @@ public class CloudRenderer {
 
         VRenderSystem.setModelOffset(-xTranslation, 0, -zTranslation);
 
-        // TODO
-        Vec3 cloudColor = Vec3.fromRGB24(level.getCloudColor(partialTicks));
-        VRenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 0.8f);
+        float r = ColorUtil.ARGB.unpackR(cloudColor);
+        float g = ColorUtil.ARGB.unpackG(cloudColor);
+        float b = ColorUtil.ARGB.unpackB(cloudColor);
+        VRenderSystem.setShaderColor(r, g, b, 0.8f);
 
         GraphicsPipeline pipeline = PipelineManager.getCloudsPipeline();
         VRenderSystem.enableBlend();
@@ -292,7 +284,7 @@ public class CloudRenderer {
         bufferBuilder.addVertex(x, y, z).setColor(color);
     }
 
-    private static CloudGrid createCloudGrid(ResourceLocation textureLocation) {
+    private static CloudGrid createCloudGrid(Identifier textureLocation) {
         ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
 
         try {

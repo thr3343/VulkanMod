@@ -2,7 +2,7 @@ package net.vulkanmod.config.gui;
 
 import com.google.common.collect.Lists;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -12,6 +12,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.UpdateChecker;
@@ -340,8 +341,8 @@ public class VOptionScreen extends Screen {
         this.setDragging(false);
         this.updateState();
         return this.getChildAt(event.x(), event.y())
-                .filter(guiEventListener -> guiEventListener.mouseReleased(event))
-                .isPresent();
+                   .filter(guiEventListener -> guiEventListener.mouseReleased(event))
+                   .isPresent();
     }
 
     @Override

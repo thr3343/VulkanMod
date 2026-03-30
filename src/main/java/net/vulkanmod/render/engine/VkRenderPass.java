@@ -5,7 +5,7 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.ScissorState;
-import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.Collection;
@@ -19,7 +19,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.SharedConstants;
 import net.vulkanmod.interfaces.shader.ExtendedRenderPipeline;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 
 @Environment(EnvType.CLIENT)
 public class VkRenderPass implements RenderPass {
@@ -36,13 +35,16 @@ public class VkRenderPass implements RenderPass {
     protected VertexFormat.IndexType indexType = VertexFormat.IndexType.INT;
     private final ScissorState scissorState = new ScissorState();
     protected final HashMap<String, GpuBufferSlice> uniforms = new HashMap<>();
-    protected final HashMap<String, GpuTextureView> samplers = new HashMap<>();
+    protected final HashMap<String, TextureViewAndSampler> samplers = new HashMap<>();
     protected final Set<String> dirtyUniforms = new HashSet<>();
     protected int pushedDebugGroups;
 
-    public VkRenderPass(VkCommandEncoder commandEncoder, boolean bl) {
+    private final boolean autoManaged;
+
+    public VkRenderPass(VkCommandEncoder commandEncoder, boolean hasDepthTexture, boolean autoManaged) {
         this.encoder = commandEncoder;
-        this.hasDepthTexture = bl;
+        this.hasDepthTexture = hasDepthTexture;
+        this.autoManaged = autoManaged;
     }
 
     public boolean hasDepthTexture() {
@@ -86,11 +88,12 @@ public class VkRenderPass implements RenderPass {
     }
 
     @Override
-    public void bindSampler(String string, @Nullable GpuTextureView gpuTextureView) {
-        if (gpuTextureView == null) {
+    public void bindTexture(String string, @Nullable GpuTextureView gpuTextureView,
+                            @Nullable GpuSampler gpuSampler) {
+        if (gpuSampler == null) {
             this.samplers.remove(string);
         } else {
-            this.samplers.put(string, gpuTextureView);
+            this.samplers.put(string, new TextureViewAndSampler((VkTextureView)gpuTextureView, (VkSampler)gpuSampler));
         }
 
         this.dirtyUniforms.add(string);
@@ -161,11 +164,11 @@ public class VkRenderPass implements RenderPass {
     }
 
     @Override
-    public void drawIndexed(int i, int j, int k, int l) {
+    public void drawIndexed(int vertexOffset, int firstIndex, int vertexCount, int instanceCount) {
         if (this.closed) {
             throw new IllegalStateException("Can't use a closed render pass");
         } else {
-            this.encoder.executeDraw(this, i, j, k, this.indexType, l);
+            this.encoder.executeDraw(this, vertexOffset, firstIndex, vertexCount, this.indexType, instanceCount);
         }
     }
 
@@ -185,11 +188,11 @@ public class VkRenderPass implements RenderPass {
     }
 
     @Override
-    public void draw(int i, int j) {
+    public void draw(int vertexOffset, int vertexCount) {
         if (this.closed) {
             throw new IllegalStateException("Can't use a closed render pass");
         } else {
-            this.encoder.executeDraw(this, i, 0, j, null, 1);
+            this.encoder.executeDraw(this, vertexOffset, 0, vertexCount, null, 1);
         }
     }
 
@@ -201,12 +204,16 @@ public class VkRenderPass implements RenderPass {
             }
 
             this.closed = true;
-            this.encoder.finishRenderPass();
+            this.encoder.finishRenderPass(!this.autoManaged);
         }
     }
 
     public @Nullable RenderPipeline getPipeline() {
         return pipeline;
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected record TextureViewAndSampler(VkTextureView view, VkSampler sampler) {
     }
 }
 

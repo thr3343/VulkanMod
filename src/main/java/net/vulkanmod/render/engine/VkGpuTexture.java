@@ -2,8 +2,7 @@ package net.vulkanmod.render.engine;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.opengl.GlTexture;
-import com.mojang.blaze3d.textures.AddressMode;
-import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.TextureFormat;
 import it.unimi.dsi.fastutil.ints.*;
@@ -11,7 +10,6 @@ import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.vulkanmod.gl.VkGlTexture;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.vulkan.VK10;
@@ -24,8 +22,8 @@ public class VkGpuTexture extends GlTexture {
     protected final int id;
     private final Int2ReferenceMap<VkFbo> fboCache = new Int2ReferenceOpenHashMap<>();
     protected boolean closed;
-    protected boolean modesDirty = true;
 
+    VkTextureView fboView;
     boolean needsClear = false;
     int clearColor = 0;
     float depthClearValue = 1.0f;
@@ -41,10 +39,6 @@ public class VkGpuTexture extends GlTexture {
         if (!this.closed) {
             this.closed = true;
             GlStateManager._deleteTexture(this.id);
-
-            for (VkFbo fbo : this.fboCache.values()) {
-                fbo.close();
-            }
         }
     }
 
@@ -53,46 +47,8 @@ public class VkGpuTexture extends GlTexture {
         return this.closed;
     }
 
-    public void flushModeChanges() {
-        if (this.modesDirty) {
-            int maxLod = this.useMipmaps ? this.getMipLevels() - 1 : 0;
-
-            int magFilterVk = magFilter == FilterMode.LINEAR ? VK10.VK_FILTER_LINEAR : VK10.VK_FILTER_NEAREST;
-            int minFilterVk = minFilter == FilterMode.LINEAR ? VK10.VK_FILTER_LINEAR : VK10.VK_FILTER_NEAREST;
-
-            int addressModeUVk = this.addressModeU == AddressMode.REPEAT ? VK10.VK_SAMPLER_ADDRESS_MODE_REPEAT : VK10.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            int addressModeVVk = this.addressModeV == AddressMode.REPEAT ? VK10.VK_SAMPLER_ADDRESS_MODE_REPEAT : VK10.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-
-            long sampler = SamplerManager.getSampler(addressModeUVk, addressModeVVk,
-                                                     minFilterVk, magFilterVk, VK10.VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                                                     maxLod, false, 0, -1);
-
-            glTexture.getVulkanImage().setSampler(sampler);
-
-            this.modesDirty = false;
-        }
-    }
-
     public int glId() {
         return this.id;
-    }
-
-    @Override
-    public void setAddressMode(AddressMode addressMode, AddressMode addressMode2) {
-        super.setAddressMode(addressMode, addressMode2);
-        this.modesDirty = true;
-    }
-
-    @Override
-    public void setTextureFilter(FilterMode filterMode, FilterMode filterMode2, boolean bl) {
-        super.setTextureFilter(filterMode, filterMode2, bl);
-        this.modesDirty = true;
-    }
-
-    @Override
-    public void setUseMipmaps(boolean bl) {
-        super.setUseMipmaps(bl);
-        this.modesDirty = true;
     }
 
     public void setClearColor(int clearColor) {
@@ -111,7 +67,13 @@ public class VkGpuTexture extends GlTexture {
 
     public VkFbo getFbo(@Nullable GpuTexture depthAttachment) {
         int depthAttachmentId = depthAttachment == null ? 0 : ((VkGpuTexture)depthAttachment).id;
-        return this.fboCache.computeIfAbsent(depthAttachmentId, j -> new VkFbo(this, (VkGpuTexture) depthAttachment));
+
+        if (this.fboView == null) {
+            VkGpuDevice gpuDevice = (VkGpuDevice) RenderSystem.getDevice();
+            this.fboView = (VkTextureView) gpuDevice.createTextureView(this, 0, this.getMipLevels());
+        }
+
+        return this.fboCache.computeIfAbsent(depthAttachmentId, j -> new VkFbo(this.fboView, (VkGpuTexture) depthAttachment));
     }
 
     public VulkanImage getVulkanImage() {

@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.function.Consumer;
 
 @Mixin(ItemStackRenderState.class)
-abstract class ItemRenderStateM {
+abstract class ItemStackRenderStateMixin {
     @Inject(method = "visitExtents", at = @At(value = "NEW", target = "()Lcom/mojang/blaze3d/vertex/PoseStack$Pose;"))
     private void afterInitVecLoad(Consumer<Vector3fc> posConsumer, CallbackInfo ci, @Local Vector3f vec, @Share("pipe") LocalRef<QuadToPosPipe> pipeRef) {
         pipeRef.set(new QuadToPosPipe(posConsumer, vec));

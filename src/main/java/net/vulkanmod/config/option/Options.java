@@ -156,10 +156,10 @@ public abstract class Options {
                                 },
                                 () -> mcOptions.enableVsync().get()),
                         new CyclingOption<>(Component.translatable("options.inactivityFpsLimit"),
-                                InactivityFpsLimit.values(),
-                                value -> mcOptions.inactivityFpsLimit().set(value),
-                                () -> mcOptions.inactivityFpsLimit().get())
-                                .setTranslator(v -> Component.translatable(v.getKey()))
+                                            InactivityFpsLimit.values(),
+                                            value -> mcOptions.inactivityFpsLimit().set(value),
+                                            () -> mcOptions.inactivityFpsLimit().get())
+                                .setTranslator(InactivityFpsLimit::caption)
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new RangeOption(Component.translatable("options.guiScale"),
@@ -182,29 +182,11 @@ public abstract class Options {
                                 () -> (int) (mcOptions.gamma().get() * 100.0))
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new SwitchOption(Component.translatable("options.viewBobbing"),
-                                value -> mcOptions.bobView().set(value),
-                                () -> mcOptions.bobView().get()),
-                        new RangeOption(Component.translatable("options.fovEffectScale"),
-                                0, 100, 1,
-                                value -> mcOptions.fovEffectScale().set(value / 100.0),
-                                () -> (int) (mcOptions.fovEffectScale().get() * 100))
-                                .setTooltip(value -> Component.translatable("options.fovEffectScale.tooltip")),
-                        new RangeOption(Component.translatable("options.glintSpeed"),
-                                0, 100, 1,
-                                value -> mcOptions.glintSpeed().set(value / 100.0),
-                                () -> (int) (mcOptions.glintSpeed().get() * 100))
-                                .setTooltip(value -> Component.translatable("options.glintSpeed.tooltip")),
-                        new RangeOption(Component.translatable("options.glintStrength"),
-                                0, 100, 1,
-                                value -> mcOptions.glintStrength().set(value / 100.0),
-                                () -> (int) (mcOptions.glintStrength().get() * 100))
-                                .setTooltip(value -> Component.translatable("options.glintStrength.tooltip")),
                         new CyclingOption<>(Component.translatable("options.attackIndicator"),
-                                AttackIndicatorStatus.values(),
-                                value -> mcOptions.attackIndicator().set(value),
-                                () -> mcOptions.attackIndicator().get())
-                                .setTranslator(v -> Component.translatable(v.getKey())),
+                                            AttackIndicatorStatus.values(),
+                                            value -> mcOptions.attackIndicator().set(value),
+                                            () -> mcOptions.attackIndicator().get())
+                                .setTranslator(AttackIndicatorStatus::caption),
                         new SwitchOption(Component.translatable("options.autosaveIndicator"),
                                 value -> mcOptions.showAutosaveIndicator().set(value),
                                 () -> mcOptions.showAutosaveIndicator().get())
@@ -213,6 +195,58 @@ public abstract class Options {
     }
 
     public static OptionBlock[] getGraphicsOpts() {
+        var texFilteringOption = new CyclingOption<>(Component.translatable("options.textureFiltering"),
+                                                     TextureFilteringMethod.values(),
+                                                     value -> {
+                                                         var oldValue = mcOptions.textureFiltering()
+                                                                                        .get();
+
+                                                         if ((oldValue == TextureFilteringMethod.ANISOTROPIC && value != TextureFilteringMethod.ANISOTROPIC)
+                                                             || (value == TextureFilteringMethod.ANISOTROPIC && oldValue != TextureFilteringMethod.ANISOTROPIC)) {
+                                                             minecraft.delayTextureReload();
+                                                             WorldRenderer.getInstance()
+                                                                          .resetSampler();
+                                                         }
+
+                                                         mcOptions.textureFiltering()
+                                                                         .set(value);
+                                                     },
+                                                     () -> mcOptions.textureFiltering()
+                                                                           .get())
+                .setTranslator(TextureFilteringMethod::caption)
+                .setTooltip(value -> switch (value) {
+                    case NONE -> Component.translatable("options.textureFiltering.none.tooltip");
+                    case RGSS -> Component.translatable("options.textureFiltering.rgss.tooltip");
+                    case ANISOTROPIC -> Component.translatable("options.textureFiltering.anisotropic.tooltip");
+                })
+                .setImpact(PerformanceImpact.MEDIUM);
+
+
+
+        var maxAnisotropyOption = new RangeOption(Component.translatable("options.maxAnisotropy"),
+                                                  1, 3, 1,
+                                                  value -> {
+                                                      var oldValue = mcOptions.maxAnisotropyBit()
+                                                                                     .get();
+
+                                                      if (mcOptions.textureFiltering().get() == TextureFilteringMethod.ANISOTROPIC
+                                                          && !oldValue.equals(value)) {
+                                                          minecraft.delayTextureReload();
+                                                          WorldRenderer.getInstance()
+                                                                       .resetSampler();
+                                                      }
+
+                                                      mcOptions.maxAnisotropyBit()
+                                                                      .set(value);
+                                                  },
+                                                  () -> mcOptions.maxAnisotropyBit()
+                                                                        .get())
+                .setTranslator((value) -> Component.translatable("options.multiplier", Integer.toString(1 << value)))
+                .setTooltip(v -> Component.translatable("options.maxAnisotropy.tooltip"));
+
+        maxAnisotropyOption.setActivationFn(() -> texFilteringOption.getNewValue() == TextureFilteringMethod.ANISOTROPIC);
+        texFilteringOption.setOnChange(maxAnisotropyOption::updateActiveState);
+
         return new OptionBlock[]{
                 new OptionBlock("", new Option<?>[]{
                         new RangeOption(Component.translatable("options.renderDistance"),
@@ -229,29 +263,46 @@ public abstract class Options {
                                 PrioritizeChunkUpdates.values(),
                                 value -> mcOptions.prioritizeChunkUpdates().set(value),
                                 () -> mcOptions.prioritizeChunkUpdates().get())
-                                .setTranslator(v -> Component.translatable(v.getKey()))
+                                .setTranslator(PrioritizeChunkUpdates::caption)
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new CyclingOption<>(Component.translatable("options.graphics"),
-                                new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
-                                value -> mcOptions.graphicsMode().set(value),
-                                () -> mcOptions.graphicsMode().get())
+                        new CyclingOption<>(Component.translatable("options.graphics.preset"),
+                                new GraphicsPreset[]{GraphicsPreset.FAST, GraphicsPreset.FANCY, GraphicsPreset.CUSTOM},
+                                value -> mcOptions.graphicsPreset().set(value),
+                                () -> mcOptions.graphicsPreset().get())
                                 .setTranslator(g -> Component.translatable(g.getKey())),
+                        texFilteringOption,
+                        maxAnisotropyOption,
                         new CyclingOption<>(Component.translatable("options.particles"),
-                                new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
-                                value -> mcOptions.particles().set(value),
-                                () -> mcOptions.particles().get())
+                                            new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
+                                            value -> mcOptions.particles().set(value),
+                                            () -> mcOptions.particles().get())
                                 .setImpact(PerformanceImpact.MEDIUM)
-                                .setTranslator(p -> Component.translatable(p.getKey())),
+                                .setTranslator(ParticleStatus::caption),
                         new CyclingOption<>(Component.translatable("options.renderClouds"),
-                                CloudStatus.values(),
-                                value -> mcOptions.cloudStatus().set(value),
-                                () -> mcOptions.cloudStatus().get())
-                                .setTranslator(c -> Component.translatable(c.getKey())),
+                                            CloudStatus.values(),
+                                            value -> mcOptions.cloudStatus().set(value),
+                                            () -> mcOptions.cloudStatus().get())
+                                .setTranslator(CloudStatus::caption),
                         new RangeOption(Component.translatable("options.renderCloudsDistance"),
-                                2, 128, 1,
-                                value -> mcOptions.cloudRange().set(value),
-                                () -> mcOptions.cloudRange().get()),
+                                        2, 128, 1,
+                                        value -> mcOptions.cloudRange().set(value),
+                                        () -> mcOptions.cloudRange().get()),
+                        new SwitchOption(Component.translatable("options.cutoutLeaves"),
+                                         value -> mcOptions.cutoutLeaves().set(value),
+                                         () -> mcOptions.cutoutLeaves().get())
+                                .setTooltip(value -> Component.translatable("options.cutoutLeaves.tooltip")),
+                        new RangeOption(Component.translatable("options.chunkFade"),
+                                        0, 40, 1,
+                                        (value) -> mcOptions.chunkSectionFadeInTime().set(value / 20.0),
+                                        () -> (int) (mcOptions.chunkSectionFadeInTime().get() * 20))
+                                .setTranslator(value -> Component.literal(String.valueOf(value / 20.0f)))
+                                .setTooltip(v -> Component.translatable("options.chunkFade.tooltip")),
+                        // TODO: improved transparency
+//                        new SwitchOption(Component.translatable("options.improvedTransparency"),
+//                                         value -> minecraftOptions.improvedTransparency().set(value),
+//                                         () -> minecraftOptions.improvedTransparency().get())
+//                                .setTooltip(Component.translatable("options.improvedTransparency.tooltip")),
                         new CyclingOption<>(Component.translatable("options.ao"),
                                 new Integer[]{LightMode.FLAT, LightMode.SMOOTH, LightMode.SUB_BLOCK},
                                 value -> {
@@ -285,10 +336,11 @@ public abstract class Options {
                                 () -> mcOptions.entityShadows().get())
                                 .setImpact(PerformanceImpact.LOW),
                         new RangeOption(Component.translatable("options.entityDistanceScaling"),
-                                50, 500, 25,
-                                value -> mcOptions.entityDistanceScaling().set(value * 0.01),
-                                () -> (int)(mcOptions.entityDistanceScaling().get() * 100))
-                                .setImpact(PerformanceImpact.HIGH),
+                                        2, 20, 1,
+                                        value -> mcOptions.entityDistanceScaling().set(value / 4.0),
+                                        () -> (int) (mcOptions.entityDistanceScaling().get() * 4.0))
+                                        .setImpact(PerformanceImpact.HIGH)
+                                        .setTranslator(value -> Component.literal(String.valueOf(value / 4.0))),
                         new CyclingOption<>(Component.translatable("options.mipmapLevels"),
                                 new Integer[]{0,1,2,3,4},
                                 value -> {
@@ -298,7 +350,16 @@ public abstract class Options {
                                 },
                                 () -> mcOptions.mipmapLevels().get())
                                 .setTranslator(v -> Component.literal(String.valueOf(v)))
-                                .setImpact(PerformanceImpact.LOW)
+                                .setImpact(PerformanceImpact.LOW),
+                        new RangeOption(Component.translatable("options.weatherRadius"),
+                                        3, 10, 1,
+                                        value -> mcOptions.weatherRadius().set(value),
+                                        () -> mcOptions.weatherRadius().get())
+                                .setTooltip(value -> Component.translatable("options.weatherRadius.tooltip")),
+                        new SwitchOption(Component.translatable("options.vignette"),
+                                         value -> mcOptions.vignette().set(value),
+                                         () -> mcOptions.vignette().get())
+                                .setTooltip(value -> Component.translatable("options.vignette.tooltip")),
                 })
         };
     }

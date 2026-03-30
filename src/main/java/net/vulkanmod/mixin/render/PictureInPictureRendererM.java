@@ -1,5 +1,7 @@
 package net.vulkanmod.mixin.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
@@ -23,7 +25,7 @@ public class PictureInPictureRendererM<T extends PictureInPictureRenderState> {
         guiRenderState.submitBlitToCurrentLayer(
                 new BlitRenderState(
                         RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
-                        TextureSetup.singleTexture(this.textureView),
+                        TextureSetup.singleTexture(this.textureView, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST)),
                         pictureInPictureRenderState.pose(),
                         pictureInPictureRenderState.x0(),
                         pictureInPictureRenderState.y0(),

@@ -1,6 +1,6 @@
 package net.vulkanmod.config;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 

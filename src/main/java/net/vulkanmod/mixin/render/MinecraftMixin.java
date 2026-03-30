@@ -1,12 +1,10 @@
 package net.vulkanmod.mixin.render;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.TimerQuery;
-import net.minecraft.client.GraphicsStatus;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.client.GraphicsPreset;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.main.GameConfig;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.texture.SpriteUpdateUtil;
 import net.vulkanmod.vulkan.Renderer;
@@ -19,10 +17,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
-
-import java.util.Optional;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
@@ -32,17 +26,21 @@ public class MinecraftMixin {
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void forceGraphicsMode(GameConfig gameConfig, CallbackInfo ci) {
-        var graphicsModeOption = this.options.graphicsMode();
+        var graphicsModeOption = this.options.graphicsPreset();
 
-        if (graphicsModeOption.get() == GraphicsStatus.FABULOUS) {
-            Initializer.LOGGER.error("Fabulous graphics mode not supported, forcing Fancy");
-            graphicsModeOption.set(GraphicsStatus.FANCY);
+        if (graphicsModeOption.get() == GraphicsPreset.FABULOUS) {
+            Initializer.LOGGER.error("Fabulous graphics mode not supported, forcing Fancy.");
+            graphicsModeOption.set(GraphicsPreset.FANCY);
+        }
+
+        if (this.options.improvedTransparency().get()) {
+            Initializer.LOGGER.error("Improved transparency currently not supported, forcing it off.");
+            this.options.improvedTransparency().set(false);
         }
     }
 
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;tick()V"),
-    locals = LocalCapture.CAPTURE_FAILHARD)
-    private void redirectResourceTick(boolean bl, CallbackInfo ci, int i, ProfilerFiller profilerFiller, int j) {
+    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;tick()V"))
+    private void redirectResourceTick(boolean bl, CallbackInfo ci, @Local(ordinal = 0) int i, @Local(ordinal = 1) int j) {
         int n = Math.min(10, i) - 1;
         boolean doUpload = j == n;
         SpriteUpdateUtil.setDoUpload(doUpload);

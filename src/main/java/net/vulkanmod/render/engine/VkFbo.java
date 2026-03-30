@@ -9,21 +9,24 @@ import org.lwjgl.opengl.GL33;
 
 public class VkFbo {
     final int glId;
-    final VkGpuTexture colorAttachment;
+    final VkTextureView colorAttachmentView;
     final VkGpuTexture depthAttachment;
 
-    protected VkFbo(VkGpuTexture colorAttachment, VkGpuTexture depthAttachment) {
+    protected VkFbo(VkTextureView colorAttachmentView, VkGpuTexture depthAttachment) {
         this.glId = GlStateManager.glGenFramebuffers();
-        this.colorAttachment = colorAttachment;
+        this.colorAttachmentView = colorAttachmentView;
         this.depthAttachment = depthAttachment;
 
         // Direct access
         VkGlFramebuffer fbo = VkGlFramebuffer.getFramebuffer(this.glId);
 
-        fbo.setAttachmentTexture(GL33.GL_COLOR_ATTACHMENT0, colorAttachment.id);
+        VkGpuTexture colorAttachmentTexture = this.colorAttachmentView.texture();
+        fbo.setAttachmentTexture(GL33.GL_COLOR_ATTACHMENT0, colorAttachmentTexture.id);
         if (depthAttachment != null) {
             fbo.setAttachmentTexture(GL33.GL_DEPTH_ATTACHMENT, depthAttachment.id);
         }
+
+        fbo.setLevel(this.colorAttachmentView.baseMipLevel());
     }
 
     public void bind() {
@@ -36,13 +39,14 @@ public class VkFbo {
         float clearDepth;
         int clearColor;
 
-        if (colorAttachment.needsClear()) {
+        VkGpuTexture colorAttachmentTexture = colorAttachmentView.texture();
+        if (colorAttachmentTexture.needsClear()) {
             clear |= 0x4000;
-            clearColor = colorAttachment.clearColor;
+            clearColor = colorAttachmentTexture.clearColor;
 
             VRenderSystem.setClearColor(ARGB.redFloat(clearColor), ARGB.greenFloat(clearColor), ARGB.blueFloat(clearColor), ARGB.alphaFloat(clearColor));
 
-            colorAttachment.needsClear = false;
+            colorAttachmentTexture.needsClear = false;
         }
 
         if (depthAttachment != null && depthAttachment.needsClear()) {
@@ -64,6 +68,6 @@ public class VkFbo {
     }
 
     public boolean needsClear() {
-        return this.colorAttachment.needsClear() || (this.depthAttachment != null && this.depthAttachment.needsClear());
+        return this.colorAttachmentView.texture().needsClear() || (this.depthAttachment != null && this.depthAttachment.needsClear());
     }
 }

@@ -15,13 +15,13 @@ public abstract class KeyboardHandlerM {
 
     @Shadow protected abstract boolean handleChunkDebugKeys(KeyEvent keyEvent);
 
-    @Shadow private boolean handledDebugKey;
+    @Shadow private boolean usedDebugKeyAsModifier;
 
     @Inject(method = "keyPress", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/KeyMapping;set(Lcom/mojang/blaze3d/platform/InputConstants$Key;Z)V", ordinal = 1))
     private void chunkDebug(long l, int i, KeyEvent keyEvent, CallbackInfo ci) {
         // GLFW key 296 -> F7
         // U -> Capture frustum
-        this.handledDebugKey |= InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), 296)
+        this.usedDebugKeyAsModifier |= InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), 296)
                 && this.handleChunkDebugKeys(keyEvent);
     }
 }

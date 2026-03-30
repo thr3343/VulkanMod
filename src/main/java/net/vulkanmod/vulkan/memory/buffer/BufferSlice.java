@@ -2,10 +2,10 @@ package net.vulkanmod.vulkan.memory.buffer;
 
 public class BufferSlice {
     Buffer buffer;
-    int offset;
+    long offset;
     int size;
 
-    public void set(Buffer buffer, int offset, int size) {
+    public void set(Buffer buffer, long offset, int size) {
         this.buffer = buffer;
         this.offset = offset;
         this.size = size;
@@ -15,7 +15,7 @@ public class BufferSlice {
         return buffer;
     }
 
-    public int getOffset() {
+    public long getOffset() {
         return offset;
     }
 

@@ -25,7 +25,8 @@ public abstract class LevelRendererM {
     @Unique private CloudRenderer vmCloudRenderer;
 
     @Inject(method = "addCloudsPass", at = @At("HEAD"), cancellable = true)
-    public void addCloudsPass(FrameGraphBuilder frameGraphBuilder, CloudStatus cloudStatus, Vec3 camPos, float partialTicks, int i, float g, CallbackInfo ci) {
+    public void addCloudsPass(FrameGraphBuilder frameGraphBuilder, CloudStatus cloudStatus, Vec3 camPos, long gameTime, float partialTicks,
+                              int cloudColor, float cloudHeight, CallbackInfo ci) {
         if (this.vmCloudRenderer == null) {
             this.vmCloudRenderer = new CloudRenderer();
         }
@@ -41,8 +42,9 @@ public abstract class LevelRendererM {
             Profiler profiler = Profiler.getMainProfiler();
             profiler.push("Clouds");
 
-            this.vmCloudRenderer.renderClouds(this.level, this.ticks, partialTicks,
-                                              camPos.x(), camPos.y(), camPos.z());
+            this.vmCloudRenderer.renderClouds(cloudHeight, cloudColor,
+                                              camPos.x(), camPos.y(), camPos.z(),
+                                            gameTime, partialTicks);
 
             profiler.pop();
         });

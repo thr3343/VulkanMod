@@ -219,18 +219,6 @@ public class FluidRenderer implements FluidRendering.DefaultRenderer {
                 v3 = sprite.getV(0.5F + (-aj - ai));
             }
 
-            float uA = (u0 + u1 + u2 + u3) / 4.0F;
-            float vA = (v0 + v1 + v2 + v3) / 4.0F;
-            float ai = sprites[0].uvShrinkRatio();
-            u0 = Mth.lerp(ai, u0, uA);
-            u1 = Mth.lerp(ai, u1, uA);
-            u2 = Mth.lerp(ai, u2, uA);
-            u3 = Mth.lerp(ai, u3, uA);
-            v0 = Mth.lerp(ai, v0, vA);
-            v1 = Mth.lerp(ai, v1, vA);
-            v2 = Mth.lerp(ai, v2, vA);
-            v3 = Mth.lerp(ai, v3, vA);
-
             float brightness = brightnessUp;
 
             setVertex(modelQuad, 0, 0.0f, nwHeight, 0.0f, u0, v0);

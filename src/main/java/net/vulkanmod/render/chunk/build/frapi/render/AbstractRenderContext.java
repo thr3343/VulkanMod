@@ -21,7 +21,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.vulkanmod.render.chunk.build.frapi.mesh.EncodingFormat;
 import net.vulkanmod.render.chunk.build.frapi.mesh.MutableQuadViewImpl;
-import org.joml.Matrix3f;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -76,7 +76,8 @@ public abstract class AbstractRenderContext {
 				matrices.transformNormal(normalVec, normalVec);
 			}
 
-			vertexConsumer.addVertex(posVec.x(), posVec.y(), posVec.z(), quad.color(i), quad.u(i), quad.v(i), overlay, quad.lightmap(i), normalVec.x(), normalVec.y(), normalVec.z());
+			int color = ColorUtil.BGRAtoRGBA(quad.color(i));
+			vertexConsumer.addVertex(posVec.x(), posVec.y(), posVec.z(), color, quad.u(i), quad.v(i), overlay, quad.lightmap(i), normalVec.x(), normalVec.y(), normalVec.z());
 		}
 	}
 }

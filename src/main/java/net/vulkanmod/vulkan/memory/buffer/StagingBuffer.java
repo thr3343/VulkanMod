@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.memory.buffer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.texture.ImageUploadHelper;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.lwjgl.system.MemoryUtil;
@@ -58,6 +59,7 @@ public class StagingBuffer extends Buffer {
         // Submit and wait all recorded uploads before resetting the buffer
         UploadManager.INSTANCE.submitUploads();
         ImageUploadHelper.INSTANCE.submitCommands();
+        Renderer.getInstance().flushCmds();
         Synchronization.INSTANCE.waitFences();
 
         this.reset();

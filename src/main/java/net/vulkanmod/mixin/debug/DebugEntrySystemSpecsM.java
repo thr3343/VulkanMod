@@ -6,7 +6,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.debug.DebugEntrySystemSpecs;
 import net.minecraft.client.gui.components.debug.DebugScreenDisplayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.vulkanmod.Initializer;
@@ -23,7 +23,7 @@ import java.util.Locale;
 @Mixin(DebugEntrySystemSpecs.class)
 public class DebugEntrySystemSpecsM {
 
-    @Shadow @Final private static ResourceLocation GROUP;
+    @Shadow @Final private static Identifier GROUP;
 
     @Inject(method = "display", at = @At("HEAD"), cancellable = true)
     private void display(DebugScreenDisplayer debugScreenDisplayer, Level level, LevelChunk levelChunk,

@@ -21,7 +21,7 @@ public class VkGpuBuffer extends GpuBuffer {
 
     Buffer buffer;
 
-    protected VkGpuBuffer(VkDebugLabel debugLabel, @Nullable Supplier<String> supplier, int usage, int size) {
+    protected VkGpuBuffer(VkDebugLabel debugLabel, @Nullable Supplier<String> supplier, int usage, long size) {
         super(usage, size);
         this.label = supplier;
 

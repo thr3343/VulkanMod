@@ -1,10 +1,10 @@
 package net.vulkanmod.vulkan.texture;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.VkGlTexture;
 import net.vulkanmod.render.engine.VkGpuTexture;
 import net.vulkanmod.render.texture.SpriteUpdateUtil;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import org.lwjgl.system.MemoryUtil;
@@ -61,6 +61,7 @@ public abstract class VTextureSelector {
         if (texture == null)
             throw new NullPointerException("Texture is null at index: " + activeTexture);
 
+        // Images need to be transitioned before main cmd buffer execution
         SpriteUpdateUtil.addTransitionedLayout(texture);
 
         texture.uploadSubTextureAsync(mipLevel, arrayLayer, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels,
@@ -69,8 +70,8 @@ public abstract class VTextureSelector {
 
     public static int getTextureIdx(String name) {
         return switch (name) {
-            case "Sampler0", "DiffuseSampler", "InSampler", "CloudFaces" -> 0;
-            case "Sampler1", "BlurSampler" -> 1;
+            case "Sampler0", "DiffuseSampler", "InSampler", "CloudFaces", "Sprite", "CurrentSprite" -> 0;
+            case "Sampler1", "BlurSampler", "NextSprite" -> 1;
             case "Sampler2" -> 2;
             case "Sampler3" -> 3;
             case "Sampler4" -> 4;
@@ -85,13 +86,12 @@ public abstract class VTextureSelector {
         var imageDescriptors = pipeline.getImageDescriptors();
 
         for (ImageDescriptor state : imageDescriptors) {
-            var textureView = RenderSystem.getShaderTexture(state.imageIdx);
+            var textureView = VRenderSystem.getShaderTexture(state.imageIdx);
 
             if (textureView == null)
                 continue;
 
             VkGpuTexture gpuTexture = (VkGpuTexture) textureView.texture();
-            gpuTexture.flushModeChanges();
 
             final int shaderTexture = gpuTexture.glId();
             VkGlTexture texture = VkGlTexture.getTexture(shaderTexture);

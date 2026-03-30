@@ -134,6 +134,7 @@ public class RenderPass {
         }
     }
 
+    // TODO: Currently it does not support image views of levels above the main
     public void beginRenderPass(VkCommandBuffer commandBuffer, long framebufferId, MemoryStack stack) {
 
         if (colorAttachmentInfo != null
@@ -234,7 +235,7 @@ public class RenderPass {
         if (colorAttachmentInfo != null) {
             VkRenderingAttachmentInfo.Buffer colorAttachment = VkRenderingAttachmentInfo.calloc(1, stack);
             colorAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-            colorAttachment.imageView(framebuffer.getColorAttachment().getImageView());
+            colorAttachment.imageView(framebuffer.getColorAttachmentView());
             colorAttachment.imageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             colorAttachment.loadOp(colorAttachmentInfo.loadOp);
             colorAttachment.storeOp(colorAttachmentInfo.storeOp);
@@ -247,7 +248,7 @@ public class RenderPass {
         if (depthAttachmentInfo != null) {
             VkRenderingAttachmentInfo depthAttachment = VkRenderingAttachmentInfo.calloc(stack);
             depthAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-            depthAttachment.imageView(framebuffer.getDepthAttachment().getImageView());
+            depthAttachment.imageView(framebuffer.getDepthImageView());
             depthAttachment.imageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
             depthAttachment.loadOp(depthAttachmentInfo.loadOp);
             depthAttachment.storeOp(depthAttachmentInfo.storeOp);

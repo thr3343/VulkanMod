@@ -9,6 +9,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.GpuQuery;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -66,12 +67,12 @@ public class VkCommandEncoder implements CommandEncoder {
     }
 
     @Override
-    public RenderPass createRenderPass(Supplier<String> supplier, GpuTextureView gpuTexture, OptionalInt optionalInt) {
-        return this.createRenderPass(supplier, gpuTexture, optionalInt, null, OptionalDouble.empty());
+    public RenderPass createRenderPass(Supplier<String> supplier, GpuTextureView colorAttachmentView, OptionalInt optionalInt) {
+        return this.createRenderPass(supplier, colorAttachmentView, optionalInt, null, OptionalDouble.empty());
     }
 
     @Override
-    public RenderPass createRenderPass(Supplier<String> supplier, GpuTextureView colorTexture, OptionalInt optionalInt, @Nullable GpuTextureView depthTexture, OptionalDouble optionalDouble) {
+    public RenderPass createRenderPass(Supplier<String> supplier, GpuTextureView colorAttachmentView, OptionalInt optionalInt, @Nullable GpuTextureView depthTexture, OptionalDouble optionalDouble) {
         if (this.inRenderPass) {
             throw new IllegalStateException("Close the existing render pass before creating a new one!");
         } else {
@@ -79,7 +80,7 @@ public class VkCommandEncoder implements CommandEncoder {
                 LOGGER.warn("Depth clear value was provided but no depth texture is being used");
             }
 
-            if (Minecraft.getInstance().getMainRenderTarget().getColorTexture() == colorTexture.texture()) {
+            if (Minecraft.getInstance().getMainRenderTarget().getColorTexture() == colorAttachmentView.texture()) {
                 Renderer.getInstance().getMainPass().rebindMainTarget();
 
                 int j = 0;
@@ -101,17 +102,17 @@ public class VkCommandEncoder implements CommandEncoder {
                     GlStateManager._clear(j);
                 }
 
-                return new VkRenderPass(this, depthTexture != null);
+                return new VkRenderPass(this, depthTexture != null, true);
             }
 
-            if (colorTexture.isClosed()) {
+            if (colorAttachmentView.isClosed()) {
                 throw new IllegalStateException("Color texture is closed");
             } else if (depthTexture != null && depthTexture.isClosed()) {
                 throw new IllegalStateException("Depth texture is closed");
             } else {
                 this.inRenderPass = true;
                 GpuTexture depthTexture1 = depthTexture != null ? depthTexture.texture() : null;
-                VkFbo fbo = ((VkGpuTexture)colorTexture.texture()).getFbo(depthTexture1);
+                VkFbo fbo = ((VkTextureView)colorAttachmentView).getFbo(depthTexture1);
                 fbo.bind();
 
                 int j = 0;
@@ -133,9 +134,9 @@ public class VkCommandEncoder implements CommandEncoder {
                     GlStateManager._clear(j);
                 }
 
-                GlStateManager._viewport(0, 0, colorTexture.getWidth(0), colorTexture.getHeight(0));
+                GlStateManager._viewport(0, 0, colorAttachmentView.getWidth(0), colorAttachmentView.getHeight(0));
                 this.lastPipeline = null;
-                return new VkRenderPass(this, depthTexture != null);
+                return new VkRenderPass(this, depthTexture != null, true);
             }
         }
 
@@ -285,7 +286,7 @@ public class VkCommandEncoder implements CommandEncoder {
                             "Cannot write more data than this buffer can hold (attempting to write " + size + " bytes at offset " + gpuBufferSlice.offset() + " to " + gpuBufferSlice.length() + " slice size)"
                     );
                 } else {
-                    int dstOffset = gpuBufferSlice.offset();
+                    long dstOffset = gpuBufferSlice.offset();
 
                     var commandBuffer = Renderer.getInstance().getTransferCb();
 
@@ -368,7 +369,7 @@ public class VkCommandEncoder implements CommandEncoder {
                     i |= 34;
                 }
 
-                ByteBuffer byteBuffer = MemoryUtil.memByteBuffer(gpuBuffer.getBuffer().getDataPtr() + gpuBufferSlice.offset(), gpuBufferSlice.length());
+                ByteBuffer byteBuffer = MemoryUtil.memByteBuffer(gpuBuffer.getBuffer().getDataPtr() + gpuBufferSlice.offset(), (int) gpuBufferSlice.length());
                 return new VkGpuBuffer.MappedView(0, byteBuffer);
             }
         }
@@ -390,13 +391,13 @@ public class VkCommandEncoder implements CommandEncoder {
                 } else if ((vkGpuBuffer2.usage() & 8) == 0) {
                     throw new IllegalStateException("Target buffer needs USAGE_COPY_DST to be a destination for a copy");
                 } else if (gpuBufferSlice.length() != gpuBufferSlice2.length()) {
-                    int var6 = gpuBufferSlice.length();
+                    long var6 = gpuBufferSlice.length();
                     throw new IllegalArgumentException("Cannot copy from slice of size " + var6 + " to slice of size " + gpuBufferSlice2.length() + ", they must be equal");
                 } else if (gpuBufferSlice.offset() + gpuBufferSlice.length() > vkGpuBuffer.size()) {
-                    int var5 = gpuBufferSlice.length();
+                    long var5 = gpuBufferSlice.length();
                     throw new IllegalArgumentException("Cannot copy more data than the source buffer holds (attempting to copy " + var5 + " bytes at offset " + gpuBufferSlice.offset() + " from " + vkGpuBuffer.size() + " size buffer)");
                 } else if (gpuBufferSlice2.offset() + gpuBufferSlice2.length() > vkGpuBuffer2.size()) {
-                    int var10002 = gpuBufferSlice2.length();
+                    long var10002 = gpuBufferSlice2.length();
                     throw new IllegalArgumentException("Cannot copy more data than the target buffer can hold (attempting to copy " + var10002 + " bytes at offset " + gpuBufferSlice2.offset() + " to " + vkGpuBuffer2.size() + " size buffer)");
                 } else {
 //                    this.device.directStateAccess().copyBufferSubData(vkGpuBuffer.handle, vkGpuBuffer2.handle, gpuBufferSlice.offset(), gpuBufferSlice2.offset(), gpuBufferSlice.length());
@@ -508,7 +509,7 @@ public class VkCommandEncoder implements CommandEncoder {
     }
 
     @Override
-    public void copyTextureToBuffer(GpuTexture gpuTexture, GpuBuffer gpuBuffer, int i, Runnable runnable, int j) {
+    public void copyTextureToBuffer(GpuTexture gpuTexture, GpuBuffer gpuBuffer, long i, Runnable runnable, int j) {
         if (this.inRenderPass) {
             throw new IllegalStateException("Close the existing render pass before performing additional commands");
         } else {
@@ -517,7 +518,7 @@ public class VkCommandEncoder implements CommandEncoder {
     }
 
     @Override
-    public void copyTextureToBuffer(GpuTexture gpuTexture, GpuBuffer gpuBuffer, int dstOffset, Runnable runnable, int mipLevel, int xOffset, int yOffset, int width, int height) {
+    public void copyTextureToBuffer(GpuTexture gpuTexture, GpuBuffer gpuBuffer, long dstOffset, Runnable runnable, int mipLevel, int xOffset, int yOffset, int width, int height) {
         VkGpuBuffer vkGpuBuffer = (VkGpuBuffer) gpuBuffer;
         VkGpuTexture vkGpuTexture = (VkGpuTexture) gpuTexture;
 
@@ -636,6 +637,16 @@ public class VkCommandEncoder implements CommandEncoder {
     }
 
     @Override
+    public GpuQuery timerQueryBegin() {
+        return null;
+    }
+
+    @Override
+    public void timerQueryEnd(GpuQuery gpuQuery) {
+
+    }
+
+    @Override
     public void presentTexture(GpuTextureView gpuTexture) {
         throw new UnsupportedOperationException();
     }
@@ -704,7 +715,7 @@ public class VkCommandEncoder implements CommandEncoder {
         }
     }
 
-    protected void executeDraw(VkRenderPass renderPass, int i, int j, int k, @Nullable VertexFormat.IndexType indexType, int l) {
+    protected void executeDraw(VkRenderPass renderPass, int vertexOffset, int firstIndex, int vertexCount, @Nullable VertexFormat.IndexType indexType, int instanceCount) {
         if (this.trySetup(renderPass)) {
             if (GlRenderPass.VALIDATION) {
                 if (indexType != null) {
@@ -726,7 +737,7 @@ public class VkCommandEncoder implements CommandEncoder {
                 }
             }
 
-            this.drawFromBuffers(renderPass, i, j, k, indexType, renderPass.pipeline, l);
+            this.drawFromBuffers(renderPass, vertexOffset, firstIndex, vertexCount, indexType, renderPass.pipeline, instanceCount);
         }
     }
 
@@ -824,18 +835,19 @@ public class VkCommandEncoder implements CommandEncoder {
 
             assert ubo != null;
             ubo.setUseGlobalBuffer(false);
-            ubo.getBufferSlice().set(gpuBuffer.buffer, gpuBufferSlice.offset(), gpuBufferSlice.length());
+            ubo.getBufferSlice().set(gpuBuffer.buffer, gpuBufferSlice.offset(), (int) gpuBufferSlice.length());
         }
 
         for (ImageDescriptor imageDescriptor : pipeline.getImageDescriptors()) {
             String uniformName = imageDescriptor.name;
             int samplerIndex = imageDescriptor.imageIdx;
 
-            VkTextureView textureView = (VkTextureView) renderPass.samplers.get(uniformName);
-            if (textureView == null) {
+            var textureSampler = renderPass.samplers.get(uniformName);
+            if (textureSampler == null) {
                 continue;
             }
 
+            VkTextureView textureView = textureSampler.view();
             VkGpuTexture gpuTexture = textureView.texture();
             if (gpuTexture.isClosed()) {
                 continue;
@@ -844,9 +856,7 @@ public class VkCommandEncoder implements CommandEncoder {
             GlStateManager._activeTexture(33984 + samplerIndex);
             GlStateManager._bindTexture(gpuTexture.id);
 
-            GlStateManager._texParameter(GL11.GL_TEXTURE_2D, 33084, textureView.baseMipLevel());
-            GlStateManager._texParameter(GL11.GL_TEXTURE_2D, 33085, textureView.baseMipLevel() + textureView.mipLevels() - 1);
-            gpuTexture.flushModeChanges();
+            gpuTexture.getVulkanImage().setSampler(textureSampler.sampler().getId());
         }
 
     }
@@ -919,7 +929,11 @@ public class VkCommandEncoder implements CommandEncoder {
         }
     }
 
-    public void finishRenderPass() {
+    public void finishRenderPass(boolean forceEnd) {
+        if (forceEnd) {
+            Renderer.getInstance().endRenderPass();
+        }
+
         this.inRenderPass = false;
     }
 

@@ -1,9 +1,9 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.TextureFilteringMethod;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 
 import java.util.function.Supplier;
@@ -29,6 +29,8 @@ public class Uniforms {
 
         //Vec1i
         vec1i_uniformMap.put("EndPortalLayers", () -> 15);
+        vec1i_uniformMap.put("UseRgss", () -> Minecraft.getInstance().options.textureFiltering().get() == TextureFilteringMethod.RGSS ? 1 : 0);
+        vec1i_uniformMap.put("CurrentTime", VRenderSystem::getCurrentTime);
 
         //Vec1
         vec1f_uniformMap.put("FogStart", () -> VRenderSystem.getFogData().renderDistanceStart);
@@ -39,11 +41,13 @@ public class Uniforms {
         vec1f_uniformMap.put("FogRenderDistanceEnd", () -> VRenderSystem.getFogData().renderDistanceEnd);
         vec1f_uniformMap.put("FogSkyEnd", () -> VRenderSystem.getFogData().skyEnd);
         vec1f_uniformMap.put("FogCloudsEnd", () -> VRenderSystem.getFogData().cloudEnd);
-        vec1f_uniformMap.put("LineWidth", RenderSystem::getShaderLineWidth);
+//        vec1f_uniformMap.put("LineWidth", RenderSystem::getShaderLineWidth);
         vec1f_uniformMap.put("AlphaCutout", () -> VRenderSystem.alphaCutout);
 
         //Vec2
         vec2f_uniformMap.put("ScreenSize", VRenderSystem::getScreenSize);
+        vec2f_uniformMap.put("TextureSize", VRenderSystem::getTextureSize);
+        vec2f_uniformMap.put("TexelSize", VRenderSystem::getTexelSize);
 
         //Vec3
         vec3f_uniformMap.put("Light0_Direction", () -> VRenderSystem.lightDirection0);
@@ -62,7 +66,7 @@ public class Uniforms {
             case "mat4" -> Uniforms.mat4f_uniformMap.get(name);
             case "vec4" -> Uniforms.vec4f_uniformMap.get(name);
             case "vec3" -> Uniforms.vec3f_uniformMap.get(name);
-            case "vec2" -> Uniforms.vec2f_uniformMap.get(name);
+            case "vec2", "ivec2" -> Uniforms.vec2f_uniformMap.get(name);
 
             default -> null;
         };

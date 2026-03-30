@@ -149,6 +149,7 @@ public class VkGlFramebuffer {
 
     VulkanImage colorAttachment;
     VulkanImage depthAttachment;
+    int level = 0;
 
     boolean needsUpdate;
 
@@ -192,6 +193,14 @@ public class VkGlFramebuffer {
         this.needsUpdate = true;
     }
 
+    public void setLevel(int level) {
+        this.level = level;
+
+        if (this.framebuffer != null) {
+            this.framebuffer.setLevel(level);
+        }
+    }
+
     void setColorAttachment(VulkanImage image) {
         this.colorAttachment = image;
     }
@@ -215,6 +224,9 @@ public class VkGlFramebuffer {
 
         this.framebuffer = Framebuffer.builder(this.colorAttachment, depthImage)
                                       .build();
+
+        this.framebuffer.setLevel(this.level);
+
         RenderPass.Builder builder = RenderPass.builder(this.framebuffer);
 
         builder.getColorAttachmentInfo()

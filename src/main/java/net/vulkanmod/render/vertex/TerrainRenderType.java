@@ -1,6 +1,6 @@
 package net.vulkanmod.render.vertex;
 
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ExtendedRenderType;
@@ -11,24 +11,21 @@ import java.util.function.Function;
 
 public enum TerrainRenderType {
     SOLID(0.0f),
-    CUTOUT_MIPPED(0.5f),
-    CUTOUT(0.1f),
-    TRANSLUCENT(0.0f),
+    CUTOUT(0.5f),
+    TRANSLUCENT(0.01f),
     TRIPWIRE(0.1f);
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
-    public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
-    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
+    public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT, TRANSLUCENT);
+    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(SOLID, CUTOUT, TRANSLUCENT);
 
     private static Function<TerrainRenderType, TerrainRenderType> remapper;
 
     static {
         SEMI_COMPACT_RENDER_TYPES.add(CUTOUT);
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
         SEMI_COMPACT_RENDER_TYPES.add(TRANSLUCENT);
 
-        COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
         COMPACT_RENDER_TYPES.add(TRANSLUCENT);
     }
 
@@ -49,7 +46,6 @@ public enum TerrainRenderType {
     public static TerrainRenderType get(ChunkSectionLayer layer) {
         return switch (layer) {
             case SOLID -> SOLID;
-            case CUTOUT_MIPPED -> CUTOUT_MIPPED;
             case CUTOUT -> CUTOUT;
             case TRANSLUCENT -> TRANSLUCENT;
             case TRIPWIRE -> TRIPWIRE;
@@ -60,7 +56,6 @@ public enum TerrainRenderType {
         return switch (name) {
             case "solid" -> TerrainRenderType.SOLID;
             case "cutout" -> TerrainRenderType.CUTOUT;
-            case "cutout_mipped" -> TerrainRenderType.CUTOUT_MIPPED;
             case "translucent" -> TerrainRenderType.TRANSLUCENT;
             case "tripwire" -> TerrainRenderType.TRIPWIRE;
             default -> null;
@@ -71,7 +66,6 @@ public enum TerrainRenderType {
         return switch (renderType) {
             case SOLID -> ChunkSectionLayer.SOLID;
             case CUTOUT -> ChunkSectionLayer.CUTOUT;
-            case CUTOUT_MIPPED -> ChunkSectionLayer.CUTOUT_MIPPED;
             case TRANSLUCENT -> ChunkSectionLayer.TRANSLUCENT;
             case TRIPWIRE -> ChunkSectionLayer.TRIPWIRE;
         };
@@ -80,12 +74,12 @@ public enum TerrainRenderType {
     public static void updateMapping() {
         if (Initializer.CONFIG.uniqueOpaqueLayer) {
             remapper = (renderType) -> switch (renderType) {
-                case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
+                case SOLID, CUTOUT -> TerrainRenderType.CUTOUT;
                 case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
             };
         } else {
             remapper = (renderType) -> switch (renderType) {
-                case SOLID, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
+                case SOLID -> TerrainRenderType.SOLID;
                 case CUTOUT -> TerrainRenderType.CUTOUT;
                 case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
             };
