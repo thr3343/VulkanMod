@@ -54,7 +54,6 @@ public class Renderer {
     private static VkDevice device;
 
     private static boolean swapChainUpdate = false;
-    public static boolean skipRendering = false;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -177,12 +176,15 @@ public class Renderer {
     }
 
     private void createSyncObjects() {
+        // Render finished semaphore are signaled only after vkQueuePresentKHR has finished execution,
+        // only vkAcquireNextImageKHR can guarantee that, hence we need as many semaphores as swapchain images
+        int swapChainImages = swapChain.getImagesNum();
+        renderFinishedSemaphores = new ArrayList<>(swapChainImages);
+
         imageAvailableSemaphores = new ArrayList<>(framesNum);
-        renderFinishedSemaphores = new ArrayList<>(framesNum);
         inFlightFences = new ArrayList<>(framesNum);
 
         try (MemoryStack stack = stackPush()) {
-
             VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack);
             semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
@@ -197,18 +199,23 @@ public class Renderer {
             for (int i = 0; i < framesNum; i++) {
 
                 if (vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS
-                    || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
                     || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
 
                     throw new RuntimeException("Failed to create synchronization objects for the frame: " + i);
                 }
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
-                renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
                 inFlightFences.add(pFence.get(0));
-
             }
 
+            for (int i = 0; i < swapChain.getImagesNum(); ++i) {
+                if (vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS) {
+
+                    throw new RuntimeException("Failed to create synchronization objects for the image: " + i);
+                }
+
+                renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
+            }
         }
     }
 
@@ -236,18 +243,6 @@ public class Renderer {
         if (swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
-
-            if (getSwapChain().getWidth() == 0 && getSwapChain().getHeight() == 0) {
-                skipRendering = true;
-                Minecraft.getInstance().noRender = true;
-            } else {
-                skipRendering = false;
-                Minecraft.getInstance().noRender = false;
-            }
-        }
-
-        if (skipRendering) {
-            return;
         }
 
         this.recursion++;
@@ -277,22 +272,27 @@ public class Renderer {
         vkResetCommandBuffer(currentCmdBuffer, 0);
 
         try (MemoryStack stack = stackPush()) {
-            IntBuffer pImageIndex = stack.mallocInt(1);
+            // Check is swapchain has images before acquiring
+            if (swapChain.hasImages()) {
+                IntBuffer pImageIndex = stack.mallocInt(1);
+                long semaphore = imageAvailableSemaphores.get(currentFrame);
 
-            int vkResult = vkAcquireNextImageKHR(device, swapChain.getId(), VUtil.UINT64_MAX,
-                                                 imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+                int vkResult = vkAcquireNextImageKHR(device, swapChain.getId(), VUtil.UINT64_MAX,
+                                                     semaphore, VK_NULL_HANDLE, pImageIndex);
 
-            if (vkResult == VK_SUBOPTIMAL_KHR || vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
-                swapChainUpdate = true;
-                skipRendering = true;
-                this.beginFrame();
+                if (vkResult == VK_SUBOPTIMAL_KHR || vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
+                    swapChainUpdate = true;
+//                skipRendering = true;
+                    this.beginFrame();
 
-                return;
-            } else if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot acquire next swap chain image: %s".formatted(VkResult.decode(vkResult)));
+                    return;
+                }
+                else if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Cannot acquire next swap chain image: %s".formatted(VkResult.decode(vkResult)));
+                }
+
+                imageIndex = pImageIndex.get(0);
             }
-
-            imageIndex = pImageIndex.get(0);
 
             this.beginMainRenderPass(stack);
         }
@@ -319,7 +319,7 @@ public class Renderer {
     }
 
     public void endFrame() {
-        if (skipRendering || !recordingCmds)
+        if (!recordingCmds)
             return;
 
         if (this.recursion == 0) {
@@ -337,14 +337,18 @@ public class Renderer {
 
         submitFrame();
         recordingCmds = false;
+        this.boundRenderPass = null;
+        this.boundFramebuffer = null;
 
         p.pop();
         p.push("Post_rendering");
     }
 
     private void submitFrame() {
-        if (swapChainUpdate)
+        if (swapChainUpdate || !swapChain.hasImages()) {
+            currentFrame = (currentFrame + 1) % framesNum;
             return;
+        }
 
         try (MemoryStack stack = stackPush()) {
             int vkResult;
@@ -366,7 +370,7 @@ public class Renderer {
             submitInfo.pWaitSemaphores(waitSemaphores);
             submitInfo.waitSemaphoreCount(waitSemaphores.limit());
             submitInfo.pWaitDstStageMask(waitDstStageMask);
-            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
+            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
             vkResetFences(device, inFlightFences.get(currentFrame));
@@ -379,7 +383,7 @@ public class Renderer {
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
-            presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
+            presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
 
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(swapChain.getId()));
@@ -420,11 +424,22 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, inFlightFences.get(currentFrame));
+            var waitSemaphores = Synchronization.INSTANCE.getWaitSemaphores(stack);
+            int waitSemaphoreCount = waitSemaphores.limit();
+            IntBuffer waitDstStageMask = stack.mallocInt(waitSemaphoreCount);
+
+            for (int i = 0; i < waitSemaphoreCount; i++) {
+                waitDstStageMask.put(i, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            }
+
+            submitInfo.pWaitSemaphores(waitSemaphores);
+            submitInfo.waitSemaphoreCount(waitSemaphores.limit());
+            submitInfo.pWaitDstStageMask(waitDstStageMask);
 
             submitUploads();
             waitFences();
 
+            vkResetFences(device, inFlightFences.get(currentFrame));
             if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().vkQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
@@ -458,7 +473,7 @@ public class Renderer {
     }
 
     public void endRenderPass(VkCommandBuffer commandBuffer) {
-        if (skipRendering || !recordingCmds || this.boundFramebuffer == null)
+        if (!recordingCmds || this.boundFramebuffer == null)
             return;
 
         this.boundRenderPass.endRenderPass(commandBuffer);
@@ -470,10 +485,6 @@ public class Renderer {
     }
 
     public boolean beginRenderPass(RenderPass renderPass, Framebuffer framebuffer) {
-        // TODO: minimizing could trigger this preventing rendering (e.g. texture atlas uploads)
-        if (skipRendering)
-            return false;
-
         if (!recordingCmds) {
             this.beginFrame();
 
@@ -592,6 +603,9 @@ public class Renderer {
         for (int i = 0; i < framesNum; ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
+        }
+
+        for (int i = 0; i < swapChain.getImagesNum(); ++i) {
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
     }
@@ -709,9 +723,6 @@ public class Renderer {
     }
 
     public static void clearAttachments(VkCommandBuffer commandBuffer, int attachments, int x, int y, int width, int height) {
-        if (skipRendering)
-            return;
-
         try (MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear,
             //it seems it uses the same buffer: color and depth values override themselves

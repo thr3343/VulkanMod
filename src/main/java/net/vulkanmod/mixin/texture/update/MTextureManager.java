@@ -22,7 +22,7 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if (Renderer.skipRendering || !Initializer.CONFIG.textureAnimations)
+        if (!Initializer.CONFIG.textureAnimations)
             return;
 
         //Debug D

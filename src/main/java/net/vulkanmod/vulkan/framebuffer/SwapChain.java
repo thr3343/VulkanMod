@@ -40,6 +40,7 @@ public class SwapChain extends Framebuffer {
     private VkExtent2D extent2D;
     public boolean isBGRAformat;
     private boolean vsync = false;
+    private boolean hasImages = false;
 
     public SwapChain() {
         this.attachmentCount = 2;
@@ -83,6 +84,7 @@ public class SwapChain extends Framebuffer {
 
                 this.width = 0;
                 this.height = 0;
+                this.hasImages = false;
                 return;
             }
 
@@ -142,6 +144,7 @@ public class SwapChain extends Framebuffer {
             vkGetSwapchainImagesKHR(device, this.swapChainId, imageCount, pSwapchainImages);
 
             this.swapChainImages = new ArrayList<>(imageCount.get(0));
+            this.hasImages = true;
 
             this.width = extent2D.width();
             this.height = extent2D.height();
@@ -192,8 +195,8 @@ public class SwapChain extends Framebuffer {
 
     private void createDepthResources() {
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                false, false);
+                                                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                            false, false);
     }
 
     @Override
@@ -214,30 +217,6 @@ public class SwapChain extends Framebuffer {
         this.swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
 
         this.depthAttachment.free();
-    }
-
-    public long getId() {
-        return this.swapChainId;
-    }
-
-    public List<VulkanImage> getImages() {
-        return this.swapChainImages;
-    }
-
-    public long getImageId(int i) {
-        return this.swapChainImages.get(i).getId();
-    }
-
-    public VkExtent2D getExtent() {
-        return this.extent2D;
-    }
-
-    public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentImage());
-    }
-
-    public long getImageView(int i) {
-        return this.swapChainImages.get(i).getImageView();
     }
 
     private VkSurfaceFormatKHR getFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
@@ -297,7 +276,7 @@ public class SwapChain extends Framebuffer {
 
         glfwGetFramebufferSize(window, width, height);
 
-        VkExtent2D actualExtent = VkExtent2D.mallocStack().set(width.get(0), height.get(0));
+        VkExtent2D actualExtent = VkExtent2D.malloc(MemoryStack.stackPush()).set(width.get(0), height.get(0));
 
         VkExtent2D minExtent = capabilities.minImageExtent();
         VkExtent2D maxExtent = capabilities.maxImageExtent();
@@ -320,6 +299,34 @@ public class SwapChain extends Framebuffer {
             }
             return VK_PRESENT_MODE_FIFO_KHR; // If None of the request modes exist/are supported by Driver
         }
+    }
+
+    public long getId() {
+        return this.swapChainId;
+    }
+
+    public List<VulkanImage> getImages() {
+        return this.swapChainImages;
+    }
+
+    public long getImageId(int i) {
+        return this.swapChainImages.get(i).getId();
+    }
+
+    public VkExtent2D getExtent() {
+        return this.extent2D;
+    }
+
+    public VulkanImage getColorAttachment() {
+        return this.swapChainImages.get(Renderer.getCurrentImage());
+    }
+
+    public long getColorAttachmentView() {
+        return this.getColorAttachment().getImageView();
+    }
+
+    public boolean hasImages() {
+        return this.hasImages;
     }
 
     public boolean isVsync() {
