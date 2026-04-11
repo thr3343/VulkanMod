@@ -20,7 +20,7 @@ public class StagingBuffer extends Buffer {
     }
 
     public StagingBuffer(long size) {
-        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
         this.createBuffer(size);
     }
 

@@ -21,7 +21,7 @@ public class VkGpuBuffer extends GpuBuffer {
 
     Buffer buffer;
 
-    protected VkGpuBuffer(VkDebugLabel glDebugLabel, @Nullable Supplier<String> supplier, int usage, int size) {
+    protected VkGpuBuffer(VkDebugLabel debugLabel, @Nullable Supplier<String> supplier, int usage, int size) {
         super(usage, size);
         this.label = supplier;
 
@@ -51,7 +51,7 @@ public class VkGpuBuffer extends GpuBuffer {
 
         MemoryType memoryType =  mappable ? MemoryTypes.HOST_MEM : MemoryTypes.GPU_MEM;
 
-        this.buffer = new Buffer(vkUsage, memoryType);
+        this.buffer = new Buffer(supplier.get(), vkUsage, memoryType);
         this.buffer.createBuffer(this.size());
     }
 

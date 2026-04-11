@@ -16,7 +16,7 @@ public class IndirectBuffer extends Buffer {
     CommandPool.CommandBuffer commandBuffer;
 
     public IndirectBuffer(int size, MemoryType type) {
-        super(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, type);
+        super("Indirect buffer", VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, type);
         this.createBuffer(size);
     }
 

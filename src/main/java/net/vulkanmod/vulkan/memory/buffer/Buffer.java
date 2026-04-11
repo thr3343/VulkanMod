@@ -1,11 +1,16 @@
 package net.vulkanmod.vulkan.memory.buffer;
 
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
+import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
 
+import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_BUFFER;
+
 public class Buffer {
+    public final String name;
     public final MemoryType type;
     public final int usage;
 
@@ -18,13 +23,20 @@ public class Buffer {
 
     protected long dataPtr;
 
-    public Buffer(int usage, MemoryType type) {
+    public Buffer(String name, int usage, MemoryType type) {
+        this.name = name;
         this.usage = usage;
         this.type = type;
     }
 
     public void createBuffer(long bufferSize) {
         this.type.createBuffer(this, bufferSize);
+
+        if (this.name != null) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                Vulkan.setDebugLabel(stack, VK_OBJECT_TYPE_BUFFER, this.id, this.name);
+            }
+        }
 
         if (this.type.mappable()) {
             this.dataPtr = MemoryManager.getInstance().Map(this.allocation).get(0);

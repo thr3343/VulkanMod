@@ -14,7 +14,7 @@ public class UniformBuffer extends Buffer {
     }
 
     public UniformBuffer(int size, MemoryType memoryType) {
-        super(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryType);
+        super("Uniform buffer", VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryType);
         this.createBuffer(size);
     }
 
