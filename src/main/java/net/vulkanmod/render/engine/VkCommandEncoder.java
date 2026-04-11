@@ -244,8 +244,10 @@ public class VkCommandEncoder implements CommandEncoder {
                 Renderer.clearAttachments(0x4100, x0, y0, width, height);
             }
             else {
-                // TODO
-//                throw new IllegalStateException();
+                VkGpuTexture gpuTexture = (VkGpuTexture) colorAttachment;
+                gpuTexture.getFbo(depthAttachment).bind();
+
+                Renderer.clearAttachments(0x4100, x0, y0, width, height);
             }
         }
     }
