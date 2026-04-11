@@ -98,12 +98,14 @@ public abstract class Option<T> {
         return this.name;
     }
 
-    public void setOnChange(Runnable runnable) {
-        onChange = runnable;
+    public Option<T> setOnChange(Runnable runnable) {
+        this.onChange = runnable;
+        return this;
     }
 
-    public void setActivationFn(Supplier<Boolean> activationFn) {
+    public Option<T> setActivationFn(Supplier<Boolean> activationFn) {
         this.activationFn = activationFn;
+        return this;
     }
 
     public boolean isChanged() {

@@ -87,6 +87,11 @@ public abstract class WindowMixin {
     public void toggleFullScreen() {
         this.fullscreen = !this.fullscreen;
         Options.fullscreenDirty = true;
+
+        if (!this.fullscreen) {
+            Config config = Initializer.CONFIG;
+            config.windowMode = WindowMode.WINDOWED.mode;
+        }
     }
 
     /**
@@ -111,13 +116,18 @@ public abstract class WindowMixin {
     private void setMode() {
         Config config = Initializer.CONFIG;
 
-        long monitor = GLFW.glfwGetPrimaryMonitor();
+        if (this.fullscreen) {
+            config.windowMode = WindowMode.EXCLUSIVE_FULLSCREEN.mode;
+        }
+
         if (this.fullscreen) {
             {
+                VideoModeManager.selectBestMonitor((Window) (Object) this);
+                long monitor = VideoModeManager.selectedMonitor;
                 VideoModeSet.VideoMode videoMode = config.videoMode;
 
                 boolean supported;
-                VideoModeSet set = VideoModeManager.getFromVideoMode(videoMode);
+                VideoModeSet set = VideoModeManager.getVideoModeSet(videoMode);
 
                 if (set != null) {
                     supported = set.hasRefreshRate(videoMode.refreshRate);
@@ -126,7 +136,7 @@ public abstract class WindowMixin {
                     supported = false;
                 }
 
-                if(!supported) {
+                if (!supported) {
                     LOGGER.error("Resolution not supported, using first available as fallback");
                     videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
                 }
@@ -148,6 +158,7 @@ public abstract class WindowMixin {
             }
         }
         else if (config.windowMode == WindowMode.WINDOWED_FULLSCREEN.mode) {
+            VideoModeManager.selectBestMonitor((Window) (Object) this);
             VideoModeSet.VideoMode videoMode = VideoModeManager.getOsVideoMode();
 
             if (!this.wasOnFullscreen) {

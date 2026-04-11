@@ -31,7 +31,6 @@ public class Initializer implements ClientModInitializer {
 		LOGGER.info("== VulkanMod ==");
 
 		Platform.init();
-		VideoModeManager.init();
 
 		var configPath = FabricLoader.getInstance()
 				.getConfigDir()

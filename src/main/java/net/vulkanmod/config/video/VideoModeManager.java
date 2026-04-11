@@ -1,5 +1,11 @@
 package net.vulkanmod.config.video;
 
+import com.mojang.blaze3d.platform.Monitor;
+import com.mojang.blaze3d.platform.ScreenManager;
+import com.mojang.blaze3d.platform.Window;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -7,18 +13,34 @@ import org.lwjgl.glfw.GLFWVidMode;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Math.clamp;
 import static org.lwjgl.glfw.GLFW.*;
 
 public abstract class VideoModeManager {
-    private static VideoModeSet.VideoMode osVideoMode;
-    private static VideoModeSet[] videoModeSets;
+    public static Long2ObjectMap<Monitor> monitors;
+    public static Long2ObjectMap<VideoModeSet[]> monitorToVideoModeSets = new Long2ObjectOpenHashMap<>();
+    public static Long2ObjectMap<VideoModeSet.VideoMode> osVideoModes = new Long2ObjectOpenHashMap<>();
 
+    public static long selectedMonitor;
     public static VideoModeSet.VideoMode selectedVideoMode;
 
-    public static void init() {
-        long monitor = glfwGetPrimaryMonitor();
-        osVideoMode = getCurrentVideoMode(monitor);
-        videoModeSets = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
+    public static void init(Long2ObjectMap<Monitor> monitors) {
+        VideoModeManager.monitors = monitors;
+        monitorToVideoModeSets.clear();
+
+        for (long monitor : VideoModeManager.monitors.keySet()) {
+            addMonitorVideoModes(monitor);
+        }
+    }
+
+    public static void addMonitorVideoModes(long monitor) {
+        monitorToVideoModeSets.put(monitor, getVideoResolutions(monitor));
+        osVideoModes.put(monitor, getCurrentVideoMode(monitor));
+    }
+
+    public static void removeMonitor(long monitor) {
+        monitorToVideoModeSets.remove(monitor);
+        osVideoModes.remove(monitor);
     }
 
     public static void applySelectedVideoMode() {
@@ -26,18 +48,20 @@ public abstract class VideoModeManager {
     }
 
     public static VideoModeSet[] getVideoResolutions() {
-        return videoModeSets;
+        return monitorToVideoModeSets.get(selectedMonitor);
     }
 
     public static VideoModeSet getFirstAvailable() {
-        if(videoModeSets != null)
+        var videoModeSets = monitorToVideoModeSets.get(glfwGetPrimaryMonitor());
+
+        if (videoModeSets != null)
             return videoModeSets[videoModeSets.length - 1];
         else
             return VideoModeSet.getDummy();
     }
 
     public static VideoModeSet.VideoMode getOsVideoMode() {
-        return osVideoMode;
+        return osVideoModes.get(selectedMonitor);
     }
 
     public static VideoModeSet.VideoMode getCurrentVideoMode(long monitor){
@@ -49,7 +73,7 @@ public abstract class VideoModeManager {
         return new VideoModeSet.VideoMode(vidMode.width(), vidMode.height(), vidMode.redBits(), vidMode.refreshRate());
     }
 
-    public static VideoModeSet[] populateVideoResolutions(long monitor) {
+    public static VideoModeSet[] getVideoResolutions(long monitor) {
         GLFWVidMode.Buffer buffer = GLFW.glfwGetVideoModes(monitor);
 
         List<VideoModeSet> videoModeSets = new ArrayList<>();
@@ -85,12 +109,65 @@ public abstract class VideoModeManager {
         return arr;
     }
 
-    public static VideoModeSet getFromVideoMode(VideoModeSet.VideoMode videoMode) {
+    public static VideoModeSet getVideoModeSet(VideoModeSet.VideoMode videoMode) {
+        var videoModeSets = monitorToVideoModeSets.get(selectedMonitor);
         for (var set : videoModeSets) {
             if (set.width == videoMode.width && set.height == videoMode.height)
                 return set;
         }
 
         return null;
+    }
+
+    public static void selectBestMonitor(Window window) {
+        selectedMonitor = findBestMonitor(window).getMonitor();
+
+        if (selectedMonitor == 0L) {
+            selectedMonitor = GLFW.glfwGetPrimaryMonitor();
+        }
+    }
+
+    public static Monitor findBestMonitor(final Window window) {
+        long windowMonitor = GLFW.glfwGetWindowMonitor(window.handle());
+        if (windowMonitor != 0L) {
+            return monitors.get(windowMonitor);
+        } else {
+            int winMinX = window.getX();
+            int winMaxX = winMinX + window.getScreenWidth();
+            int winMinY = window.getY();
+            int winMaxY = winMinY + window.getScreenHeight();
+            int maxArea = -1;
+            Monitor result = null;
+            long primaryMonitor = GLFW.glfwGetPrimaryMonitor();
+            Initializer.LOGGER.debug("Selecting monitor - primary: {}, current monitors: {}", primaryMonitor, monitors);
+
+            for (Monitor monitor : monitors.values()) {
+                int monMinX = monitor.getX();
+                int monMaxX = monMinX + monitor.getCurrentMode().getWidth();
+                int monMinY = monitor.getY();
+                int monMaxY = monMinY + monitor.getCurrentMode().getHeight();
+                int minX = clamp(winMinX, monMinX, monMaxX);
+                int maxX = clamp(winMaxX, monMinX, monMaxX);
+                int minY = clamp(winMinY, monMinY, monMaxY);
+                int maxY = clamp(winMaxY, monMinY, monMaxY);
+                int sx = Math.max(0, maxX - minX);
+                int sy = Math.max(0, maxY - minY);
+                int area = sx * sy;
+                if (area > maxArea) {
+                    result = monitor;
+                    maxArea = area;
+                } else if (area == maxArea && primaryMonitor == monitor.getMonitor()) {
+                    Initializer.LOGGER.debug("Primary monitor {} is preferred to monitor {}", monitor, result);
+                    result = monitor;
+                }
+            }
+
+            Initializer.LOGGER.debug("Selected monitor: {}", result);
+            return result;
+        }
+    }
+
+    public static Long2ObjectMap<Monitor> getMonitors() {
+        return monitors;
     }
 }

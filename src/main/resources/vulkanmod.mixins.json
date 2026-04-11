@@ -7,6 +7,7 @@
   "mixins": [
   ],
   "client": [
+    "window.ScreenManagerMixin",
     "window.WindowMixin",
     "window.WindowAccessor",
 
@@ -87,7 +88,6 @@
     "texture.mip.MipmapGeneratorM",
     "texture.image.NativeImageAccessor",
     "texture.update.MLightTexture",
-    "texture.update.MSpriteContents",
     "texture.update.MTextureManager",
     "util.ScreenshotMixin",
 
