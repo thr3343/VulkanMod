@@ -2,7 +2,6 @@ package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.vulkanmod.render.chunk.buffer.AreaBuffer;
@@ -298,7 +297,7 @@ public class RenderSection {
             AreaBuffer areaBuffer = drawBuffers.getAreaBuffer(renderType);
             int vertexOffset = DrawParametersBuffer.getVertexOffset(ptr);
             if (areaBuffer != null && vertexOffset != -1) {
-                int segmentOffset = vertexOffset * DrawBuffers.VERTEX_SIZE;
+                int segmentOffset = vertexOffset * drawBuffers.vertexSize;
                 areaBuffer.setSegmentFree(segmentOffset);
             }
 

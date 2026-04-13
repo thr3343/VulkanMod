@@ -24,7 +24,6 @@ import java.util.EnumMap;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
-    public static final int VERTEX_SIZE = PipelineManager.terrainVertexFormat.getVertexSize();
     public static final int INDEX_SIZE = Short.BYTES;
     public static final int UNDEFINED_FACING_IDX = QuadFacing.UNDEFINED.ordinal();
     public static final float POS_OFFSET = CustomVertexFormat.getPositionOffset();
@@ -34,6 +33,7 @@ public class DrawBuffers {
     private static final long cmdBufferPtr = MemoryUtil.nmemAlignedAlloc(CMD_STRIDE, (long) ChunkAreaManager.AREA_SIZE * QuadFacing.COUNT * CMD_STRIDE);
 
     private final int index;
+    public final int vertexSize = PipelineManager.getTerrainVertexFormat().getVertexSize();
     private final Vector3i origin;
     private final int minHeight;
 
@@ -116,10 +116,10 @@ public class DrawBuffers {
 
             if (vertexBuffer != null && doUpload) {
                 areaBuffer.upload(segment, vertexBuffer, offset);
-                vertexOffset = (segment.offset + offset) / VERTEX_SIZE;
+                vertexOffset = (segment.offset + offset) / vertexSize;
 
                 offset += vertexBuffer.remaining();
-                vertexCount = vertexBuffer.limit() / VERTEX_SIZE;
+                vertexCount = vertexBuffer.limit() / vertexSize;
                 indexCount = vertexCount * 6 / 4;
             }
 
@@ -154,7 +154,7 @@ public class DrawBuffers {
         };
 
         return this.vertexBuffers.computeIfAbsent(
-                renderType, renderType1 -> new AreaBuffer(AreaBuffer.Usage.VERTEX, initialSize, VERTEX_SIZE));
+                renderType, renderType1 -> new AreaBuffer(AreaBuffer.Usage.VERTEX, initialSize, vertexSize));
     }
 
     public AreaBuffer getAreaBuffer(TerrainRenderType r) {

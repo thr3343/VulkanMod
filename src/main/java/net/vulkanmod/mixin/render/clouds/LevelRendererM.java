@@ -22,12 +22,12 @@ public abstract class LevelRendererM {
     @Shadow private @Nullable ClientLevel level;
     @Shadow @Final private LevelTargetBundle targets;
 
-    @Unique private CloudRenderer cloudRenderer;
+    @Unique private CloudRenderer vmCloudRenderer;
 
     @Inject(method = "addCloudsPass", at = @At("HEAD"), cancellable = true)
     public void addCloudsPass(FrameGraphBuilder frameGraphBuilder, CloudStatus cloudStatus, Vec3 camPos, float partialTicks, int i, float g, CallbackInfo ci) {
-        if (this.cloudRenderer == null) {
-            this.cloudRenderer = new CloudRenderer();
+        if (this.vmCloudRenderer == null) {
+            this.vmCloudRenderer = new CloudRenderer();
         }
 
         FramePass framePass = frameGraphBuilder.addPass("clouds");
@@ -41,8 +41,8 @@ public abstract class LevelRendererM {
             Profiler profiler = Profiler.getMainProfiler();
             profiler.push("Clouds");
 
-            this.cloudRenderer.renderClouds(this.level, this.ticks, partialTicks,
-                                            camPos.x(), camPos.y(), camPos.z());
+            this.vmCloudRenderer.renderClouds(this.level, this.ticks, partialTicks,
+                                              camPos.x(), camPos.y(), camPos.z());
 
             profiler.pop();
         });
@@ -52,15 +52,15 @@ public abstract class LevelRendererM {
 
     @Inject(method = "allChanged", at = @At("RETURN"))
     private void onAllChanged(CallbackInfo ci) {
-        if (this.cloudRenderer != null) {
-            this.cloudRenderer.resetBuffer();
+        if (this.vmCloudRenderer != null) {
+            this.vmCloudRenderer.resetBuffer();
         }
     }
 
     @Inject(method = "onResourceManagerReload", at = @At("RETURN"))
     private void onReload(ResourceManager resourceManager, CallbackInfo ci) {
-        if (this.cloudRenderer != null) {
-            this.cloudRenderer.loadTexture();
+        if (this.vmCloudRenderer != null) {
+            this.vmCloudRenderer.loadTexture();
         }
     }
 
