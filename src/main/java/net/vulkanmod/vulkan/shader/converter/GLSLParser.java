@@ -127,29 +127,29 @@ public class GLSLParser {
 
         advanceToken(true);
         switch (currentToken.value) {
-//            case "define" -> {
-//                advanceToken(true);
-//
-//                this.defines.add(currentToken.value);
-//            }
-//            case "ifdef" -> {
-//                advanceToken(true);
-//
-//                if (!this.defines.contains(currentToken.value)) {
-//                    this.preprocessorState = PreprocessorState.IGNORE;
-//                }
-//            }
-//            case "else" -> {
-//                if (preprocessorState != PreprocessorState.IGNORE) {
-//                    preprocessorState = PreprocessorState.IGNORE;
-//                }
-//                else {
-//                    preprocessorState = PreprocessorState.DEFAULT;
-//                }
-//            }
-//            case "endif" -> {
-//                preprocessorState = PreprocessorState.DEFAULT;
-//            }
+            case "define" -> {
+                advanceToken(true);
+
+                this.defines.add(currentToken.value);
+            }
+            case "ifdef" -> {
+                advanceToken(true);
+
+                if (!this.defines.contains(currentToken.value)) {
+                    this.preprocessorState = PreprocessorState.IGNORE;
+                }
+            }
+            case "else" -> {
+                if (preprocessorState != PreprocessorState.IGNORE) {
+                    preprocessorState = PreprocessorState.IGNORE;
+                }
+                else {
+                    preprocessorState = PreprocessorState.DEFAULT;
+                }
+            }
+            case "endif" -> {
+                preprocessorState = PreprocessorState.DEFAULT;
+            }
             case "line" -> {
                 appendTokens = false;
             }
