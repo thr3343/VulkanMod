@@ -24,14 +24,6 @@ public class Page {
         return block;
     }
 
-    public Page register() {
-        OptionBlock[] oblocks = blocks.stream()
-                .map(Block::build)
-                .toArray(OptionBlock[]::new);
-        OptionRegistry.get().registerPage("name", Component.literal(name), oblocks, 5);
-        return this;
-    }
-
     public static class Block {
         private final String title;
         private final List<Option<?>> options = new ArrayList<>();

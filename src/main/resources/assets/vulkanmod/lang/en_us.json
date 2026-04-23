@@ -6,6 +6,11 @@
   "vulkanmod.options.pages.optimizations": "Optimizations",
   "vulkanmod.options.pages.other": "Other",
 
+  "vulkanmod.options.performanceImpact": "Performance impact: %s",
+  "vulkanmod.options.performanceImpact.low": "Low",
+  "vulkanmod.options.performanceImpact.medium": "Medium",
+  "vulkanmod.options.performanceImpact.high": "High",
+
   "vulkanmod.options.buttons.apply": "Apply",
   "vulkanmod.options.buttons.undo": "Undo",
   "vulkanmod.options.buttons.kofi": "Support me",

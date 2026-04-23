@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Platform;
-import net.vulkanmod.config.video.VideoMode;
 import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.config.option.Options;
 import net.vulkanmod.config.video.VideoModeSet;
@@ -17,10 +16,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -55,6 +51,9 @@ public abstract class WindowMixin {
 
     @Shadow protected abstract void updateFullscreen(boolean bl, @Nullable TracyFrameCapture tracyFrameCapture);
 
+
+    @Unique private boolean wasOnFullscreen = false;
+
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
 
@@ -88,6 +87,11 @@ public abstract class WindowMixin {
     public void toggleFullScreen() {
         this.fullscreen = !this.fullscreen;
         Options.fullscreenDirty = true;
+
+        if (!this.fullscreen) {
+            Config config = Initializer.CONFIG;
+            config.windowMode = WindowMode.WINDOWED.mode;
+        }
     }
 
     /**
@@ -103,8 +107,6 @@ public abstract class WindowMixin {
         }
     }
 
-    private boolean wasOnFullscreen = false;
-
     /**
      * @author
      */
@@ -112,24 +114,29 @@ public abstract class WindowMixin {
     private void setMode() {
         Config config = Initializer.CONFIG;
 
-        long monitor = GLFW.glfwGetPrimaryMonitor();
+        if (this.fullscreen) {
+            config.windowMode = WindowMode.EXCLUSIVE_FULLSCREEN.mode;
+        }
+
         if (this.fullscreen) {
             {
-                VideoMode videoMode = config.videoMode;
+                VideoModeManager.selectBestMonitor((Window) (Object) this);
+                long monitor = VideoModeManager.selectedMonitor;
+                VideoModeSet.VideoMode videoMode = config.videoMode;
 
                 boolean supported;
-                VideoModeSet set = VideoModeManager.findSetFor(videoMode);
+                VideoModeSet set = VideoModeManager.getVideoModeSet(videoMode);
 
                 if (set != null) {
-                    supported = set.supportsRate(videoMode.refreshRate());
+                    supported = set.hasRefreshRate(videoMode.refreshRate);
                 }
                 else {
                     supported = false;
                 }
 
-                if(!supported) {
+                if (!supported) {
                     LOGGER.error("Resolution not supported, using first available as fallback");
-                    videoMode = VideoModeManager.currentOsMode();
+                    videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
                 }
 
                 if (!this.wasOnFullscreen) {
@@ -141,15 +148,16 @@ public abstract class WindowMixin {
 
                 this.x = 0;
                 this.y = 0;
-                this.width = videoMode.width();
-                this.height = videoMode.height();
-                GLFW.glfwSetWindowMonitor(this.handle, monitor, this.x, this.y, this.width, this.height, videoMode.refreshRate());
+                this.width = videoMode.width;
+                this.height = videoMode.height;
+                GLFW.glfwSetWindowMonitor(this.handle, monitor, this.x, this.y, this.width, this.height, videoMode.refreshRate);
 
                 this.wasOnFullscreen = true;
             }
         }
-        else if (config.windowMode == 0) { // 0 is windowed
-            VideoMode videoMode = VideoModeManager.currentOsMode();
+        else if (config.windowMode == WindowMode.WINDOWED_FULLSCREEN.mode) {
+            VideoModeManager.selectBestMonitor((Window) (Object) this);
+            VideoModeSet.VideoMode videoMode = VideoModeManager.getOsVideoMode();
 
             if (!this.wasOnFullscreen) {
                 this.windowedX = this.x;
@@ -158,8 +166,8 @@ public abstract class WindowMixin {
                 this.windowedHeight = this.height;
             }
 
-            int width = videoMode.width();
-            int height = videoMode.height();
+            int width = videoMode.width;
+            int height = videoMode.height;
 
             GLFW.glfwSetWindowAttrib(this.handle, GLFW_DECORATED, GLFW_FALSE);
             GLFW.glfwSetWindowMonitor(this.handle, 0L, 0, 0, width, height, -1);
@@ -193,9 +201,6 @@ public abstract class WindowMixin {
             if(width > 0 && height > 0) {
                 this.framebufferWidth = width;
                 this.framebufferHeight = height;
-//                if (this.framebufferWidth != prevWidth || this.framebufferHeight != prevHeight) {
-//                    this.eventHandler.resizeDisplay();
-//                }
 
                 Renderer.scheduleSwapChainUpdate();
             }

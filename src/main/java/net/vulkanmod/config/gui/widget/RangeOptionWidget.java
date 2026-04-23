@@ -12,8 +12,6 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.glfw.GLFW;
 
 public class RangeOptionWidget extends OptionWidget<RangeOption> {
-    protected double value;
-
     private boolean focused;
 
     public RangeOptionWidget(RangeOption option, Component name) {
@@ -23,7 +21,8 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
     @Override
     protected void renderControls(double mouseX, double mouseY) {
-        int valueX = this.controlX + (int) (this.value * (this.controlWidth));
+        float scaledValue = this.option.getScaledNewValue();
+        int valueX = this.controlX + (int) (scaledValue * (this.controlWidth));
 
         if (this.controlHovered && this.active) {
             int halfWidth = 2;
@@ -67,7 +66,8 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
         if (isLeft || isRight) {
             float direction = isLeft ? -1.0f : 1.0f;
-            this.setValue(this.value + (double) (direction / (float) (this.width - 8)));
+            double currentValue = this.option.getScaledValue();
+            this.setValue(currentValue + (double) (direction / (float) (this.width - 8)));
         }
 
         return false;
@@ -88,10 +88,10 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
     }
 
     private void setValue(double value) {
-        double d = this.value;
-        this.value = Mth.clamp(value, 0.0, 1.0);
-        if (d != this.value) {
-            this.applyValue();
+        double currentValue = this.option.getScaledValue();
+        value = Mth.clamp(value, 0.0, 1.0);
+        if (currentValue != value) {
+            this.applyNewValue((float) value);
         }
         this.updateDisplayedValue();
     }
@@ -101,9 +101,8 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
         this.setValueFromMouse(mouseX);
     }
 
-    private void applyValue() {
-        option.setValue((float) this.value);
-        this.value = option.getScaledValue();
+    private void applyNewValue(float value) {
+        option.setNewValueFromScaledFloat(value);
     }
 
     @Override

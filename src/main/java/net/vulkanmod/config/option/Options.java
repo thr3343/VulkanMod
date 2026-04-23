@@ -14,6 +14,8 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public abstract class Options {
@@ -25,78 +27,116 @@ public abstract class Options {
     private static final Window window = minecraft.getWindow();
     private static final net.minecraft.client.Options mcOptions = minecraft.options;
 
+    public static List<OptionPage> getOptionPages() {
+        List<OptionPage> optionPages = new ArrayList<>();
+
+        OptionPage page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.video").getString(),
+                Options.getVideoOpts()
+        );
+        optionPages.add(page);
+
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.graphics").getString(),
+                Options.getGraphicsOpts()
+        );
+        optionPages.add(page);
+
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.optimizations").getString(),
+                Options.getOptimizationOpts()
+        );
+        optionPages.add(page);
+
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.other").getString(),
+                Options.getOtherOpts()
+        );
+        optionPages.add(page);
+
+        return optionPages;
+    }
+
     public static OptionBlock[] getVideoOpts() {
-        VideoMode currentMode = config.videoMode;
-        VideoModeSet currentSet = VideoModeManager.findSetFor(currentMode);
-        VideoModeSet[] resolutions = VideoModeManager.availableSets().toArray(VideoModeSet[]::new);
+        VideoModeManager.selectBestMonitor(window);
+        var resolutions = VideoModeManager.getVideoResolutions();
 
-        CyclingOption<VideoModeSet> resolutionOption = (CyclingOption<VideoModeSet>) new CyclingOption<>(
-                Component.translatable("options.fullscreen.resolution"),
-                resolutions,
-                set -> {
-                    int targetRate = currentSet.supportsRate(currentMode.refreshRate())
-                            ? currentMode.refreshRate()
-                            : set.refreshRates().last();
+        var videoMode = config.videoMode;
+        var videoModeSet = VideoModeManager.getVideoModeSet(videoMode);
 
-                                        VideoMode newMode = set.modeAtRate(targetRate);
-                    config.videoMode = newMode;
-                    VideoModeManager.selectMode(newMode);
+        if (videoModeSet == null) {
+            videoModeSet = resolutions[resolutions.length - 1];
+            videoMode = videoModeSet.getVideoMode();
+        }
 
-                    if (mcOptions.fullscreen().get()) {
-                        fullscreenDirty = true;
-                    }
-                },
-                () -> currentSet
-        ).setTranslator(set -> Component.literal(set.toString()));
+        VideoModeManager.selectedVideoMode = videoMode;
+        var refreshRates = videoModeSet.getRefreshRates();
+
+        var windowModeOption = new CyclingOption<>(Component.translatable("vulkanmod.options.windowMode"),
+                                                   WindowMode.values(),
+                                                   value -> {
+                                                       boolean exclusiveFullscreen = value == WindowMode.EXCLUSIVE_FULLSCREEN;
+                                                       mcOptions.fullscreen()
+                                                                       .set(exclusiveFullscreen);
+
+                                                       config.windowMode = value.mode;
+                                                       fullscreenDirty = true;
+                                                   },
+                                                   () -> WindowMode.fromValue(config.windowMode))
+                .setTranslator(value -> Component.translatable(WindowMode.getComponentName(value)));
 
         CyclingOption<Integer> refreshRateOption = (CyclingOption<Integer>) new CyclingOption<>(
                 Component.translatable("vulkanmod.options.refreshRate"),
-                currentSet.refreshRates().toArray(Integer[]::new),
-                rate -> {
-                    VideoMode newMode = currentMode.withRefreshRate(rate);
-                    config.videoMode = newMode;
-                    VideoModeManager.selectMode(newMode);
+                refreshRates.toArray(new Integer[0]),
+                (value) -> {
+                    VideoModeManager.selectedVideoMode.refreshRate = value;
+                    VideoModeManager.applySelectedVideoMode();
 
                     if (mcOptions.fullscreen().get()) {
                         fullscreenDirty = true;
                     }
                 },
-                currentMode::refreshRate
-        ).setTranslator(rate -> Component.literal(rate + " Hz"));
+                () -> VideoModeManager.selectedVideoMode.refreshRate)
+                .setTranslator(refreshRate -> Component.nullToEmpty(refreshRate.toString()))
+                .setActivationFn(() -> windowModeOption.getNewValue() == WindowMode.EXCLUSIVE_FULLSCREEN);
+
+        Option<VideoModeSet> resolutionOption = new CyclingOption<>(
+                Component.translatable("options.fullscreen.resolution"),
+                resolutions,
+                (value) -> {
+                    VideoModeManager.selectedVideoMode = value.getVideoMode(refreshRateOption.getNewValue());
+                    VideoModeManager.applySelectedVideoMode();
+
+                    if (mcOptions.fullscreen().get()) {
+                        fullscreenDirty = true;
+                    }
+                },
+                () -> {
+                    var selectedVideoMode = VideoModeManager.selectedVideoMode;
+                    var selectedVideoModeSet = VideoModeManager.getVideoModeSet(selectedVideoMode);
+
+                    return selectedVideoModeSet != null ? selectedVideoModeSet : VideoModeSet.getDummy();
+                })
+                .setTranslator(resolution -> Component.nullToEmpty(resolution.toString()))
+                .setActivationFn(() -> windowModeOption.getNewValue() == WindowMode.EXCLUSIVE_FULLSCREEN);
 
         resolutionOption.setOnChange(() -> {
             VideoModeSet newSet = resolutionOption.getNewValue();
-            Integer[] rates = newSet.refreshRates().toArray(new Integer[0]);
+            Integer[] rates = newSet.getRefreshRates().toArray(new Integer[0]);
             refreshRateOption.setValues(rates);
             refreshRateOption.setNewValue(rates[rates.length - 1]);
         });
 
-        CyclingOption<WindowMode> windowModeOption = (CyclingOption<WindowMode>) new CyclingOption<WindowMode>(
-                Component.translatable("vulkanmod.options.windowMode"),
-                WindowMode.VALUES,
-                mode -> {
-                    config.windowMode = switch (mode) {
-                        case WindowMode.Windowed() -> 0;
-                        case WindowMode.WindowedFullscreen() -> 1;
-                        case WindowMode.ExclusiveFullscreen() -> 2;
-                    };
-
-                    boolean exclusiveFullscreen = mode instanceof WindowMode.ExclusiveFullscreen;
-                    mcOptions.fullscreen().set(exclusiveFullscreen);
-                    fullscreenDirty = true;
-                },
-                () -> switch (config.windowMode) {
-                    case 1 -> new WindowMode.WindowedFullscreen();
-                    case 2 -> new WindowMode.ExclusiveFullscreen();
-                    default -> new WindowMode.Windowed();
-                }
-        ).setTranslator(WindowMode::nameOf);
+        windowModeOption.setOnChange(() -> {
+            resolutionOption.updateActiveState();
+            refreshRateOption.updateActiveState();
+        });
 
         return new OptionBlock[]{
                 new OptionBlock("", new Option<?>[]{
+                        windowModeOption,
                         resolutionOption,
                         refreshRateOption,
-                        windowModeOption,
                         new RangeOption(Component.translatable("options.framerateLimit"),
                                 10, 260, 10,
                                 value -> Component.nullToEmpty(value == 260
@@ -176,7 +216,9 @@ public abstract class Options {
                         new RangeOption(Component.translatable("options.renderDistance"),
                                 2, 32, 1,
                                 value -> mcOptions.renderDistance().set(value),
-                                () -> mcOptions.renderDistance().get()),
+                                () -> mcOptions.renderDistance().get())
+                                .setTooltip(v -> Component.literal("Chunk render distance"))
+                                .setImpact(PerformanceImpact.HIGH),
                         new RangeOption(Component.translatable("options.simulationDistance"),
                                 5, 32, 1,
                                 value -> mcOptions.simulationDistance().set(value),
@@ -197,6 +239,7 @@ public abstract class Options {
                                 new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                                 value -> mcOptions.particles().set(value),
                                 () -> mcOptions.particles().get())
+                                .setImpact(PerformanceImpact.MEDIUM)
                                 .setTranslator(p -> Component.translatable(p.getKey())),
                         new CyclingOption<>(Component.translatable("options.renderClouds"),
                                 CloudStatus.values(),
@@ -223,7 +266,8 @@ public abstract class Options {
                                 }))
                                 .setTooltip(value -> value == LightMode.SUB_BLOCK
                                 ? Component.translatable("vulkanmod.options.ao.subBlock.tooltip")
-                                : Component.empty()),
+                                : Component.empty())
+                                .setImpact(PerformanceImpact.LOW),
                         new RangeOption(Component.translatable("options.biomeBlendRadius"),
                                 0, 7, 1,
                                 value -> Component.nullToEmpty("%d x %d".formatted(value * 2 + 1, value * 2 + 1)),
@@ -236,11 +280,13 @@ public abstract class Options {
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("options.entityShadows"),
                                 value -> mcOptions.entityShadows().set(value),
-                                () -> mcOptions.entityShadows().get()),
+                                () -> mcOptions.entityShadows().get())
+                                .setImpact(PerformanceImpact.LOW),
                         new RangeOption(Component.translatable("options.entityDistanceScaling"),
                                 50, 500, 25,
                                 value -> mcOptions.entityDistanceScaling().set(value * 0.01),
-                                () -> (int)(mcOptions.entityDistanceScaling().get() * 100)),
+                                () -> (int)(mcOptions.entityDistanceScaling().get() * 100))
+                                .setImpact(PerformanceImpact.HIGH),
                         new CyclingOption<>(Component.translatable("options.mipmapLevels"),
                                 new Integer[]{0,1,2,3,4},
                                 value -> {
@@ -250,6 +296,7 @@ public abstract class Options {
                                 },
                                 () -> mcOptions.mipmapLevels().get())
                                 .setTranslator(v -> Component.literal(String.valueOf(v)))
+                                .setImpact(PerformanceImpact.LOW)
                 })
         };
     }
@@ -268,11 +315,13 @@ public abstract class Options {
                                     case 10 -> "options.off";
                                     default -> "vulkanmod.options.unknown";
                                 }))
-                                .setTooltip(v -> v <= 3 ? Component.translatable("vulkanmod.options.advCulling.tooltip") : Component.empty()),
+                                .setTooltip(v -> v <= 3 ? Component.translatable("vulkanmod.options.advCulling.tooltip") : Component.empty())
+                                .setImpact(PerformanceImpact.HIGH),
                         new SwitchOption(Component.translatable("vulkanmod.options.entityCulling"),
                                 v -> config.entityCulling = v,
                                 () -> config.entityCulling)
-                                .setTooltip(v -> Component.translatable("vulkanmod.options.entityCulling.tooltip")),
+                                .setTooltip(v -> Component.translatable("vulkanmod.options.entityCulling.tooltip"))
+                                .setImpact(PerformanceImpact.HIGH),
                         new SwitchOption(Component.translatable("vulkanmod.options.uniqueOpaqueLayer"),
                                 v -> {
                                     config.uniqueOpaqueLayer = v;
@@ -280,18 +329,21 @@ public abstract class Options {
                                     minecraft.levelRenderer.allChanged();
                                 },
                                 () -> config.uniqueOpaqueLayer)
-                                .setTooltip(v -> Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip")),
+                                .setTooltip(v -> Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip"))
+                                .setImpact(PerformanceImpact.HIGH),
                         new SwitchOption(Component.translatable("vulkanmod.options.backfaceCulling"),
                                 v -> {
                                     config.backFaceCulling = v;
                                     minecraft.levelRenderer.allChanged();
                                 },
                                 () -> config.backFaceCulling)
-                                .setTooltip(v -> Component.translatable("vulkanmod.options.backfaceCulling.tooltip")),
+                                .setTooltip(v -> Component.translatable("vulkanmod.options.backfaceCulling.tooltip"))
+                                .setImpact(PerformanceImpact.HIGH),
                         new SwitchOption(Component.translatable("vulkanmod.options.indirectDraw"),
                                 v -> config.indirectDraw = v,
                                 () -> config.indirectDraw)
                                 .setTooltip(v -> Component.translatable("vulkanmod.options.indirectDraw.tooltip"))
+                                .setImpact(PerformanceImpact.HIGH)
                 })
         };
     }

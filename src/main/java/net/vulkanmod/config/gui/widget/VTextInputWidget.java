@@ -49,6 +49,8 @@ public class VTextInputWidget extends VAbstractWidget {
 
         GuiRenderer.fill(this.x, this.y, this.x + this.width, this.y + this.height, backgroundColor);
 
+        this.renderHovering(0, 0);
+
         if (isFocused && cursorPos != selectionEnd) {
             int start = Math.min(cursorPos, selectionEnd);
             int end = Math.max(cursorPos, selectionEnd);

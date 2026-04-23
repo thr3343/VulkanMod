@@ -11,13 +11,13 @@ public abstract class Option<T> {
     protected final Component name;
     @SuppressWarnings("unused")
     protected Component tooltip;
+    protected PerformanceImpact impact;
 
     protected Consumer<T> onApply;
     protected Supplier<T> valueSupplier;
 
     protected T value;
     protected T newValue;
-    protected T originalValue;
 
     protected Function<T, Component> translator;
     protected Function<T, Component> tooltipTranslator;
@@ -87,13 +87,22 @@ public abstract class Option<T> {
         return this;
     }
 
+    public PerformanceImpact getImpact() {
+        return impact;
+    }
+
+    public Option<T> setImpact(PerformanceImpact impact) {
+        this.impact = impact;
+        return this;
+    }
+
     public Option<T> setActive(boolean active) {
         this.active = active;
         this.widget.active = active;
         return this;
     }
 
-    public abstract OptionWidget<?> createWidget();
+    protected abstract OptionWidget<?> createWidget();
 
     public OptionWidget<?> getWidget() {
         if (this.widget == null) {
@@ -118,9 +127,7 @@ public abstract class Option<T> {
             this.active = true;
         }
 
-        if (this.widget != null) {
-            this.widget.setActive(this.active);
-        }
+        this.widget.setActive(this.active);
     }
 
     public Component getName() {
@@ -146,17 +153,8 @@ public abstract class Option<T> {
         this.value = this.newValue;
     }
 
-    public void captureOriginalState() {
-        this.originalValue = this.value;
-    }
-
-    public void resetToOriginalState() {
-        if (this.originalValue != null) {
-            this.newValue = this.originalValue;
-
-            if (onChange != null)
-                onChange.run();
-        }
+    public void resetValue() {
+        this.setNewValue(this.value);
     }
 
     public T getNewValue() {
@@ -171,7 +169,7 @@ public abstract class Option<T> {
         if (this.tooltipTranslator != null) {
             return this.tooltipTranslator.apply(this.newValue);
         } else {
-            return Component.empty();
+            return null;
         }
     }
 }

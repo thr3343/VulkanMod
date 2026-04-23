@@ -13,19 +13,21 @@ public class RangeOption extends Option<Integer> {
     int min;
     int max;
     int step;
+    float scaledNewValue;
 
     public RangeOption(Component name, int min, int max, int step, Function<Integer, Component> translator, Consumer<Integer> setter, Supplier<Integer> getter) {
         super(name, setter, getter, translator);
         this.min = min;
         this.max = max;
         this.step = step;
+        this.scaledNewValue = computeScaledValue(this.newValue);
     }
 
     public RangeOption(Component name, int min, int max, int step, Consumer<Integer> setter, Supplier<Integer> getter) {
         this(name, min, max, step, (i) -> Component.literal(String.valueOf(i)), setter, getter);
     }
 
-    public OptionWidget<?> createWidget() {
+    protected OptionWidget<?> createWidget() {
         var widget = new RangeOptionWidget(this, this.name);
         this.widget = widget;
         return widget;
@@ -36,16 +38,28 @@ public class RangeOption extends Option<Integer> {
     }
 
     public float getScaledValue() {
-        float value = this.getNewValue();
-
-        return (value - this.min) / (this.max - this.min);
+        return this.scaledNewValue;
     }
 
-    public void setValue(float f) {
+    public void setNewValueFromScaledFloat(float f) {
         double n = Mth.lerp(f, min, max);
 
         n = this.step * Math.round(n / this.step);
 
         this.setNewValue((int) n);
+    }
+
+    public void setNewValue(Integer newValue) {
+        super.setNewValue(newValue);
+
+        this.scaledNewValue = computeScaledValue(this.newValue);
+    }
+
+    public float getScaledNewValue() {
+        return scaledNewValue;
+    }
+
+    private float computeScaledValue(float value) {
+        return (value - this.min) / (this.max - this.min);
     }
 }

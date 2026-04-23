@@ -13,7 +13,7 @@ public class SwitchOption extends Option<Boolean> {
     }
 
     @Override
-    public OptionWidget<?> createWidget() {
+    protected OptionWidget<?> createWidget() {
         var widget = new SwitchOptionWidget(this, this.name);
         this.widget = widget;
         return widget;

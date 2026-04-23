@@ -8,6 +8,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.option.Option;
+import net.vulkanmod.config.option.PerformanceImpact;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,20 +28,12 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
         this.displayedValue = Component.literal("N/A");
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
     @Override
-    public void setPosition(int x, int y, int width, int height) {
-        super.setPosition(x, y, width, height);
+    public void setDimensions(int x, int y, int width, int height) {
+        super.setDimensions(x, y, width, height);
 
         this.controlWidth = Math.min((int) (width * 0.5f) - 8, 120);
         this.controlX = this.x + this.width - this.controlWidth - 8;
-    }
-
-    public void setDimensions(int x, int y, int width, int height) {
-        this.setPosition(x, y, width, height);
     }
 
     public void render(double mouseX, double mouseY) {
@@ -159,6 +152,10 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
 
     public Component getTooltip() {
         return this.option.getTooltip();
+    }
+
+    public PerformanceImpact getImpact() {
+        return this.option.getImpact();
     }
 
     @Override

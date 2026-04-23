@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.vulkanmod.config.gui.GuiElement;
 import net.vulkanmod.config.gui.util.VGuiConstants;
 import net.vulkanmod.config.gui.render.GuiRenderer;
+import net.vulkanmod.config.option.PerformanceImpact;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 public abstract class VAbstractWidget extends GuiElement {
@@ -17,11 +18,24 @@ public abstract class VAbstractWidget extends GuiElement {
     public boolean focused;
 
     protected Component message;
+    protected boolean centeredText = true;
+    protected int margin = 4;
+
+    public void setDimensions(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public void setTextLayout(boolean centered, int margin) {
+        this.centeredText = centered;
+        this.margin = margin;
+    }
 
     public void render(double mX, double mY) {
         this.updateState(mX, mY);
         this.renderWidget(mX, mY);
-        this.renderHovering(0, 0);
     }
 
     public void renderWidget(double mX, double mY) {
@@ -36,7 +50,10 @@ public abstract class VAbstractWidget extends GuiElement {
     protected void onDrag(double mX, double mY, double f, double g) {
     }
 
-    @SuppressWarnings("SameParameterValue") // I just want code without warnings :^
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     protected void renderHovering(int xPadding, int yPadding) {
         if (this.isFocused() || !this.isActive() || !this.visible || this.focused)
             return;
@@ -120,6 +137,10 @@ public abstract class VAbstractWidget extends GuiElement {
     }
 
     public Component getTooltip() {
+        return null;
+    }
+
+    public PerformanceImpact getImpact() {
         return null;
     }
 }

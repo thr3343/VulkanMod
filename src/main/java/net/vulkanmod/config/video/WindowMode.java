@@ -1,42 +1,31 @@
 package net.vulkanmod.config.video;
 
-import net.minecraft.network.chat.Component;
+public enum WindowMode {
+    WINDOWED(0),
+    WINDOWED_FULLSCREEN(1),
+    EXCLUSIVE_FULLSCREEN(2);
 
-public sealed interface WindowMode permits WindowMode.Windowed, WindowMode.WindowedFullscreen, WindowMode.ExclusiveFullscreen {
+    public final int mode;
 
-    String translationKey();
-
-    @SuppressWarnings("unused")
-    boolean isFullscreen();
-
-    record Windowed() implements WindowMode {
-        public String translationKey() { return "vulkanmod.options.windowMode.windowed"; }
-        public boolean isFullscreen() { return false; }
+    WindowMode(int mode) {
+        this.mode = mode;
     }
 
-    record WindowedFullscreen() implements WindowMode {
-        public String translationKey() { return "vulkanmod.options.windowMode.windowedFullscreen"; }
-        public boolean isFullscreen() { return true; }
+    public static WindowMode fromValue(int value) {
+        return switch (value) {
+            case 0 -> WINDOWED;
+            case 1 -> WINDOWED_FULLSCREEN;
+            case 2 -> EXCLUSIVE_FULLSCREEN;
+
+            default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
     }
 
-    record ExclusiveFullscreen() implements WindowMode {
-        public String translationKey() { return "options.fullscreen"; }
-        public boolean isFullscreen() { return true; }
-    }
-
-    WindowMode[] VALUES = { new Windowed(), new WindowedFullscreen(), new ExclusiveFullscreen() };
-
-    @SuppressWarnings("unused")
-    static WindowMode fromIndex(int index) {
-        return VALUES[index % VALUES.length];
-    }
-
-    @SuppressWarnings("unused")
-    static WindowMode fromMinecraftFullscreen(boolean mcFullscreen) {
-        return mcFullscreen ? new ExclusiveFullscreen() : new Windowed();
-    }
-
-    static Component nameOf(WindowMode mode) {
-        return Component.translatable(mode.translationKey());
+    public static String getComponentName(WindowMode windowMode) {
+        return switch (windowMode) {
+            case WINDOWED -> "vulkanmod.options.windowMode.windowed";
+            case WINDOWED_FULLSCREEN -> "vulkanmod.options.windowMode.windowedFullscreen";
+            case EXCLUSIVE_FULLSCREEN -> "options.fullscreen";
+        };
     }
 }
