@@ -346,6 +346,36 @@ public class Renderer {
 
     private void submitFrame() {
         if (swapChainUpdate || !swapChain.hasImages()) {
+            try (MemoryStack stack = stackPush()) {
+                VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+                submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+
+                var waitSemaphores = Synchronization.INSTANCE.getWaitSemaphores(stack);
+                int waitSemaphoreCount = waitSemaphores.limit();
+                IntBuffer waitDstStageMask = stack.mallocInt(waitSemaphoreCount);
+
+                for (int i = 0; i < waitSemaphoreCount; i++) {
+                    waitDstStageMask.put(i, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+                }
+
+                submitInfo.pWaitSemaphores(waitSemaphores);
+                submitInfo.waitSemaphoreCount(waitSemaphores.limit());
+                submitInfo.pWaitDstStageMask(waitDstStageMask);
+                submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+                vkResetFences(device, inFlightFences.get(currentFrame));
+
+                int vkResult;
+                if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue()
+                                                           .vkQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+                    vkResetFences(device, inFlightFences.get(currentFrame));
+                    throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+                }
+
+                // Semaphore waited command buffers will be reset right after waiting this command buffer's fence
+                Synchronization.INSTANCE.scheduleCbReset();
+            }
+
             currentFrame = (currentFrame + 1) % framesNum;
             return;
         }
@@ -380,6 +410,9 @@ public class Renderer {
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
 
+            // Semaphore waited command buffers will be reset right after waiting this command buffer's fence
+            Synchronization.INSTANCE.scheduleCbReset();
+
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
@@ -398,9 +431,6 @@ public class Renderer {
             } else if (vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present rendered frame: %s".formatted(VkResult.decode(vkResult)));
             }
-
-            // Semaphore waited command buffers will be reset right after waiting this command buffer's fence
-            Synchronization.INSTANCE.scheduleCbReset();
 
             currentFrame = (currentFrame + 1) % framesNum;
         }
