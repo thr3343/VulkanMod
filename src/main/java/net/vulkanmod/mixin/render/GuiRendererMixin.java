@@ -14,10 +14,11 @@ import net.vulkanmod.render.engine.VkRenderPass;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GuiRenderer.class)
 public abstract class GuiRendererMixin {
@@ -25,8 +26,9 @@ public abstract class GuiRendererMixin {
     @Shadow @Final private GuiRenderState renderState;
     @Shadow private @Nullable GpuTextureView itemsAtlasView;
 
-    @Overwrite
-    private void submitBlitFromItemAtlas(GuiItemRenderState guiItemRenderState, float u, float v, int size, int atlasSize) {
+    @Inject(method = "submitBlitFromItemAtlas", at = @At("HEAD"), cancellable = true)
+    private void submitBlitFromItemAtlas(GuiItemRenderState guiItemRenderState, float u, float v, int size, int atlasSize,
+                                         CallbackInfo ci) {
         v = 1.0f - v;
         float u1 = u + (float)size / atlasSize;
         float v1 = v + (float)(size) / atlasSize;
@@ -49,6 +51,8 @@ public abstract class GuiRendererMixin {
                                 null
                         )
                 );
+
+        ci.cancel();
     }
 
     @Redirect(method = "executeDraw", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderPass;setIndexBuffer(Lcom/mojang/blaze3d/buffers/GpuBuffer;Lcom/mojang/blaze3d/vertex/VertexFormat$IndexType;)V"))
