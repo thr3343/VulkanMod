@@ -26,7 +26,9 @@ public class RangeOption extends Option<Integer> {
     }
 
     public OptionWidget<?> createWidget() {
-        return new RangeOptionWidget(this, this.name);
+        var widget = new RangeOptionWidget(this, this.name);
+        this.widget = widget;
+        return widget;
     }
 
     public Component getName() {

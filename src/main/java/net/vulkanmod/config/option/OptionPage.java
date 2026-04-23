@@ -5,8 +5,9 @@ import net.vulkanmod.config.gui.VOptionList;
 
 public class OptionPage {
     public final String name;
-    OptionBlock[] optionBlocks;
+    public OptionBlock[] optionBlocks;
     private VOptionList optionList;
+    private int order;
 
     public OptionPage(String name, OptionBlock[] optionBlocks) {
         this.name = name;
@@ -49,5 +50,29 @@ public class OptionPage {
                 option.updateActiveState();
             }
         }
+    }
+
+    public void captureOriginalState() {
+        for (var block : this.optionBlocks) {
+            for (var option : block.options()) {
+                option.captureOriginalState();
+            }
+        }
+    }
+
+    public void resetToOriginalState() {
+        for (var block : this.optionBlocks) {
+            for (var option : block.options()) {
+                option.resetToOriginalState();
+            }
+        }
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
+    }
+
+    public int getOrder() {
+        return order;
     }
 }

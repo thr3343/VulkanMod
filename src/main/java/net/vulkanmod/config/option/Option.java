@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 public abstract class Option<T> {
     protected final Component name;
+    @SuppressWarnings("unused")
     protected Component tooltip;
 
     protected Consumer<T> onApply;
@@ -16,14 +17,29 @@ public abstract class Option<T> {
 
     protected T value;
     protected T newValue;
+    protected T originalValue;
 
     protected Function<T, Component> translator;
+    protected Function<T, Component> tooltipTranslator;
 
     OptionWidget<?> widget;
 
     protected boolean active;
     protected Runnable onChange;
     protected Supplier<Boolean> activationFn;
+
+    @SuppressWarnings("unused")
+    public Option(Component name, Consumer<T> setter, Supplier<T> getter, Function<T, Component> translator,  Function<T, Component> tooltip) {
+        this.name = name;
+
+        this.onApply = setter;
+        this.valueSupplier = getter;
+
+        this.translator = translator;
+        this.tooltipTranslator = tooltip;
+
+        this.newValue = this.value = this.valueSupplier.get();
+    }
 
     public Option(Component name, Consumer<T> setter, Supplier<T> getter, Function<T, Component> translator) {
         this.name = name;
@@ -45,11 +61,13 @@ public abstract class Option<T> {
         this.newValue = this.value = this.valueSupplier.get();
     }
 
+    @SuppressWarnings("unused")
     public Option<T> setOnApply(Consumer<T> onApply) {
         this.onApply = onApply;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public Option<T> setValueSupplier(Supplier<T> supplier) {
         this.valueSupplier = supplier;
         return this;
@@ -60,13 +78,22 @@ public abstract class Option<T> {
         return this;
     }
 
+    public Function<T, Component> getTranslator() {
+        return translator;
+    }
+
+    public Option<T> setTooltip(Function<T, Component> tooltipTranslator) {
+        this.tooltipTranslator = tooltipTranslator;
+        return this;
+    }
+
     public Option<T> setActive(boolean active) {
         this.active = active;
         this.widget.active = active;
         return this;
     }
 
-    abstract OptionWidget<?> createWidget();
+    public abstract OptionWidget<?> createWidget();
 
     public OptionWidget<?> getWidget() {
         if (this.widget == null) {
@@ -91,7 +118,9 @@ public abstract class Option<T> {
             this.active = true;
         }
 
-        this.widget.setActive(this.active);
+        if (this.widget != null) {
+            this.widget.setActive(this.active);
+        }
     }
 
     public Component getName() {
@@ -117,6 +146,19 @@ public abstract class Option<T> {
         this.value = this.newValue;
     }
 
+    public void captureOriginalState() {
+        this.originalValue = this.value;
+    }
+
+    public void resetToOriginalState() {
+        if (this.originalValue != null) {
+            this.newValue = this.originalValue;
+
+            if (onChange != null)
+                onChange.run();
+        }
+    }
+
     public T getNewValue() {
         return this.newValue;
     }
@@ -125,12 +167,11 @@ public abstract class Option<T> {
         return this.translator.apply(this.newValue);
     }
 
-    public Option<T> setTooltip(Component text) {
-        this.tooltip = text;
-        return this;
-    }
-
     public Component getTooltip() {
-        return this.tooltip;
+        if (this.tooltipTranslator != null) {
+            return this.tooltipTranslator.apply(this.newValue);
+        } else {
+            return Component.empty();
+        }
     }
 }

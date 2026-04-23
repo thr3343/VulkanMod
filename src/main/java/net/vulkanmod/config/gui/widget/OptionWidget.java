@@ -5,13 +5,11 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.option.Option;
 import net.vulkanmod.vulkan.util.ColorUtil;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget implements NarratableEntry {
     public int controlX;
@@ -29,12 +27,20 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
         this.displayedValue = Component.literal("N/A");
     }
 
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     @Override
-    public void setDimensions(int x, int y, int width, int height) {
-        super.setDimensions(x, y, width, height);
+    public void setPosition(int x, int y, int width, int height) {
+        super.setPosition(x, y, width, height);
 
         this.controlWidth = Math.min((int) (width * 0.5f) - 8, 120);
         this.controlX = this.x + this.width - this.controlWidth - 8;
+    }
+
+    public void setDimensions(int x, int y, int width, int height) {
+        this.setPosition(x, y, width, height);
     }
 
     public void render(double mouseX, double mouseY) {
@@ -48,14 +54,8 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
         this.renderWidget(mouseX, mouseY);
     }
 
-    public void updateState() {
-
-    }
-
     public void renderWidget(double mouseX, double mouseY) {
         Minecraft minecraftClient = Minecraft.getInstance();
-
-        int i = this.getYImage(this.isHovered());
 
         int xPadding = 0;
         int yPadding = 0;
@@ -68,23 +68,22 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
         color = this.active ? 0xFFFFFFFF : 0xFFA0A0A0;
 
         Font textRenderer = minecraftClient.font;
-        GuiRenderer.drawString(textRenderer, this.getName().getVisualOrderText(), this.x + 8, this.y + (this.height - 8) / 2, color);
+        Component nameComp = this.getName();
+
+        if (this.option.isChanged()) {
+            nameComp = nameComp.copy().withStyle(style -> style.withItalic(true));
+        }
+
+        GuiRenderer.drawString(
+                textRenderer,
+                nameComp.getVisualOrderText(),
+                this.x + 8,
+                this.y + (this.height - 8) / 2,
+                color
+        );
+
 
         this.renderControls(mouseX, mouseY);
-    }
-
-    protected int getYImage(boolean hovered) {
-        int i = 1;
-        if (!this.active) {
-            i = 0;
-        } else if (hovered) {
-            i = 2;
-        }
-        return i;
-    }
-
-    public boolean isHovered() {
-        return this.hovered || this.focused;
     }
 
     protected abstract void renderControls(double mouseX, double mouseY);
@@ -94,10 +93,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
     public abstract void onRelease(double mouseX, double mouseY);
 
     protected abstract void onDrag(double mouseX, double mouseY, double deltaX, double deltaY);
-
-    protected boolean isValidClickButton(int button) {
-        return button == 0;
-    }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
@@ -167,7 +162,7 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
     }
 
     @Override
-    public NarrationPriority narrationPriority() {
+    public @NotNull NarrationPriority narrationPriority() {
         if (this.focused) {
             return NarrationPriority.FOCUSED;
         }
@@ -179,10 +174,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget 
 
     @Override
     public final void updateNarration(NarrationElementOutput narrationElementOutput) {
-    }
-
-    public void playDownSound(SoundManager soundManager) {
-        soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
     }
 
 }

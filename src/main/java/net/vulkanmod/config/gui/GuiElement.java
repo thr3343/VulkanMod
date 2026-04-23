@@ -7,7 +7,7 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.input.MouseButtonEvent;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class GuiElement implements GuiEventListener, NarratableEntry {
@@ -22,6 +22,7 @@ public abstract class GuiElement implements GuiEventListener, NarratableEntry {
     protected int hoverTime;
     protected long hoverStopTime;
 
+    @SuppressWarnings("unused") // this will surely be used some day
     public void setPosition(int x, int y) {
         this.x = x;
         this.y = y;
@@ -34,6 +35,7 @@ public abstract class GuiElement implements GuiEventListener, NarratableEntry {
         this.height = height;
     }
 
+    @SuppressWarnings("unused") // this will surely be used someday
     public void resize(int width, int height) {
         this.width = width;
         this.height = height;
@@ -102,7 +104,7 @@ public abstract class GuiElement implements GuiEventListener, NarratableEntry {
     }
 
     @Override
-    public ScreenRectangle getRectangle() {
+    public @NotNull ScreenRectangle getRectangle() {
         return GuiEventListener.super.getRectangle();
     }
 
@@ -117,7 +119,7 @@ public abstract class GuiElement implements GuiEventListener, NarratableEntry {
     }
 
     @Override
-    public NarrationPriority narrationPriority() {
+    public @NotNull NarrationPriority narrationPriority() {
         return NarrationPriority.NONE;
     }
 

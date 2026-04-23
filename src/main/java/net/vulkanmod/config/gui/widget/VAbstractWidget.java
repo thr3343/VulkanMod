@@ -7,6 +7,7 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.vulkanmod.config.gui.GuiElement;
+import net.vulkanmod.config.gui.util.VGuiConstants;
 import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
@@ -17,16 +18,10 @@ public abstract class VAbstractWidget extends GuiElement {
 
     protected Component message;
 
-    public void setDimensions(int x, int y, int width, int height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-
     public void render(double mX, double mY) {
         this.updateState(mX, mY);
         this.renderWidget(mX, mY);
+        this.renderHovering(0, 0);
     }
 
     public void renderWidget(double mX, double mY) {
@@ -41,21 +36,19 @@ public abstract class VAbstractWidget extends GuiElement {
     protected void onDrag(double mX, double mY, double f, double g) {
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
+    @SuppressWarnings("SameParameterValue") // I just want code without warnings :^
     protected void renderHovering(int xPadding, int yPadding) {
+        if (this.isFocused() || !this.isActive() || !this.visible || this.focused)
+            return;
+
         float hoverMultiplier = this.getHoverMultiplier(200);
+        int borderColor = ColorUtil.ARGB.multiplyAlpha(VGuiConstants.COLOR_RED, hoverMultiplier);
+        int backgroundColor = ColorUtil.ARGB.multiplyAlpha(VGuiConstants.COLOR_RED, 0.3f * hoverMultiplier);
 
         if (hoverMultiplier > 0.0f) {
-//            int color = ColorUtil.ARGB.pack(0.5f, 0.5f, 0.5f, hoverMultiplier * 0.2f);
-            int color = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, hoverMultiplier * 0.2f);
-//            int color = ColorUtil.ARGB.multiplyAlpha(VOptionScreen.RED, hoverMultiplier);
-            GuiRenderer.fill(this.x - xPadding, this.y - yPadding, this.x + this.width + xPadding, this.y + this.height + yPadding, color);
-
-//            color = ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, hoverMultiplier * 0.8f);
-            color = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, hoverMultiplier * 0.8f);
+            GuiRenderer.fill(this.x - xPadding, this.y - yPadding,
+                    this.x + this.width + xPadding, this.y + this.height + yPadding,
+                    backgroundColor);
 
             int x0 = this.x - xPadding;
             int x1 = this.x + this.width + xPadding;
@@ -63,7 +56,7 @@ public abstract class VAbstractWidget extends GuiElement {
             int y1 = this.y + height + yPadding;
             int border = 1;
 
-            GuiRenderer.renderBorder(x0, y0, x1, y1, border, color);
+            GuiRenderer.renderBorder(x0, y0, x1, y1, border, borderColor);
         }
     }
 
@@ -114,6 +107,12 @@ public abstract class VAbstractWidget extends GuiElement {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public void updateState(double mX, double mY) {
+        super.updateState(mX, mY);
+
     }
 
     public void playDownSound(SoundManager soundManager) {

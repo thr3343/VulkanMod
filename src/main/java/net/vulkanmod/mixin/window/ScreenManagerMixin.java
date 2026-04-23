@@ -3,7 +3,6 @@ package net.vulkanmod.mixin.window;
 import com.mojang.blaze3d.platform.Monitor;
 import com.mojang.blaze3d.platform.MonitorCreator;
 import com.mojang.blaze3d.platform.ScreenManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.vulkanmod.config.video.VideoModeManager;
 import org.spongepowered.asm.mixin.Final;

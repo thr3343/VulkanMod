@@ -22,11 +22,6 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
     }
 
     @Override
-    protected int getYImage(boolean hovered) {
-        return 0;
-    }
-
-    @Override
     protected void renderControls(double mouseX, double mouseY) {
         int valueX = this.controlX + (int) (this.value * (this.controlWidth));
 

@@ -8,6 +8,7 @@ import net.vulkanmod.config.gui.render.GuiRenderer;
 import net.vulkanmod.config.option.CyclingOption;
 import net.vulkanmod.render.shader.CustomRenderPipelines;
 import net.vulkanmod.vulkan.util.ColorUtil;
+import org.jetbrains.annotations.NotNull;
 
 public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
     private final Button leftButton;
@@ -29,11 +30,6 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
         this.rightButton.setDimensions(this.controlX + this.controlWidth - 16, 16);
     }
 
-    @Override
-    protected int getYImage(boolean hovered) {
-        return 0;
-    }
-
     public void renderControls(double mouseX, double mouseY) {
         this.renderBars();
 
@@ -44,7 +40,7 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
         Font textRenderer = Minecraft.getInstance().font;
         int x = this.controlX + this.controlWidth / 2;
         int y = this.y + (this.height - 9) / 2;
-        GuiRenderer.drawCenteredString(textRenderer, this.getDisplayedValue(), x, y, color);
+        GuiRenderer.drawScrollingString(textRenderer, this.getDisplayedValue(), x, y, (rightButton.x - (leftButton.x + leftButton.width) - 12), color);
 
         this.leftButton.renderButton(mouseX, mouseY);
         this.rightButton.renderButton(mouseX, mouseY);
@@ -152,7 +148,13 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
                 color = INACTIVE_COLOR;
             }
 
-            float h = f;
+            float[][] vertices = getVertices(f);
+
+
+            GuiRenderer.submitPolygon(CustomRenderPipelines.GUI_TRIANGLES, TextureSetup.noTexture(), vertices, color);
+        }
+
+        private float[] @NotNull [] getVertices(float f) {
             float w = f - 1.0f;
             float yC = y + height * 0.5f;
             float xC = x + width * 0.5f;
@@ -161,20 +163,18 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
             if (this.direction == Direction.LEFT) {
                 vertices = new float[][]{
                         {xC - w, yC},
-                        {xC + w, yC + h},
-                        {xC + w, yC - h},
+                        {xC + w, yC + f},
+                        {xC + w, yC - f},
                 };
             }
             else {
                 vertices = new float[][]{
                         {xC + w, yC},
-                        {xC - w, yC - h},
-                        {xC - w, yC + h},
+                        {xC - w, yC - f},
+                        {xC - w, yC + f},
                 };
             }
-
-
-            GuiRenderer.submitPolygon(CustomRenderPipelines.GUI_TRIANGLES, TextureSetup.noTexture(), vertices, color);
+            return vertices;
         }
 
         enum Direction {

@@ -3,9 +3,13 @@ package net.vulkanmod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Platform;
 import net.vulkanmod.config.UpdateChecker;
+import net.vulkanmod.config.option.Option;
+import net.vulkanmod.config.option.OptionRegistry;
+import net.vulkanmod.config.option.Options;
 import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.render.chunk.build.frapi.VulkanModRenderer;
 import org.apache.logging.log4j.LogManager;
@@ -44,14 +48,7 @@ public class Initializer implements ClientModInitializer {
 	}
 
 	private static Config loadConfig(Path path) {
-		Config config = Config.load(path);
-
-		if(config == null) {
-			config = new Config();
-			config.write();
-		}
-
-		return config;
+        return Config.load(path);
 	}
 
 	public static String getVersion() {

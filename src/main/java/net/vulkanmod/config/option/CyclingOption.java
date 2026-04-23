@@ -21,9 +21,12 @@ public class CyclingOption<E> extends Option<E> {
 
     @Override
     public OptionWidget<?> createWidget() {
-        return new CyclingOptionWidget(this, this.name);
+        var widget = new CyclingOptionWidget(this, this.name);
+        this.widget = widget;
+        return widget;
     }
 
+    @SuppressWarnings("unused")
     public void updateOption(E[] values, Consumer<E> setter, Supplier<E> getter) {
         this.onApply = setter;
         this.valueSupplier = getter;

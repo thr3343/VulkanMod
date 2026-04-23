@@ -13,7 +13,7 @@ public abstract class Platform {
 
     public static void init() {
         GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
-        LOGGER.info("Selecting Platform: {}", getStringFromPlat(activePlat));
+        LOGGER.info("Selecting Platform: {}", getStringFromPlat());
         LOGGER.info("GLFW: {}", GLFW.glfwGetVersionString());
         GLFW.glfwInit();
     }
@@ -40,14 +40,14 @@ public abstract class Platform {
         return GLFW_ANY_PLATFORM; //Unknown platform
     }
 
-    private static String getStringFromPlat(int plat) {
-        return switch (plat) {
+    private static String getStringFromPlat() {
+        return switch (Platform.activePlat) {
             case GLFW_PLATFORM_WIN32 -> "WIN32";
             case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
             case GLFW_PLATFORM_X11 -> "X11";
             case GLFW_PLATFORM_COCOA -> "MACOS";
             case GLFW_ANY_PLATFORM -> "ANDROID";
-            default -> throw new IllegalStateException("Unexpected value: " + plat);
+            default -> throw new IllegalStateException("Unexpected value: " + Platform.activePlat);
         };
     }
 
