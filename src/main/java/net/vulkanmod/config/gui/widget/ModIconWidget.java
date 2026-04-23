@@ -35,6 +35,6 @@ public class ModIconWidget extends VAbstractWidget {
         GuiRenderer.guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon, iconX, iconY, 0f, 0f, size, size, size, size);
 
         size = this.height;
-        GuiRenderer.drawString(Minecraft.getInstance().font, (Component) this.name, this.x + 2 + size, this.height / 2, 0xffffffff);
+        GuiRenderer.drawString(Minecraft.getInstance().font, (Component) this.name, this.x + 2 + size, this.y + this.height / 2 - 4, 0xffffffff);
     }
 }
