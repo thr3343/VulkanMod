@@ -30,11 +30,11 @@ public class ModIconWidget extends VAbstractWidget {
 
 
         int size = this.height - 4;
-        int iconX = this.x + 2;
+        int iconX = this.x + 4;
         int iconY = this.y + (height - size) / 2;
         GuiRenderer.guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon, iconX, iconY, 0f, 0f, size, size, size, size);
 
         size = this.height;
-        GuiRenderer.drawString(Minecraft.getInstance().font, (Component) this.name, this.x + 2 + size, this.y + this.height / 2 - 4, 0xffffffff);
+        GuiRenderer.drawString(Minecraft.getInstance().font, (Component) this.name, this.x + 6 + size, this.y + this.height / 2 - 4, 0xffffffff);
     }
 }
