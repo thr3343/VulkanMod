@@ -31,8 +31,7 @@ public class Config {
     public boolean textureAnimations = true;
 
     public void write() {
-
-        if(!Files.exists(CONFIG_PATH.getParent())) {
+        if (!Files.exists(CONFIG_PATH.getParent())) {
             try {
                 Files.createDirectories(CONFIG_PATH);
             } catch (IOException e) {
@@ -61,13 +60,13 @@ public class Config {
         if (Files.exists(path)) {
             try (FileReader fileReader = new FileReader(path.toFile())) {
                 config = GSON.fromJson(fileReader, Config.class);
-            }
-            catch (IOException exception) {
+            } catch (IOException exception) {
                 throw new RuntimeException(exception.getMessage());
             }
         }
         else {
-            config = null;
+            config = new Config();
+            config.write();
         }
 
         return config;
