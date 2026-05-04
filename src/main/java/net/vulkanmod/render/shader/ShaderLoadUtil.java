@@ -17,6 +17,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 
 public abstract class ShaderLoadUtil {
@@ -24,7 +25,8 @@ public abstract class ShaderLoadUtil {
     public static final String RESOURCES_PATH = SPIRVUtils.class.getResource("/assets/vulkanmod").toExternalForm();
     public static final String SHADERS_PATH = "%s/shaders/".formatted(RESOURCES_PATH);
 
-    public static final Set<String> REMAPPED_SHADERS = Sets.newHashSet("core/screenquad.vsh","core/rendertype_item_entity_translucent_cull.vsh");
+    public static final Set<String> REMAPPED_SHADERS = Sets.newHashSet("core/screenquad.vsh",
+                                                                       "core/rendertype_item_entity_translucent_cull.vsh");
 
     public static String resolveShaderPath(String path) {
         return resolveShaderPath(SHADERS_PATH, path);
@@ -35,6 +37,10 @@ public abstract class ShaderLoadUtil {
     }
 
     public static void loadShaders(Pipeline.Builder pipelineBuilder, JsonObject config, String configName, String path) {
+        loadShaders(pipelineBuilder, config, configName, path, null);
+    }
+
+    public static void loadShaders(Pipeline.Builder pipelineBuilder, JsonObject config, String configName, String path, List<String> defines) {
         String vertexShader = config.has("vertex") ? config.get("vertex").getAsString() : configName;
         String fragmentShader = config.has("fragment") ? config.get("fragment").getAsString() : configName;
 
@@ -51,8 +57,8 @@ public abstract class ShaderLoadUtil {
         vertexShader = getFileName(vertexShader);
         fragmentShader = getFileName(fragmentShader);
 
-        loadShader(pipelineBuilder, configName, path, vertexShader, SPIRVUtils.ShaderKind.VERTEX_SHADER);
-        loadShader(pipelineBuilder, configName, path, fragmentShader, SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        loadShader(pipelineBuilder, configName, path, vertexShader, SPIRVUtils.ShaderKind.VERTEX_SHADER, defines);
+        loadShader(pipelineBuilder, configName, path, fragmentShader, SPIRVUtils.ShaderKind.FRAGMENT_SHADER, defines);
     }
 
     public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, SPIRVUtils.ShaderKind type) {
@@ -60,11 +66,15 @@ public abstract class ShaderLoadUtil {
         String shaderName = splitPath[1];
         String subPath = splitPath[0];
 
-        loadShader(pipelineBuilder, configName, subPath, shaderName, type);
+        loadShader(pipelineBuilder, configName, subPath, shaderName, type, null);
     }
 
-    public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, String shaderName, SPIRVUtils.ShaderKind type) {
+    public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, String shaderName, SPIRVUtils.ShaderKind type, List<String> defines) {
         String source = getShaderSource(path, configName, shaderName, type);
+
+        if (defines != null && !defines.isEmpty()) {
+            source = injectDefines(source, defines);
+        }
 
         SPIRVUtils.SPIRV spirv = SPIRVUtils.compileShader(shaderName, source, type);
 
@@ -143,6 +153,11 @@ public abstract class ShaderLoadUtil {
         InputStream stream;
         try {
             stream = getInputStream(shaderFile);
+
+            if (stream == null) {
+                shaderFile = "%s/shaders/%s%s".formatted(RESOURCES_PATH, path, shaderExtension);
+                stream = getInputStream(shaderFile);
+            }
 
             if (stream == null) {
                 return null;
@@ -255,5 +270,18 @@ public abstract class ShaderLoadUtil {
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String injectDefines(String shaderSrc, List<String> defines) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (String define : defines) {
+            stringBuilder.append("#define ").append(define).append('\n');
+        }
+
+        int i = shaderSrc.indexOf('\n');
+
+        String out = shaderSrc.substring(0, i + 1) + "\n" + stringBuilder + "\n" + shaderSrc.substring(i + 1);
+        return out;
     }
 }
