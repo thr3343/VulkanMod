@@ -50,7 +50,7 @@ public abstract class ImageUtil {
                                                      pStagingBuffer, pStagingAllocation);
 
             copyImageToBufferCmd(stack, commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width,
-                              image.height, 0, 0, 0, 0, 0);
+                                 image.height, 0, 0, 0, 0, 0);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
@@ -65,7 +65,7 @@ public abstract class ImageUtil {
 
     public static void copyImageToBuffer(VulkanImage image, Buffer buffer, int mipLevel,
                                          int width, int height, int xOffset, int yOffset,
-                                         int bufferOffset, int bufferRowLength, int bufferImageHeight) {
+                                         long bufferOffset, int bufferRowLength, int bufferImageHeight) {
         try (MemoryStack stack = stackPush()) {
             int prevLayout = image.getCurrentLayout();
             CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
@@ -81,7 +81,7 @@ public abstract class ImageUtil {
     }
 
     public static void copyImageToBufferCmd(MemoryStack stack, VkCommandBuffer commandBuffer, long buffer, long image,
-                                            int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset,
+                                            int mipLevel, int width, int height, int xOffset, int yOffset, long bufferOffset,
                                             int bufferRowLength, int bufferImageHeight) {
         VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
         region.bufferOffset(bufferOffset);
@@ -97,18 +97,13 @@ public abstract class ImageUtil {
         vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
     }
 
-    public static void blitFramebuffer(VulkanImage dstImage, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) {
+    public static void blitFramebuffer(VulkanImage srcImage, VulkanImage dstImage) {
         try (MemoryStack stack = stackPush()) {
-
             VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
             Renderer.getInstance().endRenderPass(commandBuffer);
 
             dstImage.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-            // TODO: hardcoded srcImage
-            VulkanImage srcImage = Renderer.getInstance().getSwapChain().getColorAttachment();
-
             srcImage.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
             VkImageBlit.Buffer blit = VkImageBlit.calloc(1, stack);
@@ -129,10 +124,12 @@ public abstract class ImageUtil {
                            dstImage.getId(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, blit, VK_FILTER_LINEAR);
 
             dstImage.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-            Renderer.getInstance().getMainPass().rebindMainTarget();
-
         }
+    }
+
+    public static void blitFramebuffer(VulkanImage dstImage, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) {
+        // TODO: implement blit
+//        blitFramebuffer(Renderer.getInstance().getSwapChain().getColorAttachment(), dstImage);
     }
 
     public static void generateMipmaps(VulkanImage image) {
