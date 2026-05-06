@@ -1,16 +1,17 @@
 package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueue;
-import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -22,8 +23,12 @@ public abstract class Queue {
     private static QueueFamilyIndices queueFamilyIndices;
 
     private final VkQueue vkQueue;
+    private final long tmSemaphore; // Note: prob should be Atomic if Threaded submits + waits are needed (i.e. Submit and waiting on separate threads)
 
-    protected CommandPool commandPool;
+    private final CommandPool commandPool;
+    private final VkSemaphoreWaitInfo vkSemaphoreWaitInfo;
+    private long submits;
+    private final long pSubmitValue;
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
         try (MemoryStack stack = stackPush()) {
@@ -43,17 +48,41 @@ public abstract class Queue {
         vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
         this.vkQueue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
 
-        if (initCommandPool)
-            this.commandPool = new CommandPool(familyIndex);
+        this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+
+        this.tmSemaphore = initCommandPool ? getQueueSemaphore(stack) : VK_NULL_HANDLE;
+
+        LongBuffer pSubmitValue = MemoryUtil.memAllocLong(1);
+        LongBuffer pSemaphores = MemoryUtil.memAllocLong(1);
+
+        vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc()
+                .sType$Default()
+                .semaphoreCount(1)
+                .pSemaphores(pSemaphores.put(0, this.tmSemaphore))
+                .pValues(pSubmitValue);
+        this.pSubmitValue = MemoryUtil.memAddress(pSubmitValue);
     }
 
-    public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        return submitCommands(commandBuffer, false);
+    private static long getQueueSemaphore(MemoryStack stack) {
+        VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfo.calloc(stack)
+                .sType$Default()
+                .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE)
+                .initialValue(0);
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack)
+                .sType$Default()
+                .pNext(semaphoreTypeCreateInfo);
+
+        LongBuffer pPointer = stack.mallocLong(1);
+
+        VK12.vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pPointer);
+        return pPointer.get(0);
     }
 
-    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer, boolean useSemaphore) {
+    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            return commandBuffer.submitCommands(stack, vkQueue, useSemaphore);
+            commandBuffer.submitCommands(stack, this);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         }
     }
 
@@ -62,8 +91,13 @@ public abstract class Queue {
     }
 
     public void cleanUp() {
-        if (commandPool != null)
+        if (commandPool != null) {
             commandPool.cleanUp();
+            vkDestroySemaphore(Vulkan.getVkDevice(), this.tmSemaphore, null);
+        }
+        MemoryUtil.memFree(vkSemaphoreWaitInfo.pSemaphores());
+        MemoryUtil.memFree(vkSemaphoreWaitInfo.pValues());
+        vkSemaphoreWaitInfo.free();
     }
 
     public void waitIdle() {
@@ -74,10 +108,28 @@ public abstract class Queue {
         return commandPool;
     }
 
-    public enum Family {
-        Graphics,
-        Transfer,
-        Compute
+    public long submitCountAdd() {
+        return ++submits;
+    }
+
+    public long submitCount() {
+        return submits;
+    }
+
+    public long getTmSemaphore() {
+        return this.tmSemaphore;
+    }
+
+    public void waitSubmits() {
+        waitSubmits(this.submits);
+    }
+
+    //Functionally identical to Synchronisation.waitFences(), but for a specific queue
+    public void waitSubmits(long submitId) {
+
+        VUtil.UNSAFE.putLong(pSubmitValue, submitId);
+
+        VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
     }
 
     public static QueueFamilyIndices getQueueFamilies() {

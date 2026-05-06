@@ -23,8 +23,7 @@ public class GraphicsQueue extends Queue {
     }
 
     public void endRecordingAndSubmit() {
-        long fence = submitCommands(currentCmdBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+        submitCommands(currentCmdBuffer);
 
         currentCmdBuffer = null;
     }
@@ -36,13 +35,13 @@ public class GraphicsQueue extends Queue {
             return beginCommands();
         }
     }
-
-    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+    //true if submitted
+    public boolean endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
         if (currentCmdBuffer != null) {
-            return VK_NULL_HANDLE;
-        } else {
-            return submitCommands(commandBuffer);
+            return false;
         }
+        submitCommands(commandBuffer);
+        return true;
     }
 
 }

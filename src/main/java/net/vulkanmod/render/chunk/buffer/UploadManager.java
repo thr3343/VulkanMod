@@ -36,8 +36,6 @@ public class UploadManager {
 
         this.queue.submitCommands(this.commandBuffer);
 
-        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
-
         this.commandBuffer = null;
         this.dstBuffers.clear();
     }
@@ -106,8 +104,6 @@ public class UploadManager {
 
     public void syncUploads() {
         submitUploads();
-
-        Synchronization.INSTANCE.waitFences();
     }
 
     private void beginCommands() {

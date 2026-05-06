@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.queue;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -8,27 +7,21 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 import java.util.ArrayDeque;
-import java.util.List;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
-    long id;
+    private final long id;
 
-    private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
 
     CommandPool(int queueFamilyIndex) {
-        this.createCommandPool(queueFamilyIndex);
-    }
-
-    public void createCommandPool(int queueFamily) {
         try (MemoryStack stack = stackPush()) {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamily);
+            poolInfo.queueFamilyIndex(queueFamilyIndex);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -68,23 +61,9 @@ public class CommandPool {
         PointerBuffer pCommandBuffer = stack.mallocPointer(size);
         vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
 
-        VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-        fenceInfo.sType$Default();
-        fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
-        semaphoreCreateInfo.sType$Default();
-
         for (int i = 0; i < size; ++i) {
-            LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
-
-            LongBuffer pSemaphore = stack.mallocLong(1);
-            vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pSemaphore);
-
             VkCommandBuffer vkCommandBuffer = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
-            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer, pFence.get(0), pSemaphore.get(0));
-            commandBuffers.add(commandBuffer);
+            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer);
             availableCmdBuffers.add(commandBuffer);
         }
     }
@@ -94,10 +73,6 @@ public class CommandPool {
     }
 
     public void cleanUp() {
-        for (CommandBuffer commandBuffer : commandBuffers) {
-            vkDestroyFence(Vulkan.getVkDevice(), commandBuffer.fence, null);
-            vkDestroySemaphore(Vulkan.getVkDevice(), commandBuffer.semaphore, null);
-        }
         vkResetCommandPool(Vulkan.getVkDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
     }
@@ -109,29 +84,28 @@ public class CommandPool {
     public static class CommandBuffer {
         public final CommandPool commandPool;
         public final VkCommandBuffer handle;
-        public final long fence;
-        public final long semaphore;
-
+        public long submitId; // The submit number this cmd belongs to: Emulates fence Functionality:
+                              // e.g. submitId = 50: this cmd was submitted on the 50th submit to this queue
         boolean submitted;
         boolean recording;
 
-        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle, long fence, long semaphore) {
+        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle) {
             this.commandPool = commandPool;
             this.handle = handle;
-            this.fence = fence;
-            this.semaphore = semaphore;
+            this.submitId = 0;
         }
 
         public VkCommandBuffer getHandle() {
             return handle;
         }
 
-        public long getFence() {
-            return fence;
+        public long getSubmitId() {
+            return submitId;
         }
 
-        public long getSemaphore() {
-            return semaphore;
+        //Emulates functionality of vkWaitForFences()
+        public void wait(Queue queue) {
+            queue.waitSubmits(this.submitId);
         }
 
         public boolean isSubmitted() {
@@ -152,26 +126,30 @@ public class CommandPool {
             this.recording = true;
         }
 
-        public long submitCommands(MemoryStack stack, VkQueue queue, boolean useSemaphore) {
-            long fence = this.fence;
+        public void submitCommands(MemoryStack stack, Queue queue) {
 
             vkEndCommandBuffer(this.handle);
 
-            vkResetFences(Vulkan.getVkDevice(), this.fence);
+            long submitId = queue.submitCountAdd(); //Has same function as individual fence
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(this.handle));
+            var timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pSignalSemaphoreValues(stack.longs(submitId));
 
-            if (useSemaphore) {
-                submitInfo.pSignalSemaphores(stack.longs(this.semaphore));
-            }
+            // Avoiding Wait Stage + wait Value to allow Out Of Order Submits: (afaik this allows the driver to reorder submits freely)
+            var submitInfo = VkSubmitInfo.calloc(stack).sType$Default()
+                    .pNext(timelineSemaphoreSubmitInfo)
+                    .pSignalSemaphores(stack.longs(queue.getTmSemaphore()))
+                    .pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)) //No wait stag
+                    .pCommandBuffers(stack.pointers(this.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            vkQueueSubmit(queue.vkQueue(), submitInfo, 0);
 
             this.recording = false;
             this.submitted = true;
-            return fence;
+
+
+            this.submitId = submitId;
         }
 
         public void reset() {

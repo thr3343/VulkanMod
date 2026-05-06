@@ -33,9 +33,8 @@ public class TransferQueue extends Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-            return commandBuffer.fence;
+            return commandBuffer.submitId;
         }
     }
 
@@ -52,7 +51,7 @@ public class TransferQueue extends Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(DEVICE, commandBuffer.fence, true, VUtil.UINT64_MAX);
+            commandBuffer.wait(this);
             commandBuffer.reset();
         }
     }

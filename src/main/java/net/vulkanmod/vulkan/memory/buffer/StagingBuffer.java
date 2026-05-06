@@ -55,10 +55,10 @@ public class StagingBuffer extends Buffer {
     }
 
     private void submitUploads() {
-        // Submit and wait all recorded uploads before resetting the buffer
+        // Submit all recorded uploads before resetting the buffer
+        // (deferring waits to submit barrier at end frame)
         UploadManager.INSTANCE.submitUploads();
         ImageUploadHelper.INSTANCE.submitCommands();
-        Synchronization.INSTANCE.waitFences();
 
         this.reset();
     }
