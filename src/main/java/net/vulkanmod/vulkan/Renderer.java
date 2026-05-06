@@ -415,10 +415,12 @@ public class Renderer {
                 .sType$Default()
                 .commandBuffer(currentCmdBuffer);
 
+        // Optimize out Host-Side Sync: Wait on "GPU Sync" instead of Host-side
+
         var waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
         waitSemaphoreSubmitInfo.get(0).sType$Default()
                 .semaphore(imageAvailableSemaphores.get(currentFrame))
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT) // Fix WAR Sync Hazards
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT)
                 .value(0);
 
         waitSemaphoreSubmitInfo.get(1).sType$Default()
@@ -428,13 +430,13 @@ public class Renderer {
 
         waitSemaphoreSubmitInfo.get(2).sType$Default()
                 .semaphore(transferQueue.getTmSemaphore())
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_COPY_BIT) // Wait for Async transfers to finish: Optimize out Host-Side Sync: Wait on "GPU Sync" instead of Host-side (Async Transfers)
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT) // Wait for Async transfers to finish (For UBO vertex stage reads)
                 .value(transferQueue.submitCount());
 
         var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
         mainSemaphoreSubmitInfo.get(0).sType$Default()
                 .semaphore(renderFinishedSemaphores.get(imageIndex))
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT) // Fix Present After Write Sync Hazards
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT) // Fix Present After Write Sync Hazards
                 .value(0);
 
         mainSemaphoreSubmitInfo.get(1).sType$Default()
