@@ -326,6 +326,14 @@ public class GLSLParser {
     private void parseAttribute() {
         this.state = State.ATTRIBUTE;
 
+        Node prevNode = this.prevNode(true);
+
+        // Check if we are not inside a function declaration
+        if (prevNode != null && (prevNode.type.equals(Token.TokenType.LEFT_PARENTHESIS.name()) || prevNode.type.equals(Token.TokenType.COMMA.name())))
+        {
+            return;
+        }
+
         String ioType = this.currentToken.value;
 
         advanceToken(true);
@@ -445,8 +453,60 @@ public class GLSLParser {
         }
     }
 
-    private Token nextToken(int i) {
-        return this.tokens.get(this.currentTokenIdx + i);
+    private Token prevToken(boolean skipSpace) {
+        int tokenIdx = this.currentTokenIdx - 1;
+        Token token;
+
+        if (tokenIdx == 0) {
+            return null;
+        }
+
+        tokenIdx--;
+        token = this.tokens.get(tokenIdx);
+
+        while (skipSpace && tokenIdx != 0 &&
+               (token.type == Token.TokenType.SPACING || token.type == Token.TokenType.PREPROCESSOR || token.type == Token.TokenType.COMMENT))
+        {
+            tokenIdx--;
+            token = this.tokens.get(tokenIdx);
+        }
+
+        if (skipSpace && (token.type == Token.TokenType.SPACING || token.type == Token.TokenType.COMMENT || token.type == Token.TokenType.PREPROCESSOR)) {
+            return null;
+        }
+
+        return token;
+    }
+
+    private Node prevNode(boolean skipSpace) {
+        var nodes = getNodeStream();
+        int idx = nodes.size() - 1;
+        String type;
+
+        if (idx == 0) {
+            return null;
+        }
+
+        idx--;
+        Node node;
+        node = nodes.get(idx);
+        type = node.type;
+
+        while (skipSpace && idx != 0 &&
+               (type.equals(Token.TokenType.SPACING.name()) || type.equals(Token.TokenType.PREPROCESSOR.name()) || type.equals(Token.TokenType.COMMENT.name())))
+        {
+            idx--;
+            node = nodes.get(idx);
+            type = node.type;
+        }
+
+        if (skipSpace &&
+            (type.equals(Token.TokenType.SPACING.name()) || type.equals(Token.TokenType.PREPROCESSOR.name()) || type.equals(Token.TokenType.COMMENT.name())))
+        {
+            return null;
+        }
+
+        return node;
     }
 
     private void appendToken(Token token) {
@@ -454,10 +514,14 @@ public class GLSLParser {
     }
 
     private void appendNode(Node node) {
-        switch (this.stage) {
-            case VERTEX -> this.vsStream.add(node);
-            case FRAGMENT -> this.fsStream.add(node);
-        }
+        this.getNodeStream().add(node);
+    }
+
+    private LinkedList<Node> getNodeStream() {
+        return switch (this.stage) {
+            case VERTEX -> this.vsStream;
+            case FRAGMENT -> this.fsStream;
+        };
     }
 
     public String getOutput(Stage stage) {
@@ -565,7 +629,7 @@ public class GLSLParser {
         }
 
         public static Node fromToken(Token token) {
-            return new Node("token:%s".formatted(token.type), token.value);
+            return new Node(token.type.name(), token.value);
         }
 
         @Override
