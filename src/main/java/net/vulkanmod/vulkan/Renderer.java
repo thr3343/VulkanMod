@@ -223,7 +223,7 @@ public class Renderer {
         // this check forces sync to avoid upload corruption
         if (lastReset == currentFrame) {
             submitUploads();
-            resetStaging();
+            getStagingBuffer().reset();
         }
         lastReset = currentFrame;
 
@@ -326,9 +326,10 @@ public class Renderer {
         p.push("End_rendering");
 
         mainPass.end(currentCmdBuffer);
-
+        // Synchronization fences optimized out and merged into vkQueueSubmit2 submit Barrier
+        // (excluding async transfers to avoid upload desync)
         submitUploads();
-        resetStaging();
+        getStagingBuffer().reset();
 
         submitFrame();
         recordingCmds = false;
@@ -501,7 +502,7 @@ public class Renderer {
                     .pCommandBufferInfos(commandBufferSubmitInfo);
 
             submitUploads();
-            resetStaging();
+            getStagingBuffer().reset();
 
             if ((vkResult = KHRSynchronization2.vkQueueSubmit2KHR(graphicsQueue.vkQueue(), submitInfo, 0)) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
@@ -518,6 +519,14 @@ public class Renderer {
 
         if (transferCb.isRecording()) {
             final var transferQueue = DeviceManager.getTransferQueue();
+
+            // Wait async transfers from prev frame (i.e. similar to mainCommandBuffers sync to avoid submitting too fast; fixes upload desync)
+            // (Allows optimizing out sync overhead if no chunk uploads are pending)
+
+            if (UploadManager.INSTANCE.hasSubmit()) {
+                transferQueue.waitSubmits();
+            }
+
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 transferCb.submitCommands(stack, transferQueue);
             }
@@ -578,10 +587,6 @@ public class Renderer {
         usedPipelines.remove(pipeline);
     }
 
-    // Synchronization fences are merged into vkQueueSubmit2 submit Barrier, reducing sync overhead and improving frametime
-    private void resetStaging() {
-        Vulkan.getStagingBuffer().reset();
-    }
 
     private void resetDescriptors() {
         for (Pipeline pipeline : usedPipelines) {
@@ -596,7 +601,7 @@ public class Renderer {
     @SuppressWarnings("UnreachableCode")
     private void recreateSwapChain() {
         submitUploads();
-        resetStaging();
+        getStagingBuffer().reset();
         Vulkan.waitIdle();
 
         mainCommandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));

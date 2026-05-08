@@ -20,6 +20,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class UploadManager {
     public static UploadManager INSTANCE;
+    private long sub;
 
     public static void createInstance() {
         INSTANCE = new UploadManager();
@@ -35,6 +36,7 @@ public class UploadManager {
             return;
 
         this.queue.submitCommands(this.commandBuffer);
+        this.sub = commandBuffer.submitId;
 
         this.commandBuffer = null;
         this.dstBuffers.clear();
@@ -111,4 +113,7 @@ public class UploadManager {
             this.commandBuffer = queue.beginCommands();
     }
 
+    public boolean hasSubmit() {
+        return this.sub == queue.submitCount();
+    }
 }

@@ -267,6 +267,7 @@ public class MemoryManager {
         List<Buffer.BufferInfo> bufferList = freeableBuffers[frame];
 
         // Usually only need host-Side sync on main render thread "runahead" (Free During Use, Double Free e.g.)
+        // (Unless its N-Buffered like transferCbs/mainCommandBuffers e.g.)
         if (!bufferList.isEmpty()) {
             DeviceManager.getTransferQueue().waitSubmits();
         }
