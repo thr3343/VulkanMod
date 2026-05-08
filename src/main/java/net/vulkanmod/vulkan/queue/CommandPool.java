@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -12,6 +13,9 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
+
+    private static final boolean sync2 = DeviceManager.checkExt(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
     private final long id;
 
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
@@ -126,24 +130,48 @@ public class CommandPool {
             this.recording = true;
         }
 
-        public void submitCommands(MemoryStack stack, Queue queue) {
+        public void submitCommands(MemoryStack stack, Queue queue, long waitStage) {
 
             vkEndCommandBuffer(this.handle);
 
             long submitId = queue.submitCountAdd(); //Has same function as individual fence
 
-            var timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
-                    .sType$Default()
-                    .pSignalSemaphoreValues(stack.longs(submitId));
+            // Can prob remove this branch on 26.1+ once VanillaVK is fully released
+            // (VanillaVK mandates Sync2 Support, but pre 26.1 lacks LWJGL 3.4.1; iirc 3.3.3 is missing Sync2 support on macOS due to outdated MVK version)
 
-            // Avoiding Wait Stage + wait Value to allow Out Of Order Submits: (afaik this allows the driver to reorder submits freely)
-            var submitInfo = VkSubmitInfo.calloc(stack).sType$Default()
-                    .pNext(timelineSemaphoreSubmitInfo)
-                    .pSignalSemaphores(stack.longs(queue.getTmSemaphore()))
-                    .pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)) //No wait stag
-                    .pCommandBuffers(stack.pointers(this.handle));
+            // Submit also has implicit ALL_COMMANDS WaitSrcStageMask; can't be removed w/o Sync2
+            if (sync2) {
+                var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
+                        .sType$Default()
+                        .commandBuffer(this.handle);
 
-            vkQueueSubmit(queue.vkQueue(), submitInfo, 0);
+                var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack)
+                        .semaphore(queue.getTmSemaphore())
+                        .stageMask(waitStage) // No Wait Stage
+                        .value(submitId); //Has same function as individual fence
+
+                var submitInfo = VkSubmitInfo2.calloc(1, stack)
+                        .sType$Default()
+                        .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
+                        .pCommandBufferInfos(commandBufferSubmitInfo);
+
+                KHRSynchronization2.vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
+            }
+            else {
+
+                var timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                        .sType$Default()
+                        .pSignalSemaphoreValues(stack.longs(submitId));
+
+                // Avoiding Wait Stage + wait Value to allow Out Of Order Submits: (afaik this allows the driver to reorder submits freely)
+                var submitInfo = VkSubmitInfo.calloc(stack).sType$Default()
+                        .pNext(timelineSemaphoreSubmitInfo)
+                        .pSignalSemaphores(stack.longs(queue.getTmSemaphore()))
+                        .pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)) //No wait stag
+                        .pCommandBuffers(stack.pointers(this.handle));
+
+                vkQueueSubmit(queue.vkQueue(), submitInfo, 0);
+            }
 
             this.recording = false;
             this.submitted = true;

@@ -4,6 +4,7 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
+import org.lwjgl.vulkan.VK13;
 
 public class ImageUploadHelper {
 
@@ -23,7 +24,7 @@ public class ImageUploadHelper {
 
         SpriteUpdateUtil.transitionLayouts();
 
-        queue.submitCommands(this.currentCmdBuffer);
+        queue.submitCommands(this.currentCmdBuffer, VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT|VK13.VK_PIPELINE_STAGE_2_COPY_BIT);
 
         this.currentCmdBuffer = null;
     }

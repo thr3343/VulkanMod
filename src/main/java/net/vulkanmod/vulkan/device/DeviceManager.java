@@ -5,6 +5,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.*;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -211,6 +212,15 @@ public abstract class DeviceManager {
                 synchronization2Features.synchronization2(true);
 
                 createInfo.pNext(synchronization2Features);
+            }
+
+            // Allows minImageTransferGranularity to be (1,1,1) (Async Transfer queue now possible on AMDVlk Driver)
+            if (loadedExtensions.contains("VK_KHR_maintenance11")) {
+                long VkPhysicalDeviceMaintenance11FeaturesKHR = stack.ncalloc(8, 0,4 + 8 + 4);
+
+                VUtil.UNSAFE.putLong(VkPhysicalDeviceMaintenance11FeaturesKHR + 12, 0xFFFFFFFFL);
+
+                createInfo.pNext(VkPhysicalDeviceMaintenance11FeaturesKHR);
             }
 
             if (Vulkan.DYNAMIC_RENDERING) {

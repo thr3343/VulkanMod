@@ -528,7 +528,7 @@ public class Renderer {
             }
 
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                transferCb.submitCommands(stack, transferQueue);
+                transferCb.submitCommands(stack, transferQueue, VK13.VK_PIPELINE_STAGE_2_COPY_BIT);
             }
 
             Synchronization.INSTANCE.addCommandBuffer(transferCb);

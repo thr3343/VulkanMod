@@ -81,7 +81,14 @@ public abstract class Queue {
 
     public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            commandBuffer.submitCommands(stack, this);
+            commandBuffer.submitCommands(stack, this, VK13.VK_PIPELINE_STAGE_2_NONE);
+            Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+        }
+    }
+
+    public void submitCommands(CommandPool.CommandBuffer commandBuffer, long waitStage) {
+        try (MemoryStack stack = stackPush()) {
+            commandBuffer.submitCommands(stack, this, waitStage);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         }
     }

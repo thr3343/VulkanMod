@@ -59,7 +59,7 @@ public class Vulkan {
     }
 
     public static final Set<String> REQUIRED_EXTENSION = getRequiredExtensionSet();
-    public static final Set<String> OPTIONAL_EXTENSION = new HashSet<>(List.of(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME));
+    public static final Set<String> OPTIONAL_EXTENSION = new HashSet<>(List.of(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, "VK_KHR_maintenance11"));
 
     private static Set<String> getRequiredExtensionSet() {
         ArrayList<String> extensions = new ArrayList<>(List.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
