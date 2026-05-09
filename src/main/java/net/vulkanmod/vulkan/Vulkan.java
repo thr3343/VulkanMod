@@ -158,12 +158,14 @@ public class Vulkan {
         stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
         chunkStaging = new StagingBuffer[Renderer.getFramesNum()];
 
+        boolean reBAR = MemoryType.BAR_MEM.maxSize == MemoryType.GPU_MEM.maxSize;
+
         for (int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer("Staging buffer", 64 * 1024 * 1024, MemoryType.HOST_MEM);
         }
-
+        // TODO: Size might not be enough for high-end CPUs (More Threads -> More Chunks uploaded per tick)
         for (int i = 0; i < chunkStaging.length; ++i) {
-            chunkStaging[i] = new StagingBuffer("Chunk Staging", 8 * 1024 * 1024, MemoryType.BAR_MEM);
+            chunkStaging[i] = new StagingBuffer("Chunk Staging", (reBAR ? 64 : 16) * 1024 * 1024, MemoryType.BAR_MEM);
         }
     }
 
