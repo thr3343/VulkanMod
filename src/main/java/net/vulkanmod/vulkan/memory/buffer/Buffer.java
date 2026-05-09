@@ -113,9 +113,9 @@ public class Buffer {
     }
 
     public BufferInfo getBufferInfo() {
-        return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType());
+        return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type);
     }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType type) {
     }
 }

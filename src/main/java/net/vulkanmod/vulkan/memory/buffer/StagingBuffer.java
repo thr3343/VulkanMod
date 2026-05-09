@@ -3,8 +3,7 @@ package net.vulkanmod.vulkan.memory.buffer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.texture.ImageUploadHelper;
-import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -13,14 +12,13 @@ import static org.lwjgl.system.libc.LibCString.nmemcpy;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class StagingBuffer extends Buffer {
-    private static final long DEFAULT_SIZE = 64 * 1024 * 1024;
 
-    public StagingBuffer() {
-        this(DEFAULT_SIZE);
+    public StagingBuffer(String stagingBuffer, long defaultSize, MemoryType type1) {
+        this(defaultSize, stagingBuffer, type1);
     }
 
-    public StagingBuffer(long size) {
-        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+    public StagingBuffer(long size, String stagingBuffer, MemoryType type1) {
+        super(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, type1);
         this.createBuffer(size);
     }
 
@@ -57,8 +55,11 @@ public class StagingBuffer extends Buffer {
     private void submitUploads() {
         // Submit all recorded uploads before resetting the buffer
         // (deferring waits to submit barrier at end frame)
-        UploadManager.INSTANCE.submitUploads();
-        ImageUploadHelper.INSTANCE.submitCommands();
+
+        if (this.type == MemoryType.BAR_MEM) {
+            UploadManager.INSTANCE.submitUploads();
+        }
+        else ImageUploadHelper.INSTANCE.submitCommands();
 
         this.reset();
     }

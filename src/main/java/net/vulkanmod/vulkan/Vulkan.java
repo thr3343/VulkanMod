@@ -3,9 +3,9 @@ package net.vulkanmod.vulkan;
 import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -39,8 +39,8 @@ import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
     public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final boolean DYNAMIC_RENDERING = false;
 
@@ -131,7 +131,7 @@ public class Vulkan {
 
     private static long allocator;
 
-    private static StagingBuffer[] stagingBuffers;
+    private static StagingBuffer[] stagingBuffers, chunkStaging;
 
     public static boolean use24BitsDepthFormat = true;
     private static int DEFAULT_DEPTH_FORMAT = 0;
@@ -144,7 +144,6 @@ public class Vulkan {
         DeviceManager.init(instance);
 
         createVma();
-        MemoryTypes.createMemoryTypes();
 
         createCommandPool();
 
@@ -157,9 +156,14 @@ public class Vulkan {
         }
 
         stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
+        chunkStaging = new StagingBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer();
+            stagingBuffers[i] = new StagingBuffer("Staging buffer", 64 * 1024 * 1024, MemoryType.HOST_MEM);
+        }
+
+        for (int i = 0; i < chunkStaging.length; ++i) {
+            chunkStaging[i] = new StagingBuffer("Chunk Staging", 8 * 1024 * 1024, MemoryType.BAR_MEM);
         }
     }
 
@@ -199,6 +203,7 @@ public class Vulkan {
 
     private static void freeStagingBuffers() {
         Arrays.stream(stagingBuffers).forEach(Buffer::scheduleFree);
+        Arrays.stream(chunkStaging).forEach(Buffer::scheduleFree);
     }
 
     private static void createInstance() {
@@ -410,6 +415,10 @@ public class Vulkan {
 
     public static StagingBuffer getStagingBuffer() {
         return stagingBuffers[Renderer.getCurrentFrame()];
+    }
+
+    public static StagingBuffer getChunkStaging() {
+        return chunkStaging[Renderer.getCurrentFrame()];
     }
 
     public static Device getDevice() {

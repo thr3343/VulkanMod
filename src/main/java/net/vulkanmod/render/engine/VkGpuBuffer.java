@@ -8,7 +8,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +48,7 @@ public class VkGpuBuffer extends GpuBuffer {
                            (usage & GpuBuffer.USAGE_MAP_WRITE) != 0 |
                            (usage & GpuBuffer.USAGE_HINT_CLIENT_STORAGE) != 0;
 
-        MemoryType memoryType =  mappable ? MemoryTypes.HOST_MEM : MemoryTypes.GPU_MEM;
+        MemoryType memoryType =  mappable ? MemoryType.HOST_MEM : MemoryType.GPU_MEM;
 
         this.buffer = new Buffer(supplier.get(), vkUsage, memoryType);
         this.buffer.createBuffer(this.size());

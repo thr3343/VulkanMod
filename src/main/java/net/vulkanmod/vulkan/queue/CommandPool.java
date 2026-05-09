@@ -146,6 +146,7 @@ public class CommandPool {
                         .commandBuffer(this.handle);
 
                 var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack)
+                        .sType$Default()
                         .semaphore(queue.getTmSemaphore())
                         .stageMask(waitStage) // No Wait Stage
                         .value(submitId); //Has same function as individual fence

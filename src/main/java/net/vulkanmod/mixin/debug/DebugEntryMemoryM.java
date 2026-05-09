@@ -43,6 +43,7 @@ public abstract class DebugEntryMemoryM {
                         String.format(Locale.ROOT, "Allocated: %2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)),
                         String.format("Off-heap: " + getOffHeapMemory() + "MB"),
                         "NativeMemory: %dMB".formatted(MemoryManager.getInstance().getNativeMemoryMB()),
+                        "BARMemory: %dMB".formatted(MemoryManager.getInstance().getBarMemoryMB()),
                         "DeviceMemory: %dMB".formatted(MemoryManager.getInstance().getAllocatedDeviceMemoryMB())
                 )
         );

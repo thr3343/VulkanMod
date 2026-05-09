@@ -24,6 +24,7 @@ import java.nio.LongBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static net.vulkanmod.vulkan.memory.MemoryType.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -41,6 +42,7 @@ public class MemoryManager {
     static int Frames;
 
     private static long deviceMemory = 0;
+    private static long barMemory = 0;
     private static long nativeMemory = 0;
 
     private int currentFrame = 0;
@@ -139,11 +141,10 @@ public class MemoryManager {
             buffer.setAllocation(pAllocation.get(0));
             buffer.setBufferSize(size);
 
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
-                deviceMemory += size;
-            }
-            else {
-                nativeMemory += size;
+            switch (buffer.type) {
+                case GPU_MEM ->  deviceMemory += size;
+                case BAR_MEM -> barMemory += size;
+                case HOST_MEM -> nativeMemory += size;
             }
 
             buffers.putIfAbsent(buffer.getId(), buffer);
@@ -219,13 +220,11 @@ public class MemoryManager {
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
-        if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
+        switch (bufferInfo.type()) {
+            case GPU_MEM ->  deviceMemory -= bufferInfo.bufferSize();
+            case BAR_MEM -> barMemory -= bufferInfo.bufferSize();
+            case HOST_MEM -> nativeMemory -= bufferInfo.bufferSize();
         }
-        else {
-            nativeMemory -= bufferInfo.bufferSize();
-        }
-
         buffers.remove(bufferInfo.id());
     }
 
@@ -315,12 +314,16 @@ public class MemoryManager {
         return bytesInMb(nativeMemory);
     }
 
+    public int getBarMemoryMB() {
+        return bytesInMb(barMemory);
+    }
+
     public int getAllocatedDeviceMemoryMB() {
         return bytesInMb(deviceMemory);
     }
 
     public int getDeviceMemoryMB() {
-        return bytesInMb(MemoryTypes.GPU_MEM.vkMemoryHeap.size());
+        return bytesInMb(MemoryType.GPU_MEM.maxSize);
     }
 
     int bytesInMb(long bytes) {
@@ -333,7 +336,7 @@ public class MemoryManager {
 
             vmaGetHeapBudgets(ALLOCATOR, vmaBudgets);
 
-            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.vkMemoryType.heapIndex());
+            VmaBudget vmaBudget = vmaBudgets.get(MemoryType.GPU_MEM.heapIndex);
             long usage = vmaBudget.usage();
             long budget = vmaBudget.budget();
 

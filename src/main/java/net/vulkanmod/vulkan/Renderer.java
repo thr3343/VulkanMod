@@ -224,6 +224,7 @@ public class Renderer {
         if (lastReset == currentFrame) {
             submitUploads();
             getStagingBuffer().reset();
+            getChunkStaging().reset();
         }
         lastReset = currentFrame;
 
@@ -330,6 +331,7 @@ public class Renderer {
         // (excluding async transfers to avoid upload desync)
         submitUploads();
         getStagingBuffer().reset();
+        getChunkStaging().reset();
 
         submitFrame();
         recordingCmds = false;
@@ -503,6 +505,7 @@ public class Renderer {
 
             submitUploads();
             getStagingBuffer().reset();
+            getChunkStaging().reset();
 
             if ((vkResult = KHRSynchronization2.vkQueueSubmit2KHR(graphicsQueue.vkQueue(), submitInfo, 0)) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
@@ -602,6 +605,7 @@ public class Renderer {
     private void recreateSwapChain() {
         submitUploads();
         getStagingBuffer().reset();
+        getChunkStaging().reset();
         Vulkan.waitIdle();
 
         mainCommandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));

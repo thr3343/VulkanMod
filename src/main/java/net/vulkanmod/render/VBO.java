@@ -24,7 +24,7 @@ public class VBO {
     private int vertexCount;
 
     public VBO(boolean useGpuMem) {
-       this.memoryType = useGpuMem ? MemoryTypes.GPU_MEM : MemoryTypes.HOST_MEM;
+       this.memoryType = useGpuMem ? MemoryType.GPU_MEM : MemoryType.HOST_MEM;
     }
 
     public void upload(MeshData meshData) {
@@ -95,7 +95,7 @@ public class VBO {
                 this.indexBuffer.scheduleFree();
             }
 
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryType.GPU_MEM);
             this.indexBuffer.copyBuffer(data, data.remaining());
         }
     }
