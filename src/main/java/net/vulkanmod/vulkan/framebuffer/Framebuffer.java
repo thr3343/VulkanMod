@@ -64,21 +64,20 @@ public class Framebuffer {
 
     public void createImages() {
         if (this.hasColorAttachment) {
-            this.colorAttachment =
-                    VulkanImage.builder(this.width, this.height)
-                               .setName(this.name != null ? String.format("%s Color", this.name) : null)
-                               .setFormat(format)
-                               .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-                               .setLinearFiltering(linearFiltering)
-                               .setClamp(true)
-                               .createVulkanImage();
+            this.colorAttachment = VulkanImage.builder(this.width, this.height)
+                                              .setName(this.name != null ? String.format("%s Color", this.name) : null)
+                                              .setFormat(format)
+                                              .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                                              .setLinearFiltering(linearFiltering)
+                                              .setClamp(true)
+                                              .createVulkanImage();
         }
 
         if (this.hasDepthAttachment) {
             this.depthAttachment = VulkanImage.builder(width, height)
                                               .setName(this.name != null ? String.format("%s Depth", this.name) : null)
                                               .setFormat(depthFormat)
-                                              .setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+                                              .setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                               .setLinearFiltering(depthLinearFiltering)
                                               .setClamp(true)
                                               .createVulkanImage();
