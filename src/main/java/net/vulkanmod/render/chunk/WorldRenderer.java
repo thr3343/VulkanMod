@@ -50,6 +50,7 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Vector3d;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -80,8 +81,8 @@ public class WorldRenderer {
     private final LevelRenderState levelRenderState;
     private final FeatureRenderDispatcher featureRenderDispatcher;
 
+    private final Vector3d cameraPos = new Vector3d();
     private float partialTick;
-    private Vec3 cameraPos;
     private int lastCameraSectionX;
     private int lastCameraSectionY;
     private int lastCameraSectionZ;
@@ -159,7 +160,8 @@ public class WorldRenderer {
 
         benchCallback();
 
-        this.cameraPos = camera.getPosition();
+        Vec3 camPos = camera.position();
+        this.cameraPos.set(camPos.x(), camPos.y(), camPos.z());
         if (this.minecraft.options.getEffectiveRenderDistance() != this.renderDistance) {
             this.allChanged();
         }
@@ -410,7 +412,7 @@ public class WorldRenderer {
 
             while (iterator.hasNext() && j < 200) {
                 RenderSection section = iterator.next();
-                section.resortTransparency(this.taskDispatcher);
+                section.resortTransparency(this.taskDispatcher, this.cameraPos);
 
                 if (!section.isCompletelyEmpty()) {
                     ++j;
@@ -547,7 +549,7 @@ public class WorldRenderer {
         return INSTANCE.level;
     }
 
-    public static Vec3 getCameraPos() {
+    public static Vector3d getCameraPos() {
         return INSTANCE.cameraPos;
     }
 

@@ -18,6 +18,7 @@ import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.chunk.graph.GraphDirections;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import org.joml.Vector3d;
 
 import java.util.Collection;
 import java.util.Set;
@@ -200,7 +201,7 @@ public class RenderSection {
         adjacent.adjDirs &= (byte) ~(1 << Util.getOppositeDirIdx((byte) direction));
     }
 
-    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
+    public boolean resortTransparency(TaskDispatcher taskDispatcher, Vector3d cameraPos) {
         CompiledSection compiledSection = this.getCompiledSection();
 
         if (this.compileStatus.sortTask != null) {
@@ -210,14 +211,14 @@ public class RenderSection {
         if (!compiledSection.hasTransparencyState()) {
             return false;
         } else {
-            this.compileStatus.sortTask = new SortTransparencyTask(this);
+            this.compileStatus.sortTask = ChunkTask.createSortTask(this, cameraPos);
             taskDispatcher.schedule(this.compileStatus.sortTask);
             return true;
         }
     }
 
-    public boolean rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
-        BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
+    public boolean rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache, Vector3d cameraPos) {
+        BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache, cameraPos);
 
         if (chunkCompileTask == null)
             return false;
@@ -230,7 +231,7 @@ public class RenderSection {
     public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
     }
 
-    public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache) {
+    public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache, Vector3d cameraPos) {
         boolean flag = this.cancelTasks();
 
         Level level = WorldRenderer.getLevel();
@@ -244,7 +245,7 @@ public class RenderSection {
         RenderRegion renderRegion = renderRegionCache.createRegion(level, secX, secY, secZ);
 
         boolean flag1 = this.compileStatus.compiledSection == CompiledSection.UNCOMPILED;
-        this.compileStatus.buildTask = ChunkTask.createBuildTask(this, renderRegion, !flag1 || flag);
+        this.compileStatus.buildTask = ChunkTask.createBuildTask(this, renderRegion, cameraPos, !flag1 || flag);
         return this.compileStatus.buildTask;
     }
 
