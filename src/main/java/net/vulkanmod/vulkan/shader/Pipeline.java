@@ -1,35 +1,28 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
-import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -38,10 +31,9 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class Pipeline {
-
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     protected static final long PIPELINE_CACHE = createPipelineCache();
-    protected static final List<Pipeline> PIPELINES = new LinkedList<>();
+    protected static final List<Pipeline> PIPELINES = new ArrayList<>();
 
     private static long createPipelineCache() {
         try (MemoryStack stack = stackPush()) {
@@ -77,7 +69,6 @@ public abstract class Pipeline {
 
     protected DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
-    protected ManualUBO manualUBO;
     protected List<ImageDescriptor> imageDescriptors;
     protected PushConstants pushConstants;
 
@@ -87,7 +78,7 @@ public abstract class Pipeline {
 
     protected void createDescriptorSetLayout() {
         try (MemoryStack stack = stackPush()) {
-            int bindingsSize = this.buffers.size() + imageDescriptors.size();
+            int bindingsSize = this.buffers.size() + this.imageDescriptors.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
 
@@ -125,8 +116,6 @@ public abstract class Pipeline {
 
     protected void createPipelineLayout() {
         try (MemoryStack stack = stackPush()) {
-            // ===> PIPELINE LAYOUT CREATION <===
-
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
@@ -135,7 +124,7 @@ public abstract class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(this.pushConstants.stages);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -169,10 +158,6 @@ public abstract class Pipeline {
         }
 
         this.descriptorSets = null;
-    }
-
-    public ManualUBO getManualUBO() {
-        return this.manualUBO;
     }
 
     public void resetDescriptorPool(int i) {
@@ -257,44 +242,39 @@ public abstract class Pipeline {
         }
     }
 
+    public static Builder builder(VertexFormat vertexFormat, String path) {
+        return new Builder(vertexFormat, path);
+    }
+
     public static class Builder {
-        final VertexFormat vertexFormat;
-        final String shaderPath;
-        List<UBO> UBOs;
-        ManualUBO manualUBO;
+        public final VertexFormat vertexFormat;
+        public final String name;
+        List<UBO> UBOs = new ArrayList<>();
+        List<ImageDescriptor> imageDescriptors = new ArrayList<>();
         PushConstants pushConstants;
-        List<ImageDescriptor> imageDescriptors;
         int nextBinding;
 
-        SPIRV vertShaderSPIRV;
-        SPIRV fragShaderSPIRV;
+        Map<ShaderKind, String> shadersSrc = new EnumMap<>(ShaderKind.class);
 
         RenderPass renderPass;
 
         Function<Uniform.Info, Supplier<MappedBuffer>> uniformSupplierGetter;
 
-        public Builder(VertexFormat vertexFormat, String path) {
+        public Builder(VertexFormat vertexFormat, String name) {
             this.vertexFormat = vertexFormat;
-            this.shaderPath = path;
+            this.name = name;
         }
 
         public Builder(VertexFormat vertexFormat) {
             this(vertexFormat, null);
         }
 
-        public Builder() {
-            this(null, null);
+        public Builder(String name) {
+            this(null, name);
         }
 
-        public GraphicsPipeline createGraphicsPipeline() {
-            Validate.isTrue(this.imageDescriptors != null && this.UBOs != null
-                            && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
-                            "Cannot create Pipeline: resources missing");
-
-            if (this.manualUBO != null)
-                this.UBOs.add(this.manualUBO);
-
-            return new GraphicsPipeline(this);
+        public Builder() {
+            this(null, null);
         }
 
         public void setUniforms(List<UBO> UBOs, List<ImageDescriptor> imageDescriptors) {
@@ -302,76 +282,50 @@ public abstract class Pipeline {
             this.imageDescriptors = imageDescriptors;
         }
 
-        public void setSPIRVs(SPIRV vertShaderSPIRV, SPIRV fragShaderSPIRV) {
-            this.vertShaderSPIRV = vertShaderSPIRV;
-            this.fragShaderSPIRV = fragShaderSPIRV;
+        public void setShaderSrc(ShaderKind kind, String src) {
+            this.shadersSrc.put(kind, src);
         }
 
-        public void compileShaders(String name, String vsh, String fsh) {
-            this.vertShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), vsh, ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.fsh", name), fsh, ShaderKind.FRAGMENT_SHADER);
+        public void addUBO(UBO ubo) {
+            this.UBOs.add(ubo);
         }
 
-        public void setVertShaderSPIRV(SPIRV vertShaderSPIRV) {
-            this.vertShaderSPIRV = vertShaderSPIRV;
+        public void addImageDescriptor(ImageDescriptor imageDescriptor) {
+            this.imageDescriptors.add(imageDescriptor);
         }
 
-        public void setFragShaderSPIRV(SPIRV fragShaderSPIRV) {
-            this.fragShaderSPIRV = fragShaderSPIRV;
-        }
-
-        public void parseBindings(JsonObject jsonObject) {
-            this.UBOs = new ArrayList<>();
-            this.imageDescriptors = new ArrayList<>();
-
-            JsonArray jsonUbos = GsonHelper.getAsJsonArray(jsonObject, "UBOs", null);
-            JsonArray jsonManualUbos = GsonHelper.getAsJsonArray(jsonObject, "ManualUBOs", null);
-            JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", null);
-            JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", null);
-
-            if (jsonUbos != null) {
-                for (JsonElement jsonelement : jsonUbos) {
-                    this.parseUboNode(jsonelement);
-                }
+        public Builder applyConfig(PipelineConfig config) {
+            for (var ub : config.ubs) {
+                parseUboNode(ub);
             }
 
-            if (jsonManualUbos != null) {
-                this.parseManualUboNode(jsonManualUbos.get(0));
+            for (var imageDescriptor : config.imageDescriptors) {
+                this.parseImageDescriptor(imageDescriptor);
             }
 
-            if (jsonSamplers != null) {
-                for (JsonElement jsonelement : jsonSamplers) {
-                    this.parseSamplerNode(jsonelement);
-                }
+            if (config.pushConstantsInfo != null) {
+                this.parsePushConstantNode(config.pushConstantsInfo);
             }
 
-            if (jsonPushConstants != null) {
-                this.parsePushConstantNode(jsonPushConstants);
-            }
+            return this;
         }
 
         public void setUniformSupplierGetter(Function<Uniform.Info, Supplier<MappedBuffer>> uniformSupplierGetter) {
             this.uniformSupplierGetter = uniformSupplierGetter;
         }
 
-        private void parseUboNode(JsonElement jsonelement) {
-            JsonObject uboJson = GsonHelper.convertToJsonObject(jsonelement, "UBO");
-            int binding = GsonHelper.getAsInt(uboJson, "binding");
-            int type = getStageFromString(GsonHelper.getAsString(uboJson, "type"));
+        private void parseUboNode(PipelineConfig.UB ub) {
+            int binding = ub.binding;
+            int stages = ub.stage;
+            AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
             UBO ubo;
-            if (GsonHelper.isArrayNode(uboJson, "fields")) {
-                JsonArray fields = GsonHelper.getAsJsonArray(uboJson, "fields");
+            if (!ub.uniforms.isEmpty()) {
+                for (var field : ub.uniforms) {
+                    String name = field.name();
+                    String type = field.type();
 
-                AlignedStruct.Builder builder = new AlignedStruct.Builder();
-
-                for (JsonElement field : fields) {
-                    JsonObject fieldObject = GsonHelper.convertToJsonObject(field, "uniform");
-                    String name = GsonHelper.getAsString(fieldObject, "name");
-                    String type2 = GsonHelper.getAsString(fieldObject, "type");
-                    int count = GsonHelper.getAsInt(fieldObject, "count");
-
-                    Uniform.Info uniformInfo = Uniform.createUniformInfo(type2, name, count);
+                    Uniform.Info uniformInfo = Uniform.createUniformInfo(type, name);
                     uniformInfo.setupSupplier();
 
                     if (!uniformInfo.hasSupplier()) {
@@ -379,83 +333,78 @@ public abstract class Pipeline {
                             var uniformSupplier = this.uniformSupplierGetter.apply(uniformInfo);
 
                             if (uniformSupplier == null) {
-                                throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type2, name));
+                                throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type, name));
                             }
 
                             uniformInfo.setBufferSupplier(uniformSupplier);
                         }
                         else {
-                            throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type2, name));
+                            throw new IllegalStateException("No uniform supplier found for uniform: (%s:%s)".formatted(type, name));
                         }
                     }
 
-                    builder.addUniformInfo(uniformInfo);
+                    builder.addUniform(uniformInfo);
                 }
 
-                ubo = builder.buildUBO(binding, type);
+                ubo = builder.buildUBO(binding, stages);
             }
             else {
-                int size = GsonHelper.getAsInt(uboJson, "size");
+                int size = ub.size;
 
-                ubo = new UBO("UBO %d".formatted(binding), binding, type, size, null);
+                if (size <= 0) {
+                    throw new IllegalStateException("Manual UBO has size <= 0");
+                }
+
+                ubo = new UBO("UBO %d".formatted(binding), binding, stages, size, null);
                 ubo.setUseGlobalBuffer(false);
             }
-
-            if (binding >= this.nextBinding)
-                this.nextBinding = binding + 1;
 
             this.UBOs.add(ubo);
         }
 
-        private void parseManualUboNode(JsonElement jsonelement) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "ManualUBO");
-            int binding = GsonHelper.getAsInt(jsonobject, "binding");
-            int stage = getStageFromString(GsonHelper.getAsString(jsonobject, "type"));
-            int size = GsonHelper.getAsInt(jsonobject, "size");
+        private void parseImageDescriptor(PipelineConfig.ImageDescriptorInfo info) {
+            int descriptorType = switch (info.type()) {
+                case "sampler2D" -> VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case "image2D" -> VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                default -> throw new IllegalStateException("Unexpected value: " + info.type());
+            };
 
-            if (binding >= this.nextBinding)
-                this.nextBinding = binding + 1;
-
-            this.manualUBO = new ManualUBO(binding, stage, size);
+            this.imageDescriptors.add(new ImageDescriptor(info.binding(), info.type(), info.name(), info.imageIdx(), descriptorType));
         }
 
-        private void parseSamplerNode(JsonElement jsonelement) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
-            String name = GsonHelper.getAsString(jsonobject, "name");
-
-            int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
-            this.nextBinding++;
-        }
-
-        private void parsePushConstantNode(JsonArray jsonArray) {
+        private void parsePushConstantNode(PipelineConfig.UB ub) {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
+            int stages = ub.stage;
 
-            for (JsonElement jsonelement : jsonArray) {
-                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PushConstants");
+            for (var field : ub.uniforms) {
+                String name = field.name();
+                String type = field.type();
 
-                String name = GsonHelper.getAsString(jsonobject2, "name");
-                String type2 = GsonHelper.getAsString(jsonobject2, "type");
-                int count = GsonHelper.getAsInt(jsonobject2, "count");
-
-                Uniform.Info uniformInfo = Uniform.createUniformInfo(type2, name, count);
-                uniformInfo.setupSupplier();
-
-                builder.addUniformInfo(uniformInfo);
+                Uniform.Info uniformInfo = Uniform.createUniformInfo(type, name);
+                builder.addUniform(uniformInfo);
             }
 
-            this.pushConstants = builder.buildPushConstant();
+            this.pushConstants = builder.buildPushConstant(stages);
         }
 
-        public static int getStageFromString(String s) {
-            return switch (s) {
-                case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
-                case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
-                case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
+        public List<UBO> getUBOs() {
+            return UBOs;
+        }
 
-                default -> throw new RuntimeException("cannot identify type..");
-            };
+        public List<ImageDescriptor> getImageDescriptors() {
+            return imageDescriptors;
+        }
+
+        public PushConstants getPushConstants() {
+            return pushConstants;
+        }
+
+        public Map<ShaderKind, String> getShadersSrc() {
+            return shadersSrc;
+        }
+
+        public GraphicsPipeline createGraphicsPipeline() {
+            return new GraphicsPipeline(this);
         }
     }
 }

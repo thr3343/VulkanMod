@@ -12,7 +12,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.render.VBO;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;

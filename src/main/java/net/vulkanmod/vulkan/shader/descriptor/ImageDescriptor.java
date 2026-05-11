@@ -18,14 +18,6 @@ public class ImageDescriptor implements Descriptor {
     private int layout;
     private int mipLevel = -1;
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx) {
-        this(binding, type, name, imageIdx, false);
-    }
-
-    public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
-        this(binding, type, name, imageIdx, isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    }
-
     public ImageDescriptor(int binding, String type, String name, int imageIdx, int descriptorType) {
         this.binding = binding;
         this.qualifier = type;

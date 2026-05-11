@@ -36,52 +36,18 @@ public abstract class ShaderLoadUtil {
         return "%s%s".formatted(shaderPath, path);
     }
 
-    public static void loadShaders(Pipeline.Builder pipelineBuilder, JsonObject config, String configName, String path) {
-        loadShaders(pipelineBuilder, config, configName, path, null);
+    public static String loadShader(String path, String shaderName) {
+        return loadShader(path, shaderName, null);
     }
 
-    public static void loadShaders(Pipeline.Builder pipelineBuilder, JsonObject config, String configName, String path, List<String> defines) {
-        String vertexShader = config.has("vertex") ? config.get("vertex").getAsString() : configName;
-        String fragmentShader = config.has("fragment") ? config.get("fragment").getAsString() : configName;
-
-        if (vertexShader == null) {
-            vertexShader = configName;
-        }
-        if (fragmentShader == null) {
-            fragmentShader = configName;
-        }
-
-        vertexShader = removeNameSpace(vertexShader);
-        fragmentShader = removeNameSpace(fragmentShader);
-
-        vertexShader = getFileName(vertexShader);
-        fragmentShader = getFileName(fragmentShader);
-
-        loadShader(pipelineBuilder, configName, path, vertexShader, SPIRVUtils.ShaderKind.VERTEX_SHADER, defines);
-        loadShader(pipelineBuilder, configName, path, fragmentShader, SPIRVUtils.ShaderKind.FRAGMENT_SHADER, defines);
-    }
-
-    public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, SPIRVUtils.ShaderKind type) {
-        String[] splitPath = splitPath(path);
-        String shaderName = splitPath[1];
-        String subPath = splitPath[0];
-
-        loadShader(pipelineBuilder, configName, subPath, shaderName, type, null);
-    }
-
-    public static void loadShader(Pipeline.Builder pipelineBuilder, String configName, String path, String shaderName, SPIRVUtils.ShaderKind type, List<String> defines) {
-        String source = getShaderSource(path, configName, shaderName, type);
+    public static String loadShader(String path, String shaderName, List<String> defines) {
+        String source = getShaderSource(path, shaderName);
 
         if (defines != null && !defines.isEmpty()) {
             source = injectDefines(source, defines);
         }
 
-        SPIRVUtils.SPIRV spirv = SPIRVUtils.compileShader(shaderName, source, type);
-
-        switch (type) {
-            case VERTEX_SHADER -> pipelineBuilder.setVertShaderSPIRV(spirv);
-            case FRAGMENT_SHADER -> pipelineBuilder.setFragShaderSPIRV(spirv);
-        }
+        return source;
     }
 
     public static String getConfigFilePath(String path, String rendertype) {
@@ -186,6 +152,26 @@ public abstract class ShaderLoadUtil {
         InputStream stream;
         try {
             stream = getInputStream(shaderFile);
+            String source = IOUtils.toString(new BufferedReader(new InputStreamReader(stream)));
+            stream.close();
+
+            return source;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String getShaderSource(String path, String shaderName) {
+        String shaderFile = "%s/%s".formatted(path, shaderName);
+
+        InputStream stream;
+        try {
+            stream = getInputStream(shaderFile);
+
+            if (stream == null) {
+                return null;
+            }
+
             String source = IOUtils.toString(new BufferedReader(new InputStreamReader(stream)));
             stream.close();
 

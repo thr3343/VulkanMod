@@ -3,9 +3,8 @@ package net.vulkanmod.render.vertex;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.render.chunk.cull.QuadFacing;
-import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 

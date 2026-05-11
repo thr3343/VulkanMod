@@ -40,25 +40,34 @@ public abstract class AlignedStruct {
         return size;
     }
 
-    public static class Builder {
+    public static Builder builder() {
+        return new Builder();
+    }
 
+    public static class Builder {
         final List<Uniform.Info> uniforms = new ArrayList<>();
         protected int currentOffset = 0;
 
-        public void addUniformInfo(String type, String name, int count) {
+        public Builder addUniform(String type, String name, int count) {
             Uniform.Info info = Uniform.createUniformInfo(type, name, count);
-            addUniformInfo(info);
+            this.addUniform(info);
+
+            return this;
         }
 
-        public void addUniformInfo(String type, String name) {
+        public Builder addUniform(String type, String name) {
             Uniform.Info info = Uniform.createUniformInfo(type, name);
-            addUniformInfo(info);
+            addUniform(info);
+
+            return this;
         }
 
-        public void addUniformInfo(Uniform.Info uniformInfo) {
+        public Builder addUniform(Uniform.Info uniformInfo) {
             this.currentOffset = uniformInfo.computeAlignmentOffset(this.currentOffset);
             this.currentOffset += uniformInfo.size;
             this.uniforms.add(uniformInfo);
+
+            return this;
         }
 
         public UBO buildUBO(int binding, int stages) {
@@ -70,12 +79,12 @@ public abstract class AlignedStruct {
             return new UBO(name, binding, stages, this.currentOffset * 4, this.uniforms);
         }
 
-        public PushConstants buildPushConstant() {
+        public PushConstants buildPushConstant(int stages) {
             if (this.uniforms.isEmpty()) {
                 return null;
             }
 
-            return new PushConstants(this.uniforms, this.currentOffset * 4);
+            return new PushConstants(stages, this.uniforms, this.currentOffset * 4);
         }
 
     }

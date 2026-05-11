@@ -1,7 +1,7 @@
 package net.vulkanmod.render.chunk.buffer;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.render.chunk.ChunkAreaManager;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.UploadBuffer;

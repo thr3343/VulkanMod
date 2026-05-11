@@ -31,9 +31,8 @@ public class GraphicsPipeline extends Pipeline {
     private long fragShaderModule = 0;
 
     GraphicsPipeline(Builder builder) {
-        super(builder.shaderPath);
+        super(builder.name);
         this.buffers = builder.UBOs;
-        this.manualUBO = builder.manualUBO;
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
@@ -42,7 +41,8 @@ public class GraphicsPipeline extends Pipeline {
 
         createDescriptorSetLayout();
         createPipelineLayout();
-        createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
+
+        createShaderModules(builder);
 
         if (builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
@@ -223,9 +223,15 @@ public class GraphicsPipeline extends Pipeline {
         }
     }
 
-    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
+    private void createShaderModules(Builder builder) {
+        String vsh = builder.shadersSrc.get(SPIRVUtils.ShaderKind.VERTEX_SHADER);
+        SPIRVUtils.SPIRV vertShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), vsh, SPIRVUtils.ShaderKind.VERTEX_SHADER);
+
+        String fsh = builder.shadersSrc.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        SPIRVUtils.SPIRV fragShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), fsh, SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+
+        this.vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
+        this.fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
     }
 
     public void cleanUp() {
@@ -391,8 +397,14 @@ public class GraphicsPipeline extends Pipeline {
 
                         offset += 4;
                     }
+                    else if (type == VertexFormatElement.Type.FLOAT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R32_SFLOAT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
                     else {
-                        throw new RuntimeException(String.format("Unknown format: %s", usage));
+                        throw new RuntimeException(String.format("Unknown type: %s", type));
                     }
                 }
 

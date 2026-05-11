@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
