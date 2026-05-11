@@ -113,6 +113,7 @@ public abstract class WindowMixin {
     @Overwrite
     private void setMode() {
         Config config = Initializer.CONFIG;
+        VideoModeManager.checkConfigVideoMode(config);
 
         if (this.fullscreen) {
             config.windowMode = WindowMode.EXCLUSIVE_FULLSCREEN.mode;

@@ -1,12 +1,11 @@
 package net.vulkanmod.config.video;
 
 import com.mojang.blaze3d.platform.Monitor;
-import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Config;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 
@@ -57,7 +56,7 @@ public abstract class VideoModeManager {
         if (videoModeSets != null)
             return videoModeSets[videoModeSets.length - 1];
         else
-            return VideoModeSet.getDummy();
+            return null;
     }
 
     public static VideoModeSet.VideoMode getOsVideoMode() {
@@ -123,9 +122,21 @@ public abstract class VideoModeManager {
         selectedMonitor = findBestMonitor(window).getMonitor();
 
         if (selectedMonitor == 0L) {
+            // Fallback to primary in case of null handle
             selectedMonitor = GLFW.glfwGetPrimaryMonitor();
         }
     }
+
+    public static void checkConfigVideoMode(Config config) {
+        var videoMode = config.videoMode;
+        if (videoMode.width <= 0 || videoMode.height <= 0 || videoMode.refreshRate <= 0) {
+            videoMode = getFirstAvailable().getVideoMode();
+            config.videoMode = videoMode;
+            config.write();
+        }
+    }
+
+
 
     public static Monitor findBestMonitor(final Window window) {
         long windowMonitor = GLFW.glfwGetWindowMonitor(window.handle());
