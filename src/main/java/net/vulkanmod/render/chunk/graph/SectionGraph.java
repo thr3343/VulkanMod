@@ -199,7 +199,8 @@ public class SectionGraph {
         for (int i = 0; i < this.rebuildQueue.size(); i++) {
             RenderSection section = this.rebuildQueue.get(i);
 
-            section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
+            var cameraPos = WorldRenderer.getCameraPos();
+            section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache, cameraPos);
             section.setNotDirty();
         }
         this.rebuildQueue.clear();

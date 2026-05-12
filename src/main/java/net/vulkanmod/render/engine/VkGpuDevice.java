@@ -16,7 +16,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.renderer.ShaderDefines;
 import net.minecraft.resources.ResourceLocation;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.VkGlTexture;
 import net.vulkanmod.interfaces.shader.ExtendedRenderPipeline;
 import net.vulkanmod.render.shader.ShaderLoadUtil;
@@ -25,6 +24,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 import net.vulkanmod.vulkan.shader.converter.GLSLParser;
 import net.vulkanmod.vulkan.shader.converter.Lexer;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
@@ -277,7 +277,7 @@ public class VkGpuDevice implements GpuDevice {
                 String src = ShaderLoadUtil.getShaderSource(resourceLocation, shaderType);
 
                 if (src == null) {
-                    throw new RuntimeException("shader: (%s) not found.");
+                    throw new RuntimeException("shader: (%s) not found.".formatted(resourceLocation));
                 }
 
                 return src;
@@ -289,7 +289,13 @@ public class VkGpuDevice implements GpuDevice {
 
     public CompiledRenderPipeline precompilePipeline(RenderPipeline renderPipeline, @Nullable BiFunction<ResourceLocation, ShaderType, String> shaderSourceGetter) {
         shaderSourceGetter = shaderSourceGetter == null ? this.defaultShaderSource : shaderSourceGetter;
-        compilePipeline(renderPipeline, shaderSourceGetter);
+
+        try {
+            compilePipeline(renderPipeline, shaderSourceGetter);
+        } catch (Exception e) {
+            throw new RuntimeException("Caught exception compiling pipeline: %s".formatted(renderPipeline.toString()), e);
+        }
+
 
         return new VkRenderPipeline(renderPipeline);
     }
@@ -364,7 +370,9 @@ public class VkGpuDevice implements GpuDevice {
         String fshProcessed = parser.getOutput(GLSLParser.Stage.FRAGMENT);
 
         builder.setUniforms(List.of(ubos), parser.getSamplerList());
-        builder.compileShaders(configName, vshProcessed, fshProcessed);
+
+        builder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, vshProcessed);
+        builder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fshProcessed);
 
         try {
             pipeline = builder.createGraphicsPipeline();

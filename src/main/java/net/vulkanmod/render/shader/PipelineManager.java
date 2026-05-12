@@ -1,15 +1,16 @@
-package net.vulkanmod.render;
+package net.vulkanmod.render.shader;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
-import net.vulkanmod.render.shader.ShaderLoadUtil;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.PipelineConfig;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 import java.util.function.Function;
 
@@ -30,25 +31,45 @@ public abstract class PipelineManager {
     }
 
     public static void setDefaultTerrainShaderGetter() {
-        setShaderGetter(
-                renderType -> renderType == TerrainRenderType.TRANSLUCENT ? terrainShaderEarlyZ : terrainShader);
+        setShaderGetter(renderType -> terrainShader);
     }
 
     private static void createBasicPipelines() {
-        terrainShaderEarlyZ = createPipeline("terrain_earlyZ", CustomVertexFormat.COMPRESSED_TERRAIN);
-        terrainShader = createPipeline("terrain", CustomVertexFormat.COMPRESSED_TERRAIN);
-        fastBlitPipeline = createPipeline("blit", CustomVertexFormat.NONE);
-        cloudsPipeline = createPipeline("clouds", DefaultVertexFormat.POSITION_COLOR);
+        terrainShader = createPipeline("terrain", "basic", PipelineConfigs.TERRAIN, CustomVertexFormat.COMPRESSED_TERRAIN);
+        terrainShaderEarlyZ = createPipeline("terrain_earlyZ", "basic", CustomVertexFormat.COMPRESSED_TERRAIN);
+        fastBlitPipeline = createPipeline("blit", "basic/blit", CustomVertexFormat.NONE);
+        cloudsPipeline = createPipeline("clouds", "basic/clouds", DefaultVertexFormat.POSITION_COLOR);
     }
 
-    private static GraphicsPipeline createPipeline(String configName, VertexFormat vertexFormat) {
+    private static GraphicsPipeline createPipeline(String configName, String shaderPath, PipelineConfig config, VertexFormat vertexFormat) {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, configName);
 
-        final String path = ShaderLoadUtil.resolveShaderPath("basic");
-        JsonObject config = ShaderLoadUtil.getJsonConfig(path, configName);
-        pipelineBuilder.parseBindings(config);
+        final String path = ShaderLoadUtil.resolveShaderPath(shaderPath);
 
-        ShaderLoadUtil.loadShaders(pipelineBuilder, config, configName, path);
+        pipelineBuilder.applyConfig(config);
+
+        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(config.shaderPaths.get(SPIRVUtils.ShaderKind.VERTEX_SHADER))));
+        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(config.shaderPaths.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER))));
+
+        var pipeline = pipelineBuilder.createGraphicsPipeline();
+
+        for (var buffer : pipeline.getBuffers()) {
+            buffer.setUseGlobalBuffer(true);
+        }
+
+        return pipeline;
+    }
+
+    private static GraphicsPipeline createPipeline(String configName, String shaderPath, VertexFormat vertexFormat) {
+        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, configName);
+
+        final String path = ShaderLoadUtil.resolveShaderPath(shaderPath);
+        JsonObject config = ShaderLoadUtil.getJsonConfig(path, configName);
+        var pipelineConfig = PipelineConfig.fromJson(configName, config);
+        pipelineBuilder.applyConfig(pipelineConfig);
+
+        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(pipelineConfig.shaderPaths.get(SPIRVUtils.ShaderKind.VERTEX_SHADER))));
+        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(pipelineConfig.shaderPaths.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER))));
 
         var pipeline = pipelineBuilder.createGraphicsPipeline();
 

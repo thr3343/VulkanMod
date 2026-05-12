@@ -104,7 +104,9 @@ public class DescriptorSets {
             VulkanImage image = imageDescriptor.getImage();
 
             if (image == null) {
-                throw new NullPointerException();
+                throw new NullPointerException(
+                        "Pipeline %s: image descriptor %s (binding %d) has no image bound"
+                                .formatted(pipeline.name, imageDescriptor.name, imageDescriptor.getBinding()));
             }
 
             long view = imageDescriptor.getImageView(image);
@@ -189,7 +191,9 @@ public class DescriptorSets {
             VulkanImage image = imageDescriptor.getImage();
 
             if (image == null) {
-                throw new NullPointerException();
+                throw new NullPointerException(
+                        "Pipeline %s: image descriptor %s (binding %d) has no image bound"
+                                .formatted(pipeline.name, imageDescriptor.name, imageDescriptor.getBinding()));
             }
 
             long view = imageDescriptor.getImageView(image);

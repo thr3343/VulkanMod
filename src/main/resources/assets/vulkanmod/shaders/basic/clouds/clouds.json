@@ -1,6 +1,4 @@
 {
-    "vertex": "clouds",
-    "fragment": "clouds",
     "samplers": [],
     "UBOs": [
         { "type":  "vertex", "binding": 0, "fields": [

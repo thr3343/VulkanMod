@@ -94,8 +94,9 @@ public class Uniform {
         return switch (type) {
             case "mat4" -> new Info(type, name, 4, 16);
             case "mat3" -> new Info(type, name, 4, 9);
+            case "mat2" -> new Info(type, name, 4, 4);
 
-            case "vec4" -> new Info(type, name, 4, 4);
+            case "vec4", "ivec4" -> new Info(type, name, 4, 4);
             case "vec3", "ivec3" -> new Info(type, name, 4, 3);
             case "vec2", "ivec2" -> new Info(type, name, 2, 2);
 

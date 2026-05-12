@@ -1,8 +1,7 @@
 package net.vulkanmod.render.chunk.buffer;
 
-import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.shader.PipelineManager;
 import net.vulkanmod.render.chunk.ChunkAreaManager;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
@@ -13,6 +12,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import org.joml.Vector3d;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -186,7 +186,7 @@ public class DrawBuffers {
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
-    public void buildDrawBatchesIndirect(Vec3 cameraPos, IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesIndirect(Vector3d cameraPos, IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
         long bufferPtr = cmdBufferPtr;
 
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
@@ -326,7 +326,7 @@ public class DrawBuffers {
         vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, CMD_STRIDE);
     }
 
-    public void buildDrawBatchesDirect(Vec3 cameraPos, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesDirect(Vector3d cameraPos, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         boolean backFaceCulling = Initializer.CONFIG.backFaceCulling && !isTranslucent;
 
@@ -431,7 +431,7 @@ public class DrawBuffers {
         }
     }
 
-    private int getMask(Vec3 camera, RenderSection section) {
+    private int getMask(Vector3d camera, RenderSection section) {
         final int secX = section.xOffset;
         final int secY = section.yOffset;
         final int secZ = section.zOffset;

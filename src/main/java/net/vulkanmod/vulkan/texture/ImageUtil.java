@@ -99,6 +99,10 @@ public abstract class ImageUtil {
     }
 
     public static void blitFramebuffer(VulkanImage srcImage, VulkanImage dstImage) {
+        blitFramebuffer(srcImage, dstImage, VK_FILTER_NEAREST);
+    }
+
+    public static void blitFramebuffer(VulkanImage srcImage, VulkanImage dstImage, int filtering) {
         try (MemoryStack stack = stackPush()) {
             VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
@@ -111,18 +115,21 @@ public abstract class ImageUtil {
             blit.srcOffsets(0, VkOffset3D.calloc(stack).set(0, 0, 0));
             blit.srcOffsets(1, VkOffset3D.calloc(stack).set(srcImage.width, srcImage.height, 1));
             blit.srcSubresource()
-                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .aspectMask(srcImage.aspect)
                 .mipLevel(0)
                 .baseArrayLayer(0)
                 .layerCount(1);
 
             blit.dstOffsets(0, VkOffset3D.calloc(stack).set(0, 0, 0));
             blit.dstOffsets(1, VkOffset3D.calloc(stack).set(dstImage.width, dstImage.height, 1));
-            blit.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT).mipLevel(0).baseArrayLayer(0)
+            blit.dstSubresource()
+                .aspectMask(dstImage.aspect)
+                .mipLevel(0)
+                .baseArrayLayer(0)
                 .layerCount(1);
 
             vkCmdBlitImage(commandBuffer, srcImage.getId(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                           dstImage.getId(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, blit, VK_FILTER_LINEAR);
+                           dstImage.getId(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, blit, filtering);
 
             dstImage.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }

@@ -9,11 +9,12 @@ import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.QuadSorter;
 import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import org.joml.Vector3d;
 
 public class SortTransparencyTask extends ChunkTask {
 
-    public SortTransparencyTask(RenderSection renderSection) {
-        super(renderSection);
+    public SortTransparencyTask(RenderSection renderSection, Vector3d cameraPos) {
+        super(renderSection, cameraPos);
     }
 
     public String name() {
@@ -27,10 +28,10 @@ public class SortTransparencyTask extends ChunkTask {
             return Result.CANCELLED;
         }
 
-        Vec3 vec3 = WorldRenderer.getCameraPos();
-        float x = (float) vec3.x;
-        float y = (float) vec3.y;
-        float z = (float) vec3.z;
+        Vector3d cameraPos = WorldRenderer.getCameraPos();
+        float x = (float) cameraPos.x;
+        float y = (float) cameraPos.y;
+        float z = (float) cameraPos.z;
 
         CompiledSection compiledSection = this.section.getCompiledSection();
         QuadSorter.SortState transparencyState = compiledSection.transparencyState;

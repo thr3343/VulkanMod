@@ -573,7 +573,7 @@ public class GLSLParser {
 
                 Uniform.Info uniformInfo = Uniform.createUniformInfo(type, name);
 
-                builder.addUniformInfo(uniformInfo);
+                builder.addUniform(uniformInfo);
             }
 
             ubos[i] = builder.buildUBO(uniformBlock.name, uniformBlock.binding, VK11.VK_SHADER_STAGE_ALL);

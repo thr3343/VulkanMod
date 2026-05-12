@@ -150,7 +150,7 @@ public class Lexer {
         };
 
         if (token == null) {
-            if (Character.isLetter(currentChar)) {
+            if (Character.isLetter(currentChar) || currentChar == '_') {
                 return identifier();
             }
 

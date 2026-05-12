@@ -74,13 +74,13 @@ public class SPIRVUtils {
 
     public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {
         if (source == null) {
-            throw new NullPointerException("source for %s.%s is null".formatted(filename, shaderKind));
+            throw new NullPointerException("Source for %s.%s is null".formatted(filename, shaderKind));
         }
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
         if (result == NULL) {
-            throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V");
+            throw new RuntimeException("Failed to compile shader %s into SPRI-V".formatted(filename ));
         }
 
         if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {

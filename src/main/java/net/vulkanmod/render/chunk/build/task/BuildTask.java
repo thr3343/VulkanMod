@@ -23,14 +23,15 @@ import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
 import org.joml.Vector3f;
 
 public class BuildTask extends ChunkTask {
     @Nullable
     protected RenderRegion region;
 
-    public BuildTask(RenderSection renderSection, RenderRegion renderRegion, boolean highPriority) {
-        super(renderSection);
+    public BuildTask(RenderSection renderSection, RenderRegion renderRegion, Vector3d cameraPos, boolean highPriority) {
+        super(renderSection, cameraPos);
         this.region = renderRegion;
         this.highPriority = highPriority;
     }
@@ -46,10 +47,9 @@ public class BuildTask extends ChunkTask {
             return Result.CANCELLED;
         }
 
-        Vec3 vec3 = WorldRenderer.getCameraPos();
-        float x = (float) vec3.x;
-        float y = (float) vec3.y;
-        float z = (float) vec3.z;
+        float x = (float) this.cameraPos.x;
+        float y = (float) this.cameraPos.y;
+        float z = (float) this.cameraPos.z;
         CompileResult compileResult = this.compile(x, y, z, builderResources);
 
         CompiledSection compiledSection = new CompiledSection();
