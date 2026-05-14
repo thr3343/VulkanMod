@@ -363,16 +363,15 @@ public class WorldRenderer {
         if (allowedRenderTypes.contains(renderType)) {
             renderType.setCutoutUniform();
 
+            renderer.uploadAndBindUBOs(pipeline);
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
                 DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
-                renderer.uploadAndBindUBOs(pipeline);
                 if (drawBuffers.getAreaBuffer(renderType) != null && queue.size() > 0) {
 
                     drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, renderType, camX, camY, camZ);
-                    renderer.uploadAndBindUBOs(pipeline);
 
                     if (indirectDraw)
                         drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, renderType);
@@ -385,12 +384,6 @@ public class WorldRenderer {
         if (renderType == TerrainRenderType.CUTOUT || renderType == TerrainRenderType.TRIPWIRE) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        // Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setModelOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         zone.close();
