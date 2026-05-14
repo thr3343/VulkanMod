@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.shader.converter;
 
-public class Attribute {
+public class Attribute implements GLSLParser.Node {
 
     String ioType;
     String type;
@@ -22,8 +22,8 @@ public class Attribute {
         this.location = location;
     }
 
-    public GLSLParser.Node getNode() {
-        return new GLSLParser.Node("attribute", "layout(location = %d) %s %s %s;\n".formatted(location, ioType, type, id));
+    @Override
+    public String getStringValue() {
+        return "layout(location = %d) %s %s %s;\n".formatted(location, ioType, type, id);
     }
-
 }

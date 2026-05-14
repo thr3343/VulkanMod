@@ -27,6 +27,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 import net.vulkanmod.vulkan.shader.converter.GLSLParser;
 import net.vulkanmod.vulkan.shader.converter.Lexer;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.StringUtils;
@@ -365,11 +366,12 @@ public class VkGpuDevice implements GpuDevice {
         }
 
         UBO[] ubos = parser.createUBOs();
+        List<ImageDescriptor> samplers = parser.getSamplerList();
 
         String vshProcessed = parser.getOutput(GLSLParser.Stage.VERTEX);
         String fshProcessed = parser.getOutput(GLSLParser.Stage.FRAGMENT);
 
-        builder.setUniforms(List.of(ubos), parser.getSamplerList());
+        builder.setUniforms(List.of(ubos), samplers);
 
         builder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, vshProcessed);
         builder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fshProcessed);

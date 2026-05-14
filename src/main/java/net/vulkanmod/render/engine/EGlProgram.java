@@ -54,6 +54,11 @@ public class EGlProgram {
 
         for (String samplerName : samplers) {
             var imageDescriptor = pipeline.getImageDescriptor(samplerName);
+
+            if (imageDescriptor == null) {
+                continue;
+            }
+
             int binding = imageDescriptor.getBinding();
             int imageIdx = imageDescriptor.imageIdx;
             this.uniformsByName.put(samplerName, new Uniform.Sampler(binding, imageIdx));
