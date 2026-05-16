@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
@@ -20,23 +19,23 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class UploadManager {
     public static UploadManager INSTANCE;
+    private long sub;
 
     public static void createInstance() {
         INSTANCE = new UploadManager();
     }
 
-    Queue queue = DeviceManager.getTransferQueue();
-    CommandPool.CommandBuffer commandBuffer;
+    private final Queue queue = DeviceManager.getTransferQueue();
+    private CommandPool.CommandBuffer commandBuffer;
 
-    LongOpenHashSet dstBuffers = new LongOpenHashSet();
+    private final LongOpenHashSet dstBuffers = new LongOpenHashSet();
 
     public void submitUploads() {
         if (this.commandBuffer == null)
             return;
 
         this.queue.submitCommands(this.commandBuffer);
-
-        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
+        this.sub = commandBuffer.fence;
 
         this.commandBuffer = null;
         this.dstBuffers.clear();
@@ -104,15 +103,12 @@ public class UploadManager {
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
 
-    public void syncUploads() {
-        submitUploads();
-
-        Synchronization.INSTANCE.waitFences();
-    }
-
     private void beginCommands() {
         if (this.commandBuffer == null)
             this.commandBuffer = queue.beginCommands();
     }
 
+    public boolean hasSubmit() {
+        return this.sub == queue.submitFence();
+    }
 }

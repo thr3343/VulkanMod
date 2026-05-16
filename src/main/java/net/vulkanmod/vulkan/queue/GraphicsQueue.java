@@ -1,13 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
-import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.*;
-
-import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsQueue extends Queue {
     public static GraphicsQueue INSTANCE;
@@ -23,8 +16,7 @@ public class GraphicsQueue extends Queue {
     }
 
     public void endRecordingAndSubmit() {
-        long fence = submitCommands(currentCmdBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+        submitCommands(currentCmdBuffer);
 
         currentCmdBuffer = null;
     }
@@ -36,13 +28,13 @@ public class GraphicsQueue extends Queue {
             return beginCommands();
         }
     }
-
-    public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+    //true if submitted
+    public boolean endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
         if (currentCmdBuffer != null) {
-            return VK_NULL_HANDLE;
-        } else {
-            return submitCommands(commandBuffer);
+            return false;
         }
+        submitCommands(commandBuffer);
+        return true;
     }
 
 }

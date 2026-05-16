@@ -14,21 +14,17 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
-    long id;
+    private final long id;
 
-    private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
+    private final List<CommandBuffer> submittedCmdBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
 
     CommandPool(int queueFamilyIndex) {
-        this.createCommandPool(queueFamilyIndex);
-    }
-
-    public void createCommandPool(int queueFamily) {
         try (MemoryStack stack = stackPush()) {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamily);
+            poolInfo.queueFamilyIndex(queueFamilyIndex);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -68,23 +64,9 @@ public class CommandPool {
         PointerBuffer pCommandBuffer = stack.mallocPointer(size);
         vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
 
-        VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-        fenceInfo.sType$Default();
-        fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
-        semaphoreCreateInfo.sType$Default();
-
         for (int i = 0; i < size; ++i) {
-            LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
-
-            LongBuffer pSemaphore = stack.mallocLong(1);
-            vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pSemaphore);
-
             VkCommandBuffer vkCommandBuffer = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
-            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer, pFence.get(0), pSemaphore.get(0));
-            commandBuffers.add(commandBuffer);
+            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer);
             availableCmdBuffers.add(commandBuffer);
         }
     }
@@ -93,11 +75,11 @@ public class CommandPool {
         this.availableCmdBuffers.add(commandBuffer);
     }
 
+    public void addToSubmitted(CommandBuffer commandBuffer) {
+        this.submittedCmdBuffers.add(commandBuffer);
+    }
+
     public void cleanUp() {
-        for (CommandBuffer commandBuffer : commandBuffers) {
-            vkDestroyFence(Vulkan.getVkDevice(), commandBuffer.fence, null);
-            vkDestroySemaphore(Vulkan.getVkDevice(), commandBuffer.semaphore, null);
-        }
         vkResetCommandPool(Vulkan.getVkDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
     }
@@ -106,20 +88,21 @@ public class CommandPool {
         return id;
     }
 
+    public void resetAll() {
+        this.submittedCmdBuffers.forEach(CommandBuffer::reset);
+        this.submittedCmdBuffers.clear();
+    }
+
     public static class CommandBuffer {
         public final CommandPool commandPool;
         public final VkCommandBuffer handle;
-        public final long fence;
-        public final long semaphore;
-
+        public long fence;
         boolean submitted;
         boolean recording;
 
-        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle, long fence, long semaphore) {
+        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle) {
             this.commandPool = commandPool;
             this.handle = handle;
-            this.fence = fence;
-            this.semaphore = semaphore;
         }
 
         public VkCommandBuffer getHandle() {
@@ -130,8 +113,8 @@ public class CommandPool {
             return fence;
         }
 
-        public long getSemaphore() {
-            return semaphore;
+        public void wait(Queue queue) {
+            queue.waitSubmits(this.fence);
         }
 
         public boolean isSubmitted() {
@@ -152,26 +135,33 @@ public class CommandPool {
             this.recording = true;
         }
 
-        public long submitCommands(MemoryStack stack, VkQueue queue, boolean useSemaphore) {
-            long fence = this.fence;
+        public void submitCommands(MemoryStack stack, Queue queue, long waitStage) {
 
             vkEndCommandBuffer(this.handle);
 
-            vkResetFences(Vulkan.getVkDevice(), this.fence);
+            long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(this.handle));
+            var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
+                    .sType$Default()
+                    .commandBuffer(this.handle);
 
-            if (useSemaphore) {
-                submitInfo.pSignalSemaphores(stack.longs(this.semaphore));
-            }
+            var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack)
+                    .sType$Default()
+                    .semaphore(queue.getQueueSemaphore())
+                    .stageMask(waitStage)
+                    .value(submitFence);
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            var submitInfo = VkSubmitInfo2.calloc(1, stack)
+                    .sType$Default()
+                    .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
+                    .pCommandBufferInfos(commandBufferSubmitInfo);
+
+            KHRSynchronization2.vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
 
             this.recording = false;
             this.submitted = true;
-            return fence;
+            this.fence = submitFence;
+            this.commandPool.addToSubmitted(this);
         }
 
         public void reset() {

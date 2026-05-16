@@ -171,6 +171,10 @@ public abstract class DeviceManager {
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
 
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            deviceVulkan12Features.timelineSemaphore(true); // Mandatory in VK12
+
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
             deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
@@ -189,7 +193,14 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
+
+            // Using Extension version of Sync2 to avoid raising min req to VK13
+            VkPhysicalDeviceSynchronization2Features synchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack);
+            synchronization2Features.sType$Default();
+            synchronization2Features.synchronization2(true);
+
+            createInfo.pNext(synchronization2Features);
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
@@ -353,6 +364,12 @@ public abstract class DeviceManager {
         computeQueue.cleanUp();
 
         vkDestroyDevice(vkDevice, null);
+    }
+
+    public static void resetSubmitted() {
+        graphicsQueue.resetAll();
+        transferQueue.resetAll();
+        computeQueue.resetAll();
     }
 
     public static GraphicsQueue getGraphicsQueue() {
