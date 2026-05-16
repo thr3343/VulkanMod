@@ -98,6 +98,7 @@
     "vertex.VertexMultiConsumersM$SheetDecalM",
 
     "wayland.InputConstantsM",
+    "wayland.KeyboardHandlerM",
     "wayland.MinecraftMixin",
 
     "texture.mip.MipmapGeneratorM",

@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
+import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
 import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -39,6 +40,7 @@ public class VulkanImage {
     private long id;
     private long allocation;
     private long mainImageView;
+    private final Int2LongArrayMap imageViews = new Int2LongArrayMap(4);
 
     private final long[] levelImageViews;
 
@@ -438,6 +440,20 @@ public class VulkanImage {
 
     public long getImageView() {
         return mainImageView;
+    }
+
+    public long getImageView(int format) {
+        if (this.format == format) {
+            return this.mainImageView;
+        }
+
+        long imageView = this.imageViews.get(format);
+        if (imageView == VK_NULL_HANDLE) {
+            imageView = createImageView(this.id, VK_IMAGE_VIEW_TYPE_2D, format, this.aspect, this.arrayLayers, 0, this.mipLevels);
+            this.imageViews.put(format, imageView);
+        }
+
+        return imageView;
     }
 
     public long getLevelImageView(int i) {
