@@ -3,7 +3,7 @@ package net.vulkanmod.vulkan.shader.converter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UniformBlock {
+public class UniformBlock implements GLSLParser.Node {
     int binding;
     String name;
     String alias;
@@ -25,7 +25,8 @@ public class UniformBlock {
         this.alias = alias;
     }
 
-    public GLSLParser.Node getNode() {
+    @Override
+    public String getStringValue() {
         StringBuilder sb = new StringBuilder();
 
         sb.append("layout(binding = %d) uniform %s {\n".formatted(binding, name));
@@ -47,7 +48,7 @@ public class UniformBlock {
 
         sb.append(";\n");
 
-        return new GLSLParser.Node("uniform_block", sb.toString());
+        return sb.toString();
     }
 
     public static class Field {

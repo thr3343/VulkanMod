@@ -34,6 +34,7 @@ public class GLSLParser {
     Map<String, UniformBlock> uniformBlockMap = new HashMap<>();
     List<Sampler> samplers = new ArrayList<>();
     Map<String, Sampler> samplerMap = new HashMap<>();
+    List<UniformBlock.Field> legacyUniforms = new ArrayList<>();
 
     VertexFormat vertexFormat;
     int currentInAtt = 0, currentOutAtt = 0;
@@ -99,6 +100,45 @@ public class GLSLParser {
 
             advanceToken();
         }
+
+        // Post-processing
+
+        if (this.stage == Stage.VERTEX) {
+            for (var attribute : this.vertInAttributes) {
+                if (attribute.location != -1) {
+                    // location already set
+                    continue;
+                }
+
+                int attributeLocation;
+                if (this.vertexFormat != null) {
+                    var attributeNames = this.vertexFormat.getElementAttributeNames();
+                    attributeLocation = attributeNames.indexOf(attribute.id);
+
+                    if (attributeLocation == -1) {
+                        Initializer.LOGGER.error("Element %s not found in elements %s".formatted(attribute.id, attributeNames));
+                        continue;
+                    }
+
+                    attribute.setLocation(attributeLocation);
+                    currentInAtt++;
+                }
+            }
+
+            // Check for in attributes not specified in the format.
+            for (var attribute : this.vertInAttributes) {
+                if (attribute.location != -1) {
+                    // location already set
+                    continue;
+                }
+
+                int attributeLocation = currentInAtt++;
+
+                attribute.setLocation(attributeLocation);
+            }
+        }
+
+
     }
 
     private void parseVersion() {
@@ -180,9 +220,15 @@ public class GLSLParser {
             case "samplerCube" -> parseSampler(Sampler.Type.SAMPLER_CUBE);
             case "isamplerBuffer" -> parseSampler(Sampler.Type.I_SAMPLER_BUFFER);
 
-            default -> throw new IllegalStateException("Unrecognized value: %s".formatted(currentToken.value));
+//            default -> throw new IllegalStateException("Unrecognized value: %s".formatted(currentToken.value));
+            default -> parseStorageUniform();
         }
         // TODO: parse uniform
+    }
+
+    private void parseStorageUniform() {
+        var field = parseUniformField();
+        this.legacyUniforms.add(field);
     }
 
     private void parseSampler(Sampler.Type type) {
@@ -218,12 +264,12 @@ public class GLSLParser {
             sampler = samplerMap.get(name);
         }
         else {
-            sampler.setBinding(currentUniformLocation++);
+//            sampler.setBinding(currentUniformLocation++);
             this.samplerMap.put(name, sampler);
             this.samplers.add(sampler);
         }
 
-        appendNode(sampler.getNode());
+        appendNode(sampler);
     }
 
     private void parseUniformBlock() {
@@ -259,24 +305,10 @@ public class GLSLParser {
 
         // Recognize fields
         while (currentToken.type != Token.TokenType.RIGHT_BRACE) {
-            if (currentToken.type != Token.TokenType.IDENTIFIER) {
-                throw new IllegalStateException();
-            }
-            String fieldType = this.currentToken.value;
-
-            advanceToken(true);
-            if (currentToken.type != Token.TokenType.IDENTIFIER) {
-                throw new IllegalStateException();
-            }
-            String fieldName = this.currentToken.value;
-
-            advanceToken(true);
-            if (currentToken.type != Token.TokenType.SEMICOLON) {
-                throw new IllegalStateException();
-            }
+            var field = this.parseUniformField();
 
             // Add field
-            ub.addField(new UniformBlock.Field(fieldType, fieldName));
+            ub.addField(field);
 
             advanceToken(true);
         }
@@ -315,18 +347,38 @@ public class GLSLParser {
             ub = uniformBlockMap.get(ub.name);
         }
         else {
-            ub.setBinding(this.currentUniformLocation++);
+//            ub.setBinding(this.currentUniformLocation++);
             this.uniformBlockMap.put(ub.name, ub);
             this.uniformBlocks.add(ub);
         }
 
-        appendNode(ub.getNode());
+        appendNode(ub);
+    }
+
+    private UniformBlock.Field parseUniformField() {
+        if (currentToken.type != Token.TokenType.IDENTIFIER) {
+            throw new IllegalStateException();
+        }
+        String fieldType = this.currentToken.value;
+
+        advanceToken(true);
+        if (currentToken.type != Token.TokenType.IDENTIFIER) {
+            throw new IllegalStateException();
+        }
+        String fieldName = this.currentToken.value;
+
+        advanceToken(true);
+        if (currentToken.type != Token.TokenType.SEMICOLON) {
+            throw new IllegalStateException();
+        }
+
+        return new UniformBlock.Field(fieldType, fieldName);
     }
 
     private void parseAttribute() {
         this.state = State.ATTRIBUTE;
 
-        Node prevNode = this.prevNode(true);
+        TokenNode prevNode = this.prevNode(true);
 
         // Check if we are not inside a function declaration
         if (prevNode != null && (prevNode.type.equals(Token.TokenType.LEFT_PARENTHESIS.name()) || prevNode.type.equals(Token.TokenType.COMMA.name())))
@@ -372,22 +424,22 @@ public class GLSLParser {
             case VERTEX -> {
                 switch (attribute.ioType) {
                     case "in" -> {
-                        int attributeLocation;
-                        if (this.vertexFormat != null) {
-                            var attributeNames = this.vertexFormat.getElementAttributeNames();
-                            attributeLocation = attributeNames.indexOf(attribute.id);
+//                        int attributeLocation;
+//                        if (this.vertexFormat != null) {
+//                            var attributeNames = this.vertexFormat.getElementAttributeNames();
+//                            attributeLocation = attributeNames.indexOf(attribute.id);
+//
+//                            if (attributeLocation == -1) {
+//                                Initializer.LOGGER.error("Element %s not found in elements %s".formatted(attribute.id, attributeNames));
+//                                attributeLocation = currentInAtt;
+//                            }
+//
+//                            currentInAtt++;
+//                        } else {
+//                            attributeLocation = currentInAtt++;
+//                        }
 
-                            if (attributeLocation == -1) {
-                                Initializer.LOGGER.error("Element %s not found in elements %s".formatted(attribute.id, attributeNames));
-                                attributeLocation = currentInAtt;
-                            }
-
-                            currentInAtt++;
-                        } else {
-                            attributeLocation = currentInAtt++;
-                        }
-
-                        attribute.setLocation(attributeLocation);
+                        attribute.setLocation(-1);
                         vertInAttributes.add(attribute);
                     }
                     case "out" -> {
@@ -424,7 +476,7 @@ public class GLSLParser {
             }
         }
 
-        this.appendNode(attribute.getNode());
+        this.appendNode(attribute);
     }
 
     private Attribute getVertAttribute(Attribute attribute) {
@@ -478,7 +530,7 @@ public class GLSLParser {
         return token;
     }
 
-    private Node prevNode(boolean skipSpace) {
+    private TokenNode prevNode(boolean skipSpace) {
         var nodes = getNodeStream();
         int idx = nodes.size() - 1;
         String type;
@@ -490,14 +542,26 @@ public class GLSLParser {
         idx--;
         Node node;
         node = nodes.get(idx);
-        type = node.type;
+
+        if (!(node instanceof TokenNode)) {
+            return null;
+        }
+
+        TokenNode tokenNode = (TokenNode) node;
+        type = tokenNode.type;
 
         while (skipSpace && idx != 0 &&
                (type.equals(Token.TokenType.SPACING.name()) || type.equals(Token.TokenType.PREPROCESSOR.name()) || type.equals(Token.TokenType.COMMENT.name())))
         {
             idx--;
             node = nodes.get(idx);
-            type = node.type;
+
+            if (!(node instanceof TokenNode)) {
+                return null;
+            }
+
+            tokenNode = (TokenNode) node;
+            type = tokenNode.type;
         }
 
         if (skipSpace &&
@@ -506,11 +570,11 @@ public class GLSLParser {
             return null;
         }
 
-        return node;
+        return (TokenNode) node;
     }
 
     private void appendToken(Token token) {
-        this.appendNode(Node.fromToken(token));
+        this.appendNode(TokenNode.fromToken(token));
     }
 
     private void appendNode(Node node) {
@@ -534,7 +598,7 @@ public class GLSLParser {
 
         // Version
         Node node = stream.getFirst();
-        stringBuilder.append(node.value);
+        stringBuilder.append(node.getStringValue());
         stringBuilder.append("\n");
 
         switch (stage) {
@@ -544,12 +608,23 @@ public class GLSLParser {
         }
 
         // Rename glsl reserved keywords
-        stringBuilder.append("#define sampler sampler1\n\n");
+        stringBuilder.append("#define sampler sampler1\n");
         stringBuilder.append("#define sample sample1\n\n");
+
+        // Add UBO for legacy uniforms
+        if (!this.legacyUniforms.isEmpty()) {
+            stringBuilder.append("layout(binding = 0) uniform UBO {\n");
+
+            for (var field : this.legacyUniforms) {
+                stringBuilder.append("\t%s %s;\n".formatted(field.type, field.name));
+            }
+
+            stringBuilder.append("};\n\n");
+        }
 
         for (int i = 1; i < stream.size(); i++) {
             node = stream.get(i);
-            stringBuilder.append(node.value);
+            stringBuilder.append(node.getStringValue());
         }
 
         return stringBuilder.toString();
@@ -561,9 +636,33 @@ public class GLSLParser {
         }
 
         int uboCount = this.uniformBlockMap.size();
-        UBO[] ubos = new UBO[uboCount];
 
+        UBO[] ubos;
         int i = 0;
+
+        if (!this.legacyUniforms.isEmpty()) {
+            uboCount += 1;
+            i = 1;
+            ubos = new UBO[uboCount];
+
+            AlignedStruct.Builder builder = new AlignedStruct.Builder();
+
+            for (var field : this.legacyUniforms) {
+                String name = field.name;
+                String type = field.type;
+
+                Uniform.Info uniformInfo = Uniform.createUniformInfo(type, name);
+
+                builder.addUniform(uniformInfo);
+            }
+
+            ubos[0] = builder.buildUBO("UBO 0", 0, VK11.VK_SHADER_STAGE_ALL);
+            this.currentUniformLocation++;
+        }
+        else {
+            ubos = new UBO[uboCount];
+        }
+
         for (var uniformBlock : this.uniformBlocks) {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
@@ -576,6 +675,7 @@ public class GLSLParser {
                 builder.addUniform(uniformInfo);
             }
 
+            uniformBlock.setBinding(this.currentUniformLocation++);
             ubos[i] = builder.buildUBO(uniformBlock.name, uniformBlock.binding, VK11.VK_SHADER_STAGE_ALL);
             ++i;
         }
@@ -594,6 +694,7 @@ public class GLSLParser {
                 case I_SAMPLER_BUFFER -> VK11.VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             };
 
+            sampler.setBinding(this.currentUniformLocation++);
             imageDescriptors.add(new ImageDescriptor(sampler.binding, "sampler2D", sampler.id, imageIdx, descriptorType));
             imageIdx++;
         }
@@ -619,22 +720,30 @@ public class GLSLParser {
         FRAGMENT
     }
 
-    public static class Node {
+    public interface Node {
+        public String getStringValue();
+    }
+
+    public static class TokenNode implements Node {
         String type;
         String value;
 
-        public Node(String type, String value) {
+        public TokenNode(String type, String value) {
             this.type = type;
             this.value = value;
         }
 
-        public static Node fromToken(Token token) {
-            return new Node(token.type.name(), token.value);
+        public static TokenNode fromToken(Token token) {
+            return new TokenNode(token.type.name(), token.value);
+        }
+
+        public String getStringValue() {
+            return value;
         }
 
         @Override
         public String toString() {
-            return "Node{" +
+            return "GenericNode{" +
                    "type='" + type + '\'' +
                    ", value='" + value + '\'' +
                    '}';

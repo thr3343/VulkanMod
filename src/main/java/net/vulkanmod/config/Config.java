@@ -2,7 +2,6 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.config.video.VideoModeSet;
 
 import java.io.FileReader;
@@ -13,7 +12,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 public class Config {
-    public VideoModeSet.VideoMode videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
+    public VideoModeSet.VideoMode videoMode = VideoModeSet.getDummy().getVideoMode();
     public int windowMode = 0;
 
     public int advCulling = 2;
@@ -22,6 +21,7 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
+    public boolean useWayland = false;
 
     public int ambientOcclusion = 1;
     public int frameQueueSize = 2;

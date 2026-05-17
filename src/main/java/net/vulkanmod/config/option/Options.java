@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ParticleStatus;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
+import net.vulkanmod.config.Platform;
 import net.vulkanmod.config.gui.*;
 import net.vulkanmod.config.video.*;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -58,6 +59,7 @@ public abstract class Options {
     }
 
     public static OptionBlock[] getVideoOpts() {
+        VideoModeManager.checkConfigVideoMode(config);
         VideoModeManager.selectBestMonitor(window);
         var resolutions = VideoModeManager.getVideoResolutions();
 
@@ -374,6 +376,11 @@ public abstract class Options {
                                 () -> config.textureAnimations)
                 }),
                 new OptionBlock("", new Option<?>[]{
+                        new SwitchOption(Component.translatable("vulkanmod.options.wayland"),
+                                         v -> config.useWayland = v,
+                                         () -> config.useWayland)
+                                .setActivationFn(Platform::isLinux)
+                                .setTooltip(v -> Component.translatable("vulkanmod.options.wayland.tooltip")),
                         new CyclingOption<>(Component.translatable("vulkanmod.options.deviceSelector"),
                                 IntStream.range(-1, DeviceManager.suitableDevices.size())
                                         .boxed()

@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.shader.converter;
 
-public class Sampler {
+public class Sampler implements GLSLParser.Node {
     final Type type;
     final String id;
     int binding;
@@ -14,8 +14,9 @@ public class Sampler {
         this.binding = binding;
     }
 
-    public GLSLParser.Node getNode() {
-        return new GLSLParser.Node("sampler", "layout(binding = %d) uniform %s %s;\n".formatted(binding, type.name, id));
+    @Override
+    public String getStringValue() {
+        return "layout(binding = %d) uniform %s %s;\n".formatted(binding, type.name, id);
     }
 
     public enum Type {

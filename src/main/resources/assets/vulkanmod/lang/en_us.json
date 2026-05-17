@@ -46,6 +46,9 @@
   "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
 
+  "vulkanmod.options.wayland": "Use Wayland",
+  "vulkanmod.options.wayland.tooltip": "Use Linux Wayland compositor if available (Experimental). Requires restart.",
+
   "vulkanmod.options.windowMode": "Window Mode",
   "vulkanmod.options.windowMode.windowed": "Windowed",
   "vulkanmod.options.windowMode.windowedFullscreen": "Windowed Fullscreen",
