@@ -24,7 +24,7 @@ public class VBO {
     private int vertexCount;
 
     public VBO(boolean useGpuMem) {
-       this.memoryType = useGpuMem ? MemoryTypes.GPU_MEM : MemoryTypes.HOST_MEM;
+        this.memoryType = useGpuMem ? MemoryTypes.GPU_MEM : MemoryTypes.HOST_MEM;
     }
 
     public void upload(MeshData meshData) {
@@ -53,39 +53,8 @@ public class VBO {
 
     public void uploadIndexBuffer(ByteBuffer data) {
         if (data == null) {
-
-            AutoIndexBuffer autoIndexBuffer;
-            switch (this.mode) {
-                case TRIANGLE_FAN -> {
-                    autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
-                    this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
-                }
-                case TRIANGLE_STRIP, LINE_STRIP -> {
-                    autoIndexBuffer = Renderer.getDrawer().getTriangleStripIndexBuffer();
-                    this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
-                }
-                case QUADS -> {
-                    autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
-                }
-                case LINES -> {
-                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
-                }
-                case DEBUG_LINE_STRIP -> {
-                    autoIndexBuffer = Renderer.getDrawer().getDebugLineStripIndexBuffer();
-                }
-                case TRIANGLES, DEBUG_LINES -> {
-                    autoIndexBuffer = null;
-                }
-                default -> throw new IllegalStateException("Unexpected draw mode: %s".formatted(this.mode));
-            }
-
             if (this.indexBuffer != null && !this.autoIndexed) {
                 this.indexBuffer.scheduleFree();
-            }
-
-            if (autoIndexBuffer != null) {
-                autoIndexBuffer.checkCapacity(this.vertexCount);
-                this.indexBuffer = autoIndexBuffer.getIndexBuffer();
             }
 
             this.autoIndexed = true;
@@ -100,6 +69,40 @@ public class VBO {
         }
     }
 
+    private IndexBuffer getAutoIndexBuffer() {
+        AutoIndexBuffer autoIndexBuffer;
+        switch (this.mode) {
+            case TRIANGLE_FAN -> {
+                autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
+                this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
+            }
+            case TRIANGLE_STRIP -> {
+                autoIndexBuffer = Renderer.getDrawer().getTriangleStripIndexBuffer();
+                this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
+            }
+            case QUADS -> {
+                autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
+            }
+            case LINES -> {
+                autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
+            }
+            case DEBUG_LINE_STRIP -> {
+                autoIndexBuffer = Renderer.getDrawer().getDebugLineStripIndexBuffer();
+            }
+            case TRIANGLES, DEBUG_LINES -> {
+                autoIndexBuffer = null;
+            }
+            default -> throw new IllegalStateException("Unexpected draw mode: %s".formatted(this.mode));
+        }
+
+        if (autoIndexBuffer != null) {
+            autoIndexBuffer.checkCapacity(this.vertexCount);
+            return autoIndexBuffer.getIndexBuffer();
+        }
+
+        return null;
+    }
+
     public void bind(GraphicsPipeline pipeline) {
         Renderer renderer = Renderer.getInstance();
         renderer.bindGraphicsPipeline(pipeline);
@@ -112,6 +115,10 @@ public class VBO {
             Renderer renderer = Renderer.getInstance();
             Pipeline pipeline = renderer.getBoundPipeline();
             renderer.uploadAndBindUBOs(pipeline);
+
+            if (this.autoIndexed) {
+                this.indexBuffer = getAutoIndexBuffer();
+            }
 
             if (this.indexBuffer != null) {
                 Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
@@ -138,4 +145,27 @@ public class VBO {
         this.indexCount = 0;
     }
 
+    public VertexBuffer getVertexBuffer() {
+        return vertexBuffer;
+    }
+
+    public int getVertexCount() {
+        return vertexCount;
+    }
+
+    public int getIndexCount() {
+        return indexCount;
+    }
+
+    public boolean isAutoIndexed() {
+        return autoIndexed;
+    }
+
+    public VertexFormat.Mode getMode() {
+        return mode;
+    }
+
+    public IndexBuffer getIndexBuffer() {
+        return indexBuffer;
+    }
 }
