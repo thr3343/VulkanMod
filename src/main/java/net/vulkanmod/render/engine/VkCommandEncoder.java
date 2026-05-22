@@ -20,7 +20,6 @@ import net.vulkanmod.gl.VkGlFramebuffer;
 import net.vulkanmod.gl.VkGlTexture;
 import net.vulkanmod.interfaces.shader.ExtendedRenderPipeline;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -192,8 +191,8 @@ public class VkCommandEncoder implements CommandEncoder {
             Renderer.clearAttachments(commandBuffer.handle, 0x4000, 0, 0, framebuffer.getWidth(), framebuffer.getHeight());
             renderPass.endRenderPass(commandBuffer.handle);
 
-            long fence = graphicsQueue.submitCommands(commandBuffer);
-            Synchronization.waitFence(fence);
+            graphicsQueue.submitCommands(commandBuffer);
+            // wait value used instead (at end of frame submit)
         }
     }
 

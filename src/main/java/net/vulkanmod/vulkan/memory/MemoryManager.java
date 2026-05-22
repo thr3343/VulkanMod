@@ -265,6 +265,11 @@ public class MemoryManager {
 
     private void freeBuffers(int frame) {
         List<Buffer.BufferInfo> bufferList = freeableBuffers[frame];
+
+        // Host sync only needed if host interacts with resources used in currently executing commands (Free During Use, Double Free e.g.)
+        if (!bufferList.isEmpty()) {
+            DeviceManager.getTransferQueue().waitSubmits();
+        }
         for (Buffer.BufferInfo bufferInfo : bufferList) {
 
             freeBuffer(bufferInfo);
