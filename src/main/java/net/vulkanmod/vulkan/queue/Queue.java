@@ -156,6 +156,15 @@ public abstract class Queue {
         return queueFamilyIndices;
     }
 
+    @Override
+    public String toString() {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            var pPtr = stack.nmalloc(Long.BYTES);
+            VK12.nvkGetSemaphoreCounterValue(device, this.queueSemaphore, pPtr);
+            return commandPool.toString() + ": submitFence: " + VUtil.UNSAFE.getLong(pPtr);
+        }
+    }
+
     public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
         QueueFamilyIndices indices = new QueueFamilyIndices();
 

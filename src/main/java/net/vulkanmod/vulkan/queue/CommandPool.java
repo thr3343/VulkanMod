@@ -189,4 +189,9 @@ public class CommandPool {
             this.commandPool.addToAvailable(this);
         }
     }
+
+    @Override
+    public String toString() {
+        return "CommandInfos: submitted: " + submittedCmdBuffers.size() + " available: " + availableCmdBuffers.size();
+    }
 }
