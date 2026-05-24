@@ -266,7 +266,6 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = mainCommandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
 
         try (MemoryStack stack = stackPush()) {
             // Check is swapchain has images before acquiring
@@ -329,6 +328,8 @@ public class Renderer {
 
         mainPass.end(currentCmdBuffer);
         submitUploads();
+        // Wait for animation passes + texture writes
+        DeviceManager.getGraphicsQueue().executePendingCmds(VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK13.VK_PIPELINE_STAGE_2_COPY_BIT);
         getStagingBuffer().reset();
 
         submitFrame();
@@ -475,6 +476,8 @@ public class Renderer {
             final var graphicsQueue = DeviceManager.getGraphicsQueue();
             final var transferQueue = DeviceManager.getTransferQueue();
 
+            graphicsQueue.executePendingCmds();
+
             var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
                     .sType$Default()
                     .commandBuffer(currentCmdBuffer);
@@ -529,10 +532,8 @@ public class Renderer {
             if (UploadManager.INSTANCE.hasSubmit()) {
                 transferQueue.waitSubmits();
             }
-
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                transferCb.submitCommands(stack, transferQueue, VK13.VK_PIPELINE_STAGE_2_COPY_BIT); // Ensure writes are finished before shader reads + main graphics execution (Sync Hazard Fixes)
-            }
+            transferCb.enqueue();
+            transferQueue.executePendingCmds(VK13.VK_PIPELINE_STAGE_2_COPY_BIT); // Ensure writes are finished before shader reads + main graphics execution (Sync Hazard Fixes)
 
             transferCbs.set(currentFrame, transferQueue.getCommandPool().getCommandBuffer());
         }

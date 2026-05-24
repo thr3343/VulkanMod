@@ -174,7 +174,7 @@ public class VkCommandEncoder implements CommandEncoder {
         }
         else {
             GraphicsQueue graphicsQueue = DeviceManager.getGraphicsQueue();
-            var commandBuffer = graphicsQueue.getCommandBuffer();
+            var commandBuffer = graphicsQueue.beginCommands();
             VkGpuTexture vkGpuTexture = (VkGpuTexture) colorAttachment;
 
             VkGlFramebuffer glFramebuffer = VkGlFramebuffer.getFramebuffer(this.framebufferId);
@@ -191,7 +191,7 @@ public class VkCommandEncoder implements CommandEncoder {
             Renderer.clearAttachments(commandBuffer.handle, 0x4000, 0, 0, framebuffer.getWidth(), framebuffer.getHeight());
             renderPass.endRenderPass(commandBuffer.handle);
 
-            graphicsQueue.submitCommands(commandBuffer);
+            commandBuffer.enqueue();
             // wait value used instead (at end of frame submit)
         }
     }

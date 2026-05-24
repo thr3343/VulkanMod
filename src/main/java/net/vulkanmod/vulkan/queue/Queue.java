@@ -82,16 +82,22 @@ public abstract class Queue {
         return pPointer.get(0);
     }
 
-    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        try (MemoryStack stack = stackPush()) {
-            commandBuffer.submitCommands(stack, this, VK13.VK_PIPELINE_STAGE_2_NONE); // None + Sync2 allows submitting without waiting on current executing operations
-        }
+    public void executeImmediate(CommandPool.CommandBuffer commandBuffer, long waitStage) {
+        commandBuffer.enqueue();
+        this.commandPool.executePending(this, waitStage, true);
     }
 
-    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer, long waitStage) {
-        try (MemoryStack stack = stackPush()) {
-            commandBuffer.submitCommands(stack, this, waitStage);
-        }
+    public void executeImmediate(CommandPool.CommandBuffer commandBuffer) {
+        commandBuffer.enqueue();
+        this.commandPool.executePending(this, VK13.VK_PIPELINE_STAGE_2_NONE, true);
+    }
+
+    public void executePendingCmds(long waitStage) {
+        this.commandPool.executePending(this, waitStage, false);
+    }
+
+    public void executePendingCmds() {
+        this.commandPool.executePending(this, VK13.VK_PIPELINE_STAGE_2_NONE, false);
     }
 
     public VkQueue vkQueue() {

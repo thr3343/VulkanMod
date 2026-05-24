@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkMemoryBarrier;
@@ -33,8 +34,8 @@ public class UploadManager {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
-        this.sub = commandBuffer.fence;
+        this.queue.executeImmediate(commandBuffer);
+        this.sub = commandBuffer.getFence();
 
         this.commandBuffer = null;
         this.dstBuffers.clear();

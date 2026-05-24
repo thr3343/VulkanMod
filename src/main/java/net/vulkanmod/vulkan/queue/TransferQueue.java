@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkDevice;
@@ -30,9 +31,9 @@ public class TransferQueue extends Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            commandBuffer.enqueue();
 
-            return commandBuffer.fence;
+            return commandBuffer.getFence();
         }
     }
 
@@ -48,7 +49,7 @@ public class TransferQueue extends Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            this.executeImmediate(commandBuffer);
             commandBuffer.wait(this);
             commandBuffer.reset();
         }
