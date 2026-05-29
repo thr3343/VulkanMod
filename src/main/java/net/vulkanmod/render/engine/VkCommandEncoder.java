@@ -298,9 +298,6 @@ public class VkCommandEncoder implements CommandEncoder {
                             commandBuffer.begin(stack);
                         }
 
-                        VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                        barrier.sType$Default();
-
                         VkBufferMemoryBarrier.Buffer bufferMemoryBarriers = VkBufferMemoryBarrier.calloc(1, stack);
                         VkBufferMemoryBarrier bufferMemoryBarrier = bufferMemoryBarriers.get(0);
                         bufferMemoryBarrier.sType$Default();
@@ -312,7 +309,7 @@ public class VkCommandEncoder implements CommandEncoder {
                         vkCmdPipelineBarrier(commandBuffer.handle,
                                              VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                              0,
-                                             barrier,
+                                             null,
                                              bufferMemoryBarriers,
                                              null);
 

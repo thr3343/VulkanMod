@@ -423,7 +423,7 @@ public class Renderer {
         var waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(3, stack);
         waitSemaphoreSubmitInfo.get(0).sType$Default()
                 .semaphore(imageAvailableSemaphores.get(currentFrame))
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) // Attachment operations
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Attachment operations + Transition from present
                 .value(0);
 
         waitSemaphoreSubmitInfo.get(1).sType$Default()
@@ -439,7 +439,7 @@ public class Renderer {
         var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(2, stack);
         mainSemaphoreSubmitInfo.get(0).sType$Default()
                 .semaphore(renderFinishedSemaphores.get(imageIndex))
-                .stageMask(VK13.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT) // Optimize out waiting for transfer ops on this submit
+                .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Transition to present
                 .value(0);
 
         mainSemaphoreSubmitInfo.get(1).sType$Default()
