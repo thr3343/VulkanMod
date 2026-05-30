@@ -51,6 +51,7 @@
     "render.RenderTypeM",
     "render.biome.BiomeManagerM",
     "render.block.BakedQuadM",
+    "render.buffer.VertexFormatMixin",
     "render.clouds.LevelRendererM",
     "render.color.BlockColorsM",
     "render.entity.EntityRendererM",

@@ -21,6 +21,8 @@ public class VkGpuBuffer extends GpuBuffer {
 
     Buffer buffer;
 
+    int offset;
+
     protected VkGpuBuffer(VkDebugLabel debugLabel, @Nullable Supplier<String> supplier, int usage, long size) {
         super(usage, size);
         this.label = supplier;
@@ -55,6 +57,13 @@ public class VkGpuBuffer extends GpuBuffer {
         this.buffer.createBuffer(this.size());
     }
 
+    protected VkGpuBuffer(Buffer buffer) {
+        super(buffer.usage, buffer.getBufferSize());
+
+        this.label = null;
+        this.buffer = buffer;
+    }
+
     @Override
     public boolean isClosed() {
         return this.closed;
@@ -73,6 +82,10 @@ public class VkGpuBuffer extends GpuBuffer {
         return buffer;
     }
 
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
     public static int bufferUsageToGlEnum(int i) {
         boolean stream = (i & 4) != 0;
         // Draw
@@ -85,6 +98,10 @@ public class VkGpuBuffer extends GpuBuffer {
         } else {
             return 35044;
         }
+    }
+
+    public static VkGpuBuffer from(Buffer buffer) {
+        return new VkGpuBuffer(buffer);
     }
 
     @Environment(EnvType.CLIENT)

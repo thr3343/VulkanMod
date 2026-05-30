@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.vulkanmod.render.engine.VkGpuBuffer;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
@@ -30,6 +31,8 @@ public class Drawer {
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private IndexBuffer[] indexBuffers;
+
+    private final GpuBuffers gpuBuffers = new GpuBuffers();
 
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer quadsIntIndexBuffer;
@@ -82,6 +85,8 @@ public class Drawer {
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
         Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+
+        this.getGpuBuffers().createBuffers(this.vertexBuffers, this.indexBuffers);
     }
 
     public void resetBuffers(int currentFrame) {
@@ -211,5 +216,36 @@ public class Drawer {
             case POINTS -> null;
             case TRIANGLES, DEBUG_LINES -> null;
 		};
+    }
+
+    public GpuBuffers getGpuBuffers() {
+        return gpuBuffers;
+    }
+
+    public class GpuBuffers {
+        VkGpuBuffer[] vertexBuffers;
+        VkGpuBuffer[] indexBuffers;
+
+        public void createBuffers(VertexBuffer[] vertexBuffers, IndexBuffer[] indexBuffers) {
+            this.vertexBuffers = new VkGpuBuffer[vertexBuffers.length];
+
+            for (int i = 0; i < vertexBuffers.length; i++) {
+                this.vertexBuffers[i] = VkGpuBuffer.from(vertexBuffers[i]);
+            }
+
+            this.indexBuffers = new VkGpuBuffer[indexBuffers.length];
+
+            for (int i = 0; i < vertexBuffers.length; i++) {
+                this.indexBuffers[i] = VkGpuBuffer.from(indexBuffers[i]);
+            }
+        }
+
+        public VkGpuBuffer getVertexBuffer() {
+            return vertexBuffers[Drawer.this.currentFrame];
+        }
+
+        public VkGpuBuffer getIndexBuffer() {
+            return indexBuffers[Drawer.this.currentFrame];
+        }
     }
 }
