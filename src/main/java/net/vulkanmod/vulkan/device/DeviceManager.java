@@ -213,8 +213,6 @@ public abstract class DeviceManager {
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
-            createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
-
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
             int res = vkCreateDevice(physicalDevice, createInfo, null, pDevice);
