@@ -654,7 +654,7 @@ public class VkCommandEncoder implements CommandEncoder {
     protected <T> void executeDrawMultiple(
             VkRenderPass renderPass,
             Collection<RenderPass.Draw<T>> collection,
-            @Nullable GpuBuffer gpuBuffer,
+            @Nullable GpuBuffer indexBuffer,
             @Nullable VertexFormat.IndexType indexType,
             Collection<String> collection2,
             T object
@@ -668,7 +668,7 @@ public class VkCommandEncoder implements CommandEncoder {
 
             for (RenderPass.Draw draw : collection) {
                 VertexFormat.IndexType indexType2 = draw.indexType() == null ? indexType : draw.indexType();
-                renderPass.setIndexBuffer(draw.indexBuffer() == null ? gpuBuffer : draw.indexBuffer(), indexType2);
+                renderPass.setIndexBuffer(draw.indexBuffer() == null ? indexBuffer : draw.indexBuffer(), indexType2);
                 renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer());
 
                 if (GlRenderPass.VALIDATION) {
@@ -693,17 +693,20 @@ public class VkCommandEncoder implements CommandEncoder {
                 if (biConsumer != null) {
                     biConsumer.accept(object, (string, gpuBufferSlice) -> {
                         EGlProgram glProgram = ExtendedRenderPipeline.of(renderPass.pipeline).getProgram();
-                        if (glProgram.getUniform(string) instanceof Uniform.Ubo ubo) {
+                        if (glProgram.getUniform(string) instanceof Uniform.Ubo ubo1) {
 
                             int blockBinding;
                             try {
-                                blockBinding = ubo.blockBinding();
+                                blockBinding = ubo1.blockBinding();
                             } catch (Throwable var7) {
                                 throw new MatchException(var7.toString(), var7);
                             }
 
-                            // TODO
-//                            GL32.glBindBufferRange(35345, blockBinding, ((GlBuffer)gpuBufferSlice.buffer()).handle, (long)gpuBufferSlice.offset(), (long)gpuBufferSlice.length());
+                            VkGpuBuffer gpuBuffer1 = (VkGpuBuffer) gpuBufferSlice.buffer();
+
+                            UBO ubo = pipeline.getUBO(blockBinding);
+                            ubo.setUseGlobalBuffer(false);
+                            ubo.getBufferSlice().set(gpuBuffer1.buffer, gpuBufferSlice.offset(), (int) gpuBufferSlice.length());
                         }
                     });
 
@@ -755,7 +758,8 @@ public class VkCommandEncoder implements CommandEncoder {
         VkGpuBuffer vertexBuffer = (VkGpuBuffer)renderPass.vertexBuffers[0];
         try (MemoryStack stack = stackPush()) {
             if (vertexBuffer != null) {
-                VK11.vkCmdBindVertexBuffers(vkCommandBuffer, 0, stack.longs(vertexBuffer.buffer.getId()), stack.longs(0));
+//                VK11.vkCmdBindVertexBuffers(vkCommandBuffer, 0, stack.longs(vertexBuffer.buffer.getId()), stack.longs(0));
+                VK11.vkCmdBindVertexBuffers(vkCommandBuffer, 0, stack.longs(vertexBuffer.buffer.getId()), stack.longs(vertexBuffer.offset));
             }
 
             if (renderPass.indexBuffer != null) {
@@ -766,7 +770,8 @@ public class VkCommandEncoder implements CommandEncoder {
                     case INT -> VK_INDEX_TYPE_UINT32;
                 };
 
-                VK11.vkCmdBindIndexBuffer(vkCommandBuffer, indexBuffer.buffer.getId(), 0, vkIndexType);
+//                VK11.vkCmdBindIndexBuffer(vkCommandBuffer, indexBuffer.buffer.getId(), 0, vkIndexType);
+                VK11.vkCmdBindIndexBuffer(vkCommandBuffer, indexBuffer.buffer.getId(), indexBuffer.offset, vkIndexType);
                 VK11.vkCmdDrawIndexed(vkCommandBuffer, vertexCount, instanceCount, firstIndex, vertexOffset, 0);
             }
             else {
