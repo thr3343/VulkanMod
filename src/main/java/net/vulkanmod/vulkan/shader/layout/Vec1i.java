@@ -17,7 +17,8 @@ public class Vec1i extends Uniform {
     protected void setupSupplier() {
         if (this.info.intSupplier != null) {
             this.intSupplier = this.info.intSupplier;
-        } else {
+        }
+        else if (this.info.bufferSupplier != null) {
             this.setSupplier(this.info.bufferSupplier);
         }
     }
@@ -28,6 +29,10 @@ public class Vec1i extends Uniform {
     }
 
     void update(long ptr) {
+        if (this.intSupplier == null) {
+            return;
+        }
+
         int i = this.intSupplier.get();
         MemoryUtil.memPutInt(ptr + this.offset, i);
     }

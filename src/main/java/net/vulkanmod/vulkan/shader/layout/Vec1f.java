@@ -15,7 +15,8 @@ public class Vec1f extends Uniform {
     protected void setupSupplier() {
         if (this.info.floatSupplier != null) {
             this.floatSupplier = this.info.floatSupplier;
-        } else {
+        }
+        else if (this.info.bufferSupplier != null) {
             this.setSupplier(this.info.bufferSupplier);
         }
     }
@@ -26,6 +27,10 @@ public class Vec1f extends Uniform {
     }
 
     void update(long ptr) {
+        if (this.floatSupplier == null) {
+            return;
+        }
+
         float f = this.floatSupplier.get();
         MemoryUtil.memPutFloat(ptr + this.offset, f);
     }
