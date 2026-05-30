@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.shader;
 
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL33;
 
 import java.util.Objects;
 
@@ -155,50 +157,29 @@ public class PipelineState {
 
         private static int glToVulkanBlendOp(int value) {
             return switch (value) {
-                case 0x8006 -> VK_BLEND_OP_ADD;
-                case 0x8007 -> VK_BLEND_OP_MIN;
-                case 0x8008 -> VK_BLEND_OP_MAX;
-                case 0x800A -> VK_BLEND_OP_SUBTRACT;
-                case 0x800B -> VK_BLEND_OP_REVERSE_SUBTRACT;
+                case GL33.GL_FUNC_ADD -> VK_BLEND_OP_ADD;
+                case GL33.GL_MIN -> VK_BLEND_OP_MIN;
+                case GL33.GL_MAX -> VK_BLEND_OP_MAX;
+                case GL33.GL_FUNC_SUBTRACT -> VK_BLEND_OP_SUBTRACT;
+                case GL33.GL_FUNC_REVERSE_SUBTRACT -> VK_BLEND_OP_REVERSE_SUBTRACT;
                 default -> throw new RuntimeException("unknown blend factor: " + value);
-
-
-//                GL_FUNC_ADD = 0x8006,
-//                GL_MIN      = 0x8007,
-//                GL_MAX      = 0x8008;
-//                GL_FUNC_SUBTRACT         = 0x800A,
-//                GL_FUNC_REVERSE_SUBTRACT = 0x800B;
             };
         }
 
         private static int glToVulkanBlendFactor(int value) {
             return switch (value) {
-                case 1 -> VK_BLEND_FACTOR_ONE;
-                case 0 -> VK_BLEND_FACTOR_ZERO;
-                case 771 -> VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-                case 770 -> VK_BLEND_FACTOR_SRC_ALPHA;
-                case 775 -> VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-                case 769 -> VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-                case 774 -> VK_BLEND_FACTOR_DST_COLOR;
-                case 768 -> VK_BLEND_FACTOR_SRC_COLOR;
+                case GL11.GL_ONE -> VK_BLEND_FACTOR_ONE;
+                case GL11.GL_ZERO -> VK_BLEND_FACTOR_ZERO;
+                case GL11.GL_SRC_COLOR -> VK_BLEND_FACTOR_SRC_COLOR;
+                case GL11.GL_ONE_MINUS_SRC_COLOR -> VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+                case GL11.GL_SRC_ALPHA -> VK_BLEND_FACTOR_SRC_ALPHA;
+                case GL11.GL_ONE_MINUS_SRC_ALPHA -> VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                case GL11.GL_DST_ALPHA -> VK_BLEND_FACTOR_DST_ALPHA;
+                case GL11.GL_ONE_MINUS_DST_ALPHA -> VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+                case GL11.GL_DST_COLOR -> VK_BLEND_FACTOR_DST_COLOR;
+                case GL11.GL_ONE_MINUS_DST_COLOR -> VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+                case GL11.GL_SRC_ALPHA_SATURATE -> VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
                 default -> throw new RuntimeException("unknown blend factor: " + value);
-
-
-//                        CONSTANT_ALPHA(32771),
-//                        CONSTANT_COLOR(32769),
-//                        DST_ALPHA(772),
-//                        DST_COLOR(774),
-//                        ONE(1),
-//                        ONE_MINUS_CONSTANT_ALPHA(32772),
-//                        ONE_MINUS_CONSTANT_COLOR(32770),
-//                        ONE_MINUS_DST_ALPHA(773),
-//                        ONE_MINUS_DST_COLOR(775),
-//                        ONE_MINUS_SRC_ALPHA(771),
-//                        ONE_MINUS_SRC_COLOR(769),
-//                        SRC_ALPHA(770),
-//                        SRC_ALPHA_SATURATE(776),
-//                        SRC_COLOR(768),
-//                        ZERO(0);
             };
         }
     }
@@ -283,8 +264,21 @@ public class PipelineState {
 
         public static int glToVulkan(int f) {
             return switch (f) {
-                case 5387 -> VK_LOGIC_OP_OR_REVERSE;
-                //TODO complete
+                case GL11.GL_AND -> VK_LOGIC_OP_AND;
+                case GL11.GL_AND_REVERSE -> VK_LOGIC_OP_AND_REVERSE;
+                case GL11.GL_AND_INVERTED -> VK_LOGIC_OP_AND_INVERTED;
+                case GL11.GL_COPY -> VK_LOGIC_OP_COPY;
+                case GL11.GL_NOOP -> VK_LOGIC_OP_NO_OP;
+                case GL11.GL_XOR -> VK_LOGIC_OP_XOR;
+                case GL11.GL_OR -> VK_LOGIC_OP_OR;
+                case GL11.GL_NOR -> VK_LOGIC_OP_NOR;
+                case GL11.GL_EQUIV -> VK_LOGIC_OP_EQUIVALENT;
+                case GL11.GL_INVERT -> VK_LOGIC_OP_INVERT;
+                case GL11.GL_OR_REVERSE -> VK_LOGIC_OP_OR_REVERSE;
+                case GL11.GL_COPY_INVERTED -> VK_LOGIC_OP_COPY_INVERTED;
+                case GL11.GL_OR_INVERTED -> VK_LOGIC_OP_OR_INVERTED;
+                case GL11.GL_NAND -> VK_LOGIC_OP_NAND;
+                case GL11.GL_SET -> VK_LOGIC_OP_SET;
 
                 default -> VK_LOGIC_OP_AND;
             };
@@ -361,28 +355,15 @@ public class PipelineState {
 
         private static int glToVulkan(int value) {
             return switch (value) {
-                case 515 -> VK_COMPARE_OP_LESS_OR_EQUAL;
-                case 519 -> VK_COMPARE_OP_ALWAYS;
-                case 516 -> VK_COMPARE_OP_GREATER;
-                case 518 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
-                case 514 -> VK_COMPARE_OP_EQUAL;
-                default -> throw new RuntimeException("unknown blend factor..");
-
-//                case 515 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
-//                case 519 -> VK_COMPARE_OP_ALWAYS;
-//                case 516 -> VK_COMPARE_OP_GREATER;
-//                case 518 -> VK_COMPARE_OP_LESS_OR_EQUAL;
-//                case 514 -> VK_COMPARE_OP_EQUAL;
-//                default -> throw new RuntimeException("unknown blend factor..");
-
-//                public static final int GL_NEVER = 512;
-//                public static final int GL_LESS = 513;
-//                public static final int GL_EQUAL = 514;
-//                public static final int GL_LEQUAL = 515;
-//                public static final int GL_GREATER = 516;
-//                public static final int GL_NOTEQUAL = 517;
-//                public static final int GL_GEQUAL = 518;
-//                public static final int GL_ALWAYS = 519;
+                case GL11.GL_NEVER -> VK_COMPARE_OP_NEVER;
+                case GL11.GL_LESS -> VK_COMPARE_OP_LESS;
+                case GL11.GL_EQUAL -> VK_COMPARE_OP_EQUAL;
+                case GL11.GL_LEQUAL -> VK_COMPARE_OP_LESS_OR_EQUAL;
+                case GL11.GL_GREATER -> VK_COMPARE_OP_GREATER;
+                case GL11.GL_NOTEQUAL -> VK_COMPARE_OP_NOT_EQUAL;
+                case GL11.GL_GEQUAL -> VK_COMPARE_OP_GREATER_OR_EQUAL;
+                case GL11.GL_ALWAYS -> VK_COMPARE_OP_ALWAYS;
+                default -> throw new RuntimeException("unknown blend factor: %d".formatted(value));
             };
         }
 
