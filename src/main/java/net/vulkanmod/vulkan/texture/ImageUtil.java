@@ -234,4 +234,31 @@ public abstract class ImageUtil {
             vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
         }
     }
+
+    public static void imageTransferMemoryBarrier(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int baseLevel) {
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(image.getCurrentLayout());
+        barrier.newLayout(image.getCurrentLayout());
+        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.image(image.getId());
+
+        barrier.subresourceRange().baseMipLevel(baseLevel);
+        barrier.subresourceRange().levelCount(1);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(VK_REMAINING_ARRAY_LAYERS);
+
+        barrier.subresourceRange().aspectMask(image.aspect);
+
+        barrier.srcAccessMask(VK_ACCESS_MEMORY_WRITE_BIT);
+        barrier.dstAccessMask(VK_ACCESS_MEMORY_WRITE_BIT);
+
+        vkCmdPipelineBarrier(commandBuffer,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0,
+                             null,
+                             null,
+                             barrier);
+    }
 }

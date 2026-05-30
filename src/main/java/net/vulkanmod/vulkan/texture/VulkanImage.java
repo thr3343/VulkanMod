@@ -120,7 +120,7 @@ public class VulkanImage {
                                            .setLinearFiltering(false)
                                            .setClamp(false)
                                            .createVulkanImage();
-            image.uploadSubTextureAsync(0, 0, image.width, image.height, 0, 0, 0, 0, 0, buffer);
+            image.uploadSubTextureAsync(0, 0, image.width, image.height, 0, 0, 0, 0, image.width, buffer);
             return image;
         }
     }
@@ -256,6 +256,8 @@ public class VulkanImage {
             ImageUtil.copyBufferToImageCmd(stack, commandBuffer, bufferId, this.id,
                                            arrayLayer, mipLevel, width, height, xOffset, yOffset,
                                            srcOffset, unpackRowLength, height);
+
+            ImageUtil.imageTransferMemoryBarrier(stack, commandBuffer, this, mipLevel);
         }
     }
 
@@ -338,7 +340,7 @@ public class VulkanImage {
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
                 dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+                destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
                 dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
