@@ -20,7 +20,6 @@ public class Initializer implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-
 		VERSION = FabricLoader.getInstance()
 				.getModContainer("vulkanmod")
 				.get()
@@ -29,13 +28,12 @@ public class Initializer implements ClientModInitializer {
 
 		LOGGER.info("== VulkanMod ==");
 
-		Platform.init();
-
 		var configPath = FabricLoader.getInstance()
 				.getConfigDir()
 				.resolve("vulkanmod_settings.json");
 
 		CONFIG = loadConfig(configPath);
+		Platform.init();
 
 		Renderer.register(VulkanModRenderer.INSTANCE);
 
