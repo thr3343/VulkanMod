@@ -58,7 +58,7 @@ public class StagingBuffer extends Buffer {
     private void submitUploads() {
         // Submit and wait all recorded uploads before resetting the buffer
         UploadManager.INSTANCE.submitUploads();
-        ImageUploadHelper.INSTANCE.submitCommands();
+        ImageUploadHelper.INSTANCE.submitCommands(false);
         Renderer.getInstance().flushCmds();
         Synchronization.INSTANCE.waitFences();
 

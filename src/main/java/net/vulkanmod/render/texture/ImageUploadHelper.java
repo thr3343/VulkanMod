@@ -17,14 +17,18 @@ public class ImageUploadHelper {
     }
 
     public void submitCommands() {
+        this.submitCommands(true);
+    }
+
+    public void submitCommands(boolean useSemaphore) {
         if (this.currentCmdBuffer == null) {
             return;
         }
 
         SpriteUpdateUtil.transitionLayouts();
 
-        queue.submitCommands(this.currentCmdBuffer, true);
-        Synchronization.INSTANCE.addCommandBuffer(this.currentCmdBuffer, true);
+        queue.submitCommands(this.currentCmdBuffer, useSemaphore);
+        Synchronization.INSTANCE.addCommandBuffer(this.currentCmdBuffer, useSemaphore);
 
         this.currentCmdBuffer = null;
     }

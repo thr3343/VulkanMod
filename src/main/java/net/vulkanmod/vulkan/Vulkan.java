@@ -3,10 +3,10 @@ package net.vulkanmod.vulkan;
 import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
-import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
+import net.vulkanmod.vulkan.memory.buffer.StagingBuffers;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -19,7 +19,10 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
@@ -38,7 +41,7 @@ import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+        public static final boolean ENABLE_VALIDATION_LAYERS = false;
 //    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final boolean DYNAMIC_RENDERING = true;
@@ -92,7 +95,8 @@ public class Vulkan {
     }
 
     private static int createDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT createInfo,
-                                                    VkAllocationCallbacks allocationCallbacks, LongBuffer pDebugMessenger) {
+                                                    VkAllocationCallbacks allocationCallbacks,
+                                                    LongBuffer pDebugMessenger) {
 
         if (vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT") != NULL) {
             return vkCreateDebugUtilsMessengerEXT(instance, createInfo, allocationCallbacks, pDebugMessenger);
@@ -101,7 +105,8 @@ public class Vulkan {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    private static void destroyDebugUtilsMessengerEXT(VkInstance instance, long debugMessenger, VkAllocationCallbacks allocationCallbacks) {
+    private static void destroyDebugUtilsMessengerEXT(VkInstance instance, long debugMessenger,
+                                                      VkAllocationCallbacks allocationCallbacks) {
 
         if (vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT") != NULL) {
             vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, allocationCallbacks);
@@ -129,7 +134,7 @@ public class Vulkan {
 
     private static long allocator;
 
-    private static StagingBuffer[] stagingBuffers;
+    private static final StagingBuffers stagingBuffers = new StagingBuffers();
 
     public static boolean use24BitsDepthFormat = true;
     private static int DEFAULT_DEPTH_FORMAT = 0;
@@ -150,15 +155,7 @@ public class Vulkan {
     }
 
     static void createStagingBuffers() {
-        if (stagingBuffers != null) {
-            freeStagingBuffers();
-        }
-
-        stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
-
-        for (int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer();
-        }
+        stagingBuffers.updateFrameCount(Renderer.getFramesNum());
     }
 
     static void setupDepthFormat() {
@@ -196,7 +193,7 @@ public class Vulkan {
     }
 
     private static void freeStagingBuffers() {
-        Arrays.stream(stagingBuffers).forEach(Buffer::scheduleFree);
+        stagingBuffers.free();
     }
 
     private static void createInstance() {
@@ -256,8 +253,8 @@ public class Vulkan {
             vkEnumerateInstanceLayerProperties(layerCount, availableLayers);
 
             Set<String> availableLayerNames = availableLayers.stream()
-                    .map(VkLayerProperties::layerNameString)
-                    .collect(toSet());
+                                                             .map(VkLayerProperties::layerNameString)
+                                                             .collect(toSet());
 
             return availableLayerNames.containsAll(Vulkan.VALIDATION_LAYERS);
         }
@@ -287,7 +284,7 @@ public class Vulkan {
             LongBuffer pDebugMessenger = stack.longs(VK_NULL_HANDLE);
 
             checkResult(createDebugUtilsMessengerEXT(instance, createInfo, null, pDebugMessenger),
-                    "Failed to set up debug messenger");
+                        "Failed to set up debug messenger");
 
             debugMessenger = pDebugMessenger.get(0);
         }
@@ -312,7 +309,7 @@ public class Vulkan {
             LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
 
             checkResult(glfwCreateWindowSurface(instance, window, null, pSurface),
-                    "Failed to create window surface");
+                        "Failed to create window surface");
 
             surface = pSurface.get(0);
         }
@@ -334,7 +331,7 @@ public class Vulkan {
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
             checkResult(vmaCreateAllocator(allocatorCreateInfo, pAllocator),
-                    "Failed to create Allocator");
+                        "Failed to create Allocator");
 
             allocator = pAllocator.get(0);
         }
@@ -354,7 +351,7 @@ public class Vulkan {
             LongBuffer pCommandPool = stack.mallocLong(1);
 
             checkResult(vkCreateCommandPool(DeviceManager.vkDevice, poolInfo, null, pCommandPool),
-                    "Failed to create command pool");
+                        "Failed to create command pool");
 
             commandPool = pCommandPool.get(0);
         }
@@ -407,7 +404,11 @@ public class Vulkan {
     }
 
     public static StagingBuffer getStagingBuffer() {
-        return stagingBuffers[Renderer.getCurrentFrame()];
+        return stagingBuffers.getStagingBuffer();
+    }
+
+    public static StagingBuffers getStagingBuffers() {
+        return stagingBuffers;
     }
 
     public static Device getDevice() {

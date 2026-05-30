@@ -225,14 +225,6 @@ public class Renderer {
         p.round();
         p.push("Frame_ops");
 
-        // runTick might be called recursively,
-        // this check forces sync to avoid upload corruption
-        if (lastReset == currentFrame) {
-            submitUploads();
-            waitFences();
-        }
-        lastReset = currentFrame;
-
         drawer.resetBuffers(currentFrame);
 
         WorldRenderer.getInstance().uploadSections();
@@ -240,19 +232,17 @@ public class Renderer {
     }
 
     public void beginFrame() {
-        if (swapChainUpdate) {
+        this.recursion++;
+
+        if (swapChainUpdate && recursion <= 1) {
             recreateSwapChain();
             swapChainUpdate = false;
         }
-
-        this.recursion++;
 
         // In case this is a recursive call end prev frame
         if (this.recursion > 1) {
             this.endFrame();
         }
-
-        this.preInitFrame();
 
         Profiler p = Profiler.getMainProfiler();
         p.pop();
@@ -263,8 +253,13 @@ public class Renderer {
         p.pop();
         p.push("Begin_rendering");
 
+        submitUploads();
+
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
+        Vulkan.getStagingBuffers().beginFrame(currentFrame);
+
+        this.preInitFrame();
 
         resetDescriptors();
 
@@ -282,16 +277,13 @@ public class Renderer {
 
                 if (vkResult == VK_SUBOPTIMAL_KHR || vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
                     swapChainUpdate = true;
-//                skipRendering = true;
-                    this.beginFrame();
-
-                    return;
                 }
                 else if (vkResult != VK_SUCCESS) {
                     throw new RuntimeException("Cannot acquire next swap chain image: %s".formatted(VkResult.decode(vkResult)));
                 }
 
                 imageIndex = pImageIndex.get(0);
+                swapChain.setAcquired(true);
             }
 
             this.beginMainRenderPass(stack);
@@ -345,63 +337,47 @@ public class Renderer {
     }
 
     private void submitFrame() {
-        if (swapChainUpdate || !swapChain.hasImages()) {
-            try (MemoryStack stack = stackPush()) {
-                VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-                submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-
-                var waitSemaphores = Synchronization.INSTANCE.getWaitSemaphores(stack);
-                int waitSemaphoreCount = waitSemaphores.limit();
-                IntBuffer waitDstStageMask = stack.mallocInt(waitSemaphoreCount);
-
-                for (int i = 0; i < waitSemaphoreCount; i++) {
-                    waitDstStageMask.put(i, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-                }
-
-                submitInfo.pWaitSemaphores(waitSemaphores);
-                submitInfo.waitSemaphoreCount(waitSemaphores.limit());
-                submitInfo.pWaitDstStageMask(waitDstStageMask);
-                submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
-
-                vkResetFences(device, inFlightFences.get(currentFrame));
-
-                int vkResult;
-                if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue()
-                                                           .vkQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                    vkResetFences(device, inFlightFences.get(currentFrame));
-                    throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
-                }
-
-                // Semaphore waited command buffers will be reset right after waiting this command buffer's fence
-                Synchronization.INSTANCE.scheduleCbReset();
-            }
-
-            currentFrame = (currentFrame + 1) % framesNum;
-            return;
-        }
-
         try (MemoryStack stack = stackPush()) {
             int vkResult;
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
-            Synchronization.INSTANCE.addWaitSemaphore(imageAvailableSemaphores.get(currentFrame));
-            var waitSemaphores = Synchronization.INSTANCE.getWaitSemaphores(stack);
-            int waitSemaphoreCount = waitSemaphores.limit();
-            IntBuffer waitDstStageMask = stack.mallocInt(waitSemaphoreCount);
+            // Submitted commands waited before main command buffer
+            int waitSemaphoreCount = Synchronization.INSTANCE.getWaitSemaphoreCount();
+            int totalWaitSemaphores = waitSemaphoreCount;
 
-            for (int i = 0; i < waitSemaphoreCount - 1; i++) {
+            // Swapchain has an acquired image,
+            // the corresponding acquire operation has to be waited before running this command buffer
+            if (swapChain.isAcquired()) {
+                totalWaitSemaphores += 1;
+            }
+
+            LongBuffer waitSemaphores = stack.mallocLong(totalWaitSemaphores);
+            IntBuffer waitDstStageMask = stack.mallocInt(totalWaitSemaphores);
+
+            Synchronization.INSTANCE.getWaitSemaphores(waitSemaphores);
+
+            for (int i = 0; i < waitSemaphoreCount; i++) {
                 waitDstStageMask.put(i, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
             }
-            // Image available semaphore mask
-            waitDstStageMask.put(waitSemaphoreCount - 1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+            if (swapChain.isAcquired()) {
+                waitSemaphores.put(totalWaitSemaphores - 1, imageAvailableSemaphores.get(currentFrame));
+                waitDstStageMask.put(totalWaitSemaphores - 1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            }
+
+            waitSemaphores.position(0);
+            waitSemaphores.limit(totalWaitSemaphores);
 
             submitInfo.pWaitSemaphores(waitSemaphores);
             submitInfo.waitSemaphoreCount(waitSemaphores.limit());
             submitInfo.pWaitDstStageMask(waitDstStageMask);
-            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+            if (swapChain.isAcquired()) {
+                submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
+            }
 
             vkResetFences(device, inFlightFences.get(currentFrame));
 
@@ -413,26 +389,31 @@ public class Renderer {
             // Semaphore waited command buffers will be reset right after waiting this command buffer's fence
             Synchronization.INSTANCE.scheduleCbReset();
 
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
-            presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+            if (swapChain.isAcquired()) {
+                VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
+                presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
-            presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
+                presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
 
-            presentInfo.swapchainCount(1);
-            presentInfo.pSwapchains(stack.longs(swapChain.getId()));
+                presentInfo.swapchainCount(1);
+                presentInfo.pSwapchains(stack.longs(swapChain.getId()));
 
-            presentInfo.pImageIndices(stack.ints(imageIndex));
+                presentInfo.pImageIndices(stack.ints(imageIndex));
 
-            vkResult = vkQueuePresentKHR(DeviceManager.getPresentQueue().vkQueue(), presentInfo);
+                vkResult = vkQueuePresentKHR(DeviceManager.getPresentQueue().vkQueue(), presentInfo);
 
-            if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
-                swapChainUpdate = true;
-                return;
-            } else if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Failed to present rendered frame: %s".formatted(VkResult.decode(vkResult)));
+                if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
+                    swapChainUpdate = true;
+                    return;
+                } else if (vkResult != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to present rendered frame: %s".formatted(VkResult.decode(vkResult)));
+                }
             }
 
+            Vulkan.getStagingBuffers().endFrame(currentFrame);
+
             currentFrame = (currentFrame + 1) % framesNum;
+            swapChain.setAcquired(false);
         }
     }
 
@@ -454,13 +435,19 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            var waitSemaphores = Synchronization.INSTANCE.getWaitSemaphores(stack);
-            int waitSemaphoreCount = waitSemaphores.limit();
+            int waitSemaphoreCount = Synchronization.INSTANCE.getWaitSemaphoreCount();
+
+            LongBuffer waitSemaphores = stack.mallocLong(waitSemaphoreCount);
             IntBuffer waitDstStageMask = stack.mallocInt(waitSemaphoreCount);
+
+            Synchronization.INSTANCE.getWaitSemaphores(waitSemaphores);
 
             for (int i = 0; i < waitSemaphoreCount; i++) {
                 waitDstStageMask.put(i, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
             }
+
+            waitSemaphores.position(0);
+            waitSemaphores.limit(waitSemaphoreCount);
 
             submitInfo.pWaitSemaphores(waitSemaphores);
             submitInfo.waitSemaphoreCount(waitSemaphores.limit());
@@ -813,10 +800,18 @@ public class Renderer {
     }
 
     public static void resetViewport() {
-        int width = INSTANCE.getSwapChain().getWidth();
-        int height = INSTANCE.getSwapChain().getHeight();
+        Framebuffer framebuffer = INSTANCE.getMainPass().getMainFramebuffer();
 
-        setViewportState(0, 0, width, height);
+        if (framebuffer == null) {
+            return;
+        }
+
+        int width = framebuffer.getWidth();
+        int height = framebuffer.getHeight();
+
+        if (width > 0 && height > 0) {
+            setViewportState(0, 0, width, height);
+        }
     }
 
     public static void setViewportState(int x, int y, int width, int height) {
@@ -849,9 +844,11 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-            int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
+            Framebuffer framebuffer = INSTANCE.boundFramebuffer;
+            int framebufferHeight = framebuffer.getHeight();
 
             x = Math.max(0, x);
+            width = Math.min(width, framebuffer.getWidth());
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(x, framebufferHeight - (y + height));

@@ -41,6 +41,7 @@ public class SwapChain extends Framebuffer {
     public boolean isBGRAformat;
     private boolean vsync = false;
     private boolean hasImages = false;
+    private boolean acquired = false;
 
     public SwapChain() {
         this.attachmentCount = 2;
@@ -85,6 +86,7 @@ public class SwapChain extends Framebuffer {
                 this.width = 0;
                 this.height = 0;
                 this.hasImages = false;
+                this.acquired = false;
                 return;
             }
 
@@ -327,6 +329,14 @@ public class SwapChain extends Framebuffer {
 
     public boolean hasImages() {
         return this.hasImages;
+    }
+
+    public boolean isAcquired() {
+        return this.acquired;
+    }
+
+    public void setAcquired(boolean acquired) {
+        this.acquired = acquired;
     }
 
     public boolean isVsync() {

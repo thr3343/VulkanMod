@@ -77,13 +77,14 @@ public class Synchronization {
         this.semaphores.add(semaphore);
     }
 
-    public LongBuffer getWaitSemaphores(MemoryStack stack) {
-        var buffer = stack.mallocLong(this.semaphores.size())
-                          .put(this.semaphores.elements(), 0, this.semaphores.size());
-        buffer.flip();
+    public int getWaitSemaphoreCount() {
+        return this.semaphores.size();
+    }
+
+    public void getWaitSemaphores(LongBuffer buffer) {
+        buffer.put(this.semaphores.elements(), 0, this.semaphores.size());
 
         this.semaphores.clear();
-        return buffer;
     }
 
     public void scheduleCbReset() {
