@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk.build.task;
 
-import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
@@ -35,6 +34,10 @@ public class SortTransparencyTask extends ChunkTask {
 
         CompiledSection compiledSection = this.section.getCompiledSection();
         QuadSorter.SortState transparencyState = compiledSection.transparencyState;
+
+        if (transparencyState == null) {
+            return Result.CANCELLED;
+        }
 
         TerrainBuilder bufferBuilder = builderPack.builder(TerrainRenderType.TRANSLUCENT);
         bufferBuilder.begin();
