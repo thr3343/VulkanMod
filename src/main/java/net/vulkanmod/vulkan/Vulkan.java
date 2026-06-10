@@ -36,6 +36,7 @@ import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
@@ -61,6 +62,10 @@ public class Vulkan {
     }
 
     public static final Set<String> REQUIRED_EXTENSION = getRequiredExtensionSet();
+
+    // Sync2 is mandatory for VanillaVK (26.2+), but isn't supported on macOS w/ 1.21.11 (outdated MVK version on LWJGL 3.3.3)
+    // Can be made mandatory once 1.21.11 is dropped
+    public static final Set<String> OPTIONAL_EXTENSION = new HashSet<>(List.of(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME));
 
     private static Set<String> getRequiredExtensionSet() {
         ArrayList<String> extensions = new ArrayList<>(List.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME));

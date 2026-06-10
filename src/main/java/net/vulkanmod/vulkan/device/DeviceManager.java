@@ -5,6 +5,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.*;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -12,6 +13,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
@@ -25,6 +27,7 @@ import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public abstract class DeviceManager {
+    private static final Set<String> loadedExtensions = Vulkan.REQUIRED_EXTENSION;
     public static List<Device> availableDevices;
     public static List<Device> suitableDevices;
 
@@ -154,6 +157,13 @@ public abstract class DeviceManager {
     public static void createLogicalDevice() {
         try (MemoryStack stack = stackPush()) {
 
+            for (var extensionProperties : getAvailableExtension(stack, physicalDevice)) {
+                String extensionNameString = extensionProperties.extensionNameString();
+                if (Vulkan.OPTIONAL_EXTENSION.contains(extensionNameString)) {
+                    loadedExtensions.add(extensionNameString);
+                }
+            }
+
             net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = indices.unique();
@@ -170,6 +180,10 @@ public abstract class DeviceManager {
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
+
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            deviceVulkan12Features.timelineSemaphore(true); // Mandatory in VK12
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
@@ -189,7 +203,17 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
+
+            // Using Extension version of Sync2 to avoid raising min req to VK13
+            // Sync2 support is also mandatory for VanillaVK (26.2+), but it isn't supported on macOS before LWJGL 3.3.4
+            if (loadedExtensions.contains(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)) {
+                VkPhysicalDeviceSynchronization2Features synchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack);
+                synchronization2Features.sType$Default();
+                synchronization2Features.synchronization2(true);
+
+                createInfo.pNext(synchronization2Features);
+            }
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
@@ -209,7 +233,7 @@ public abstract class DeviceManager {
 //                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
             }
 
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(loadedExtensions));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
@@ -225,6 +249,11 @@ public abstract class DeviceManager {
             presentQueue = new PresentQueue(stack, indices.presentFamily);
             computeQueue = new ComputeQueue(stack, indices.computeFamily);
         }
+    }
+
+    /** Allows checking for extension availability (e.g. for feature specific code paths) */
+    public static boolean checkExt(String ExtName) {
+        return loadedExtensions.contains(ExtName);
     }
 
     private static PointerBuffer getRequiredExtensions() {
@@ -351,6 +380,20 @@ public abstract class DeviceManager {
         computeQueue.cleanUp();
 
         vkDestroyDevice(vkDevice, null);
+    }
+
+    public static void waitAll() {
+        graphicsQueue.waitSubmits();
+        transferQueue.waitSubmits();
+        computeQueue.waitSubmits();
+    }
+
+    /** Reset all submitted cmdbuffers; returning to available */
+
+    public static void resetSubmitted() {
+        graphicsQueue.resetAll();
+        transferQueue.resetAll();
+        computeQueue.resetAll();
     }
 
     public static GraphicsQueue getGraphicsQueue() {
