@@ -3,14 +3,14 @@ package net.vulkanmod.vulkan.queue;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueue;
-import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -22,8 +22,11 @@ public abstract class Queue {
     private static QueueFamilyIndices queueFamilyIndices;
 
     private final VkQueue vkQueue;
+    private final long queueSemaphore, pSubmitValue;
 
-    protected CommandPool commandPool;
+    private final CommandPool commandPool;
+    private final VkSemaphoreWaitInfo vkSemaphoreWaitInfo;
+    private long submitFence;
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
         try (MemoryStack stack = stackPush()) {
@@ -43,17 +46,59 @@ public abstract class Queue {
         vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
         this.vkQueue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
 
-        if (initCommandPool)
-            this.commandPool = new CommandPool(familyIndex);
+        this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+
+        this.queueSemaphore = initCommandPool ? getQueueSemaphore(stack) : VK_NULL_HANDLE;
+
+        if (initCommandPool) {
+            LongBuffer pSubmitValue = MemoryUtil.memAllocLong(1);
+            LongBuffer pSemaphores = MemoryUtil.memAllocLong(1);
+
+            vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc()
+                    .sType$Default()
+                    .semaphoreCount(1)
+                    .pSemaphores(pSemaphores.put(0, this.queueSemaphore))
+                    .pValues(pSubmitValue);
+            this.pSubmitValue = MemoryUtil.memAddress(pSubmitValue);
+        }
+        else {
+            vkSemaphoreWaitInfo = null;
+            this.pSubmitValue = 0L;
+        }
     }
 
-    public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        return submitCommands(commandBuffer, false);
+    private long getQueueSemaphore(MemoryStack stack) {
+        VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfo.calloc(stack)
+                .sType$Default()
+                .semaphoreType(VK12.VK_SEMAPHORE_TYPE_TIMELINE);
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack)
+                .sType$Default()
+                .pNext(semaphoreTypeCreateInfo);
+
+        LongBuffer pPointer = stack.mallocLong(1);
+
+        VK12.vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pPointer);
+        return pPointer.get(0);
     }
 
-    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer, boolean useSemaphore) {
+    /**
+     * Submit current command buffer to this queue
+     * Defaults to Stage None to minimize submit/ sync overhead
+     * */
+    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            return commandBuffer.submitCommands(stack, vkQueue, useSemaphore);
+            commandBuffer.submitCommands(stack, this, VK13.VK_PIPELINE_STAGE_2_NONE); // None + Sync2 allows submitting without waiting on current executing operations
+        }
+    }
+
+    /**
+     * Submit current command buffer to this queue
+     * @param waitStage reorder/barrier commands if necessary (allows optimizing out fences)
+     * */
+    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer, long waitStage) {
+        try (MemoryStack stack = stackPush()) {
+            commandBuffer.submitCommands(stack, this, waitStage);
         }
     }
 
@@ -62,8 +107,18 @@ public abstract class Queue {
     }
 
     public void cleanUp() {
-        if (commandPool != null)
+        if (commandPool != null) {
             commandPool.cleanUp();
+            vkDestroySemaphore(Vulkan.getVkDevice(), this.queueSemaphore, null);
+            MemoryUtil.memFree(vkSemaphoreWaitInfo.pSemaphores());
+            MemoryUtil.memFree(vkSemaphoreWaitInfo.pValues());
+            vkSemaphoreWaitInfo.free();
+        }
+    }
+
+
+    public void resetAll() {
+        this.commandPool.resetAll();
     }
 
     public void waitIdle() {
@@ -74,10 +129,36 @@ public abstract class Queue {
         return commandPool;
     }
 
-    public enum Family {
-        Graphics,
-        Transfer,
-        Compute
+    /**
+     * Increments the queue fence's value (used when executing submits)
+     */
+    public long submitFenceAdd() {
+        return ++submitFence;
+    }
+
+    public long submitFence() {
+        return submitFence;
+    }
+
+    public long getQueueSemaphore() {
+        return this.queueSemaphore;
+    }
+
+    /**
+     * Functionally identical to Synchronisation.waitFences(), but for a specific queue
+     */
+
+    public void waitSubmits() {
+        waitSubmits(this.submitFence);
+    }
+
+    /**
+     * Functionally identical to Synchronisation.waitFences(), but for a specific queue
+     * @param submitFence specific submit/command buffer to wait on (Optional arg to optimize out for all submits (if only a specific submit wait is needed)
+     */
+    public void waitSubmits(long submitFence) {
+        VUtil.UNSAFE.putLong(pSubmitValue, submitFence);
+        VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
     }
 
     public static QueueFamilyIndices getQueueFamilies() {
@@ -88,6 +169,17 @@ public abstract class Queue {
             queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
         }
         return queueFamilyIndices;
+    }
+
+    /** Used for debugging infos */
+
+    @Override
+    public String toString() {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            var pPtr = stack.nmalloc(Long.BYTES);
+            VK12.nvkGetSemaphoreCounterValue(device, this.queueSemaphore, pPtr);
+            return commandPool.toString() + ": submitFence: " + VUtil.UNSAFE.getLong(pPtr);
+        }
     }
 
     public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
