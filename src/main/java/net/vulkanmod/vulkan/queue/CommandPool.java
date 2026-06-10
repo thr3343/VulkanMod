@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -23,6 +24,8 @@ public class CommandPool {
 
     private final List<CommandBuffer> submittedCmdBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
+    private final ObjectArrayFIFOQueue<CommandBuffer> pendingCmdBuffers = new ObjectArrayFIFOQueue<>();
+    private long waitStages;
 
     CommandPool(int queueFamilyIndex) {
         try (MemoryStack stack = stackPush()) {
@@ -84,6 +87,10 @@ public class CommandPool {
         this.submittedCmdBuffers.add(commandBuffer);
     }
 
+    private void addToPending(CommandBuffer commandBuffer) {
+        this.pendingCmdBuffers.enqueue(commandBuffer);
+    }
+
     public void resetAll() {
         this.submittedCmdBuffers.forEach(CommandBuffer::reset);
         this.submittedCmdBuffers.clear();
@@ -96,6 +103,69 @@ public class CommandPool {
 
     public long getId() {
         return id;
+    }
+
+    public void executePending(Queue queue, boolean executeFirst) {
+
+        if (pendingCmdBuffers.isEmpty())
+            return;
+
+        // macOS compat: Branch can be removed once LWJGL 3.3.4+ is guaranteed (MC 26.1+)
+        if (sync2) execute2(queue, executeFirst);
+        else execute(queue, executeFirst);
+
+        waitStages = 0;
+    }
+
+    private void execute(Queue queue, boolean executeFirst) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            final long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
+
+            var commandBufferSubmitInfo = stack.mallocPointer(executeFirst ? 1 : pendingCmdBuffers.size());
+            for (int i = 0; i < commandBufferSubmitInfo.capacity(); i++) {
+                final var dequeue = executeFirst ? pendingCmdBuffers.dequeueLast() : pendingCmdBuffers.dequeue();
+                commandBufferSubmitInfo.put(dequeue.handle);
+                dequeue.submit(queue); // All share same submit fence/state (as if one singular cmd)
+            }
+
+            var timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack).sType$Default()
+                    .pSignalSemaphoreValues(stack.longs(submitFence));
+
+            var submitInfo = VkSubmitInfo.calloc(stack).sType$Default()
+                    .pNext(timelineSemaphoreSubmitInfo)
+                    .pSignalSemaphores(stack.longs(queue.getQueueSemaphore()))
+                    .pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)) //No wait stage
+                    .pCommandBuffers(commandBufferSubmitInfo.rewind());
+
+            vkQueueSubmit(queue.vkQueue(), submitInfo, 0);
+        }
+    }
+
+    private void execute2(Queue queue, boolean executeFirst) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            final long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
+
+            var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(executeFirst ? 1 : pendingCmdBuffers.size(), stack);
+            for (var submitInfo : commandBufferSubmitInfo) {
+                final var dequeue = executeFirst ? pendingCmdBuffers.dequeueLast() : pendingCmdBuffers.dequeue();
+                submitInfo.sType$Default().commandBuffer(dequeue.handle);
+                dequeue.submit(queue); // All share same submit fence/state (as if one singular cmd)
+            }
+
+            var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack).sType$Default()
+                    .semaphore(queue.getQueueSemaphore())
+                    .stageMask(waitStages)
+                    .value(submitFence);
+
+            var submitInfo = VkSubmitInfo2.calloc(1, stack).sType$Default()
+                    .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
+                    .pCommandBufferInfos(commandBufferSubmitInfo);
+
+            vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
+
+        }
     }
 
     public static class CommandBuffer {
@@ -142,47 +212,10 @@ public class CommandPool {
             this.recording = true;
         }
 
-        
-        public void submitCommands(MemoryStack stack, Queue queue, long waitStage) {
-
-            vkEndCommandBuffer(this.handle);
-
-            final long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
-
-            // macOS compat: Branch can be removed once LWJGL 3.3.4+ is guaranteed (MC 26.1+)
-            if (sync2) {
-                var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack).sType$Default()
-                        .commandBuffer(this.handle);
-
-                var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack).sType$Default()
-                        .semaphore(queue.getQueueSemaphore())
-                        .stageMask(waitStage)
-                        .value(submitFence);
-
-                var submitInfo = VkSubmitInfo2.calloc(1, stack).sType$Default()
-                        .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
-                        .pCommandBufferInfos(commandBufferSubmitInfo);
-
-                vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
-            }
-            else {
-                var timelineSemaphoreSubmitInfo = VkTimelineSemaphoreSubmitInfo.calloc(stack).sType$Default()
-                        .pSignalSemaphoreValues(stack.longs(submitFence));
-
-                // Most early submits don't depend on each other; can be submitted out of order without dst wait stage (afaik allows driver to reorder submits freely)
-                // (only the main submit at end frame depends on these)
-                var submitInfo = VkSubmitInfo.calloc(stack).sType$Default()
-                        .pNext(timelineSemaphoreSubmitInfo)
-                        .pSignalSemaphores(stack.longs(queue.getQueueSemaphore()))
-                        .pWaitDstStageMask(stack.ints(VK13.VK_PIPELINE_STAGE_NONE)) // No wait stage
-                        .pCommandBuffers(stack.pointers(this.handle));
-
-                vkQueueSubmit(queue.vkQueue(), submitInfo, 0);
-            }
-
+        public void submit(Queue queue) {
             this.recording = false;
             this.submitted = true;
-            this.fence = submitFence;
+            this.fence = queue.submitFence();
             this.commandPool.addToSubmitted(this);
         }
 
@@ -191,10 +224,18 @@ public class CommandPool {
             this.recording = false;
             this.commandPool.addToAvailable(this);
         }
+
+        public void enqueue(long waitStage) {
+            vkEndCommandBuffer(this.handle);
+            this.submitted = false;
+            this.recording = false;
+            this.commandPool.waitStages |= waitStage;
+            this.commandPool.addToPending(this);
+        }
     }
 
     @Override
     public String toString() {
-        return "submitted: " + submittedCmdBuffers.size() + " available: " + availableCmdBuffers.size();
+        return "submitted: " + submittedCmdBuffers.size() + " available: " + availableCmdBuffers.size() + " pending: " + pendingCmdBuffers.size();
     }
 }

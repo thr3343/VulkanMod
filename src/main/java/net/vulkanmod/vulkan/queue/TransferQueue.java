@@ -30,7 +30,7 @@ public class TransferQueue extends Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            this.addPending(commandBuffer);
 
             return commandBuffer.fence;
         }
@@ -48,7 +48,7 @@ public class TransferQueue extends Queue {
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
-            this.submitCommands(commandBuffer);
+            this.executeImmediate(commandBuffer);
             commandBuffer.wait(this);
             commandBuffer.reset();
         }
