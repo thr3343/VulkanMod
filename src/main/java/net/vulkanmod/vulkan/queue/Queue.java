@@ -81,25 +81,36 @@ public abstract class Queue {
         VK12.vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pPointer);
         return pPointer.get(0);
     }
-
     /**
-     * Submit current command buffer to this queue
+     * Enqueues current command buffer to this queue
      * Defaults to Stage None to minimize submit/ sync overhead
      * */
-    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer) {
-        try (MemoryStack stack = stackPush()) {
-            commandBuffer.submitCommands(stack, this, VK13.VK_PIPELINE_STAGE_2_NONE); // None + Sync2 allows submitting without waiting on current executing operations
-        }
+    public void addPending(CommandPool.CommandBuffer commandBuffer) {
+        commandBuffer.enqueue(VK13.VK_PIPELINE_STAGE_2_NONE);
     }
-
     /**
-     * Submit current command buffer to this queue
+     * Enqueues current command buffer to this queue
      * @param waitStage reorder/barrier commands if necessary (allows optimizing out fences)
      * */
-    public synchronized void submitCommands(CommandPool.CommandBuffer commandBuffer, long waitStage) {
-        try (MemoryStack stack = stackPush()) {
-            commandBuffer.submitCommands(stack, this, waitStage);
-        }
+    public void addPending(CommandPool.CommandBuffer commandBuffer, long waitStage) {
+        commandBuffer.enqueue(waitStage);
+    }
+
+    /** Execute this specific command buffer immediately: ignoring other pending cmds  */
+    public void executeImmediate(CommandPool.CommandBuffer commandBuffer, long waitStage) {
+        commandBuffer.enqueue(waitStage);
+        this.commandPool.executePending(this,true);
+    }
+
+    /** Execute this specific command buffer immediately: ignoring other pending cmds */
+    public void executeImmediate(CommandPool.CommandBuffer commandBuffer) {
+        commandBuffer.enqueue(VK13.VK_PIPELINE_STAGE_2_NONE);
+        this.commandPool.executePending(this, true);
+    }
+
+    /** Executes all currently pending command buffers */
+    public void executePendingCmds() {
+        this.commandPool.executePending(this, false);
     }
 
     public VkQueue vkQueue() {
