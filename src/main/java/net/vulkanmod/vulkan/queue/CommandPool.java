@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
@@ -20,6 +21,8 @@ public class CommandPool {
 
     private final List<CommandBuffer> submittedCmdBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
+    private final ObjectArrayFIFOQueue<CommandBuffer> pendingCmdBuffers = new ObjectArrayFIFOQueue<>();
+    private long waitStages;
 
     CommandPool(int queueFamilyIndex) {
         try (MemoryStack stack = stackPush()) {
@@ -66,11 +69,8 @@ public class CommandPool {
         PointerBuffer pCommandBuffer = stack.mallocPointer(size);
         vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
 
-        for (int i = 0; i < size; ++i) {
-            VkCommandBuffer vkCommandBuffer = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
-            CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer);
-            availableCmdBuffers.add(commandBuffer);
-        }
+        for (int i = 0; i < size; ++i)
+            availableCmdBuffers.add(new CommandBuffer(this, pCommandBuffer.get(i)));
     }
 
     public void addToAvailable(CommandBuffer commandBuffer) {
@@ -79,6 +79,10 @@ public class CommandPool {
 
     public void addToSubmitted(CommandBuffer commandBuffer) {
         this.submittedCmdBuffers.add(commandBuffer);
+    }
+
+    private void addToPending(CommandBuffer commandBuffer) {
+        this.pendingCmdBuffers.enqueue(commandBuffer);
     }
 
     public void resetAll() {
@@ -95,6 +99,42 @@ public class CommandPool {
         return id;
     }
 
+    public void executePending(Queue queue, boolean executeFirst) {
+
+        if (pendingCmdBuffers.isEmpty())
+            return;
+
+        execute(queue, executeFirst);
+
+        waitStages = VK13.VK_PIPELINE_STAGE_2_NONE;
+    }
+
+    private void execute(Queue queue, boolean executeFirst) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            final long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
+
+            var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(executeFirst ? 1 : pendingCmdBuffers.size(), stack);
+            for (var submitInfo : commandBufferSubmitInfo) {
+                final var dequeue = executeFirst ? pendingCmdBuffers.dequeueLast() : pendingCmdBuffers.dequeue();
+                submitInfo.sType$Default().commandBuffer(dequeue.handle);
+                dequeue.submit(queue); // All share same submit fence/state (as if one singular cmd)
+            }
+
+            var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack).sType$Default()
+                    .semaphore(queue.getQueueSemaphore())
+                    .stageMask(waitStages)
+                    .value(submitFence);
+
+            var submitInfo = VkSubmitInfo2.calloc(1, stack).sType$Default()
+                    .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
+                    .pCommandBufferInfos(commandBufferSubmitInfo);
+
+            vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
+
+        }
+    }
+
     public static class CommandBuffer {
         public final CommandPool commandPool;
         public final VkCommandBuffer handle;
@@ -103,9 +143,9 @@ public class CommandPool {
         boolean submitted;
         boolean recording;
 
-        public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle) {
+        public CommandBuffer(CommandPool commandPool, long pCmdBuffer) {
             this.commandPool = commandPool;
-            this.handle = handle;
+            this.handle = new VkCommandBuffer(pCmdBuffer, Vulkan.getVkDevice());
         }
 
         public VkCommandBuffer getHandle() {
@@ -139,30 +179,10 @@ public class CommandPool {
             this.recording = true;
         }
 
-        
-        public void submitCommands(MemoryStack stack, Queue queue, long waitStage) {
-
-            vkEndCommandBuffer(this.handle);
-
-            final long submitFence = queue.submitFenceAdd(); // Has same function as individual fence
-
-            var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack).sType$Default()
-                    .commandBuffer(this.handle);
-
-            var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(1, stack).sType$Default()
-                    .semaphore(queue.getQueueSemaphore())
-                    .stageMask(waitStage)
-                    .value(submitFence);
-
-            var submitInfo = VkSubmitInfo2.calloc(1, stack).sType$Default()
-                    .pSignalSemaphoreInfos(mainSemaphoreSubmitInfo) // No additional Waits, only Signal
-                    .pCommandBufferInfos(commandBufferSubmitInfo);
-
-            vkQueueSubmit2KHR(queue.vkQueue(), submitInfo, 0);
-
+        public void submit(Queue queue) {
             this.recording = false;
             this.submitted = true;
-            this.fence = submitFence;
+            this.fence = queue.submitFence();
             this.commandPool.addToSubmitted(this);
         }
 
@@ -171,10 +191,18 @@ public class CommandPool {
             this.recording = false;
             this.commandPool.addToAvailable(this);
         }
+
+        public void enqueue(long waitStage) {
+            vkEndCommandBuffer(this.handle);
+            this.submitted = false;
+            this.recording = false;
+            this.commandPool.waitStages |= waitStage;
+            this.commandPool.addToPending(this);
+        }
     }
 
     @Override
     public String toString() {
-        return "submitted: " + submittedCmdBuffers.size() + " available: " + availableCmdBuffers.size();
+        return "submitted: " + submittedCmdBuffers.size() + " available: " + availableCmdBuffers.size() + " pending: " + pendingCmdBuffers.size();
     }
 }

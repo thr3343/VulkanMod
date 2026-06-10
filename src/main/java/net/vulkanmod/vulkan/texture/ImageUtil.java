@@ -53,7 +53,7 @@ public abstract class ImageUtil {
                               image.height, 0, 0, 0, 0, 0);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
-            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().executeImmediate(commandBuffer, VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
             commandBuffer.wait(DeviceManager.getGraphicsQueue());
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
@@ -76,7 +76,7 @@ public abstract class ImageUtil {
                               height, xOffset, yOffset, bufferOffset, bufferRowLength, bufferImageHeight);
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
-            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().addPending(commandBuffer);
             // Exploit implicit submit ordering to defer waits to main submit
         }
     }
@@ -268,7 +268,7 @@ public abstract class ImageUtil {
 
             image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
+            DeviceManager.getGraphicsQueue().addPending(commandBuffer);
 
             // Exploit implicit submit ordering to defer waits to main submit
         }

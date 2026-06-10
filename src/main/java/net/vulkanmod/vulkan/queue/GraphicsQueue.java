@@ -22,7 +22,7 @@ public class GraphicsQueue extends Queue {
     }
 
     public void endRecordingAndSubmit() {
-        submitCommands(currentCmdBuffer);
+        executeImmediate(currentCmdBuffer);
 
         currentCmdBuffer = null;
     }
@@ -39,7 +39,7 @@ public class GraphicsQueue extends Queue {
         if (currentCmdBuffer != null) {
             return false;
         }
-        submitCommands(commandBuffer);
+        executeImmediate(commandBuffer);
         return true;
     }
 

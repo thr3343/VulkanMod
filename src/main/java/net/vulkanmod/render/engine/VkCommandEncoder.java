@@ -196,7 +196,7 @@ public class VkCommandEncoder implements CommandEncoder {
             Renderer.clearAttachments(commandBuffer.handle, 0x4000, 0, 0, framebuffer.getWidth(), framebuffer.getHeight());
             renderPass.endRenderPass(commandBuffer.handle);
 
-            graphicsQueue.submitCommands(commandBuffer);
+            graphicsQueue.addPending(commandBuffer);
             // wait value used instead (at end of frame submit)
         }
     }
