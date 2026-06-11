@@ -450,12 +450,12 @@ public class Renderer {
         if (waitPresent) {
             waitSemaphoreSubmitInfo.get().sType$Default()
                     .semaphore(imageAvailableSemaphores.get(currentFrame))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) // Attachment operations
+                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Attachment operations + Transition from present
                     .value(0);
 
             mainSemaphoreSubmitInfo.get().sType$Default()
                     .semaphore(renderFinishedSemaphores.get(imageIndex))
-                    .stageMask(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT)
+                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Transition to present
                     .value(0);
         }
 

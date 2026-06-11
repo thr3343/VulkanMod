@@ -21,6 +21,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
+    public static final int framebufferLocalStages = (VK10.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK10.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK10.VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
@@ -300,22 +301,22 @@ public class VulkanImage {
         }
 
         int sourceStage, srcAccessMask, destinationStage, dstAccessMask = 0;
-
+        // Apparently read access is not needed on src stages (RaR Sync hazards do not exist)
         switch (image.currentLayout) {
             case VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
                 srcAccessMask = 0;
-                sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
                 srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
-                srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                srcAccessMask = 0;
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
-                srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                srcAccessMask = 0;
                 sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
@@ -323,7 +324,7 @@ public class VulkanImage {
                 sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
-                srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 sourceStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             }
             default -> throw new RuntimeException("Unexpected value:" + image.currentLayout);
@@ -351,7 +352,7 @@ public class VulkanImage {
                 destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
             }
             case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
-                destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             default -> throw new RuntimeException("Unexpected value:" + newLayout);
         }
@@ -387,9 +388,11 @@ public class VulkanImage {
         barrier.srcAccessMask(srcAccessMask);
         barrier.dstAccessMask(dstAccessMask);
 
+        final var isFramebufferLocal = (sourceStage | destinationStage | framebufferLocalStages) == framebufferLocalStages;
+
         vkCmdPipelineBarrier(commandBuffer,
                              sourceStage, destinationStage,
-                             0,
+                             isFramebufferLocal ? VK_DEPENDENCY_BY_REGION_BIT : 0,
                              null,
                              null,
                              barrier);
