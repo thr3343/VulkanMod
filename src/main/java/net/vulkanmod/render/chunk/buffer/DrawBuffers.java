@@ -26,6 +26,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
+import static net.vulkanmod.render.chunk.WorldRenderer.NO_FADE;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -112,7 +113,7 @@ public class DrawBuffers {
             doUpload = true;
         }
 
-        int baseInstance = section.inAreaIndex;
+        int baseInstance = NO_FADE ? encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset()) : section.inAreaIndex;
 
         int offset = 0;
         for (int i = 0; i < QuadFacing.COUNT; i++) {
@@ -152,7 +153,7 @@ public class DrawBuffers {
             DrawParametersBuffer.setBaseInstance(paramPtr, baseInstance);
         }
 
-        updateUniformData(section);
+        if(!NO_FADE) updateUniformData(section);
 
         buffer.release();
     }
@@ -500,11 +501,13 @@ public class DrawBuffers {
             updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
         }
 
-        this.updateFadeUniform(currentTime, fadeTimeMs, fadeTimeInv);
+        if(!NO_FADE) {
+            this.updateFadeUniform(currentTime, fadeTimeMs, fadeTimeInv);
 
-        UBO ubo = pipeline.getUBO(2); // SectionData
-        ubo.setUseGlobalBuffer(false);
-        ubo.getBufferSlice().set(sectionDataBuffer, 0, (int) sectionDataBuffer.getBufferSize());
+            UBO ubo = pipeline.getUBO(2); // SectionData
+            ubo.setUseGlobalBuffer(false);
+            ubo.getBufferSlice().set(sectionDataBuffer, 0, (int) sectionDataBuffer.getBufferSize());
+        }
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);

@@ -58,7 +58,7 @@ import org.lwjgl.opengl.GL11;
 import java.util.*;
 
 public class WorldRenderer {
-    private static final boolean FAST_TEX = true;
+    public static final boolean FAST_TEX = true, NO_FADE = true;
     private static WorldRenderer INSTANCE;
 
     public static WorldRenderer init(EntityRenderDispatcher entityRenderDispatcher,
@@ -389,6 +389,8 @@ public class WorldRenderer {
         if (allowedRenderTypes.contains(renderType)) {
             renderType.setCutoutUniform();
 
+            if(NO_FADE) renderer.uploadAndBindUBOs(pipeline);
+
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
@@ -400,7 +402,7 @@ public class WorldRenderer {
                                             camX, camY, camZ,
                                             currentTimeMs, fadeTimeMs, fadeTimeInv);
 
-                    renderer.uploadAndBindUBOs(pipeline);
+                    if (!NO_FADE) renderer.uploadAndBindUBOs(pipeline);
 
                     if (indirectDraw) {
                         drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, renderType);

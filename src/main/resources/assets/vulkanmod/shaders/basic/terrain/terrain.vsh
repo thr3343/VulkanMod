@@ -2,7 +2,8 @@
 
 #include "light.glsl"
 #include "fog.glsl"
-
+// TODO: Spec Constant
+layout(constant_id = 1) const bool NO_FADE = true;
 layout (binding = 0) uniform UniformBufferObject {
     mat4 MVP;
 };
@@ -44,7 +45,7 @@ const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
 
 vec3 getVertexPosition() {
-    const int encOffset = SectionOffsets[gl_BaseInstance >> 2][gl_BaseInstance & 3];
+    const int encOffset = NO_FADE ? gl_BaseInstance : SectionOffsets[gl_BaseInstance >> 2][gl_BaseInstance & 3];
     const vec3 baseOffset = bitfieldExtract(ivec3(encOffset) >> ivec3(0, 16, 8), 0, 8);
 
     #ifdef COMPRESSED_VERTEX
@@ -67,7 +68,7 @@ void main() {
 
     // BaseInstance is guaranteed dynamically uniform index unlike instanceIndex
     // (afaik instanceIndex is only nonuniform if instanceIndex != 1, but idk if this is guaranteed for all drivers; still went w/ BaseInstance)
-    fadeFactor = SectionFadeFactors[gl_BaseInstance >> 2][gl_BaseInstance & 3];
+    fadeFactor = NO_FADE ? 1 : SectionFadeFactors[gl_BaseInstance >> 2][gl_BaseInstance & 3];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;

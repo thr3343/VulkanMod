@@ -5,6 +5,7 @@
 
 // TODO: Spec Constant
 layout(constant_id = 0) const bool FAST_TEX = true;
+layout(constant_id = 1) const bool NO_FADE = true;
 //layout(constant_id = 1) const bool ALPHA_CUTOUT = 0.5f;
 
 layout(binding = 3) uniform sampler2D Sampler0;
@@ -105,7 +106,7 @@ layout (location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = FAST_TEX ? texture(Sampler0, texCoord0) * vertexColor : (UseRgss ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
-    color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
+    if(!NO_FADE) color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
     if (color.a < AlphaCutout) {
         discard;
     }
