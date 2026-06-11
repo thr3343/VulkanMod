@@ -5,21 +5,6 @@
 
 layout (binding = 0) uniform UniformBufferObject {
     mat4 MVP;
-    int CurrentTime;
-};
-
-layout(binding = 1) uniform UBO {
-    vec4 FogColor;
-    float FogEnvironmentalStart;
-    float FogEnvironmentalEnd;
-    float FogRenderDistanceStart;
-    float FogRenderDistanceEnd;
-    float FogSkyEnd;
-    float FogCloudsEnd;
-    float AlphaCutout;
-    ivec2 TextureSize;
-    vec2 TexelSize;
-    int UseRgss;
 };
 
 layout (binding = 2) uniform UBO2 {
@@ -59,7 +44,7 @@ const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
 
 vec3 getVertexPosition() {
-    const int encOffset = SectionOffsets[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    const int encOffset = SectionOffsets[gl_BaseInstance >> 2][gl_BaseInstance & 3];
     const vec3 baseOffset = bitfieldExtract(ivec3(encOffset) >> ivec3(0, 16, 8), 0, 8);
 
     #ifdef COMPRESSED_VERTEX
@@ -79,9 +64,10 @@ void main() {
     const vec4 Color = unpackUnorm4x8(PackedColor);
 
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
-//    vertexColor = Color * sample_lightmap(Sampler2, UV2);
 
-    fadeFactor = SectionFadeFactors[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    // BaseInstance is guaranteed dynamically uniform index unlike instanceIndex
+    // (afaik instanceIndex is only nonuniform if instanceIndex != 1, but idk if this is guaranteed for all drivers; still went w/ BaseInstance)
+    fadeFactor = SectionFadeFactors[gl_BaseInstance >> 2][gl_BaseInstance & 3];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;

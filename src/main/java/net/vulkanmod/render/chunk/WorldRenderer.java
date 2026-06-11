@@ -58,6 +58,7 @@ import org.lwjgl.opengl.GL11;
 import java.util.*;
 
 public class WorldRenderer {
+    private static final boolean FAST_TEX = true;
     private static WorldRenderer INSTANCE;
 
     public static WorldRenderer init(EntityRenderDispatcher entityRenderDispatcher,
@@ -359,7 +360,7 @@ public class WorldRenderer {
         var texture = (VkGpuTexture)texView.texture();
 
         if (this.terrainSampler == 0L) {
-            this.terrainSampler = SamplerManager.getSampler(true, true, texture.getVulkanImage().mipLevels - 1, useAnisotropy, maxAnisotropy);
+            this.terrainSampler = SamplerManager.getSampler(true, !FAST_TEX, texture.getVulkanImage().mipLevels - 1, useAnisotropy, maxAnisotropy);
         }
 
         texture.getVulkanImage().setSampler(this.terrainSampler);
