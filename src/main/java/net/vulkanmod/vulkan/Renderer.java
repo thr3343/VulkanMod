@@ -837,7 +837,7 @@ public class Renderer {
             pRect.baseArrayLayer(0);
             pRect.layerCount(1);
 
-            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
+//            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
         }
     }
 
