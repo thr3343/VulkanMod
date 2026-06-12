@@ -163,7 +163,7 @@ public abstract class Options {
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new RangeOption(Component.translatable("options.guiScale"),
-                                0, window.calculateScale(0, minecraft.isEnforceUnicode()), 1,
+                                0, Math.max(window.calculateScale(0, minecraft.isEnforceUnicode()), mcOptions.guiScale().get()), 1,
                                 value -> Component.translatable(value == 0 ? "options.guiScale.auto" : String.valueOf(value)),
                                 value -> {
                                     mcOptions.guiScale().set(value);
