@@ -8,9 +8,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.MeshView;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadAtlas;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.render.FabricLayerRenderState;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderLayerHelper;
+import net.fabricmc.fabric.api.renderer.v1.render.ItemRenderTypeGetter;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -23,7 +24,7 @@ import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.vulkanmod.render.chunk.build.frapi.helper.ColorHelper;
 import net.vulkanmod.render.chunk.build.frapi.mesh.MutableQuadViewImpl;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -33,33 +34,38 @@ public class ItemRenderContext extends AbstractRenderContext {
 	private static final int GLINT_COUNT = ItemStackRenderState.FoilType.values().length;
 
 	private ItemDisplayContext itemDisplayContext;
-	private PoseStack matrixStack;
 	private MultiBufferSource vertexConsumerProvider;
 	private int lightmap;
 	private int[] tints;
 
 	private RenderType defaultLayer;
+	private ItemRenderTypeGetter renderTypeGetter;
 	private ItemStackRenderState.FoilType defaultGlint;
     private boolean ignoreQuadGlint;
 
 	private PoseStack.Pose specialGlintEntry;
 	private final VertexConsumer[] vertexConsumerCache = new VertexConsumer[3 * GLINT_COUNT];
 
-	public void renderModel(ItemDisplayContext itemDisplayContext, PoseStack matrixStack, MultiBufferSource bufferSource, int lightmap, int overlay, int[] tints, List<BakedQuad> modelQuads, MeshView mesh, RenderType renderType, ItemStackRenderState.FoilType foilType, boolean ignoreQuadGlint) {
+	public void renderModel(ItemDisplayContext itemDisplayContext, PoseStack matrixStack,
+	                        MultiBufferSource bufferSource, int lightmap, int overlay, int[] tints,
+	                        List<BakedQuad> modelQuads, MeshView mesh, RenderType renderType,
+	                        @Nullable ItemRenderTypeGetter renderTypeGetter,
+	                        ItemStackRenderState.FoilType foilType, boolean ignoreQuadGlint) {
 		this.itemDisplayContext = itemDisplayContext;
-		this.matrixStack = matrixStack;
+		this.matrices = matrixStack.last();
 		this.vertexConsumerProvider = bufferSource;
 		this.lightmap = lightmap;
 		this.overlay = overlay;
 		this.tints = tints;
 
 		defaultLayer = renderType;
+		this.renderTypeGetter = renderTypeGetter;
 		defaultGlint = foilType;
         this.ignoreQuadGlint = ignoreQuadGlint;
 
 		bufferQuads(modelQuads, mesh);
 
-		this.matrixStack = null;
+		this.matrices = null;
 		this.vertexConsumerProvider = null;
 		this.tints = null;
 
@@ -83,7 +89,7 @@ public class ItemRenderContext extends AbstractRenderContext {
 
 	@Override
 	protected void bufferQuad(MutableQuadViewImpl quad) {
-        final VertexConsumer vertexConsumer = getVertexConsumer(quad.renderLayer(), quad.glint());
+        final VertexConsumer vertexConsumer = getVertexConsumer(quad.atlas(), quad.renderLayer(), quad.glint());
 
         tintQuad(quad);
         shadeQuad(quad, quad.emissive());
@@ -116,47 +122,53 @@ public class ItemRenderContext extends AbstractRenderContext {
 		}
 	}
 
-    private VertexConsumer getVertexConsumer(@Nullable ChunkSectionLayer quadRenderLayer, @Nullable ItemStackRenderState.FoilType quadGlint) {
-        RenderType layer;
-        ItemStackRenderState.FoilType glint;
+	private VertexConsumer getVertexConsumer(QuadAtlas quadAtlas, @org.jspecify.annotations.Nullable ChunkSectionLayer quadRenderLayer, ItemStackRenderState.@Nullable FoilType quadGlint) {
+		RenderType layer;
+		ItemStackRenderState.FoilType glint;
 
-        if (quadRenderLayer == null) {
-            layer = defaultLayer;
-        } else {
-            layer = RenderLayerHelper.getEntityBlockLayer(quadRenderLayer);
-        }
+		if (renderTypeGetter != null) {
+			layer = renderTypeGetter.renderType(quadAtlas, quadRenderLayer);
 
-        if (ignoreQuadGlint || quadGlint == null) {
-            glint = defaultGlint;
-        } else {
-            glint = quadGlint;
-        }
+			if (layer == null) {
+				layer = defaultLayer;
+			}
+		} else {
+			layer = defaultLayer;
+		}
 
-        int cacheIndex;
+		if (ignoreQuadGlint || quadGlint == null) {
+			glint = defaultGlint;
+		} else {
+			glint = quadGlint;
+		}
 
-        if (layer == Sheets.translucentItemSheet()) {
-            cacheIndex = 0;
-        } else if (layer == Sheets.cutoutBlockSheet()) {
-            cacheIndex = GLINT_COUNT;
-        } else {
-            cacheIndex = 2 * GLINT_COUNT;
-        }
+		int cacheIndex;
 
-        cacheIndex += glint.ordinal();
-        VertexConsumer vertexConsumer = vertexConsumerCache[cacheIndex];
+		if (layer == Sheets.translucentItemSheet()) {
+			cacheIndex = 0;
+		} else if (layer == Sheets.cutoutBlockSheet()) {
+			cacheIndex = GLINT_COUNT;
+		} else if (layer == Sheets.translucentBlockItemSheet()) {
+			cacheIndex = 2 * GLINT_COUNT;
+		} else {
+			return createVertexConsumer(layer, glint);
+		}
 
-        if (vertexConsumer == null) {
-            vertexConsumer = createVertexConsumer(layer, glint);
-            vertexConsumerCache[cacheIndex] = vertexConsumer;
-        }
+		cacheIndex += glint.ordinal();
+		VertexConsumer vertexConsumer = vertexConsumerCache[cacheIndex];
 
-        return vertexConsumer;
-    }
+		if (vertexConsumer == null) {
+			vertexConsumer = createVertexConsumer(layer, glint);
+			vertexConsumerCache[cacheIndex] = vertexConsumer;
+		}
+
+		return vertexConsumer;
+	}
 
 	private VertexConsumer createVertexConsumer(RenderType layer, ItemStackRenderState.FoilType glint) {
 		if (glint == ItemStackRenderState.FoilType.SPECIAL) {
 			if (specialGlintEntry == null) {
-				specialGlintEntry = matrixStack.last().copy();
+				specialGlintEntry = matrices.copy();
 
 				if (itemDisplayContext == ItemDisplayContext.GUI) {
 					MatrixUtil.mulComponentWise(specialGlintEntry.pose(), 0.5F);

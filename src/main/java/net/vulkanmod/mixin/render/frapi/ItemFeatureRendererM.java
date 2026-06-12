@@ -28,13 +28,39 @@ public class ItemFeatureRendererM {
     private void onReturnRender(SubmitNodeCollection queue, MultiBufferSource.BufferSource vertexConsumers, OutlineBufferSource outlineVertexConsumers, CallbackInfo ci) {
         for (MeshItemCommand itemCommand : ((AccessBatchingRenderCommandQueue) queue).getMeshItemCommands()) {
             poseStack.pushPose();
-            poseStack.last().set(itemCommand.positionMatrix());
+            poseStack.last()
+                     .set(itemCommand.positionMatrix());
 
-            itemRenderContext.renderModel(itemCommand.displayContext(), poseStack, vertexConsumers, itemCommand.lightCoords(), itemCommand.overlayCoords(), itemCommand.tintLayers(), itemCommand.quads(), itemCommand.mesh(), itemCommand.renderLayer(), itemCommand.glintType(), false);
-
+            itemRenderContext.renderModel(
+                    itemCommand.displayContext(),
+                    poseStack,
+                    vertexConsumers,
+                    itemCommand.lightCoords(),
+                    itemCommand.overlayCoords(),
+                    itemCommand.tintLayers(),
+                    itemCommand.quads(),
+                    itemCommand.mesh(),
+                    itemCommand.renderLayer(),
+                    itemCommand.renderTypeGetter(),
+                    itemCommand.glintType(),
+                    false
+            );
             if (itemCommand.outlineColor() != 0) {
                 outlineVertexConsumers.setColor(itemCommand.outlineColor());
-                itemRenderContext.renderModel(itemCommand.displayContext(), poseStack, outlineVertexConsumers, itemCommand.lightCoords(), itemCommand.overlayCoords(), itemCommand.tintLayers(), itemCommand.quads(), itemCommand.mesh(), itemCommand.renderLayer(), ItemStackRenderState.FoilType.NONE, true);
+                itemRenderContext.renderModel(
+                        itemCommand.displayContext(),
+                        poseStack,
+                        outlineVertexConsumers,
+                        itemCommand.lightCoords(),
+                        itemCommand.overlayCoords(),
+                        itemCommand.tintLayers(),
+                        itemCommand.quads(),
+                        itemCommand.mesh(),
+                        itemCommand.renderLayer(),
+                        itemCommand.renderTypeGetter(),
+                        ItemStackRenderState.FoilType.NONE,
+                        true
+                );
             }
 
             poseStack.popPose();

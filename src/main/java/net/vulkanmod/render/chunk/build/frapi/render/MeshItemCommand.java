@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.renderer.v1.mesh.MeshView;
 import net.fabricmc.fabric.api.renderer.v1.render.ItemRenderTypeGetter;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.jspecify.annotations.Nullable;
 
@@ -17,7 +18,7 @@ public record MeshItemCommand(
         int outlineColor,
         int[] tintLayers,
         List<BakedQuad> quads,
-        net.minecraft.client.renderer.rendertype.RenderType renderLayer,
+        RenderType renderLayer,
         ItemStackRenderState.FoilType glintType,
         MeshView mesh,
         @Nullable ItemRenderTypeGetter renderTypeGetter
