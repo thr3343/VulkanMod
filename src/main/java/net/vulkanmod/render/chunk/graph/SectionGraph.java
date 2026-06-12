@@ -175,9 +175,10 @@ public class SectionGraph {
 
             if (!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
+
+            this.chunkAreaQueue.add(renderSection.getChunkArea());
 
             if (renderSection.containsBlockEntities()) {
                 this.blockEntitiesSections.ensureCapacity(1);
@@ -258,9 +259,10 @@ public class SectionGraph {
 
             if (!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
+
+            this.chunkAreaQueue.add(renderSection.getChunkArea());
 
             if (renderSection.isDirty()) {
                 this.rebuildQueue.ensureCapacity(1);
