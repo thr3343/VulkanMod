@@ -228,7 +228,7 @@ public class GraphicsPipeline extends Pipeline {
         SPIRVUtils.SPIRV vertShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), vsh, SPIRVUtils.ShaderKind.VERTEX_SHADER);
 
         String fsh = builder.shadersSrc.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
-        SPIRVUtils.SPIRV fragShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), fsh, SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        SPIRVUtils.SPIRV fragShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.fsh", name), fsh, SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
 
         this.vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
