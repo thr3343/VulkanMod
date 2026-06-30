@@ -5,7 +5,6 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.*;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -14,9 +13,11 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
+import static net.vulkanmod.vulkan.queue.Queue.*;
+import static net.vulkanmod.vulkan.queue.QueueFamilyIndices.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -40,11 +41,6 @@ public abstract class DeviceManager {
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
 
     public static SurfaceProperties surfaceProperties;
-
-    static GraphicsQueue graphicsQueue;
-    static PresentQueue presentQueue;
-    static TransferQueue transferQueue;
-    static ComputeQueue computeQueue;
 
     public static void init(VkInstance instance) {
         try {
@@ -164,9 +160,8 @@ public abstract class DeviceManager {
                 }
             }
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = IntStream.of(graphicsFamily.queueFamily, presentFamily.queueFamily, transferFamily.queueFamily, computeFamily.queueFamily).distinct().toArray();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(uniqueQueueFamilies.length, stack);
 
@@ -243,11 +238,6 @@ public abstract class DeviceManager {
             Vulkan.checkResult(res, "Failed to create logical device");
 
             vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
-
-            graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
-            transferQueue = new TransferQueue(stack, indices.transferFamily);
-            presentQueue = new PresentQueue(stack, indices.presentFamily);
-            computeQueue = new ComputeQueue(stack, indices.computeFamily);
         }
     }
 
@@ -277,8 +267,6 @@ public abstract class DeviceManager {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
         try (MemoryStack stack = stackPush()) {
-            Queue.QueueFamilyIndices indices = findQueueFamilies(device);
-
             VkExtensionProperties.Buffer availableExtensions = getAvailableExtension(stack, device);
             boolean extensionsSupported = availableExtensions.stream()
                     .map(VkExtensionProperties::extensionNameString)
@@ -296,7 +284,7 @@ public abstract class DeviceManager {
             vkGetPhysicalDeviceFeatures(device, supportedFeatures);
             boolean anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
 
-            return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+            return extensionsSupported && swapChainAdequate;
         }
     }
 
@@ -396,19 +384,19 @@ public abstract class DeviceManager {
         computeQueue.resetAll();
     }
 
-    public static GraphicsQueue getGraphicsQueue() {
+    public static Queue getGraphicsQueue() {
         return graphicsQueue;
     }
 
-    public static PresentQueue getPresentQueue() {
+    public static Queue getPresentQueue() {
         return presentQueue;
     }
 
-    public static TransferQueue getTransferQueue() {
+    public static Queue getTransferQueue() {
         return transferQueue;
     }
 
-    public static ComputeQueue getComputeQueue() {
+    public static Queue getComputeQueue() {
         return computeQueue;
     }
 
