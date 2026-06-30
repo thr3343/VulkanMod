@@ -169,9 +169,8 @@ public class MemoryManager {
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
             imageInfo.flags(flags);
-//            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            imageInfo.pQueueFamilyIndices(
-                    stack.ints(Queue.getQueueFamilies().graphicsFamily, Queue.getQueueFamilies().computeFamily));
+
+            // Don't need explicit queue families w/ exclusive
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(memProperties);

@@ -26,7 +26,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import static net.vulkanmod.vulkan.queue.Queue.graphicsQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -174,7 +175,7 @@ public class VkCommandEncoder implements CommandEncoder {
             }
         }
         else {
-            GraphicsQueue graphicsQueue = DeviceManager.getGraphicsQueue();
+            Queue graphicsQueue = DeviceManager.getGraphicsQueue();
             var commandBuffer = graphicsQueue.beginCommands(); // Fix bug with currentCmdBuffer leak (is not reset properly)
             VkGpuTexture vkGpuTexture = (VkGpuTexture) colorAttachment;
 

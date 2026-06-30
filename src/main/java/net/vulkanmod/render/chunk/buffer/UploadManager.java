@@ -2,12 +2,10 @@ package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -15,6 +13,7 @@ import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.transferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class UploadManager {
@@ -24,7 +23,6 @@ public class UploadManager {
         INSTANCE = new UploadManager();
     }
     private long sub;
-    private final Queue queue = DeviceManager.getTransferQueue();
     private CommandPool.CommandBuffer commandBuffer;
 
     private final LongOpenHashSet dstBuffers = new LongOpenHashSet();
@@ -33,7 +31,7 @@ public class UploadManager {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.executeImmediate(commandBuffer);
+        transferQueue.executeImmediate(commandBuffer);
         this.sub = commandBuffer.fence;
 
         this.commandBuffer = null;
@@ -65,7 +63,7 @@ public class UploadManager {
             this.dstBuffers.clear();
         }
 
-        TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
+        transferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
     }
 
     public void copyBuffer(Buffer src, Buffer dst) {
@@ -99,21 +97,21 @@ public class UploadManager {
 
         this.dstBuffers.add(dst.getId());
 
-        TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
+        transferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
 
     public void syncUploads() {
         submitUploads();
 
-        queue.waitSubmits(sub);
+        transferQueue.waitSubmits(sub);
     }
 
     private void beginCommands() {
         if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+            this.commandBuffer = transferQueue.beginCommands();
     }
 
     public boolean hasSubmit() {
-        return this.sub == queue.submitFence();
+        return this.sub == transferQueue.submitFence();
     }
 }

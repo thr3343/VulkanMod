@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.queue;
 
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -9,18 +8,20 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.stream.IntStream;
 
+import static net.vulkanmod.vulkan.queue.QueueFamilyIndices.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
-public abstract class Queue {
-    private static VkDevice device;
-    private static QueueFamilyIndices queueFamilyIndices;
+public enum Queue {
 
+    graphicsQueue(graphicsFamily.queueFamily, true),
+    transferQueue(transferFamily.queueFamily, true),
+    computeQueue(computeFamily.queueFamily, true),
+    presentQueue(presentFamily.queueFamily, false);
+
+    private static final VkDevice device = DeviceManager.vkDevice;
     private final VkQueue vkQueue;
     private final long queueSemaphore, pSubmitValue;
 
@@ -37,33 +38,30 @@ public abstract class Queue {
         }
     }
 
-    Queue(MemoryStack stack, int familyIndex) {
-        this(stack, familyIndex, true);
-    }
+    Queue(int familyIndex, boolean initCommandPool) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            PointerBuffer pQueue = stack.mallocPointer(1);
+            vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
+            this.vkQueue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
 
-    Queue(MemoryStack stack, int familyIndex, boolean initCommandPool) {
-        PointerBuffer pQueue = stack.mallocPointer(1);
-        vkGetDeviceQueue(DeviceManager.vkDevice, familyIndex, 0, pQueue);
-        this.vkQueue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
+            this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
 
-        this.commandPool = initCommandPool ? new CommandPool(familyIndex) : null;
+            this.queueSemaphore = initCommandPool ? getQueueSemaphore(stack) : VK_NULL_HANDLE;
 
-        this.queueSemaphore = initCommandPool ? getQueueSemaphore(stack) : VK_NULL_HANDLE;
+            if (initCommandPool) {
+                LongBuffer pSubmitValue = MemoryUtil.memAllocLong(1);
+                LongBuffer pSemaphores = MemoryUtil.memAllocLong(1);
 
-        if (initCommandPool) {
-            LongBuffer pSubmitValue = MemoryUtil.memAllocLong(1);
-            LongBuffer pSemaphores = MemoryUtil.memAllocLong(1);
-
-            vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc()
-                    .sType$Default()
-                    .semaphoreCount(1)
-                    .pSemaphores(pSemaphores.put(0, this.queueSemaphore))
-                    .pValues(pSubmitValue);
-            this.pSubmitValue = MemoryUtil.memAddress(pSubmitValue);
-        }
-        else {
-            vkSemaphoreWaitInfo = null;
-            this.pSubmitValue = 0L;
+                vkSemaphoreWaitInfo = VkSemaphoreWaitInfo.calloc()
+                        .sType$Default()
+                        .semaphoreCount(1)
+                        .pSemaphores(pSemaphores.put(0, this.queueSemaphore))
+                        .pValues(pSubmitValue);
+                this.pSubmitValue = MemoryUtil.memAddress(pSubmitValue);
+            } else {
+                vkSemaphoreWaitInfo = null;
+                this.pSubmitValue = 0L;
+            }
         }
     }
 
@@ -111,6 +109,59 @@ public abstract class Queue {
     /** Executes all currently pending command buffers */
     public void executePendingCmds() {
         this.commandPool.executePending(this, false);
+    }
+
+
+    /* Transfer ops */
+
+    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+        try (MemoryStack stack = stackPush()) {
+
+            CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+            this.addPending(commandBuffer);
+
+            return commandBuffer.fence;
+        }
+    }
+
+    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+        try (MemoryStack stack = stackPush()) {
+            CommandPool.CommandBuffer commandBuffer = this.beginCommands();
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+            this.executeImmediate(commandBuffer);
+            commandBuffer.wait(this);
+            commandBuffer.reset();
+        }
+    }
+
+    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+        try (MemoryStack stack = stackPush()) {
+
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
+            copyRegion.size(size);
+            copyRegion.srcOffset(srcOffset);
+            copyRegion.dstOffset(dstOffset);
+
+            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
+        }
     }
 
     public VkQueue vkQueue() {
@@ -172,15 +223,6 @@ public abstract class Queue {
         VK12.vkWaitSemaphores(device, vkSemaphoreWaitInfo, VUtil.UINT64_MAX);
     }
 
-    public static QueueFamilyIndices getQueueFamilies() {
-        if (device == null)
-            device = Vulkan.getVkDevice();
-
-        if (queueFamilyIndices == null) {
-            queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
-        }
-        return queueFamilyIndices;
-    }
 
     /** Used for debugging infos */
 
@@ -190,134 +232,6 @@ public abstract class Queue {
             var pPtr = stack.nmalloc(Long.BYTES);
             VK12.nvkGetSemaphoreCounterValue(device, this.queueSemaphore, pPtr);
             return commandPool.toString() + ": submitFence: " + VUtil.UNSAFE.getLong(pPtr);
-        }
-    }
-
-    public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-        QueueFamilyIndices indices = new QueueFamilyIndices();
-
-        try (MemoryStack stack = stackPush()) {
-
-            IntBuffer queueFamilyCount = stack.ints(0);
-
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, null);
-
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
-
-            vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
-
-            IntBuffer presentSupport = stack.ints(VK_FALSE);
-
-            for (int i = 0; i < queueFamilies.capacity(); i++) {
-                int queueFlags = queueFamilies.get(i).queueFlags();
-
-                if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    indices.graphicsFamily = i;
-
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if (presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                    indices.computeFamily = i;
-                } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
-                        && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                    indices.transferFamily = i;
-                }
-
-                if (indices.presentFamily == -1) {
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
-
-                    if (presentSupport.get(0) == VK_TRUE) {
-                        indices.presentFamily = i;
-                    }
-                }
-
-                if (indices.isComplete())
-                    break;
-            }
-
-            if (indices.presentFamily == -1) {
-                // Some drivers will not show present support even if some queue supports it
-                // Use compute queue as fallback
-
-                indices.presentFamily = indices.computeFamily;
-                Initializer.LOGGER.warn("Using compute queue as present fallback");
-            }
-
-            // In case there's no dedicated transfer queue, we need choose another one
-            // preferably a different one from the already selected queues
-            if (indices.transferFamily == -1) {
-
-                int transferIndex = -1;
-                for (int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if ((queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
-                        if (transferIndex == -1)
-                            transferIndex = i;
-
-                        if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0) {
-                            indices.transferFamily = i;
-
-                            if (i != indices.computeFamily)
-                                break;
-
-                            transferIndex = i;
-                        }
-                    }
-                }
-
-                if (transferIndex == -1)
-                    throw new RuntimeException("Failed to find queue family with transfer support");
-
-                indices.transferFamily = transferIndex;
-            }
-
-            if (indices.computeFamily == -1) {
-                for (int i = 0; i < queueFamilies.capacity(); i++) {
-                    int queueFlags = queueFamilies.get(i).queueFlags();
-
-                    if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                        indices.computeFamily = i;
-                        break;
-                    }
-                }
-            }
-
-            if (indices.graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
-                throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == VK_QUEUE_FAMILY_IGNORED)
-                throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == VK_QUEUE_FAMILY_IGNORED)
-                throw new RuntimeException("Unable to find queue family with compute support.");
-
-            return indices;
-        }
-    }
-
-    public static class QueueFamilyIndices {
-        public int graphicsFamily = VK_QUEUE_FAMILY_IGNORED;
-        public int presentFamily = VK_QUEUE_FAMILY_IGNORED;
-        public int transferFamily = VK_QUEUE_FAMILY_IGNORED;
-        public int computeFamily = VK_QUEUE_FAMILY_IGNORED;
-
-        public boolean isComplete() {
-            return graphicsFamily != -1 && presentFamily != -1 && transferFamily != -1 && computeFamily != -1;
-        }
-
-        public boolean isSuitable() {
-            return graphicsFamily != -1 && presentFamily != -1;
-        }
-
-        public int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily, transferFamily, computeFamily).distinct().toArray();
-        }
-
-        public int[] array() {
-            return new int[]{graphicsFamily, presentFamily};
         }
     }
 }
