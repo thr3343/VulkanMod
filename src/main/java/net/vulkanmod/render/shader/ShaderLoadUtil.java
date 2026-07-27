@@ -6,8 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.shaders.ShaderType;
 import net.minecraft.resources.Identifier;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.SPIRVUtils;
+import net.vulkanmod.vulkan.shader.SpirvCompiler;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -22,7 +21,7 @@ import java.util.Set;
 
 public abstract class ShaderLoadUtil {
 
-    public static final String RESOURCES_PATH = SPIRVUtils.class.getResource("/assets/vulkanmod").toExternalForm();
+    public static final String RESOURCES_PATH = SpirvCompiler.class.getResource("/assets/vulkanmod").toExternalForm();
     public static final String SHADERS_PATH = "%s/shaders/".formatted(RESOURCES_PATH);
 
     public static final Set<String> REMAPPED_SHADERS = Sets.newHashSet("core/screenquad.vsh",
@@ -183,7 +182,7 @@ public abstract class ShaderLoadUtil {
         }
     }
 
-    public static String getShaderSource(String path, String configName, String shaderName, SPIRVUtils.ShaderKind type) {
+    public static String getShaderSource(String path, String configName, String shaderName, SpirvCompiler.ShaderKind type) {
         String shaderExtension = switch (type) {
             case VERTEX_SHADER -> ".vsh";
             case FRAGMENT_SHADER -> ".fsh";

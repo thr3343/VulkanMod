@@ -23,9 +23,8 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.SPIRVUtils;
-import net.vulkanmod.vulkan.shader.converter.GLSLParser;
-import net.vulkanmod.vulkan.shader.converter.Lexer;
+import net.vulkanmod.vulkan.shader.SpirvCompiler;
+import net.vulkanmod.vulkan.shader.converter.*;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -43,6 +42,13 @@ import java.util.function.Supplier;
 public class VkGpuDevice implements GpuDevice {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    private static final ShaderDefines GLOBAL_DEFINES = ShaderDefines.builder()
+                                                                     .define("gl_VertexID", "gl_VertexIndex")
+                                                                     .define("gl_InstanceID", "gl_InstanceIndex")
+                                                                     .define("sample", "sample1")
+                                                                     .define("sampler", "sampler1")
+                                                                     .build();
+
     private final VkCommandEncoder encoder;
     private final VkDebugLabel debugLabels;
     private final int maxSupportedTextureSize;
@@ -57,7 +63,7 @@ public class VkGpuDevice implements GpuDevice {
     public VkGpuDevice(long l, int i, boolean bl, ShaderSource shaderSource, boolean bl2) {
         this.debugLabels = VkDebugLabel.create(bl2, this.enabledExtensions);
         this.maxSupportedTextureSize = VRenderSystem.maxSupportedTextureSize();
-        this.uniformOffsetAlignment = (int) DeviceManager.deviceProperties.limits().minUniformBufferOffsetAlignment();
+        this.uniformOffsetAlignment = (int) DeviceManager.deviceProperties().limits().minUniformBufferOffsetAlignment();
         this.defaultShaderSource = shaderSource;
 
         this.encoder = new VkCommandEncoder(this);
@@ -360,32 +366,35 @@ public class VkGpuDevice implements GpuDevice {
         String vshSrc = this.getCachedShaderSrc(vertexShaderLocation, ShaderType.VERTEX, shaderDefines, shaderSrcGetter);
         String fshSrc = this.getCachedShaderSrc(fragmentShaderLocation, ShaderType.FRAGMENT, shaderDefines, shaderSrcGetter);
 
+        vshSrc = GlslPreprocessor.injectDefines(vshSrc, GLOBAL_DEFINES);
+        fshSrc = GlslPreprocessor.injectDefines(fshSrc, GLOBAL_DEFINES);
         vshSrc = GlslPreprocessor.injectDefines(vshSrc, shaderDefines);
         fshSrc = GlslPreprocessor.injectDefines(fshSrc, shaderDefines);
 
-        Lexer lexer = new Lexer(vshSrc);
-        GLSLParser parser = new GLSLParser();
-        parser.setVertexFormat(renderPipeline.getVertexFormat());
-
         try {
-            parser.parse(lexer, GLSLParser.Stage.VERTEX);
+            var spirv = SpirvCompiler.compileShader(vertexShaderLocation.getPath(), vshSrc, SpirvCompiler.ShaderKind.VERTEX_SHADER);
+            var vsSpirv = SpirvShader.createFromSpirv(vertexShaderLocation.getPath(), spirv.bytecode());
 
-            lexer = new Lexer(fshSrc);
-            parser.parse(lexer, GLSLParser.Stage.FRAGMENT);
-        } catch (Exception e) {
-            throw new RuntimeException("Caught exception while parsing: %s".formatted(renderPipeline.toString()), e);
+            spirv = SpirvCompiler.compileShader(fragmentShaderLocation.getPath(), fshSrc, SpirvCompiler.ShaderKind.FRAGMENT_SHADER);
+            var fsSpirv = SpirvShader.createFromSpirv(fragmentShaderLocation.getPath(), spirv.bytecode());
+
+            SpirvPipeline spirvPipeline = new SpirvPipeline(vsSpirv, fsSpirv);
+
+//            spirvPipeline.setBindings();
+            spirvPipeline.updateLocations(renderPipeline.getVertexFormat().getElementAttributeNames());
+
+
+            List<ImageDescriptor> samplers = spirvPipeline.getSamplerList();
+            List<UBO> ubos = spirvPipeline.createUBOs();
+
+            builder.setShaderSpirv(SpirvCompiler.ShaderKind.VERTEX_SHADER, vsSpirv.spirv());
+            builder.setShaderSpirv(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fsSpirv.spirv());
+
+            builder.setUniforms(ubos, samplers);
+
+        } catch (ShaderCompileException e) {
+            throw new RuntimeException(e);
         }
-
-        UBO[] ubos = parser.createUBOs();
-        List<ImageDescriptor> samplers = parser.getSamplerList();
-
-        String vshProcessed = parser.getOutput(GLSLParser.Stage.VERTEX);
-        String fshProcessed = parser.getOutput(GLSLParser.Stage.FRAGMENT);
-
-        builder.setUniforms(List.of(ubos), samplers);
-
-        builder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, vshProcessed);
-        builder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fshProcessed);
 
         try {
             pipeline = builder.createGraphicsPipeline();

@@ -492,8 +492,10 @@ public class DrawBuffers {
     }
 
     public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType,
+                            UBO sectionData,
                             double camX, double camY, double camZ,
-                            long currentTime, int fadeTimeMs, float fadeTimeInv) {
+                            long currentTime, int fadeTimeMs, float fadeTimeInv
+    ) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
@@ -502,9 +504,7 @@ public class DrawBuffers {
 
         this.updateFadeUniform(currentTime, fadeTimeMs, fadeTimeInv);
 
-        UBO ubo = pipeline.getUBO(2); // SectionData
-        ubo.setUseGlobalBuffer(false);
-        ubo.getBufferSlice().set(sectionDataBuffer, 0, (int) sectionDataBuffer.getBufferSize());
+        sectionData.getBufferSlice().set(sectionDataBuffer, 0, (int) sectionDataBuffer.getBufferSize());
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);

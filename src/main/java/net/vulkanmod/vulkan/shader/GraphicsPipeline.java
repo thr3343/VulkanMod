@@ -224,14 +224,29 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     private void createShaderModules(Builder builder) {
-        String vsh = builder.shadersSrc.get(SPIRVUtils.ShaderKind.VERTEX_SHADER);
-        SPIRVUtils.SPIRV vertShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.vsh", name), vsh, SPIRVUtils.ShaderKind.VERTEX_SHADER);
+        ByteBuffer vsSpirv;
+        if (builder.shadersSpirv.containsKey(SpirvCompiler.ShaderKind.VERTEX_SHADER)) {
+            vsSpirv = builder.shadersSpirv.get(SpirvCompiler.ShaderKind.VERTEX_SHADER);
+        }
+        else {
+            String vsh = builder.shadersSrc.get(SpirvCompiler.ShaderKind.VERTEX_SHADER);
+            SpirvCompiler.SPIRV vertShaderSPIRV = SpirvCompiler.compileShader(String.format("%s.vsh", name), vsh, SpirvCompiler.ShaderKind.VERTEX_SHADER);
+            vsSpirv = vertShaderSPIRV.bytecode();
+        }
 
-        String fsh = builder.shadersSrc.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
-        SPIRVUtils.SPIRV fragShaderSPIRV = SPIRVUtils.compileShader(String.format("%s.fsh", name), fsh, SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        ByteBuffer fsSpirv;
+        if (builder.shadersSpirv.containsKey(SpirvCompiler.ShaderKind.FRAGMENT_SHADER)) {
+            fsSpirv = builder.shadersSpirv.get(SpirvCompiler.ShaderKind.FRAGMENT_SHADER);
+        }
+        else  {
+            String fsh = builder.shadersSrc.get(SpirvCompiler.ShaderKind.FRAGMENT_SHADER);
+            SpirvCompiler.SPIRV fragShaderSPIRV = SpirvCompiler.compileShader(String.format("%s.fsh", name), fsh, SpirvCompiler.ShaderKind.FRAGMENT_SHADER);
+            fsSpirv = fragShaderSPIRV.bytecode();
+        }
 
-        this.vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
-        this.fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
+
+        this.vertShaderModule = createShaderModule(vsSpirv);
+        this.fragShaderModule = createShaderModule(fsSpirv);
     }
 
     public void cleanUp() {

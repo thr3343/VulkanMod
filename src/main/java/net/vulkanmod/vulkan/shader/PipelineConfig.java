@@ -13,12 +13,12 @@ import java.util.List;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class PipelineConfig {
-    final public EnumMap<SPIRVUtils.ShaderKind, String> shaderPaths;
+    final public EnumMap<SpirvCompiler.ShaderKind, String> shaderPaths;
     final public List<UB> ubs;
     final public List<ImageDescriptorInfo> imageDescriptors;
     final public UB pushConstantsInfo;
 
-    public PipelineConfig(EnumMap<SPIRVUtils.ShaderKind, String> shaderPaths, List<UB> ubs, List<ImageDescriptorInfo> imageDescriptors, UB pushConstantsInfo) {
+    public PipelineConfig(EnumMap<SpirvCompiler.ShaderKind, String> shaderPaths, List<UB> ubs, List<ImageDescriptorInfo> imageDescriptors, UB pushConstantsInfo) {
         this.shaderPaths = shaderPaths;
         this.ubs = ubs;
         this.imageDescriptors = imageDescriptors;
@@ -32,8 +32,8 @@ public class PipelineConfig {
         String vertexShader = config.has("vertex") ? config.get("vertex").getAsString() : defaultPath;
         String fragmentShader = config.has("fragment") ? config.get("fragment").getAsString() : defaultPath;
 
-        builder.withShader(SPIRVUtils.ShaderKind.VERTEX_SHADER, vertexShader);
-        builder.withShader(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragmentShader);
+        builder.withShader(SpirvCompiler.ShaderKind.VERTEX_SHADER, vertexShader);
+        builder.withShader(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragmentShader);
 
         JsonArray jsonUbos = GsonHelper.getAsJsonArray(config, "UBOs", null);
         JsonArray jsonManualUbos = GsonHelper.getAsJsonArray(config, "ManualUBOs", null);
@@ -141,12 +141,12 @@ public class PipelineConfig {
     }
 
     public static class Builder {
-        EnumMap<SPIRVUtils.ShaderKind, String> shaderPaths = new EnumMap<>(SPIRVUtils.ShaderKind.class);
+        EnumMap<SpirvCompiler.ShaderKind, String> shaderPaths = new EnumMap<>(SpirvCompiler.ShaderKind.class);
         public List<UB> ubs = new ArrayList<>();
         public List<ImageDescriptorInfo> imageDescriptors = new ArrayList<>();
         public UB pushConstantsInfo;
 
-        public Builder withShader(SPIRVUtils.ShaderKind shaderKind, String path) {
+        public Builder withShader(SpirvCompiler.ShaderKind shaderKind, String path) {
             this.shaderPaths.put(shaderKind, path);
 
             return this;
@@ -187,28 +187,36 @@ public class PipelineConfig {
 
     public static class UB {
         public final int binding;
+        public final String name;
         public final int stage;
         public final int size;
         public final List<Uniform> uniforms;
 
         public static Builder builder(int binding, int stage) {
-            return new Builder(binding, stage);
+            return new Builder("UB%d".formatted(binding), binding, stage);
         }
 
-        public UB(int binding, int stage, int size, List<Uniform> uniforms) {
+        public static Builder builder(String name, int binding, int stage) {
+            return new Builder(name, binding, stage);
+        }
+
+        public UB(int binding, String name, int stage, int size, List<Uniform> uniforms) {
             this.binding = binding;
+            this.name = name;
             this.stage = stage;
             this.size = size;
             this.uniforms = uniforms;
         }
 
         public static class Builder {
+            String name;
             int binding;
             int stage;
             int size;
             List<Uniform> uniforms = new ArrayList<>();
 
-            public Builder(int binding, int stage) {
+            public Builder(String name, int binding, int stage) {
+                this.name = name;
                 this.binding = binding;
                 this.stage = stage;
             }
@@ -226,7 +234,7 @@ public class PipelineConfig {
             }
 
             public UB build() {
-                return new UB(this.binding, this.stage, this.size, this.uniforms);
+                return new UB(this.binding, this.name, this.stage, this.size, this.uniforms);
             }
         }
     }
@@ -234,6 +242,14 @@ public class PipelineConfig {
     public record Uniform(String type, String name) {}
 
     public record ImageDescriptorInfo(int binding, String type, String name, int imageIdx) {}
+
+    public static int getVkSamplerDescriptorType(String s) {
+        return switch (s) {
+            case "sampler2D" -> VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            case "image2D" -> VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            default -> throw new IllegalStateException("Unexpected value: " + s);
+        };
+    }
 
     public static int getStageFromString(String s) {
         return switch (s) {

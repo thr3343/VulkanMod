@@ -3,12 +3,12 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout (binding = 0) uniform UniformBufferObject {
+layout (binding = 0) uniform UB0 {
     mat4 MVP;
     int CurrentTime;
 };
 
-layout(binding = 1) uniform UBO {
+layout(binding = 1) uniform UB1 {
     vec4 FogColor;
     float FogEnvironmentalStart;
     float FogEnvironmentalEnd;
@@ -22,7 +22,7 @@ layout(binding = 1) uniform UBO {
     int UseRgss;
 };
 
-layout (binding = 2) uniform UBO2 {
+layout (binding = 2) uniform SectionData {
     ivec4 SectionOffsets[128];
     vec4 SectionFadeFactors[128];
 };

@@ -75,8 +75,11 @@ public abstract class AlignedStruct {
         }
 
         public UBO buildUBO(String name, int binding, int stages) {
-            //offset is expressed in floats/ints
-            return new UBO(name, binding, stages, this.currentOffset * 4, this.uniforms);
+           return this.buildUBO(name, binding, stages, this.currentOffset * 4);
+        }
+
+        public UBO buildUBO(String name, int binding, int stages, int size) {
+            return new UBO(name, binding, stages, size, this.uniforms);
         }
 
         public PushConstants buildPushConstant(int stages) {
@@ -84,7 +87,16 @@ public abstract class AlignedStruct {
                 return null;
             }
 
-            return new PushConstants(stages, this.uniforms, this.currentOffset * 4);
+            int size = this.currentOffset * 4;
+            return this.buildPushConstant(stages, size);
+        }
+
+        public PushConstants buildPushConstant(int stages, int size) {
+            return new PushConstants(stages, this.uniforms, size);
+        }
+
+        public int getSize() {
+            return this.currentOffset * 4;
         }
 
     }

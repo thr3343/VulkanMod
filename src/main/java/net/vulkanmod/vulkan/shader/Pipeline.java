@@ -7,7 +7,7 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
+import net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
@@ -19,10 +19,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -255,6 +252,7 @@ public abstract class Pipeline {
         int nextBinding;
 
         Map<ShaderKind, String> shadersSrc = new EnumMap<>(ShaderKind.class);
+        Map<ShaderKind, ByteBuffer> shadersSpirv = new EnumMap<>(ShaderKind.class);
 
         RenderPass renderPass;
 
@@ -284,6 +282,10 @@ public abstract class Pipeline {
 
         public void setShaderSrc(ShaderKind kind, String src) {
             this.shadersSrc.put(kind, src);
+        }
+
+        public void setShaderSpirv(ShaderKind kind, ByteBuffer spirv) {
+            this.shadersSpirv.put(kind, spirv);
         }
 
         public void addUBO(UBO ubo) {
@@ -346,7 +348,7 @@ public abstract class Pipeline {
                     builder.addUniform(uniformInfo);
                 }
 
-                ubo = builder.buildUBO(binding, stages);
+                ubo = builder.buildUBO(ub.name, binding, stages);
             }
             else {
                 int size = ub.size;
@@ -355,7 +357,7 @@ public abstract class Pipeline {
                     throw new IllegalStateException("Manual UBO has size <= 0");
                 }
 
-                ubo = new UBO("UBO %d".formatted(binding), binding, stages, size, null);
+                ubo = new UBO(ub.name, binding, stages, size, null);
                 ubo.setUseGlobalBuffer(false);
             }
 
@@ -363,11 +365,7 @@ public abstract class Pipeline {
         }
 
         private void parseImageDescriptor(PipelineConfig.ImageDescriptorInfo info) {
-            int descriptorType = switch (info.type()) {
-                case "sampler2D" -> VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                case "image2D" -> VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-                default -> throw new IllegalStateException("Unexpected value: " + info.type());
-            };
+            int descriptorType = PipelineConfig.getVkSamplerDescriptorType(info.type());
 
             this.imageDescriptors.add(new ImageDescriptor(info.binding(), info.type(), info.name(), info.imageIdx(), descriptorType));
         }
@@ -384,7 +382,13 @@ public abstract class Pipeline {
                 builder.addUniform(uniformInfo);
             }
 
-            this.pushConstants = builder.buildPushConstant(stages);
+            int size = ub.size;
+
+            if (size <= 0) {
+                size = builder.getSize();
+            }
+
+            this.pushConstants = builder.buildPushConstant(stages, size);
         }
 
         public List<UBO> getUBOs() {
@@ -404,7 +408,15 @@ public abstract class Pipeline {
         }
 
         public GraphicsPipeline createGraphicsPipeline() {
+            // Make sure descriptor bindings are ordered
+            this.sortDescriptorLists();
+
             return new GraphicsPipeline(this);
+        }
+
+        private void sortDescriptorLists() {
+            this.UBOs.sort(Comparator.comparingInt(UBO::getBinding));
+            this.imageDescriptors.sort(Comparator.comparingInt(ImageDescriptor::getBinding));
         }
     }
 }

@@ -53,7 +53,8 @@ public class VkGpuBuffer extends GpuBuffer {
 
         MemoryType memoryType =  mappable ? MemoryTypes.HOST_MEM : MemoryTypes.GPU_MEM;
 
-        this.buffer = new Buffer(supplier.get(), vkUsage, memoryType);
+        String label = supplier != null ? supplier.get() : null;
+        this.buffer = new Buffer(label, vkUsage, memoryType);
         this.buffer.createBuffer(this.size());
     }
 

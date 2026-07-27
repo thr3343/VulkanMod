@@ -385,6 +385,9 @@ public class WorldRenderer {
         IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
         Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer, indexBuffer.indexType.value);
 
+        UBO sectionData = pipeline.getUBO(2);
+        sectionData.setUseGlobalBuffer(false);
+
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(renderType)) {
@@ -398,6 +401,7 @@ public class WorldRenderer {
                 if (drawBuffers.getAreaBuffer(renderType) != null && queue.size() > 0) {
 
                     drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, renderType,
+                                            sectionData,
                                             camX, camY, camZ,
                                             currentTimeMs, fadeTimeMs, fadeTimeInv);
 

@@ -1,7 +1,7 @@
 package net.vulkanmod.render.shader;
 
 import net.vulkanmod.vulkan.shader.PipelineConfig;
-import net.vulkanmod.vulkan.shader.SPIRVUtils;
+import net.vulkanmod.vulkan.shader.SpirvCompiler;
 
 import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_ALL_GRAPHICS;
 import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
@@ -26,7 +26,7 @@ public class PipelineConfigs {
                                                                   .addUniform("int", "UseRgss")
                                                                   .build();
 
-    public static final PipelineConfig.UB TERRAIN_UB2 = PipelineConfig.UB.builder(2, VK_SHADER_STAGE_VERTEX_BIT)
+    public static final PipelineConfig.UB TERRAIN_UB2 = PipelineConfig.UB.builder("SectionData", 2, VK_SHADER_STAGE_VERTEX_BIT)
                                                     .setSize(4096)
                                                     .build();
 
@@ -35,8 +35,8 @@ public class PipelineConfigs {
                                                                   .build();
 
     public static final PipelineConfig TERRAIN = PipelineConfig.builder()
-                                                        .withShader(SPIRVUtils.ShaderKind.VERTEX_SHADER, "terrain/terrain")
-                                                        .withShader(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, "terrain/terrain")
+                                                        .withShader(SpirvCompiler.ShaderKind.VERTEX_SHADER, "terrain/terrain")
+                                                        .withShader(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, "terrain/terrain")
                                                         .addUB(TERRAIN_UB0)
                                                         .addUB(TERRAIN_UB1)
                                                         .addUB(TERRAIN_UB2)
@@ -46,8 +46,8 @@ public class PipelineConfigs {
                                                         .build();
 
     static final PipelineConfig TERRAIN_EARLY_Z_CONFIG = PipelineConfig.builder()
-                                                                       .withShader(SPIRVUtils.ShaderKind.VERTEX_SHADER, "terrain/terrain")
-                                                                       .withShader(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, "terrain_earlyZ/terrain_earlyZ")
+                                                                       .withShader(SpirvCompiler.ShaderKind.VERTEX_SHADER, "terrain/terrain")
+                                                                       .withShader(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, "terrain_earlyZ/terrain_earlyZ")
                                                                        .addUB(TERRAIN_UB0)
                                                                        .addUB(TERRAIN_UB1)
                                                                        .addUB(TERRAIN_UB2)

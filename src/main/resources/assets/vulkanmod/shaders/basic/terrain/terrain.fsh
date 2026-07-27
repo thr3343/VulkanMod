@@ -5,7 +5,7 @@
 
 layout(binding = 3) uniform sampler2D Sampler0;
 
-layout(binding = 1) uniform UBO {
+layout(binding = 1) uniform UB1 {
     vec4 FogColor;
     float FogEnvironmentalStart;
     float FogEnvironmentalEnd;

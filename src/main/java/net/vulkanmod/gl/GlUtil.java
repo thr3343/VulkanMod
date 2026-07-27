@@ -1,7 +1,7 @@
 package net.vulkanmod.gl;
 
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.shader.SPIRVUtils;
+import net.vulkanmod.vulkan.shader.SpirvCompiler;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -13,10 +13,10 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class GlUtil {
 
-    public static SPIRVUtils.ShaderKind extToShaderKind(String ext) {
+    public static SpirvCompiler.ShaderKind extToShaderKind(String ext) {
         return switch (ext) {
-            case ".vsh" -> SPIRVUtils.ShaderKind.VERTEX_SHADER;
-            case ".fsh" -> SPIRVUtils.ShaderKind.FRAGMENT_SHADER;
+            case ".vsh" -> SpirvCompiler.ShaderKind.VERTEX_SHADER;
+            case ".fsh" -> SpirvCompiler.ShaderKind.FRAGMENT_SHADER;
             default -> throw new RuntimeException("unknown shader type: " + ext);
         };
     }

@@ -60,6 +60,7 @@ dependencies {
 
 	includeNatives("org.lwjgl:lwjgl-vma")
 	includeNatives("org.lwjgl:lwjgl-shaderc")
+	includeNatives("org.lwjgl:lwjgl-spvc")
 
 	//MoltenVK
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))

@@ -60,8 +60,9 @@ public class DescriptorSets {
     }
 
     private void updateUniforms(UniformBuffer globalUB) {
-        int i = 0;
-        for (UBO ubo : pipeline.getBuffers()) {
+        for (int i = 0; i < pipeline.getBuffers().size(); ++i) {
+            var ubo = pipeline.getBuffers().get(i);
+
             // Prevent NPE in case UBO has no bound buffer slice
             if (ubo.getBufferSlice().getBuffer() == null) {
                 ubo.setUseGlobalBuffer(true);
@@ -90,8 +91,6 @@ public class DescriptorSets {
             }
 
             this.dynamicOffsets.put(i, offset);
-
-            ++i;
         }
     }
 

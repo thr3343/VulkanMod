@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
+import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.util.shaderc.ShadercIncludeResolveI;
 import org.lwjgl.util.shaderc.ShadercIncludeResult;
 import org.lwjgl.util.shaderc.ShadercIncludeResultReleaseI;
@@ -21,7 +22,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memASCII;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
-public class SPIRVUtils {
+public class SpirvCompiler {
     private static final boolean DEBUG = true;
     private static final boolean OPTIMIZATIONS = false;
 
@@ -36,10 +37,10 @@ public class SPIRVUtils {
     private static ObjectArrayList<String> includePaths;
 
     static {
-        initCompiler();
+        init();
     }
 
-    private static void initCompiler() {
+    private static void init() {
         compiler = shaderc_compiler_initialize();
 
         if (compiler == NULL) {
@@ -61,12 +62,15 @@ public class SPIRVUtils {
         shaderc_compile_options_set_target_env(options, shaderc_env_version_vulkan_1_2, VK12.VK_API_VERSION_1_2);
         shaderc_compile_options_set_include_callbacks(options, SHADER_INCLUDER, SHADER_RELEASER, pUserData);
 
+        Shaderc.shaderc_compile_options_set_auto_bind_uniforms(options, true);
+        Shaderc.shaderc_compile_options_set_auto_map_locations(options, true);
+
         includePaths = new ObjectArrayList<>();
         addIncludePath("/assets/vulkanmod/shaders/include/");
     }
 
     public static void addIncludePath(String path) {
-        URL url = SPIRVUtils.class.getResource(path);
+        URL url = SpirvCompiler.class.getResource(path);
 
         if (url != null)
             includePaths.add(url.toExternalForm());

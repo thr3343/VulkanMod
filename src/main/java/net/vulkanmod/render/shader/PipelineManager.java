@@ -7,10 +7,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineConfig;
-import net.vulkanmod.vulkan.shader.SPIRVUtils;
+import net.vulkanmod.vulkan.shader.*;
 
 import java.util.function.Function;
 
@@ -48,8 +45,8 @@ public abstract class PipelineManager {
 
         pipelineBuilder.applyConfig(config);
 
-        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(config.shaderPaths.get(SPIRVUtils.ShaderKind.VERTEX_SHADER))));
-        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(config.shaderPaths.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER))));
+        pipelineBuilder.setShaderSrc(SpirvCompiler.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(config.shaderPaths.get(SpirvCompiler.ShaderKind.VERTEX_SHADER))));
+        pipelineBuilder.setShaderSrc(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(config.shaderPaths.get(SpirvCompiler.ShaderKind.FRAGMENT_SHADER))));
 
         var pipeline = pipelineBuilder.createGraphicsPipeline();
 
@@ -68,8 +65,8 @@ public abstract class PipelineManager {
         var pipelineConfig = PipelineConfig.fromJson(configName, config);
         pipelineBuilder.applyConfig(pipelineConfig);
 
-        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(pipelineConfig.shaderPaths.get(SPIRVUtils.ShaderKind.VERTEX_SHADER))));
-        pipelineBuilder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(pipelineConfig.shaderPaths.get(SPIRVUtils.ShaderKind.FRAGMENT_SHADER))));
+        pipelineBuilder.setShaderSrc(SpirvCompiler.ShaderKind.VERTEX_SHADER, ShaderLoadUtil.loadShader(path, "%s.vsh".formatted(pipelineConfig.shaderPaths.get(SpirvCompiler.ShaderKind.VERTEX_SHADER))));
+        pipelineBuilder.setShaderSrc(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, ShaderLoadUtil.loadShader(path, "%s.fsh".formatted(pipelineConfig.shaderPaths.get(SpirvCompiler.ShaderKind.FRAGMENT_SHADER))));
 
         var pipeline = pipelineBuilder.createGraphicsPipeline();
 
