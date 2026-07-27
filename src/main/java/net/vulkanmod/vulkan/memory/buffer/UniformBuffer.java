@@ -7,7 +7,7 @@ import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
 public class UniformBuffer extends Buffer {
-    private final static int MIN_OFFSET_ALIGNMENT = (int) DeviceManager.deviceProperties.limits().minUniformBufferOffsetAlignment();
+    private final static int MIN_OFFSET_ALIGNMENT = (int) DeviceManager.deviceProperties().limits().minUniformBufferOffsetAlignment();
 
     public static int getAlignedSize(int uploadSize) {
         return align(uploadSize, MIN_OFFSET_ALIGNMENT);

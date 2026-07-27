@@ -34,7 +34,7 @@ public class Buffer {
 
         if (this.name != null) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                Vulkan.setDebugLabel(stack, VK_OBJECT_TYPE_BUFFER, this.id, this.name);
+                Vulkan.Debug.setDebugLabel(stack, VK_OBJECT_TYPE_BUFFER, this.id, this.name);
             }
         }
 

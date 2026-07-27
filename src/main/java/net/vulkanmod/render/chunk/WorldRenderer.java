@@ -347,6 +347,8 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(modelView, projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
+        Renderer.pushDebugSection("Terrain_" + renderType);
+
         Renderer renderer = Renderer.getInstance();
         GraphicsPipeline pipeline = PipelineManager.getTerrainShader(renderType);
         renderer.bindGraphicsPipeline(pipeline);
@@ -421,6 +423,8 @@ public class WorldRenderer {
             VRenderSystem.setModelOffset(0, 0, 0);
             renderer.pushConstants(pipeline);
         }
+
+        Renderer.popDebugSection();
 
         zone.close();
     }

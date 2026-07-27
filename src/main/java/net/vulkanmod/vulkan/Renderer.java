@@ -95,7 +95,7 @@ public class Renderer {
     private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
-    private static int imageIndex;
+    private static int imageIndex = 0;
     private static int lastReset = -1;
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
@@ -869,30 +869,11 @@ public class Renderer {
     }
 
     public static void pushDebugSection(String s) {
-        if (Vulkan.ENABLE_VALIDATION_LAYERS) {
-            VkCommandBuffer commandBuffer = INSTANCE.currentCmdBuffer;
-
-            try (MemoryStack stack = stackPush()) {
-                VkDebugUtilsLabelEXT markerInfo = VkDebugUtilsLabelEXT.calloc(stack);
-                markerInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
-                ByteBuffer string = stack.UTF8(s);
-                markerInfo.pLabelName(string);
-                vkCmdBeginDebugUtilsLabelEXT(commandBuffer, markerInfo);
-            }
-        }
+        Vulkan.Debug.pushDebugSection(INSTANCE.currentCmdBuffer, s);
     }
 
     public static void popDebugSection() {
-        if (Vulkan.ENABLE_VALIDATION_LAYERS) {
-            VkCommandBuffer commandBuffer = INSTANCE.currentCmdBuffer;
-
-            vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-        }
-    }
-
-    public static void popPushDebugSection(String s) {
-        popDebugSection();
-        pushDebugSection(s);
+        Vulkan.Debug.popDebugSection(INSTANCE.currentCmdBuffer);
     }
 
     public static int getFramesNum() {

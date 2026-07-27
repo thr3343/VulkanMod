@@ -323,7 +323,7 @@ public class MemoryManager {
 
     public String getHeapStats() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VmaBudget.Buffer vmaBudgets = VmaBudget.calloc(DeviceManager.memoryProperties.memoryHeapCount(), stack);
+            VmaBudget.Buffer vmaBudgets = VmaBudget.calloc(DeviceManager.memoryProperties().memoryHeapCount(), stack);
 
             vmaGetHeapBudgets(ALLOCATOR, vmaBudgets);
 

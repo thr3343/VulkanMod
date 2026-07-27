@@ -19,9 +19,9 @@ public class MemoryTypes {
 
     public static void createMemoryTypes() {
 
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
-            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+        for (int i = 0; i < DeviceManager.memoryProperties().memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties().memoryTypes(i);
+            VkMemoryHeap heap = DeviceManager.memoryProperties().memoryHeaps(memoryType.heapIndex());
             int propertyFlags = memoryType.propertyFlags();
 
             if (propertyFlags == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -37,9 +37,9 @@ public class MemoryTypes {
             return;
 
         // Could not find 1 or more MemoryTypes, need to use fallback
-        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
-            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
+        for (int i = 0; i < DeviceManager.memoryProperties().memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties().memoryTypes(i);
+            VkMemoryHeap heap = DeviceManager.memoryProperties().memoryHeaps(memoryType.heapIndex());
 
             // GPU mappable memory
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {

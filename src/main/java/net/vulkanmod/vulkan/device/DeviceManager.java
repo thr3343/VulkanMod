@@ -11,6 +11,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -34,10 +35,11 @@ public abstract class DeviceManager {
 
     public static Device device;
 
-    public static VkPhysicalDeviceProperties deviceProperties;
-    public static VkPhysicalDeviceMemoryProperties memoryProperties;
+    private static VkPhysicalDeviceProperties deviceProperties;
+    private static VkPhysicalDeviceMemoryProperties memoryProperties;
 
-    public static SurfaceProperties surfaceProperties;
+    private static Set<String> enabledExtensions;
+    private static SurfaceProperties surfaceProperties;
     public static boolean fullScreenExclusiveControl = false;
 
     static GraphicsQueue graphicsQueue;
@@ -89,7 +91,7 @@ public abstract class DeviceManager {
 
         List<Device> devices = new ObjectArrayList<>();
         for (Device device : availableDevices) {
-            if (isDeviceSuitable(device.physicalDevice)) {
+            if (isDeviceSuitable(device)) {
                 devices.add(device);
             }
         }
@@ -111,7 +113,7 @@ public abstract class DeviceManager {
             physicalDevice = DeviceManager.device.physicalDevice;
 
             // Get device properties
-            deviceProperties = device.properties;
+            deviceProperties = device.properties();
 
             memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
@@ -130,7 +132,7 @@ public abstract class DeviceManager {
         for (Device device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties().deviceType();
             if (deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
@@ -173,6 +175,10 @@ public abstract class DeviceManager {
             deviceVulkan11Features.sType$Default();
             deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
 
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+            deviceVulkan12Features.hostQueryReset(true);
+
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
             deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
@@ -186,12 +192,17 @@ public abstract class DeviceManager {
                 VRenderSystem.canSetLineWidth = true;
             }
 
+            if (device.availableFeatures12.samplerFilterMinmax()) {
+                deviceVulkan12Features.samplerFilterMinmax(true);
+            }
+
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType$Default();
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.pNext(deviceVulkan11Features);
+            createInfo.pNext(deviceVulkan12Features);
 
             if (Vulkan.DYNAMIC_RENDERING) {
                 VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
@@ -199,26 +210,24 @@ public abstract class DeviceManager {
                 dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
                 deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            }
 
-//                //Vulkan 1.3 dynamic rendering
-//                VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-//                deviceVulkan13Features.sType$Default();
-//                if(!deviceInfo.availableFeatures13.dynamicRendering())
-//                    throw new RuntimeException("Device does not support dynamic rendering feature.");
-//
-//                deviceVulkan13Features.dynamicRendering(true);
-//                createInfo.pNext(deviceVulkan13Features);
-//                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+            HashSet<String> enabledExtensions = new HashSet<>(Vulkan.REQUIRED_DEVICE_EXTENSIONS);
+
+            if (device.hasExtension("VK_KHR_portability_subset")) {
+                enabledExtensions.add("VK_KHR_portability_subset");
+            }
+
+            // TODO: checkpoint extension
+            if (device.hasExtension("VK_AMD_buffer_marker")) {
+                enabledExtensions.add("VK_AMD_buffer_marker");
+            } else if (device.hasExtension("VK_NV_device_diagnostic_checkpoints")) {
+                enabledExtensions.add("VK_NV_device_diagnostic_checkpoints");
             }
 
             fullScreenExclusiveControl = false;
-            List<String> enabledExtensions = new ArrayList<>(Vulkan.REQUIRED_EXTENSION);
             if (Vulkan.surfaceCapabilities2Supported) {
-                Set<String> availableExtensions = getAvailableExtension(stack, physicalDevice).stream()
-                        .map(VkExtensionProperties::extensionNameString)
-                        .collect(toSet());
-
-                if (availableExtensions.contains(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
+                if (device.hasExtension(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
                     enabledExtensions.add(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME);
                     fullScreenExclusiveControl = true;
                     Initializer.LOGGER.info("VK_EXT_full_screen_exclusive enabled: opting out of full screen exclusive control");
@@ -227,7 +236,11 @@ public abstract class DeviceManager {
 
             createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
 
-//            Configuration.DEBUG_FUNCTIONS.set(true);
+            if (device.hasExtension("VK_EXT_multi_draw")) {
+                enabledExtensions.add("VK_EXT_multi_draw");
+            }
+
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
@@ -240,6 +253,8 @@ public abstract class DeviceManager {
             transferQueue = new TransferQueue(stack, indices.transferFamily);
             presentQueue = new PresentQueue(stack, indices.presentFamily);
             computeQueue = new ComputeQueue(stack, indices.computeFamily);
+
+            DeviceManager.enabledExtensions = enabledExtensions;
         }
     }
 
@@ -247,7 +262,6 @@ public abstract class DeviceManager {
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
 
         if (Vulkan.ENABLE_VALIDATION_LAYERS) {
-
             MemoryStack stack = stackGet();
 
             PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 1);
@@ -262,32 +276,31 @@ public abstract class DeviceManager {
         return glfwExtensions;
     }
 
-    private static boolean isDeviceSuitable(VkPhysicalDevice device) {
+    private static boolean isDeviceSuitable(Device device) {
         try (MemoryStack stack = stackPush()) {
-            Queue.QueueFamilyIndices indices = findQueueFamilies(device);
+            Queue.QueueFamilyIndices indices = findQueueFamilies(device.physicalDevice);
 
-            VkExtensionProperties.Buffer availableExtensions = getAvailableExtension(stack, device);
+            VkExtensionProperties.Buffer availableExtensions = device.extensionProperties;
             boolean extensionsSupported = availableExtensions.stream()
-                    .map(VkExtensionProperties::extensionNameString)
-                    .collect(toSet())
-                    .containsAll(Vulkan.REQUIRED_EXTENSION);
+                                                             .map(VkExtensionProperties::extensionNameString)
+                                                             .collect(toSet())
+                                                             .containsAll(Vulkan.REQUIRED_DEVICE_EXTENSIONS);
 
             boolean swapChainAdequate = false;
 
             if (extensionsSupported) {
-                SurfaceProperties surfaceProperties = querySurfaceProperties(device, stack);
+                SurfaceProperties surfaceProperties = querySurfaceProperties(device.physicalDevice, stack);
                 swapChainAdequate = surfaceProperties.formats.hasRemaining() && surfaceProperties.presentModes.hasRemaining();
             }
 
-            VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.malloc(stack);
-            vkGetPhysicalDeviceFeatures(device, supportedFeatures);
+            VkPhysicalDeviceFeatures supportedFeatures = device.availableFeatures.features();
             boolean anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
 
             return indices.isSuitable() && extensionsSupported && swapChainAdequate;
         }
     }
 
-    private static VkExtensionProperties.Buffer getAvailableExtension(MemoryStack stack, VkPhysicalDevice device) {
+    public static VkExtensionProperties.Buffer getAvailableExtension(MemoryStack stack, VkPhysicalDevice device) {
         IntBuffer extensionCount = stack.ints(0);
         vkEnumerateDeviceExtensionProperties(device, (String) null, extensionCount, null);
 
@@ -301,7 +314,7 @@ public abstract class DeviceManager {
     // Nvidia performs best with 24 bit depth, while AMD is most performant with 32-bit float
     public static int findDepthFormat(boolean use24BitsDepthFormat) {
         int[] formats = use24BitsDepthFormat ? new int[]
-                {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
+                                               {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
                 : new int[]{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT};
 
         return findSupportedFormat(
@@ -350,7 +363,7 @@ public abstract class DeviceManager {
             stringBuilder.append("\t\tVulkan Version: %s\n".formatted(device.vkVersion));
 
             stringBuilder.append("\t\t");
-            var unsupportedExtensions = device.getUnsupportedExtensions(Vulkan.REQUIRED_EXTENSION);
+            var unsupportedExtensions = device.getUnsupportedExtensions(Vulkan.REQUIRED_DEVICE_EXTENSIONS);
             if (unsupportedExtensions.isEmpty()) {
                 stringBuilder.append("All required extensions are supported\n");
             } else {
@@ -385,8 +398,23 @@ public abstract class DeviceManager {
         return computeQueue;
     }
 
-    public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
+    public static VkPhysicalDeviceProperties deviceProperties() {
+        return deviceProperties;
+    }
 
+    public static VkPhysicalDeviceMemoryProperties memoryProperties() {
+        return memoryProperties;
+    }
+
+    public static Set<String> enabledExtensions() {
+        return enabledExtensions;
+    }
+
+    public static SurfaceProperties surfaceProperties() {
+        return surfaceProperties;
+    }
+
+    public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
         long surface = Vulkan.getSurface();
         SurfaceProperties details = new SurfaceProperties();
 
