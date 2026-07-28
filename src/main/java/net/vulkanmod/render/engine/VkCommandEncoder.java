@@ -26,7 +26,10 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
+import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
+import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -34,6 +37,7 @@ import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryStack;
@@ -559,9 +563,20 @@ public class VkCommandEncoder implements CommandEncoder {
             } else if (gpuBuffer.isClosed()) {
                 throw new IllegalStateException("Destination buffer is closed");
             } else {
-                ImageUtil.copyImageToBuffer(vkGpuTexture.getVulkanImage(), vkGpuBuffer.getBuffer(), mipLevel, width, height, xOffset, yOffset, dstOffset, width, height);
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
+                    VkCommandBuffer vkCommandBuffer = commandBuffer.getHandle();
+                    VulkanImage image = vkGpuTexture.getVulkanImage();
+                    Buffer buffer = vkGpuBuffer.getBuffer();
 
-                runnable.run();
+                    int prevLayout = image.getCurrentLayout();
+                    image.transitionImageLayout(stack, vkCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                    ImageUtil.copyImageToBuffer(stack, vkCommandBuffer, buffer.getId(), image.getId(), mipLevel, width, height, xOffset, yOffset, dstOffset, width, height);
+
+                    image.transitionImageLayout(stack, vkCommandBuffer, prevLayout);
+                }
+
+                MemoryManager.getInstance().addFrameOp(runnable);
             }
         } else {
             throw new IllegalArgumentException("Invalid mipLevel " + mipLevel + ", must be >= 0 and < " + gpuTexture.getMipLevels());

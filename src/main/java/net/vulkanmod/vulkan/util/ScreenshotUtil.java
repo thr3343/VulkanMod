@@ -22,66 +22,65 @@ public abstract class ScreenshotUtil {
         GpuTexture gpuTexture = renderTarget.getColorTexture();
         if (gpuTexture == null) {
             throw new IllegalStateException("Tried to capture screenshot of an incomplete framebuffer");
-        } else {
-            // Need to submit and wait cmds if screenshot was requested
-            // before the end of the frame
-            Renderer.getInstance().flushCmds();
+        }
 
-            int pixelSize = TextureFormat.RGBA8.pixelSize();
-            GpuBuffer gpuBuffer = RenderSystem.getDevice()
-                                              .createBuffer(() -> "Screenshot buffer", 9, width * height * pixelSize);
-            CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
-            RenderSystem.getDevice().createCommandEncoder().copyTextureToBuffer(gpuTexture, gpuBuffer, 0, () -> {
-                try (GpuBuffer.MappedView readView = commandEncoder.mapBuffer(gpuBuffer, true, false)) {
-                    NativeImage nativeImage = new NativeImage(width, height, false);
+        int pixelSize = TextureFormat.RGBA8.pixelSize();
+        GpuBuffer gpuBuffer = RenderSystem.getDevice().createBuffer(
+                () -> "Screenshot buffer",
+                GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_MAP_READ,
+                width * height * pixelSize);
 
-                    var colorAttachment = ((VkGpuTexture) Renderer.getInstance()
-                                                                  .getMainPass()
-                                                                  .getColorAttachment());
-                    boolean isBgraFormat = (colorAttachment.getVulkanImage().format == VK10.VK_FORMAT_B8G8R8A8_UNORM);
+        CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+        RenderSystem.getDevice().createCommandEncoder().copyTextureToBuffer(gpuTexture, gpuBuffer, 0, () -> {
+            try (GpuBuffer.MappedView readView = commandEncoder.mapBuffer(gpuBuffer, true, false)) {
+                NativeImage nativeImage = new NativeImage(width, height, false);
 
-                    int size = mipLevel * mipLevel;
+                var colorAttachment = ((VkGpuTexture) Renderer.getInstance()
+                                                              .getMainPass()
+                                                              .getColorAttachment());
+                boolean isBgraFormat = (colorAttachment.getVulkanImage().format == VK10.VK_FORMAT_B8G8R8A8_UNORM);
 
-                    for (int y = 0; y < height; y++) {
-                        for (int x = 0; x < width; x++) {
+                int size = mipLevel * mipLevel;
 
-                            if (mipLevel == 1) {
-                                int color = readView.data().getInt((x + y * width) * pixelSize);
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
 
-                                if (isBgraFormat) {
-                                    color = ColorUtil.BGRAtoRGBA(color);
-                                }
+                        if (mipLevel == 1) {
+                            int color = readView.data().getInt((x + y * width) * pixelSize);
 
-                                nativeImage.setPixelABGR(x, y, color | 0xFF000000);
-                            } else {
-                                int red = 0;
-                                int green = 0;
-                                int blue = 0;
-
-                                for (int x1 = 0; x1 < mipLevel; x1++) {
-                                    for (int y1 = 0; y1 < mipLevel; y1++) {
-                                        int color = readView.data().getInt(((x + x1) + (y + y1) * width) * pixelSize);
-
-                                        if (isBgraFormat) {
-                                            color = ColorUtil.BGRAtoRGBA(color);
-                                        }
-
-                                        red += ARGB.red(color);
-                                        green += ARGB.green(color);
-                                        blue += ARGB.blue(color);
-                                    }
-                                }
-
-                                nativeImage.setPixelABGR(x, y, ARGB.color(255, red / size, green / size, blue / size));
+                            if (isBgraFormat) {
+                                color = ColorUtil.BGRAtoRGBA(color);
                             }
+
+                            nativeImage.setPixelABGR(x, y, color | 0xFF000000);
+                        } else {
+                            int red = 0;
+                            int green = 0;
+                            int blue = 0;
+
+                            for (int x1 = 0; x1 < mipLevel; x1++) {
+                                for (int y1 = 0; y1 < mipLevel; y1++) {
+                                    int color = readView.data().getInt(((x + x1) + (y + y1) * width) * pixelSize);
+
+                                    if (isBgraFormat) {
+                                        color = ColorUtil.BGRAtoRGBA(color);
+                                    }
+
+                                    red += ARGB.red(color);
+                                    green += ARGB.green(color);
+                                    blue += ARGB.blue(color);
+                                }
+                            }
+
+                            nativeImage.setPixelABGR(x, y, ARGB.color(255, red / size, green / size, blue / size));
                         }
                     }
-
-                    consumer.accept(nativeImage);
                 }
 
-                gpuBuffer.close();
-            }, 0);
-        }
+                consumer.accept(nativeImage);
+            }
+
+            gpuBuffer.close();
+        }, 0);
     }
 }
