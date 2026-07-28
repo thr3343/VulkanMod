@@ -42,11 +42,11 @@ public class SamplerInfo {
     }
 
     public int getAddressModeU() {
-        return (this.encodedState >> ADDRESS_MODE_U_OFFSET) & ADDRESS_MODE_BITS;
+        return (this.encodedState >> ADDRESS_MODE_U_OFFSET) & ADDRESS_MODE_MASK;
     }
 
     public int getAddressModeV() {
-        return (this.encodedState >> ADDRESS_MODE_V_OFFSET) & ADDRESS_MODE_BITS;
+        return (this.encodedState >> ADDRESS_MODE_V_OFFSET) & ADDRESS_MODE_MASK;
     }
 
     public int getMinFilter() {
@@ -70,7 +70,7 @@ public class SamplerInfo {
     }
 
     public int getCompareOp() {
-        return (this.encodedState >> COMPARE_ENABLED_OFFSET) & COMPARE_OP_BITS;
+        return (this.encodedState >> COMPARE_OP_OFFSET) & COMPARE_OP_MASK;
     }
 
     public boolean hasReductionMode() {
@@ -78,7 +78,7 @@ public class SamplerInfo {
     }
 
     public int getReductionMode() {
-        return (this.encodedState >> REDUCTION_MODE_OFFSET) & REDUCTION_MODE_BITS;
+        return (this.encodedState >> REDUCTION_MODE_OFFSET) & REDUCTION_MODE_MASK;
     }
 
     public int getMaxAnisotropy() {

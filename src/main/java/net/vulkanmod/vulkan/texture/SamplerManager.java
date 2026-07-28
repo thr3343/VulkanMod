@@ -18,6 +18,10 @@ public abstract class SamplerManager {
     public static final int REDUCTION_MODE_BITS = 2;
     public static final int COMPARE_OP_BITS = 3;
 
+    public static final int ADDRESS_MODE_MASK = 3;
+    public static final int REDUCTION_MODE_MASK = 3;
+    public static final int COMPARE_OP_MASK = 7;
+
     public static final int ADDRESS_MODE_U_OFFSET = 0;
     public static final int ADDRESS_MODE_V_OFFSET = 2;
     public static final int MIN_FILTER_OFFSET = 4;
@@ -127,16 +131,16 @@ public abstract class SamplerManager {
                                boolean compare, int compareOp,
                                int reductionMode)
     {
-        int encodedState = (addressModeU & ADDRESS_MODE_BITS) << ADDRESS_MODE_U_OFFSET;
-        encodedState |= (addressModeV & ADDRESS_MODE_BITS) << ADDRESS_MODE_V_OFFSET;
+        int encodedState = (addressModeU & ADDRESS_MODE_MASK) << ADDRESS_MODE_U_OFFSET;
+        encodedState |= (addressModeV & ADDRESS_MODE_MASK) << ADDRESS_MODE_V_OFFSET;
         encodedState |= (minFilter & 1) << MIN_FILTER_OFFSET;
         encodedState |= (magFilter & 1) << MAG_FILTER_OFFSET;
         encodedState |= (mipmapMode & 1) << MIPMAP_MODE_OFFSET;
         encodedState |= ((anisotropy ? 1 : 0) & 1) << ANISOTROPY_OFFSET;
         encodedState |= ((compare ? 1 : 0) & 1) << COMPARE_ENABLED_OFFSET;
-        encodedState |= (compareOp & COMPARE_OP_BITS) << COMPARE_OP_OFFSET;
+        encodedState |= (compareOp & COMPARE_OP_MASK) << COMPARE_OP_OFFSET;
         encodedState |= (reductionMode != -1 ? 1 : 0) << REDUCTION_MODE_ENABLE_OFFSET;
-        encodedState |= (reductionMode & REDUCTION_MODE_BITS) << REDUCTION_MODE_OFFSET;
+        encodedState |= (reductionMode & REDUCTION_MODE_MASK) << REDUCTION_MODE_OFFSET;
 
         return encodedState;
     }
