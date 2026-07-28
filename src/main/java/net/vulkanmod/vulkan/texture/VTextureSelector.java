@@ -36,6 +36,18 @@ public abstract class VTextureSelector {
         levels[i] = -1;
     }
 
+    public static void bindTexture(int i, VulkanImage texture, int viewFormat) {
+        if (i < 0 || i >= SIZE) {
+            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, %d]", i, SIZE - 1));
+            return;
+        }
+
+        texture.setViewFormat(viewFormat);
+
+        boundTextures[i] = texture;
+        levels[i] = -1;
+    }
+
     public static void bindImage(int i, VulkanImage texture, int level) {
         if (i < 0 || i > 7) {
             Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, %d]", i, SIZE - 1));
@@ -134,6 +146,10 @@ public abstract class VTextureSelector {
 
     public static VulkanImage getBoundTexture(int i) {
         return boundTextures[i];
+    }
+
+    public static VulkanImage[] getBoundTextures() {
+        return boundTextures;
     }
 
     public static VulkanImage getWhiteTexture() {
