@@ -388,9 +388,6 @@ public class WorldRenderer {
         final var commandBuffer = Renderer.getCommandBuffer();
         Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer, indexBuffer.indexType.value);
 
-        UBO sectionData = pipeline.getUBO(2);
-        sectionData.setUseGlobalBuffer(false);
-
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(renderType)) {
