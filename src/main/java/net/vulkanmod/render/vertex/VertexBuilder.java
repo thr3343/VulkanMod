@@ -78,9 +78,9 @@ public interface VertexBuilder {
         public static final float UV_CONV_MUL = 32768.0f;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET_CONV);
+            final short sX = Float.floatToFloat16(x + POS_OFFSET);
+            final short sY = Float.floatToFloat16(y + POS_OFFSET);
+            final short sZ = Float.floatToFloat16(z + POS_OFFSET);
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);
@@ -97,9 +97,9 @@ public interface VertexBuilder {
 
         @Override
         public void position(long ptr, float x, float y, float z) {
-            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET_CONV);
-            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET_CONV);
+            final short sX = Float.floatToFloat16(x + POS_OFFSET);
+            final short sY = Float.floatToFloat16(x + POS_OFFSET);
+            final short sZ = Float.floatToFloat16(x + POS_OFFSET);
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);
