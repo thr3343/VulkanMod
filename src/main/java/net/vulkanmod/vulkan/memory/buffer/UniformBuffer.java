@@ -5,6 +5,7 @@ import net.vulkanmod.vulkan.memory.MemoryType;
 
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK12.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 public class UniformBuffer extends Buffer {
     private final static int MIN_OFFSET_ALIGNMENT = (int) DeviceManager.deviceProperties().limits().minUniformBufferOffsetAlignment();
@@ -14,7 +15,7 @@ public class UniformBuffer extends Buffer {
     }
 
     public UniformBuffer(int size, MemoryType memoryType) {
-        super("Uniform buffer", VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryType);
+        super("Uniform buffer", VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, memoryType);
         this.createBuffer(size);
     }
 

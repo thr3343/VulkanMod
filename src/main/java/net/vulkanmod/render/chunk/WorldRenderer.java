@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3d;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.*;
 
@@ -384,7 +385,8 @@ public class WorldRenderer {
         float fadeTimeInv = fadeTime > 0 ? 1 / (fadeTime * 1000) : 1;
 
         IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
-        Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer, indexBuffer.indexType.value);
+        final var commandBuffer = Renderer.getCommandBuffer();
+        Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer, indexBuffer.indexType.value);
 
         UBO sectionData = pipeline.getUBO(2);
         sectionData.setUseGlobalBuffer(false);
@@ -394,6 +396,8 @@ public class WorldRenderer {
         if (allowedRenderTypes.contains(renderType)) {
             renderType.setCutoutUniform();
 
+            renderer.uploadAndBindUBOs(pipeline);
+
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
@@ -401,12 +405,9 @@ public class WorldRenderer {
 
                 if (drawBuffers.getAreaBuffer(renderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, renderType,
-                                            sectionData,
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, renderType,
                                             camX, camY, camZ,
                                             currentTimeMs, fadeTimeMs, fadeTimeInv);
-
-                    renderer.uploadAndBindUBOs(pipeline);
 
                     if (indirectDraw) {
                         drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, renderType);

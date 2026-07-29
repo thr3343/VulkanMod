@@ -20,10 +20,10 @@
             { "name": "TextureSize", "type": "int", "count": 2 },
             { "name": "TexelSize", "type": "float", "count": 2 },
             { "name": "UseRgss", "type": "int", "count": 1 }
-        ] },
-        { "type": "vertex", "binding": 2, "size": 4096 }
+        ] }
     ],
     "PushConstants": [
+        { "name": "ab", "type": "int", "count": 2, "values": [ 0.0, 0.0 ] },
         { "name": "ModelOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
     ]
 }
