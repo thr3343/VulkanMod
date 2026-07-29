@@ -22,13 +22,6 @@ public enum TerrainRenderType {
 
     private static Function<TerrainRenderType, TerrainRenderType> remapper;
 
-    static {
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT);
-        SEMI_COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-
-        COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-    }
-
     public final float alphaCutout;
 
     TerrainRenderType(float alphaCutout) {

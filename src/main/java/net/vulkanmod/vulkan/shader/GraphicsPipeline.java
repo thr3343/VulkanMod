@@ -406,6 +406,12 @@ public class GraphicsPipeline extends Pipeline {
 
                         offset += 2;
                     }
+                    if (type == VertexFormatElement.Type.USHORT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R16_UINT);
+                        posDescription.offset(offset);
+
+                        offset += 2;
+                    }
                     else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R32_SINT);
                         posDescription.offset(offset);
