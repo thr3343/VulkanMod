@@ -17,8 +17,6 @@ layout (buffer_reference, buffer_reference_align = 2048) buffer restrict readonl
     float SectionFadeFactors[512];
 };
 
-// TODO: Check for perf regressions from scalar (Very unlikely)
-
 layout (push_constant, scalar) uniform pushConstant {
     restrict ChunkAreaInfos chunkAreaInfo;
     vec3 ModelOffset;
@@ -37,7 +35,7 @@ layout (location = 4) out flat float fadeFactor;
 
 #ifdef COMPRESSED_VERTEX
     layout (location = 0) in vec3 Position;
-    layout (location = 1) in int Light;
+    layout (location = 1) in uint Light;
     layout (location = 2) in uvec2 UV0;
     layout (location = 3) in uint PackedColor;
 #else
