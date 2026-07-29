@@ -179,6 +179,8 @@ public abstract class DeviceManager {
             VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
             deviceVulkan12Features.sType$Default();
             deviceVulkan12Features.timelineSemaphore(true); // Mandatory in VK12
+            deviceVulkan12Features.bufferDeviceAddress(true); // Should be safe to raise min reqs: BDA has very high support even w/o VK1.3
+            deviceVulkan12Features.scalarBlockLayout(true);
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();

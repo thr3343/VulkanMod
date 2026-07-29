@@ -3,7 +3,7 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 2) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UBO {
     vec4 FogColor;
@@ -16,7 +16,7 @@ layout(binding = 1) uniform UBO {
     float AlphaCutout;
     ivec2 TextureSize;
     vec2 TexelSize;
-    int UseRgss;
+    bool UseRgss;
 };
 
 vec4 sampleNearest(sampler2D sampler1, vec2 uv, vec2 pixelSize, vec2 du, vec2 dv, vec2 texelScreenSize) {
@@ -100,7 +100,7 @@ layout (location = 4) in flat float fadeFactor;
 layout (location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
+    vec4 color = (UseRgss ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
     color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
     if (color.a < AlphaCutout) {
         discard;

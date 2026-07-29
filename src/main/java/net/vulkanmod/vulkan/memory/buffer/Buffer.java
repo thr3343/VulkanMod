@@ -4,9 +4,12 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK12;
+import org.lwjgl.vulkan.VkBufferDeviceAddressInfo;
 
 import java.nio.ByteBuffer;
 
+import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_BUFFER;
 
 public class Buffer {
@@ -22,6 +25,7 @@ public class Buffer {
     protected long offset;
 
     protected long dataPtr;
+    protected long ptr;
 
     public Buffer(String name, int usage, MemoryType type) {
         this.name = name;
@@ -40,6 +44,25 @@ public class Buffer {
 
         if (this.type.mappable()) {
             this.dataPtr = MemoryManager.getInstance().Map(this.allocation).get(0);
+        }
+
+        this.ptr = getBufferAddress();
+    }
+
+    private long getBufferAddress() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            final boolean canUseAddress = (usage & VK12.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0;
+
+            final var bufferAddressInfo = VkBufferDeviceAddressInfo.calloc(stack);
+            bufferAddressInfo.sType$Default();
+            bufferAddressInfo.buffer(id);
+
+            final long ptr = canUseAddress ? VK12.vkGetBufferDeviceAddress(Vulkan.getVkDevice(), bufferAddressInfo) : VK_NULL_HANDLE;
+
+            if (canUseAddress && ptr == VK_NULL_HANDLE) throw new RuntimeException();
+
+            return ptr;
         }
     }
 
@@ -98,6 +121,10 @@ public class Buffer {
 
     public long getDataPtr() {
         return dataPtr;
+    }
+
+    public long getPtr() {
+        return ptr;
     }
 
     public void setBufferSize(long size) {

@@ -3,35 +3,28 @@
 #include "light.glsl"
 #include "fog.glsl"
 
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : require
+
 layout (binding = 0) uniform UniformBufferObject {
     mat4 MVP;
-    int CurrentTime;
 };
 
-layout(binding = 1) uniform UBO {
-    vec4 FogColor;
-    float FogEnvironmentalStart;
-    float FogEnvironmentalEnd;
-    float FogRenderDistanceStart;
-    float FogRenderDistanceEnd;
-    float FogSkyEnd;
-    float FogCloudsEnd;
-    float AlphaCutout;
-    ivec2 TextureSize;
-    vec2 TexelSize;
-    int UseRgss;
-};
+// Used massive PoT alignment in case of potential perf benefits with aligned loads
 
-layout (binding = 2) uniform UBO2 {
+layout (buffer_reference, buffer_reference_align = 4096) buffer restrict readonly ChunkAreaInfos {
     ivec4 SectionOffsets[128];
     vec4 SectionFadeFactors[128];
 };
 
-layout (push_constant) uniform pushConstant {
+// TODO: Check for perf regressions from scalar (Very unlikely)
+
+layout (push_constant, scalar) uniform pushConstant {
+    restrict ChunkAreaInfos chunkAreaInfo;
     vec3 ModelOffset;
 };
 
-layout (binding = 4) uniform sampler2D Sampler2;
+layout (binding = 3) uniform sampler2D Sampler2;
 
 
 layout (location = 0) out vec4 vertexColor;
@@ -59,7 +52,7 @@ const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
 
 vec3 getVertexPosition() {
-    const int encOffset = SectionOffsets[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    const int encOffset = chunkAreaInfo.SectionOffsets[gl_BaseInstance >> 2][gl_BaseInstance & 3];
     const vec3 baseOffset = bitfieldExtract(ivec3(encOffset) >> ivec3(0, 16, 8), 0, 8);
 
     #ifdef COMPRESSED_VERTEX
@@ -81,7 +74,7 @@ void main() {
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
 
-    fadeFactor = SectionFadeFactors[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    fadeFactor = chunkAreaInfo.SectionFadeFactors[gl_BaseInstance >> 2][gl_BaseInstance & 3];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;
