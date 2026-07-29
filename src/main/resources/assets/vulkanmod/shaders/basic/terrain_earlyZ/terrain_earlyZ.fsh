@@ -4,7 +4,8 @@ layout(early_fragment_tests) in;
 
 #include "light.glsl"
 #include "fog.glsl"
-
+#extension GL_KHR_shader_subgroup_quad : require
+#extension GL_KHR_shader_subgroup_ballot : require
 layout(binding = 2) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UBO {
@@ -37,7 +38,7 @@ vec4 sampleNearest(sampler2D sampler1, vec2 uv, vec2 pixelSize, vec2 du, vec2 dv
 vec4 sampleNearest(sampler2D source, vec2 uv, vec2 pixelSize) {
     vec2 du = dFdx(uv);
     vec2 dv = dFdy(uv);
-    vec2 texelScreenSize = sqrt(du * du + dv * dv);
+    vec2 texelScreenSize = subgroupBroadcastFirst(sqrt(du * du + dv * dv));
     return sampleNearest(source, uv, pixelSize, du, dv, texelScreenSize);
 }
 
@@ -103,6 +104,6 @@ layout (location = 0) out vec4 fragColor;
 void main() {
 //    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
     vec4 color = (UseRgss ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
-    color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
+    color = mix(FogColor * vec4(1, 1, 1, color.a), color, subgroupBroadcastFirst(fadeFactor));
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }
