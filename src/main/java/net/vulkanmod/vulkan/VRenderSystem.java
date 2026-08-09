@@ -30,14 +30,15 @@ public abstract class VRenderSystem {
 
     public static boolean depthTest = true;
     public static boolean depthMask = true;
-    public static int depthFun = 515;
+    public static int depthFun = VK_COMPARE_OP_LESS_OR_EQUAL;
     public static int topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     public static int polygonMode = VK_POLYGON_MODE_FILL;
     public static boolean canSetLineWidth = false;
 
     public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 
-    public static boolean cull = true;
+    public static int frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    public static int cullMode = VK_CULL_MODE_BACK_BIT;
 
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
@@ -237,6 +238,14 @@ public abstract class VRenderSystem {
         depthMask = b;
     }
 
+    public static void setPrimitiveTopology(int mode) {
+        VRenderSystem.topology = mode;
+    }
+
+    public static void setPolygonMode(int mode) {
+        VRenderSystem.polygonMode = mode;
+    }
+
     public static void setPrimitiveTopologyGL(final int mode) {
         VRenderSystem.topology = switch (mode) {
             case GL11.GL_LINES, GL11.GL_LINE_STRIP  -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
@@ -274,15 +283,20 @@ public abstract class VRenderSystem {
     }
 
     public static void enableCull() {
-        cull = true;
+        cullMode = VK_CULL_MODE_BACK_BIT;
     }
 
     public static void disableCull() {
-        cull = false;
+        cullMode = VK_CULL_MODE_NONE;
     }
 
-    public static void depthFunc(int depthFun) {
+    public static void setDepthFun(int depthFun) {
         VRenderSystem.depthFun = depthFun;
+    }
+
+    public static void glDepthFun(int depthFun) {
+        int vkDepthFun = PipelineState.DepthState.glToVulkan(depthFun);
+        setDepthFun(vkDepthFun);
     }
 
     public static void enableBlend() {
@@ -297,12 +311,31 @@ public abstract class VRenderSystem {
         PipelineState.blendInfo.setBlendFunction(srcFactor, dstFactor);
     }
 
-    public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
-        PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+    public static void blendFuncSeparate(int srcFactorColor, int dstFactorColor, int srcFactorAlpha, int dstFactorAlpha) {
+        PipelineState.blendInfo.setBlendFuncSeparate(srcFactorColor, dstFactorColor, srcFactorAlpha, dstFactorAlpha);
     }
 
     public static void blendOp(int op) {
         PipelineState.blendInfo.setBlendOp(op);
+    }
+
+    public static void glBlendFunc(int srcFactor, int dstFactor) {
+        int vkSrcFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(srcFactor);
+        int vkDstFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(dstFactor);
+        PipelineState.blendInfo.setBlendFunction(vkSrcFactor, vkDstFactor);
+    }
+
+    public static void glBlendFuncSeparate(int srcFactorColor, int dstFactorColor, int srcFactorAlpha, int dstFactorAlpha) {
+        int vkColorSrcFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(srcFactorColor);
+        int vkColorDstFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(dstFactorColor);
+        int vkAlphaSrcFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(srcFactorAlpha);
+        int vkAlphaDstFactor = PipelineState.BlendInfo.glToVulkanBlendFactor(dstFactorAlpha);
+        PipelineState.blendInfo.setBlendFuncSeparate(vkColorSrcFactor, vkColorDstFactor, vkAlphaSrcFactor, vkAlphaDstFactor);
+    }
+
+    public static void glBlendOp(int op) {
+        int vkBlendOp = PipelineState.BlendInfo.glToVulkanBlendOp(op);
+        PipelineState.blendInfo.setBlendOp(vkBlendOp);
     }
 
     public static void enableColorLogicOp() {
@@ -313,8 +346,12 @@ public abstract class VRenderSystem {
         logicOp = false;
     }
 
-    public static void logicOp(int glLogicOp) {
-        logicOpFun = glLogicOp;
+    public static void setLogicOpFun(int logicOpFun) {
+        VRenderSystem.logicOpFun = logicOpFun;
+    }
+
+    public static void glLogicOp(int glLogicOp) {
+        setLogicOpFun(PipelineState.LogicOpState.glToVulkan(glLogicOp));
     }
 
     public static void polygonOffset(float slope, float biasConstant) {

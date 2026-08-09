@@ -37,7 +37,7 @@ public class PipelineState {
     }
 
     public static int getAssemblyRasterState() {
-        return AssemblyRasterState.encode(VRenderSystem.cull, VRenderSystem.topology, VRenderSystem.polygonMode);
+        return AssemblyRasterState.encode(VRenderSystem.cullMode, VRenderSystem.frontFace, VRenderSystem.topology, VRenderSystem.polygonMode);
     }
 
     public static int getDepthState() {
@@ -120,8 +120,10 @@ public class PipelineState {
         public int dstAlphaFactor;
         public int blendOp;
 
-        public BlendInfo(boolean enabled, int srcRgbFactor, int dstRgbFactor, int srcAlphaFactor, int dstAlphaFactor,
-                         int blendOp) {
+        public BlendInfo(boolean enabled, int srcRgbFactor, int dstRgbFactor,
+                         int srcAlphaFactor, int dstAlphaFactor,
+                         int blendOp
+        ) {
             this.enabled = enabled;
             this.srcRgbFactor = srcRgbFactor;
             this.dstRgbFactor = dstRgbFactor;
@@ -130,24 +132,22 @@ public class PipelineState {
             this.blendOp = blendOp;
         }
 
-        /* gl to Vulkan conversion */
         public void setBlendFunction(int sourceFactor, int destFactor) {
-            this.srcRgbFactor = glToVulkanBlendFactor(sourceFactor);
-            this.srcAlphaFactor = glToVulkanBlendFactor(sourceFactor);
-            this.dstRgbFactor = glToVulkanBlendFactor(destFactor);
-            this.dstAlphaFactor = glToVulkanBlendFactor(destFactor);
+            this.srcRgbFactor = sourceFactor;
+            this.srcAlphaFactor = sourceFactor;
+            this.dstRgbFactor = destFactor;
+            this.dstAlphaFactor = destFactor;
         }
 
-        /* gl to Vulkan conversion */
         public void setBlendFuncSeparate(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
-            this.srcRgbFactor = glToVulkanBlendFactor(srcRgb);
-            this.srcAlphaFactor = glToVulkanBlendFactor(srcAlpha);
-            this.dstRgbFactor = glToVulkanBlendFactor(dstRgb);
-            this.dstAlphaFactor = glToVulkanBlendFactor(dstAlpha);
+            this.srcRgbFactor = srcRgb;
+            this.srcAlphaFactor = srcAlpha;
+            this.dstRgbFactor = dstRgb;
+            this.dstAlphaFactor = dstAlpha;
         }
 
         public void setBlendOp(int i) {
-            this.blendOp = glToVulkanBlendOp(i);
+            this.blendOp = i;
         }
 
 
@@ -155,7 +155,7 @@ public class PipelineState {
             return BlendState.getState(this);
         }
 
-        private static int glToVulkanBlendOp(int value) {
+        public static int glToVulkanBlendOp(int value) {
             return switch (value) {
                 case GL33.GL_FUNC_ADD -> VK_BLEND_OP_ADD;
                 case GL33.GL_MIN -> VK_BLEND_OP_MIN;
@@ -166,7 +166,7 @@ public class PipelineState {
             };
         }
 
-        private static int glToVulkanBlendFactor(int value) {
+        public static int glToVulkanBlendFactor(int value) {
             return switch (value) {
                 case GL11.GL_ONE -> VK_BLEND_FACTOR_ONE;
                 case GL11.GL_ZERO -> VK_BLEND_FACTOR_ZERO;
@@ -252,9 +252,7 @@ public class PipelineState {
             return (i & ENABLE_BIT) != 0;
         }
 
-        public static int encodeLogicOpFun(int glFun) {
-            int fun = glToVulkan(glFun);
-
+        public static int encodeLogicOpFun(int fun) {
             return fun << FUN_OFFSET;
         }
 
@@ -288,6 +286,7 @@ public class PipelineState {
 
     public abstract static class AssemblyRasterState {
         public static final int POLYGON_MODE_MASK = 7;
+        public static final int POLYGON_MODE_OFFSET = 0;
 
         public static final int TOPOLOGY_OFFSET = 3;
         public static final int TOPOLOGY_BITS = 4;
@@ -297,6 +296,10 @@ public class PipelineState {
         public static final int CULL_MODE_BITS = 2;
         public static final int CULL_MODE_MASK = 0b11;
 
+        public static final int FRONT_FACE_OFFSET = CULL_MODE_OFFSET + CULL_MODE_BITS;
+        public static final int FRONT_FACE_BITS = 1;
+        public static final int FRONT_FACE_MASK = 0b1;
+
         public static int encode(boolean cull, int topology, int polygonMode) {
             int state = (polygonMode | (topology << TOPOLOGY_OFFSET));
             state |= ((cull ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE) << CULL_MODE_OFFSET);
@@ -304,12 +307,41 @@ public class PipelineState {
             return state;
         }
 
+        public static int encode(int cullMode, int frontFace, int topology, int polygonMode) {
+            int state = encodePolygonMode(polygonMode);
+            state |= encodeTopology(topology);
+            state |= encodeCullMode(cullMode);
+            state |= encodeFrontFace(frontFace);
+
+            return state;
+        }
+
+        public static int encodeFrontFace(int ff) {
+            return (ff & FRONT_FACE_MASK) << FRONT_FACE_OFFSET;
+        }
+
+        public static int decodeFrontFace(int state) {
+            return (state >>> FRONT_FACE_MASK) & FRONT_FACE_OFFSET;
+        }
+
+        public static int encodeTopology(int topology) {
+            return (topology & TOPOLOGY_MASK) << TOPOLOGY_OFFSET;
+        }
+
         public static int decodeTopology(int state) {
             return (state >>> TOPOLOGY_OFFSET) & TOPOLOGY_MASK;
         }
 
+        public static int encodePolygonMode(int pm) {
+            return (pm & POLYGON_MODE_MASK) << POLYGON_MODE_OFFSET;
+        }
+
         public static int decodePolygonMode(int state) {
-            return state & POLYGON_MODE_MASK;
+            return (state >>> POLYGON_MODE_OFFSET) & POLYGON_MODE_MASK;
+        }
+
+        public static int encodeCullMode(int cm) {
+            return (cm & CULL_MODE_MASK) << CULL_MODE_OFFSET;
         }
 
         public static int decodeCullMode(int state) {
@@ -343,9 +375,7 @@ public class PipelineState {
             return (i & DEPTH_MASK_BIT) != 0;
         }
 
-        public static int encodeDepthFun(int glFun) {
-            int fun = glToVulkan(glFun);
-
+        public static int encodeDepthFun(int fun) {
             return fun << DEPTH_FUN_OFFSET;
         }
 
@@ -353,7 +383,7 @@ public class PipelineState {
             return state >>> DEPTH_FUN_OFFSET;
         }
 
-        private static int glToVulkan(int value) {
+        public static int glToVulkan(int value) {
             return switch (value) {
                 case GL11.GL_NEVER -> VK_COMPARE_OP_NEVER;
                 case GL11.GL_LESS -> VK_COMPARE_OP_LESS;

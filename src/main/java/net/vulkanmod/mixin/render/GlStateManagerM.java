@@ -55,7 +55,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _blendFuncSeparate(int i, int j, int k, int l) {
         RenderSystem.assertOnRenderThread();
-        VRenderSystem.blendFuncSeparate(i, j, k, l);
+        VRenderSystem.glBlendFuncSeparate(i, j, k, l);
 
     }
 
@@ -199,7 +199,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _depthFunc(int i) {
         RenderSystem.assertOnRenderThread();
-        VRenderSystem.depthFunc(i);
+        VRenderSystem.glDepthFun(i);
     }
 
     /**
@@ -262,7 +262,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _logicOp(int i) {
         RenderSystem.assertOnRenderThread();
-        VRenderSystem.logicOp(i);
+        VRenderSystem.glLogicOp(i);
     }
 
     /**

@@ -135,9 +135,9 @@ public class CloudRenderer {
 
         GraphicsPipeline pipeline = PipelineManager.getCloudsPipeline();
         VRenderSystem.enableBlend();
-        VRenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+        VRenderSystem.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
         VRenderSystem.enableDepthTest();
-        VRenderSystem.depthFunc(GL11.GL_LEQUAL);
+        VRenderSystem.glDepthFun(GL11.GL_LEQUAL);
         GlStateManager._enableDepthTest();
         GlStateManager._depthMask(true);
         GlStateManager._colorMask(true, true, true, true);

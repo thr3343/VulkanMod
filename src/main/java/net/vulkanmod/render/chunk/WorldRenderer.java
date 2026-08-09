@@ -48,6 +48,7 @@ import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
@@ -331,11 +332,11 @@ public class WorldRenderer {
             GlStateManager._disableBlend();
         } else {
             GlStateManager._enableBlend();
-            VRenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            VRenderSystem.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
         }
 
         VRenderSystem.enableCull();
-        VRenderSystem.depthFunc(GL11.GL_LEQUAL);
+        VRenderSystem.glDepthFun(GL11.GL_LEQUAL);
 
         GlStateManager._enableDepthTest();
         GlStateManager._depthMask(true);
