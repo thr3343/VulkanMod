@@ -29,6 +29,7 @@ public class Config {
 
     public boolean backFaceCulling = true;
     public boolean textureAnimations = true;
+    public boolean fastTex = false;
 
     public void write() {
         if (!Files.exists(CONFIG_PATH.getParent())) {

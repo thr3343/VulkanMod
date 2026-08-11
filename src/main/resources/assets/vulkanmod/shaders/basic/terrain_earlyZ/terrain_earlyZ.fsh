@@ -1,7 +1,7 @@
 #version 450
 
 layout(early_fragment_tests) in;
-
+layout(constant_id = 0) const bool FAST_TEX = false;
 #include "light.glsl"
 #include "fog.glsl"
 #extension GL_KHR_shader_subgroup_quad : require
@@ -102,8 +102,13 @@ layout (location = 4) in flat float fadeFactor;
 layout (location = 0) out vec4 fragColor;
 
 void main() {
-//    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
-    vec4 color = (UseRgss ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
+    vec4 color;
+
+    if (FAST_TEX)
+        color = texture(Sampler0, texCoord0) * vertexColor;
+    else
+        color = (UseRgss ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
+
     color = mix(FogColor * vec4(1, 1, 1, color.a), color, subgroupBroadcastFirst(fadeFactor));
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }

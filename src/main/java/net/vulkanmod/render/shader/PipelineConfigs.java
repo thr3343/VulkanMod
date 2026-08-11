@@ -3,6 +3,8 @@ package net.vulkanmod.render.shader;
 import net.vulkanmod.vulkan.shader.PipelineConfig;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
+import java.util.EnumSet;
+
 import static org.lwjgl.vulkan.VK10.*;
 
 public class PipelineConfigs {
@@ -38,6 +40,7 @@ public class PipelineConfigs {
                                                         .setPushConstants(TERRAIN_PC)
                                                         .addImageDescriptor(2, "sampler2D", "Sampler0", 0)
                                                         .addImageDescriptor(3, "sampler2D", "LightTexture", 2)
+                                                        .setSpecConstants(EnumSet.of(SPIRVUtils.SpecConstant.FAST_TEX))
                                                         .build();
 
     static final PipelineConfig TERRAIN_EARLY_Z_CONFIG = PipelineConfig.builder()
@@ -48,6 +51,7 @@ public class PipelineConfigs {
                                                                        .setPushConstants(TERRAIN_PC)
                                                                        .addImageDescriptor(2, "sampler2D", "Sampler0", 0)
                                                                        .addImageDescriptor(3, "sampler2D", "LightTexture", 2)
+                                                                       .setSpecConstants(EnumSet.of(SPIRVUtils.SpecConstant.FAST_TEX))
                                                                        .build();
 
 }

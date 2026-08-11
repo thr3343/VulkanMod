@@ -19,10 +19,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -50,6 +47,8 @@ public abstract class Pipeline {
             return pPipelineCache.get(0);
         }
     }
+
+    public abstract void checkSpecConstantState(EnumSet<SPIRVUtils.SpecConstant> specConstant);
 
     public static void destroyPipelineCache() {
         vkDestroyPipelineCache(DEVICE, PIPELINE_CACHE, null);
@@ -147,10 +146,10 @@ public abstract class Pipeline {
     }
 
     public void scheduleCleanUp() {
-        MemoryManager.getInstance().addFrameOp(this::cleanUp);
+        MemoryManager.getInstance().addFrameOp(() -> cleanUp(true));
     }
 
-    public abstract void cleanUp();
+    public abstract void cleanUp(boolean recomp);
 
     protected void destroyDescriptorSets() {
         for (DescriptorSets descriptorSets : this.descriptorSets) {
@@ -247,6 +246,7 @@ public abstract class Pipeline {
     }
 
     public static class Builder {
+        final EnumSet<SPIRVUtils.SpecConstant> specConstants = EnumSet.noneOf(SPIRVUtils.SpecConstant.class);
         public final VertexFormat vertexFormat;
         public final String name;
         List<UBO> UBOs = new ArrayList<>();

@@ -14,6 +14,7 @@ import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -394,6 +395,16 @@ public abstract class Options {
                                 () -> config.uniqueOpaqueLayer)
                                 .setTooltip(v -> Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip"))
                                 .setImpact(PerformanceImpact.HIGH),
+                        new SwitchOption(Component.translatable("vulkanmod.options.fastTex"),
+                                v -> {
+                                    Renderer.neededConstants.add(SPIRVUtils.SpecConstant.FAST_TEX);
+                                    config.fastTex = v;
+                                    WorldRenderer.getInstance()
+                                            .resetSampler();
+                                },
+                                () -> config.fastTex)
+                                .setTooltip(v -> Component.translatable("vulkanmod.options.fastTex.tooltip"))
+                                .setImpact(PerformanceImpact.MEDIUM),
                         new SwitchOption(Component.translatable("vulkanmod.options.backfaceCulling"),
                                 v -> {
                                     config.backFaceCulling = v;

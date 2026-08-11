@@ -347,7 +347,7 @@ public class WorldRenderer {
         var texture = (VkGpuTexture)texView.texture();
 
         if (this.terrainSampler == 0L) {
-            this.terrainSampler = SamplerManager.getSampler(true, true, texture.getVulkanImage().mipLevels - 1, useAnisotropy, maxAnisotropy);
+            this.terrainSampler = SamplerManager.getSampler(true, !Initializer.CONFIG.fastTex, texture.getVulkanImage().mipLevels - 1, useAnisotropy, maxAnisotropy);
         }
 
         texture.getVulkanImage().setSampler(this.terrainSampler);

@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.util.shaderc.ShadercIncludeResolveI;
@@ -102,6 +103,19 @@ public class SPIRVUtils {
         ShaderKind(int kind) {
             this.kind = kind;
         }
+    }
+
+    public enum SpecConstant {
+        FAST_TEX,
+        DEBUG;
+
+        public int getValue() {
+            return switch (this) {
+                case FAST_TEX -> Initializer.CONFIG.fastTex ? 0xffffffff : 0x00000000;
+                case DEBUG -> 0xffffffff; // Not implemented
+            };
+        }
+
     }
 
     private static class ShaderIncluder implements ShadercIncludeResolveI {

@@ -46,6 +46,9 @@
   "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
 
+  "vulkanmod.options.fastTex": "Fast Textures",
+  "vulkanmod.options.fastTex.tooltip": "Optimizes texture rendering performance in exchange for worse visual aliasing (Same as pre-1.21.11 texture sampling)",
+
   "vulkanmod.options.wayland": "Use Wayland",
   "vulkanmod.options.wayland.tooltip": "Use Linux Wayland compositor if available (Experimental). Requires restart.",
 

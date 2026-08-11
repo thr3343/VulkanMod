@@ -21,10 +21,7 @@ import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -38,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -56,6 +54,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     private static final boolean sync2 = DeviceManager.checkExt(KHRSynchronization2.VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+    public static final EnumSet<SPIRVUtils.SpecConstant> neededConstants = EnumSet.noneOf(SPIRVUtils.SpecConstant.class);
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -605,6 +604,15 @@ public class Renderer {
     private void resetDescriptors() {
         for (Pipeline pipeline : usedPipelines) {
             pipeline.resetDescriptorPool(currentFrame);
+        }
+
+        if(!neededConstants.isEmpty())
+        {
+            Vulkan.waitIdle();
+            for (Pipeline pipeline : usedPipelines) {
+                pipeline.checkSpecConstantState(neededConstants);
+            }
+            neededConstants.clear();
         }
 
         usedPipelines.clear();

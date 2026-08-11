@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -145,6 +146,7 @@ public class PipelineConfig {
         public List<UB> ubs = new ArrayList<>();
         public List<ImageDescriptorInfo> imageDescriptors = new ArrayList<>();
         public UB pushConstantsInfo;
+        public EnumSet<SPIRVUtils.SpecConstant> specConstants = EnumSet.noneOf(SPIRVUtils.SpecConstant.class);
 
         public Builder withShader(SPIRVUtils.ShaderKind shaderKind, String path) {
             this.shaderPaths.put(shaderKind, path);
@@ -175,6 +177,13 @@ public class PipelineConfig {
 
             return this;
         }
+
+        public Builder setSpecConstants(EnumSet<SPIRVUtils.SpecConstant> specConstants) {
+            this.specConstants = specConstants;
+
+            return this;
+        }
+
 
         public PipelineConfig build() {
             return new PipelineConfig(this.shaderPaths, this.ubs, this.imageDescriptors, this.pushConstantsInfo);
