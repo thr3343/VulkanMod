@@ -27,6 +27,7 @@ import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public abstract class DeviceManager {
+    private static final Set<String> loadedExtensions = Vulkan.REQUIRED_DEVICE_EXTENSIONS;
     public static List<Device> availableDevices;
     public static List<Device> suitableDevices;
 
@@ -38,7 +39,7 @@ public abstract class DeviceManager {
     private static VkPhysicalDeviceProperties deviceProperties;
     private static VkPhysicalDeviceMemoryProperties memoryProperties;
 
-    private static Set<String> enabledExtensions;
+//    private static Set<String> enabledExtensions;
     private static SurfaceProperties surfaceProperties;
     public static boolean fullScreenExclusiveControl = false;
 
@@ -158,6 +159,13 @@ public abstract class DeviceManager {
     public static void createLogicalDevice() {
         try (MemoryStack stack = stackPush()) {
 
+            for (var extensionProperties : getAvailableExtension(stack, physicalDevice)) {
+                String extensionNameString = extensionProperties.extensionNameString();
+                if (Vulkan.OPTIONAL_EXTENSION.contains(extensionNameString)) {
+                    loadedExtensions.add(extensionNameString);
+                }
+            }
+
             net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = indices.unique();
@@ -178,6 +186,7 @@ public abstract class DeviceManager {
             VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
             deviceVulkan12Features.sType$Default();
             deviceVulkan12Features.hostQueryReset(true);
+            deviceVulkan12Features.timelineSemaphore(true); // Mandatory in VK12
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
@@ -201,46 +210,45 @@ public abstract class DeviceManager {
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan11Features);
-            createInfo.pNext(deviceVulkan12Features);
+            createInfo.pNext(deviceVulkan11Features).pNext(deviceVulkan12Features);
 
-            if (Vulkan.DYNAMIC_RENDERING) {
-                VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-                dynamicRenderingFeaturesKHR.sType$Default();
-                dynamicRenderingFeaturesKHR.dynamicRendering(true);
+            VkPhysicalDeviceSynchronization2Features synchronization2Features = VkPhysicalDeviceSynchronization2Features.calloc(stack);
+            synchronization2Features.sType$Default();
+            synchronization2Features.synchronization2(true);
 
-                deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
-            }
+            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
+            dynamicRenderingFeaturesKHR.sType$Default();
+            dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
-            HashSet<String> enabledExtensions = new HashSet<>(Vulkan.REQUIRED_DEVICE_EXTENSIONS);
+            createInfo.pNext(synchronization2Features).pNext(dynamicRenderingFeaturesKHR.address());
 
-            if (device.hasExtension("VK_KHR_portability_subset")) {
-                enabledExtensions.add("VK_KHR_portability_subset");
-            }
 
-            // TODO: checkpoint extension
-            if (device.hasExtension("VK_AMD_buffer_marker")) {
-                enabledExtensions.add("VK_AMD_buffer_marker");
-            } else if (device.hasExtension("VK_NV_device_diagnostic_checkpoints")) {
-                enabledExtensions.add("VK_NV_device_diagnostic_checkpoints");
-            }
+
+//            if (device.hasExtension("VK_KHR_portability_subset")) {
+//                enabledExtensions.add("VK_KHR_portability_subset");
+//            }
+//
+//            // TODO: checkpoint extension
+//            if (device.hasExtension("VK_AMD_buffer_marker")) {
+//                enabledExtensions.add("VK_AMD_buffer_marker");
+//            } else if (device.hasExtension("VK_NV_device_diagnostic_checkpoints")) {
+//                enabledExtensions.add("VK_NV_device_diagnostic_checkpoints");
+//            }
+
 
             fullScreenExclusiveControl = false;
-            if (Vulkan.surfaceCapabilities2Supported) {
-                if (device.hasExtension(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
-                    enabledExtensions.add(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME);
-                    fullScreenExclusiveControl = true;
-                    Initializer.LOGGER.info("VK_EXT_full_screen_exclusive enabled: opting out of full screen exclusive control");
-                }
+            if (Vulkan.surfaceCapabilities2Supported && checkExt(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
+                fullScreenExclusiveControl = true;
+                Initializer.LOGGER.info("VK_EXT_full_screen_exclusive enabled: opting out of full screen exclusive control");
             }
 
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
+//            createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
+//
+//            if (device.hasExtension("VK_EXT_multi_draw")) {
+//                enabledExtensions.add("VK_EXT_multi_draw");
+//            }
 
-            if (device.hasExtension("VK_EXT_multi_draw")) {
-                enabledExtensions.add("VK_EXT_multi_draw");
-            }
-
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(loadedExtensions));
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
@@ -253,15 +261,20 @@ public abstract class DeviceManager {
             transferQueue = new TransferQueue(stack, indices.transferFamily);
             presentQueue = new PresentQueue(stack, indices.presentFamily);
             computeQueue = new ComputeQueue(stack, indices.computeFamily);
-
-            DeviceManager.enabledExtensions = enabledExtensions;
         }
     }
+
+    /** Allows checking for extension availability (e.g. for feature specific code paths) */
+    public static boolean checkExt(String ExtName) {
+        return loadedExtensions.contains(ExtName);
+    }
+
 
     private static PointerBuffer getRequiredExtensions() {
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
 
         if (Vulkan.ENABLE_VALIDATION_LAYERS) {
+
             MemoryStack stack = stackGet();
 
             PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 1);
@@ -314,7 +327,7 @@ public abstract class DeviceManager {
     // Nvidia performs best with 24 bit depth, while AMD is most performant with 32-bit float
     public static int findDepthFormat(boolean use24BitsDepthFormat) {
         int[] formats = use24BitsDepthFormat ? new int[]
-                                               {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
+                {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
                 : new int[]{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT};
 
         return findSupportedFormat(
@@ -382,6 +395,20 @@ public abstract class DeviceManager {
         vkDestroyDevice(vkDevice, null);
     }
 
+    public static void waitAll() {
+        graphicsQueue.waitSubmits();
+        transferQueue.waitSubmits();
+        computeQueue.waitSubmits();
+    }
+
+    /** Reset all submitted cmdbuffers; returning to available */
+
+    public static void resetSubmitted() {
+        graphicsQueue.resetAll();
+        transferQueue.resetAll();
+        computeQueue.resetAll();
+    }
+
     public static GraphicsQueue getGraphicsQueue() {
         return graphicsQueue;
     }
@@ -407,7 +434,7 @@ public abstract class DeviceManager {
     }
 
     public static Set<String> enabledExtensions() {
-        return enabledExtensions;
+        return loadedExtensions;
     }
 
     public static SurfaceProperties surfaceProperties() {
@@ -415,6 +442,7 @@ public abstract class DeviceManager {
     }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
+
         long surface = Vulkan.getSurface();
         SurfaceProperties details = new SurfaceProperties();
 
