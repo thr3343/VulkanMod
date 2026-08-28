@@ -96,6 +96,7 @@ public class Renderer {
 
     private static int currentFrame = 0;
     private static int imageIndex = 0;
+    private static int currentWidth, currentHeight;
     private static final int lastReset = -1;
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
@@ -279,7 +280,7 @@ public class Renderer {
                 imageIndex = pImageIndex.get(0);
                 swapChain.setAcquired(true);
             }
-
+            currentWidth=currentHeight=0;
             this.beginMainRenderPass(stack);
         }
 
@@ -299,7 +300,7 @@ public class Renderer {
         }
 
         recordingCmds = true;
-        mainPass.begin(commandBuffer, stack);
+//        mainPass.begin(commandBuffer, stack);
 
         resetDynamicState(commandBuffer);
     }
@@ -614,12 +615,12 @@ public class Renderer {
     }
 
     private void destroySyncObjects() {
-        for (int i = 0; i < framesNum; ++i) {
-            vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
+        for (long imageAvailableSemaphore : imageAvailableSemaphores) {
+            vkDestroySemaphore(device, imageAvailableSemaphore, null);
         }
 
-        for (int i = 0; i < swapChain.getImagesNum(); ++i) {
-            vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
+        for (long renderFinishedSemaphore : renderFinishedSemaphores) {
+            vkDestroySemaphore(device, renderFinishedSemaphore, null);
         }
     }
 
@@ -776,7 +777,7 @@ public class Renderer {
                 }
                 default -> throw new RuntimeException("unexpected value");
             }
-
+            // TODO: Test Disable attachment (in Pipeline) instead if partal clear (e.g. Depth Only)
             //Rect to clear
             VkRect2D renderArea = VkRect2D.malloc(stack);
             renderArea.offset().set(x, y);
@@ -823,7 +824,7 @@ public class Renderer {
     public static void setViewport(int x, int y, int width, int height, MemoryStack stack) {
         if (!INSTANCE.recordingCmds)
             return;
-
+        // Viewport State Spam
         VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
         viewport.x(x);
         viewport.y(height + y);
@@ -839,6 +840,13 @@ public class Renderer {
         if (!INSTANCE.recordingCmds || INSTANCE.boundFramebuffer == null)
             return;
 
+//        if (INSTANCE.boundFramebuffer.getWidth() == width && INSTANCE.boundFramebuffer.getHeight() == height)
+//            return;
+
+        if (height == currentHeight && width == currentWidth)
+            return;
+
+        // Scissor State Spam
         try (MemoryStack stack = stackPush()) {
             Framebuffer framebuffer = INSTANCE.boundFramebuffer;
             int framebufferHeight = framebuffer.getHeight();
@@ -851,16 +859,25 @@ public class Renderer {
             scissor.extent().set(width, height);
 
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
+
+            currentHeight = height;
+            currentWidth = width;
         }
     }
 
     public static void resetScissor() {
         if (INSTANCE.boundFramebuffer == null)
             return;
+        // Scissor State Spam
+
+        if (INSTANCE.boundFramebuffer.getHeight() == currentHeight && INSTANCE.boundFramebuffer.getWidth() == currentWidth)
+            return;
 
         try (MemoryStack stack = stackPush()) {
             VkRect2D.Buffer scissor = INSTANCE.boundFramebuffer.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
+            currentHeight = INSTANCE.boundFramebuffer.getHeight();
+            currentWidth = INSTANCE.boundFramebuffer.getWidth();
         }
     }
 

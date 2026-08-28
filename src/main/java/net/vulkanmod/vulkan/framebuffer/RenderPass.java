@@ -9,6 +9,8 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 
+import static org.lwjgl.vulkan.EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+import static org.lwjgl.vulkan.EXTLoadStoreOpNone.VK_ATTACHMENT_STORE_OP_NONE_EXT;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -57,8 +59,8 @@ public class RenderPass {
                                .samples(VK_SAMPLE_COUNT_1_BIT)
                                .loadOp(colorAttachmentInfo.loadOp)
                                .storeOp(colorAttachmentInfo.storeOp)
-                               .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-                               .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                               .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_NONE_EXT)
+                               .stencilStoreOp(VK_ATTACHMENT_STORE_OP_NONE_EXT)
                                .initialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
                                .finalLayout(colorAttachmentInfo.finalLayout);
 
@@ -79,8 +81,8 @@ public class RenderPass {
                                .samples(VK_SAMPLE_COUNT_1_BIT)
                                .loadOp(depthAttachmentInfo.loadOp)
                                .storeOp(depthAttachmentInfo.storeOp)
-                               .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-                               .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                               .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_NONE_EXT)
+                               .stencilStoreOp(VK_ATTACHMENT_STORE_OP_NONE_EXT)
                                .initialLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
                                .finalLayout(depthAttachmentInfo.finalLayout);
 
@@ -174,7 +176,7 @@ public class RenderPass {
     public void endRenderPass(VkCommandBuffer commandBuffer) {
         if (Vulkan.DYNAMIC_RENDERING) {
             KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
-
+            // TODO: Check for Sync Hazards: remove if (RenderPass Overlapping)
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 if (colorAttachmentInfo != null
                     && framebuffer.getColorAttachment().getCurrentLayout() != this.colorAttachmentInfo.finalLayout)
@@ -224,7 +226,7 @@ public class RenderPass {
 
         VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
         clearValues.get(0).color().float32(VRenderSystem.clearColor);
-        clearValues.get(1).depthStencil().set(1.0f, 0);
+        clearValues.get(1).depthStencil().set(1.0f, 0); // Fast Depth Clear
 
         VkRenderingInfo renderingInfo = VkRenderingInfo.calloc(stack);
         renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_INFO_KHR);
@@ -292,7 +294,7 @@ public class RenderPass {
             this.format = format;
             this.finalLayout = type.defaultLayout;
 
-            this.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            this.loadOp = VK_ATTACHMENT_LOAD_OP_NONE_EXT;
             this.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         }
 
@@ -342,7 +344,7 @@ public class RenderPass {
             if (framebuffer.hasColorAttachment)
                 colorAttachmentInfo = new AttachmentInfo(AttachmentInfo.Type.COLOR, framebuffer.format).setOps(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE);
             if (framebuffer.hasDepthAttachment)
-                depthAttachmentInfo = new AttachmentInfo(AttachmentInfo.Type.DEPTH, framebuffer.depthFormat).setOps(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE);
+                depthAttachmentInfo = new AttachmentInfo(AttachmentInfo.Type.DEPTH, framebuffer.depthFormat).setOps(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_NONE_EXT);
         }
 
         public RenderPass build() {

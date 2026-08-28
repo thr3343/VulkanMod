@@ -92,8 +92,8 @@ public class SwapChain extends Framebuffer {
                 this.acquired = false;
                 return;
             }
-
-            int requestedImages = surfaceProperties.capabilities.minImageCount() + 1;
+            // TODO: Checks for Optimal Count (Vendor-Specific)
+            int requestedImages = !vsync && Vulkan.getDevice().isAMD() ? 8 : surfaceProperties.capabilities.minImageCount() + 1;
             if (surfaceProperties.capabilities.maxImageCount() > 0 && requestedImages > surfaceProperties.capabilities.maxImageCount()) {
                 requestedImages = surfaceProperties.capabilities.maxImageCount();
             }
@@ -131,8 +131,8 @@ public class SwapChain extends Framebuffer {
             if (DeviceManager.fullScreenExclusiveControl) {
                 VkSurfaceFullScreenExclusiveInfoEXT fullScreenExclusiveInfo = VkSurfaceFullScreenExclusiveInfoEXT.calloc(stack);
                 fullScreenExclusiveInfo.sType(EXTFullScreenExclusive.VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT);
-                fullScreenExclusiveInfo.fullScreenExclusive(EXTFullScreenExclusive.VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
-                createInfo.pNext(fullScreenExclusiveInfo.address());
+                fullScreenExclusiveInfo.fullScreenExclusive(EXTFullScreenExclusive.VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT);
+                createInfo.pNext(fullScreenExclusiveInfo);
             }
 
             if (this.swapChainId != VK_NULL_HANDLE) {

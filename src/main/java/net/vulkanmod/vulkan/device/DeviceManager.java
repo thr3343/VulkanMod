@@ -216,7 +216,7 @@ public abstract class DeviceManager {
             dynamicRenderingFeaturesKHR.sType$Default();
             dynamicRenderingFeaturesKHR.dynamicRendering(true);
 
-            createInfo.pNext(synchronization2Features).pNext(dynamicRenderingFeaturesKHR.address());
+            createInfo.pNext(synchronization2Features).pNext(dynamicRenderingFeaturesKHR);
 
 
 

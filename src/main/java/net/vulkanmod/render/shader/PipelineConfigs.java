@@ -5,14 +5,14 @@ import net.vulkanmod.vulkan.shader.SpirvCompiler;
 
 import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_ALL_GRAPHICS;
 import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_FRAGMENT_BIT;
 
 public class PipelineConfigs {
     public static final PipelineConfig.UB TERRAIN_UB0 = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT)
                                                     .addUniform("mat4", "MVP")
-                                                    .addUniform("int", "CurrentTime")
                                                     .build();
 
-    public static final PipelineConfig.UB TERRAIN_UB1 = PipelineConfig.UB.builder(1, VK_SHADER_STAGE_ALL_GRAPHICS)
+    public static final PipelineConfig.UB TERRAIN_UB1 = PipelineConfig.UB.builder(1, VK_SHADER_STAGE_FRAGMENT_BIT)
                                                                   .addUniform("vec4", "FogColor")
                                                                   .addUniform("float", "FogEnvironmentalStart")
                                                                   .addUniform("float", "FogEnvironmentalEnd")

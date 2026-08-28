@@ -417,16 +417,10 @@ public class WorldRenderer {
                 }
             }
         }
-
+        // TODO: Check IF ReBAR/ Fixed BAr needed for "Hot Paths"
         if (renderType == TerrainRenderType.CUTOUT || renderType == TerrainRenderType.TRIPWIRE) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        // Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setModelOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         Renderer.popDebugSection();

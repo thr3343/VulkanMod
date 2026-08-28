@@ -67,7 +67,8 @@ public class Vulkan {
     }
 
     public static final Set<String> REQUIRED_DEVICE_EXTENSIONS = new HashSet<>(Set.of(
-            "VK_KHR_dynamic_rendering", "VK_KHR_synchronization2", "VK_KHR_swapchain"
+            "VK_KHR_dynamic_rendering", "VK_KHR_synchronization2", "VK_KHR_swapchain",
+            EXTLoadStoreOpNone.VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME // VkMod-Specific
     ));
 
     public static final Set<String> OPTIONAL_EXTENSION = Set.of(

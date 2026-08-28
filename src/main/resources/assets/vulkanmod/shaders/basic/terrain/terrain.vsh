@@ -5,21 +5,6 @@
 
 layout (binding = 0) uniform UB0 {
     mat4 MVP;
-    int CurrentTime;
-};
-
-layout(binding = 1) uniform UB1 {
-    vec4 FogColor;
-    float FogEnvironmentalStart;
-    float FogEnvironmentalEnd;
-    float FogRenderDistanceStart;
-    float FogRenderDistanceEnd;
-    float FogSkyEnd;
-    float FogCloudsEnd;
-    float AlphaCutout;
-    ivec2 TextureSize;
-    vec2 TexelSize;
-    int UseRgss;
 };
 
 layout (binding = 2) uniform SectionData {

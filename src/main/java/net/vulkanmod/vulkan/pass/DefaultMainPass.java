@@ -12,11 +12,14 @@ import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.EXTLoadStoreOpNone;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkRect2D;
 
 import java.util.function.IntSupplier;
 
+import static org.lwjgl.vulkan.EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+import static org.lwjgl.vulkan.EXTLoadStoreOpNone.VK_ATTACHMENT_STORE_OP_NONE_EXT;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -30,6 +33,8 @@ public class DefaultMainPass implements MainPass {
 
     private RenderPass mainRenderPass;
     private RenderPass auxRenderPass;
+
+    private RenderPass prevPass;
 
     private GpuTexture[] colorAttachmentTextures;
     private GpuTextureView[] colorAttachmentTextureViews;
@@ -65,12 +70,12 @@ public class DefaultMainPass implements MainPass {
         createRenderPasses();
         createAttachmentTextures();
     }
-
+    // TODO: Deferred Load/Store Attachment Ops
     private void createRenderPasses() {
         RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
         builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
-        builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
+        builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_NONE_EXT, VK_ATTACHMENT_STORE_OP_STORE);
+        builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_NONE_EXT, VK_ATTACHMENT_STORE_OP_STORE);
 
         this.mainRenderPass = builder.build();
 
@@ -134,7 +139,13 @@ public class DefaultMainPass implements MainPass {
             return;
 
         Renderer.getInstance().endRenderPass(commandBuffer);
-        Renderer.getInstance().beginRenderPass(this.auxRenderPass, this.mainFramebuffer);
+
+        // TODO: Deferred Attachment Ops: Set to Load Op if
+        //  Same Attachment Image used consecutively + Attachment Indices align across
+        //  initially Non-Attachment Image (E.g. Animation passes)
+
+        Renderer.getInstance().beginRenderPass(prevPass != this.mainRenderPass ? this.mainRenderPass : this.auxRenderPass, this.mainFramebuffer);
+        prevPass = boundRenderPass;
     }
 
     @Override
