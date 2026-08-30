@@ -1,5 +1,6 @@
 package net.vulkanmod.mixin.screen;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.vulkanmod.vulkan.Renderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,6 +15,12 @@ public class ScreenM {
     private void clearDepth(CallbackInfo ci) {
         // Workaround to fix hardcoded z value on PostPass blit shader,
         // that conflicts with Vulkan depth range [0.0, 1.0]
+        Renderer.clearAttachments(256);
+    }
+
+    @Inject(method = "renderPanorama", at = @At("RETURN"))
+    protected void renderPanorama(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
+        // Temp fix for missing depth clear after splash screen (caused by deferring mainPass begin)
         Renderer.clearAttachments(256);
     }
 }

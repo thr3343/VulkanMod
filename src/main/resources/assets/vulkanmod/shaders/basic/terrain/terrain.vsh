@@ -5,21 +5,6 @@
 
 layout (binding = 0) uniform UB0 {
     mat4 MVP;
-    int CurrentTime;
-};
-
-layout(binding = 1) uniform UB1 {
-    vec4 FogColor;
-    float FogEnvironmentalStart;
-    float FogEnvironmentalEnd;
-    float FogRenderDistanceStart;
-    float FogRenderDistanceEnd;
-    float FogSkyEnd;
-    float FogCloudsEnd;
-    float AlphaCutout;
-    ivec2 TextureSize;
-    vec2 TexelSize;
-    int UseRgss;
 };
 
 layout (binding = 2) uniform SectionData {
@@ -59,7 +44,7 @@ const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
 
 vec3 getVertexPosition() {
-    const int encOffset = SectionOffsets[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    const int encOffset = SectionOffsets[gl_BaseInstance >> 2][gl_BaseInstance & 3];
     const vec3 baseOffset = bitfieldExtract(ivec3(encOffset) >> ivec3(0, 16, 8), 0, 8);
 
     #ifdef COMPRESSED_VERTEX
@@ -81,7 +66,7 @@ void main() {
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
 
-    fadeFactor = SectionFadeFactors[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    fadeFactor = SectionFadeFactors[gl_BaseInstance >> 2][gl_BaseInstance & 3];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;

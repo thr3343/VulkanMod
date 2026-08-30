@@ -89,8 +89,8 @@ public class SwapChain extends Framebuffer {
                 this.acquired = false;
                 return;
             }
-
-            int requestedImages = surfaceProperties.capabilities.minImageCount() + 1;
+            // TODO: Figure out better checks for determining (Vendor-Specific) optimal image counts
+            int requestedImages = !vsync && Vulkan.getDevice().isAMD() ? 4 : surfaceProperties.capabilities.minImageCount() + 1;
             if (surfaceProperties.capabilities.maxImageCount() > 0 && requestedImages > surfaceProperties.capabilities.maxImageCount()) {
                 requestedImages = surfaceProperties.capabilities.maxImageCount();
             }

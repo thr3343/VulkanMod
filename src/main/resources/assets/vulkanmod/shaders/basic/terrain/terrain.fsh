@@ -1,8 +1,9 @@
 #version 450
-
+layout(constant_id = 0) const bool USE_RGSS = false;
 #include "light.glsl"
 #include "fog.glsl"
-
+#extension GL_KHR_shader_subgroup_quad : require
+#extension GL_KHR_shader_subgroup_ballot : require
 layout(binding = 3) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UB1 {
@@ -16,7 +17,6 @@ layout(binding = 1) uniform UB1 {
     float AlphaCutout;
     ivec2 TextureSize;
     vec2 TexelSize;
-    int UseRgss;
 };
 
 vec4 sampleNearest(sampler2D sampler1, vec2 uv, vec2 pixelSize, vec2 du, vec2 dv, vec2 texelScreenSize) {
@@ -36,7 +36,8 @@ vec4 sampleNearest(sampler2D sampler1, vec2 uv, vec2 pixelSize, vec2 du, vec2 dv
 vec4 sampleNearest(sampler2D source, vec2 uv, vec2 pixelSize) {
     vec2 du = dFdx(uv);
     vec2 dv = dFdy(uv);
-    vec2 texelScreenSize = sqrt(du * du + dv * dv);
+    vec2 sumOfSquares = (du * du) + (dv * dv);
+    vec2 texelScreenSize = subgroupQuadBroadcast(sqrt(sumOfSquares), 0);
     return sampleNearest(source, uv, pixelSize, du, dv, texelScreenSize);
 }
 
@@ -100,9 +101,8 @@ layout (location = 4) in flat float fadeFactor;
 layout (location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
-    color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
-    if (color.a < AlphaCutout) {
+    vec4 color = (USE_RGSS ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
+    if ((color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor)).a < AlphaCutout) {
         discard;
     }
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);

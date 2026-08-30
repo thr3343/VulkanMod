@@ -3,16 +3,14 @@ package net.vulkanmod.render.shader;
 import net.vulkanmod.vulkan.shader.PipelineConfig;
 import net.vulkanmod.vulkan.shader.SpirvCompiler;
 
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_ALL_GRAPHICS;
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class PipelineConfigs {
     public static final PipelineConfig.UB TERRAIN_UB0 = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT)
                                                     .addUniform("mat4", "MVP")
-                                                    .addUniform("int", "CurrentTime")
                                                     .build();
 
-    public static final PipelineConfig.UB TERRAIN_UB1 = PipelineConfig.UB.builder(1, VK_SHADER_STAGE_ALL_GRAPHICS)
+    public static final PipelineConfig.UB TERRAIN_UB1 = PipelineConfig.UB.builder(1, VK_SHADER_STAGE_FRAGMENT_BIT)
                                                                   .addUniform("vec4", "FogColor")
                                                                   .addUniform("float", "FogEnvironmentalStart")
                                                                   .addUniform("float", "FogEnvironmentalEnd")
@@ -23,7 +21,6 @@ public class PipelineConfigs {
                                                                   .addUniform("float", "AlphaCutout")
                                                                   .addUniform("vec2", "TextureSize")
                                                                   .addUniform("vec2", "TexelSize")
-                                                                  .addUniform("int", "UseRgss")
                                                                   .build();
 
     public static final PipelineConfig.UB TERRAIN_UB2 = PipelineConfig.UB.builder("SectionData", 2, VK_SHADER_STAGE_VERTEX_BIT)
