@@ -44,7 +44,6 @@ import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -96,6 +95,7 @@ public class Renderer {
 
     private static int currentFrame = 0;
     private static int imageIndex = 0;
+    private static int currentScissorWidth = 0, currentScissorHeight = 0;
     private static int lastReset = -1;
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
@@ -286,13 +286,13 @@ public class Renderer {
                 swapChain.setAcquired(true);
             }
 
-            this.beginMainRenderPass(stack);
+            this.beginMainCmds(stack);
         }
 
         p.pop();
     }
 
-    private void beginMainRenderPass(MemoryStack stack) {
+    private void beginMainCmds(MemoryStack stack) {
         VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
         beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
         beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -305,8 +305,7 @@ public class Renderer {
         }
 
         recordingCmds = true;
-        mainPass.begin(commandBuffer, stack);
-
+        // Removed immediate mainPass begin; fixes minor RenderPass bugs (empty renderpass, incorrect load ops e.g.)
         resetDynamicState(commandBuffer);
     }
 
@@ -411,7 +410,7 @@ public class Renderer {
             }
 
             Vulkan.getStagingBuffers().endFrame(currentFrame);
-
+            currentScissorWidth = currentScissorHeight = 0;
             currentFrame = (currentFrame + 1) % framesNum;
             swapChain.setAcquired(false);
         }
@@ -464,7 +463,7 @@ public class Renderer {
 
             vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
-            this.beginMainRenderPass(stack);
+            this.beginMainCmds(stack);
         }
     }
 
@@ -622,7 +621,7 @@ public class Renderer {
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
         }
 
-        for (int i = 0; i < swapChain.getImagesNum(); ++i) {
+        for (int i = 0; i < renderFinishedSemaphores.size(); ++i) {
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
     }
@@ -843,6 +842,10 @@ public class Renderer {
         if (!INSTANCE.recordingCmds || INSTANCE.boundFramebuffer == null)
             return;
 
+        // Fix scissor state spam
+        if (height == currentScissorHeight && width == currentScissorWidth)
+            return;
+
         try (MemoryStack stack = stackPush()) {
             Framebuffer framebuffer = INSTANCE.boundFramebuffer;
             int framebufferHeight = framebuffer.getHeight();
@@ -855,16 +858,26 @@ public class Renderer {
             scissor.extent().set(width, height);
 
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
+
+            currentScissorHeight = height;
+            currentScissorWidth = width;
         }
     }
 
     public static void resetScissor() {
-        if (INSTANCE.boundFramebuffer == null)
+        final var boundFramebuffer = INSTANCE.boundFramebuffer;
+        if (boundFramebuffer == null)
+            return;
+
+        // Fix scissor state spam
+        if (boundFramebuffer.getHeight() == currentScissorHeight && boundFramebuffer.getWidth() == currentScissorWidth)
             return;
 
         try (MemoryStack stack = stackPush()) {
-            VkRect2D.Buffer scissor = INSTANCE.boundFramebuffer.scissor(stack);
+            VkRect2D.Buffer scissor = boundFramebuffer.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
+            currentScissorHeight = boundFramebuffer.getHeight();
+            currentScissorWidth = boundFramebuffer.getWidth();
         }
     }
 

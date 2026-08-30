@@ -31,6 +31,8 @@ public class DefaultMainPass implements MainPass {
     private RenderPass mainRenderPass;
     private RenderPass auxRenderPass;
 
+    private RenderPass prevPass;
+
     private GpuTexture[] colorAttachmentTextures;
     private GpuTextureView[] colorAttachmentTextureViews;
     IntSupplier imageIdxSupplier;
@@ -134,7 +136,10 @@ public class DefaultMainPass implements MainPass {
             return;
 
         Renderer.getInstance().endRenderPass(commandBuffer);
-        Renderer.getInstance().beginRenderPass(this.auxRenderPass, this.mainFramebuffer);
+
+        // Fixes SwapChain using auxPass by mistake after Animations + LightPass (unnecessary load op load)
+        Renderer.getInstance().beginRenderPass(prevPass != this.mainRenderPass ? this.mainRenderPass : this.auxRenderPass, this.mainFramebuffer);
+        prevPass = boundRenderPass;
     }
 
     @Override
