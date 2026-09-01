@@ -41,6 +41,7 @@ public class MemoryManager {
     static int Frames;
 
     private static long deviceMemory = 0;
+    private static long barMemory = 0;
     private static long nativeMemory = 0;
 
     private int currentFrame = 0;
@@ -138,12 +139,11 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
             buffer.setBufferSize(size);
-
-            if ((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
-                deviceMemory += size;
-            }
-            else {
-                nativeMemory += size;
+            // TODO: No usage/out of mem checks for BAR_LOCAL mem atm (i'm lazy)
+            switch (buffer.type.type) {
+                case DEVICE_LOCAL -> deviceMemory += size;
+                case BAR_LOCAL -> barMemory += size;
+                case null, default -> nativeMemory += size;
             }
 
             buffers.putIfAbsent(buffer.getId(), buffer);
@@ -218,12 +218,11 @@ public class MemoryManager {
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
-
-        if (bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
-        }
-        else {
-            nativeMemory -= bufferInfo.bufferSize();
+        // TODO: No usage/out of mem checks for BAR_LOCAL mem atm (i'm lazy)
+        switch (bufferInfo.type()) {
+            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
+            case BAR_LOCAL -> barMemory -= bufferInfo.bufferSize();
+            case null, default -> nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());

@@ -38,6 +38,7 @@ import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryStack;
@@ -289,7 +290,11 @@ public class VkCommandEncoder implements CommandEncoder {
                     throw new IllegalArgumentException(
                             "Cannot write more data than this buffer can hold (attempting to write " + size + " bytes at offset " + gpuBufferSlice.offset() + " to " + gpuBufferSlice.length() + " slice size)"
                     );
-                } else {
+                }
+                if (vkGpuBuffer.buffer.type.mappable()) {
+                    VUtil.memcpy(byteBuffer, vkGpuBuffer.buffer.getDataPtr() + gpuBufferSlice.offset());
+                }
+                else {
                     long dstOffset = gpuBufferSlice.offset();
 
                     var commandBuffer = Renderer.getInstance().getTransferCb();

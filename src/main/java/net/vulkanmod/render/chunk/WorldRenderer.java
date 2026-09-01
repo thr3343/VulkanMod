@@ -43,6 +43,7 @@ import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
@@ -140,7 +141,7 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.BAR_MEM);
         }
     }
 
@@ -404,6 +405,7 @@ public class WorldRenderer {
 
         if (renderType == TerrainRenderType.CUTOUT || renderType == TerrainRenderType.TRIPWIRE) {
             indirectBuffers[currentFrame].submitUploads();
+            MemoryManager.getInstance().addFrameOp(() -> indirectBuffers[currentFrame].reset());
 //            uniformBuffers.submitUploads();
         }
 

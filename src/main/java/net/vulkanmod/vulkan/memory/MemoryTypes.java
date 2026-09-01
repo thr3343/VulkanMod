@@ -15,6 +15,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryTypes {
     public static MemoryType GPU_MEM;
+    public static MemoryType BAR_MEM;
     public static MemoryType HOST_MEM;
 
     public static void createMemoryTypes() {
@@ -28,12 +29,16 @@ public class MemoryTypes {
                 GPU_MEM = new DeviceLocalMemory(memoryType, heap);
             }
 
+            if (propertyFlags == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                BAR_MEM = new DeviceMappableMemory(memoryType, heap);
+            }
+
             if (propertyFlags == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
                 HOST_MEM = new HostCoherentMemory(memoryType, heap);
             }
         }
 
-        if (GPU_MEM != null && HOST_MEM != null)
+        if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
             return;
 
         // Could not find 1 or more MemoryTypes, need to use fallback
@@ -43,14 +48,14 @@ public class MemoryTypes {
 
             // GPU mappable memory
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
-                GPU_MEM = new DeviceMappableMemory(memoryType, heap);
+                GPU_MEM = BAR_MEM = new DeviceMappableMemory(memoryType, heap);
             }
 
             if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
                 HOST_MEM = new HostLocalFallbackMemory(memoryType, heap);
             }
 
-            if (GPU_MEM != null && HOST_MEM != null)
+            if (GPU_MEM != null && BAR_MEM != null && HOST_MEM != null)
                 return;
         }
 
@@ -153,14 +158,14 @@ public class MemoryTypes {
     static class DeviceMappableMemory extends MappableMemory {
 
         DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
-            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+            super(Type.BAR_LOCAL, vkMemoryType, vkMemoryHeap);
         }
 
         @Override
         public void createBuffer(Buffer buffer, long size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
     }
 }

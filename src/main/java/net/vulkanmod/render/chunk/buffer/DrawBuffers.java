@@ -21,6 +21,7 @@ import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
@@ -32,9 +33,7 @@ public class DrawBuffers {
     public static final int UNDEFINED_FACING_IDX = QuadFacing.UNDEFINED.ordinal();
     public static final float POS_OFFSET = CustomVertexFormat.getPositionOffset();
 
-    private static final int CMD_STRIDE = 32;
-
-    private static final long cmdBufferPtr = MemoryUtil.nmemAlignedAlloc(CMD_STRIDE, (long) ChunkAreaManager.AREA_SIZE * QuadFacing.COUNT * CMD_STRIDE);
+    private static final int CMD_STRIDE = VkDrawIndexedIndirectCommand.SIZEOF;
 
     public static final int vertexSize = PipelineManager.getTerrainVertexFormat().getVertexSize();
     private final Vector3i origin;
@@ -43,7 +42,7 @@ public class DrawBuffers {
     private AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
-    private final UniformBuffer sectionDataBuffer = new UniformBuffer(ChunkAreaManager.AREA_SIZE * 4, MemoryTypes.HOST_MEM);
+    private final UniformBuffer sectionDataBuffer = new UniformBuffer(ChunkAreaManager.AREA_SIZE * 4, MemoryTypes.BAR_MEM);
 
     final long drawParamsPtr;
     final int[] sectionIndices = new int[512];
@@ -221,7 +220,11 @@ public class DrawBuffers {
     }
 
     public void buildDrawBatchesIndirect(Vector3d cameraPos, IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
-        long bufferPtr = cmdBufferPtr;
+        long offset = indirectBuffer.getUsedBytes();
+
+        // Checks remaining first to avoid overflow
+        indirectBuffer.reserveOffset(queue.size() * QuadFacing.COUNT * CMD_STRIDE);
+        long bufferPtr = indirectBuffer.getDataPtr() + offset;
 
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
         boolean backFaceCulling = Initializer.CONFIG.backFaceCulling && !isTranslucent;
@@ -354,10 +357,7 @@ public class DrawBuffers {
             return;
         }
 
-        ByteBuffer byteBuffer = MemoryUtil.memByteBuffer(cmdBufferPtr, queue.size() * QuadFacing.COUNT * CMD_STRIDE);
-        indirectBuffer.recordCopyCmd(byteBuffer.position(0));
-
-        vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, CMD_STRIDE);
+        vkCmdDrawIndexedIndirect(Renderer.getCommandBuffer(), indirectBuffer.getId(), offset, drawCount, CMD_STRIDE);
     }
 
     public void buildDrawBatchesDirect(Vector3d cameraPos, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
