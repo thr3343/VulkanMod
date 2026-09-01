@@ -27,7 +27,7 @@ public class PipelineConfigs {
                                                                   .build();
 
     public static final PipelineConfig.UB TERRAIN_UB2 = PipelineConfig.UB.builder("SectionData", 2, VK_SHADER_STAGE_VERTEX_BIT)
-                                                    .setSize(4096)
+                                                    .setSize(2048)
                                                     .build();
 
     public static final PipelineConfig.UB TERRAIN_PC = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT) // Binding ignored

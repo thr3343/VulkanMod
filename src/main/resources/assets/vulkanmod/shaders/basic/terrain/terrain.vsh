@@ -3,6 +3,9 @@
 #include "light.glsl"
 #include "fog.glsl"
 
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_spirv_intrinsics : require
+
 layout (binding = 0) uniform UB0 {
     mat4 MVP;
     int CurrentTime;
@@ -22,9 +25,8 @@ layout(binding = 1) uniform UB1 {
     int UseRgss;
 };
 
-layout (binding = 2) uniform SectionData {
-    ivec4 SectionOffsets[128];
-    vec4 SectionFadeFactors[128];
+layout (binding = 2, scalar) uniform SectionData {
+    float SectionFadeFactors[512];
 };
 
 layout (push_constant) uniform pushConstant {
@@ -58,9 +60,11 @@ const float UV_INV = 1.0 / 32768.0;
 const vec3 POSITION_INV = vec3(1.0 / 2048.0);
 const vec3 POSITION_OFFSET = vec3(4.0);
 
+spirv_instruction (id = 203)
+ivec3 bitfieldExtractU(ivec3 value, int offset, int bits);
+
 vec3 getVertexPosition() {
-    const int encOffset = SectionOffsets[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
-    const vec3 baseOffset = bitfieldExtract(ivec3(encOffset) >> ivec3(0, 16, 8), 0, 8);
+    const vec3 baseOffset = bitfieldExtractU(ivec3(gl_BaseInstance) >> ivec3(0, 6, 3), 0, 3) << 4u;
 
     #ifdef COMPRESSED_VERTEX
         return fma(Position.xyz, POSITION_INV, ModelOffset + baseOffset);
@@ -80,8 +84,8 @@ void main() {
 
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
-
-    fadeFactor = SectionFadeFactors[gl_InstanceIndex >> 2][gl_InstanceIndex & 3];
+    const int rSectionIndex = gl_BaseInstance;
+    fadeFactor = SectionFadeFactors[rSectionIndex];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;
