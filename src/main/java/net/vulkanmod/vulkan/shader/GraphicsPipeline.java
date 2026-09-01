@@ -331,10 +331,10 @@ public class GraphicsPipeline extends Pipeline {
                             offset += 12;
                         }
                         case SHORT -> {
-                            posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                            posDescription.format(VK_FORMAT_R16G16B16_SFLOAT);
                             posDescription.offset(offset);
 
-                            offset += 8;
+                            offset += 6;
                         }
                         case BYTE -> {
                             posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
@@ -402,6 +402,12 @@ public class GraphicsPipeline extends Pipeline {
                 case GENERIC -> {
                     if (type == VertexFormatElement.Type.SHORT && elementCount == 1) {
                         posDescription.format(VK_FORMAT_R16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 2;
+                    }
+                    if (type == VertexFormatElement.Type.USHORT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R16_UINT);
                         posDescription.offset(offset);
 
                         offset += 2;

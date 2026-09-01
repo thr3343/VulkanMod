@@ -55,16 +55,16 @@ public class QuadSorter {
             for (int m = 0; m < pointCount; ++m) {
                 long ptr = bufferPtr + (long) m * quadStride;
 
-                short x0 = MemoryUtil.memGetShort(ptr + 0);
-                short y0 = MemoryUtil.memGetShort(ptr + 2);
-                short z0 = MemoryUtil.memGetShort(ptr + 4);
-                short x2 = MemoryUtil.memGetShort(ptr + offset + 0);
-                short y2 = MemoryUtil.memGetShort(ptr + offset + 2);
-                short z2 = MemoryUtil.memGetShort(ptr + offset + 4);
+                float x0 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + 0));
+                float y0 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + 2));
+                float z0 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + 4));
+                float x2 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + offset + 0));
+                float y2 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + offset + 2));
+                float z2 = Float.float16ToFloat(MemoryUtil.memGetShort(ptr + offset + 4));
 
-                float xa = (x0 + x2) * invConv * 0.5f + convOffset;
-                float ya = (y0 + y2) * invConv * 0.5f + convOffset;
-                float za = (z0 + z2) * invConv * 0.5f + convOffset;
+                float xa = (x0 + x2) * 0.5f;
+                float ya = (y0 + y2) * 0.5f;
+                float za = (z0 + z2) * 0.5f;
                 sortingPoints[m] = new Vector3f(xa, ya, za);
             }
         } else {

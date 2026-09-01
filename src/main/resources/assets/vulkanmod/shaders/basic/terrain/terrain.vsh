@@ -45,9 +45,10 @@ layout (location = 4) out flat float fadeFactor;
 #define COMPRESSED_VERTEX
 
 #ifdef COMPRESSED_VERTEX
-    layout (location = 0) in ivec4 Position;
-    layout (location = 1) in uvec2 UV0;
-    layout (location = 2) in uint PackedColor;
+    layout (location = 0) in vec3 Position;
+    layout (location = 1) in uint Light;
+    layout (location = 2) in uvec2 UV0;
+    layout (location = 3) in uint PackedColor;
 #else
     layout (location = 0) in vec3 Position;
     layout (location = 1) in vec4 Color;
@@ -64,10 +65,10 @@ spirv_instruction (id = 203)
 ivec3 bitfieldExtractU(ivec3 value, int offset, int bits);
 
 vec3 getVertexPosition() {
-    const vec3 baseOffset = bitfieldExtractU(ivec3(gl_BaseInstance) >> ivec3(0, 6, 3), 0, 3) << 4u;
+    const vec3 baseOffset = bitfieldExtractU(ivec3(gl_BaseInstance) >> ivec3(0, 6, 3), 0, 3);
 
     #ifdef COMPRESSED_VERTEX
-        return fma(Position.xyz, POSITION_INV, ModelOffset + baseOffset);
+        return fma(baseOffset, vec3(16), ModelOffset + Position);
     #else
         return Position.xyz + ModelOffset + baseOffset;
     #endif
@@ -82,7 +83,7 @@ void main() {
 
     const vec4 Color = unpackUnorm4x8(PackedColor);
 
-    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
+    vertexColor = Color * sample_lightmap2(Sampler2, Light);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     const int rSectionIndex = gl_BaseInstance;
     fadeFactor = SectionFadeFactors[rSectionIndex];
