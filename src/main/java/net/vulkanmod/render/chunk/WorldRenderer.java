@@ -80,12 +80,8 @@ public class WorldRenderer {
     private final Minecraft minecraft;
     private ClientLevel level;
     private int renderDistance;
-    private final RenderBuffers renderBuffers;
 
-    private final EntityRenderDispatcher entityRenderDispatcher;
     private final BlockEntityRenderDispatcher blockEntityRenderDispatcher;
-    private final LevelRenderState levelRenderState;
-    private final FeatureRenderDispatcher featureRenderDispatcher;
 
     private float partialTick;
     private final Vector3d cameraPos = new Vector3d();
@@ -102,8 +98,6 @@ public class WorldRenderer {
 
     private SectionGraph sectionGraph;
     private boolean graphNeedsUpdate;
-
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
     private final TaskDispatcher taskDispatcher;
 
@@ -124,11 +118,7 @@ public class WorldRenderer {
                           FeatureRenderDispatcher featureRenderDispatcher)
     {
         this.minecraft = Minecraft.getInstance();
-        this.renderBuffers = renderBuffers;
-        this.entityRenderDispatcher = entityRenderDispatcher;
         this.blockEntityRenderDispatcher = blockEntityRenderDispatcher;
-        this.levelRenderState = levelRenderState;
-        this.featureRenderDispatcher = featureRenderDispatcher;
 
         this.renderRegionCache = new RenderRegionBuilder();
         this.taskDispatcher = new TaskDispatcher();
@@ -266,9 +256,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);
@@ -418,12 +405,6 @@ public class WorldRenderer {
         if (renderType == TerrainRenderType.CUTOUT || renderType == TerrainRenderType.TRIPWIRE) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        // Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setModelOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         Renderer.popDebugSection();

@@ -10,7 +10,6 @@ import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_FRAGMENT_BIT;
 public class PipelineConfigs {
     public static final PipelineConfig.UB TERRAIN_UB0 = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT)
                                                     .addUniform("mat4", "MVP")
-                                                    .addUniform("int", "CurrentTime")
                                                     .build();
 
     public static final PipelineConfig.UB TERRAIN_UB1 = PipelineConfig.UB.builder(1, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -28,7 +27,7 @@ public class PipelineConfigs {
                                                                   .build();
 
     public static final PipelineConfig.UB TERRAIN_PC = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT) // Binding ignored
-                                                                 .addUniform("vec2", "ab")
+                                                                 .addUniform("vec2", "ptr0")
                                                                  .addUniform("vec3", "ModelOffset")
                                                                   .build();
 

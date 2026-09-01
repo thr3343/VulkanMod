@@ -25,7 +25,7 @@ public class Buffer {
     protected long offset;
 
     protected long dataPtr;
-    protected long ptr;
+    protected long gpuPtr;
 
     public Buffer(String name, int usage, MemoryType type) {
         this.name = name;
@@ -46,7 +46,7 @@ public class Buffer {
             this.dataPtr = MemoryManager.getInstance().Map(this.allocation).get(0);
         }
 
-        this.ptr = getBufferAddress();
+        this.gpuPtr = getBufferAddress();
     }
 
     private long getBufferAddress() {
@@ -123,8 +123,8 @@ public class Buffer {
         return dataPtr;
     }
 
-    public long getPtr() {
-        return ptr;
+    public long getGpuPtr() {
+        return gpuPtr;
     }
 
     public void setBufferSize(long size) {

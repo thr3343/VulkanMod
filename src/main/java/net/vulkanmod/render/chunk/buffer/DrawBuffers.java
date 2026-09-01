@@ -36,13 +36,11 @@ public class DrawBuffers {
 
     private static final long cmdBufferPtr = MemoryUtil.nmemAlignedAlloc(CMD_STRIDE, (long) ChunkAreaManager.AREA_SIZE * QuadFacing.COUNT * CMD_STRIDE);
 
-    private final int index;
-    public final int vertexSize = PipelineManager.getTerrainVertexFormat().getVertexSize();
+    public static final int vertexSize = PipelineManager.getTerrainVertexFormat().getVertexSize();
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated = false;
-    AreaBuffer indexBuffer;
+    private AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     private final UniformBuffer sectionDataBuffer = new UniformBuffer(ChunkAreaManager.AREA_SIZE * 4, MemoryTypes.HOST_MEM);
@@ -57,7 +55,6 @@ public class DrawBuffers {
 
     // Need ugly minHeight parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
-        this.index = index;
         this.origin = origin;
         this.minHeight = minHeight;
 
@@ -183,8 +180,6 @@ public class DrawBuffers {
     }
 
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType renderType) {
-        this.allocated = true;
-
         int initialSize = switch (renderType) {
             case SOLID -> 100000;
             case CUTOUT -> 250000;
@@ -217,7 +212,7 @@ public class DrawBuffers {
 
         ByteBuffer byteBuffer = stack.malloc(12+8);
 
-        byteBuffer.putLong(0, sectionDataBuffer.getPtr());
+        byteBuffer.putLong(0, sectionDataBuffer.getGpuPtr());
         byteBuffer.putFloat(8, xOffset);
         byteBuffer.putFloat(12, yOffset);
         byteBuffer.putFloat(16, zOffset);
@@ -505,7 +500,7 @@ public class DrawBuffers {
     }
 
     public void releaseBuffers() {
-        if (!this.allocated)
+        if (this.vertexBuffers.isEmpty())
             return;
 
         this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
@@ -514,8 +509,6 @@ public class DrawBuffers {
         if (this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
         this.indexBuffer = null;
-
-        this.allocated = false;
     }
 
     public void free() {
