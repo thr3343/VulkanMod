@@ -5,35 +5,24 @@
 
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_spirv_intrinsics : require
+#extension GL_EXT_buffer_reference2 : require
 
 layout (binding = 0) uniform UB0 {
     mat4 MVP;
-    int CurrentTime;
 };
 
-layout(binding = 1) uniform UB1 {
-    vec4 FogColor;
-    float FogEnvironmentalStart;
-    float FogEnvironmentalEnd;
-    float FogRenderDistanceStart;
-    float FogRenderDistanceEnd;
-    float FogSkyEnd;
-    float FogCloudsEnd;
-    float AlphaCutout;
-    ivec2 TextureSize;
-    vec2 TexelSize;
-    int UseRgss;
-};
-
-layout (binding = 2, scalar) uniform SectionData {
+layout (buffer_reference, buffer_reference_align = 2048) buffer readonly restrict SectionData {
     float SectionFadeFactors[512];
 };
 
-layout (push_constant) uniform pushConstant {
+// TODO: Check for perf regressions from scalar (Very unlikely)
+
+layout (push_constant, scalar) uniform pushConstant {
+    restrict SectionData chunkAreaInfo;
     vec3 ModelOffset;
 };
 
-layout (binding = 4) uniform sampler2D Sampler2;
+layout (binding = 3) uniform sampler2D Sampler2;
 
 
 layout (location = 0) out vec4 vertexColor;
@@ -86,7 +75,7 @@ void main() {
     vertexColor = Color * sample_lightmap2(Sampler2, Light);
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     const int rSectionIndex = gl_BaseInstance;
-    fadeFactor = SectionFadeFactors[rSectionIndex];
+    fadeFactor = chunkAreaInfo.SectionFadeFactors[rSectionIndex];
 
     texCoord0 = UV0 * UV_INV;
 //    texCoord0 = UV0;

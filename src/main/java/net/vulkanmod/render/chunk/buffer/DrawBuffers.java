@@ -16,7 +16,6 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
@@ -216,11 +215,12 @@ public class DrawBuffers {
         float yOffset = (float) ((this.origin.y) + POS_OFFSET - camY);
         float zOffset = (float) ((this.origin.z) + POS_OFFSET - camZ);
 
-        ByteBuffer byteBuffer = stack.malloc(12);
+        ByteBuffer byteBuffer = stack.malloc(12+8);
 
-        byteBuffer.putFloat(0, xOffset);
-        byteBuffer.putFloat(4, yOffset);
-        byteBuffer.putFloat(8, zOffset);
+        byteBuffer.putLong(0, sectionDataBuffer.getPtr());
+        byteBuffer.putFloat(8, xOffset);
+        byteBuffer.putFloat(12, yOffset);
+        byteBuffer.putFloat(16, zOffset);
 
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
@@ -488,7 +488,6 @@ public class DrawBuffers {
     }
 
     public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType,
-                            UBO sectionData,
                             double camX, double camY, double camZ,
                             long currentTime, int fadeTimeMs, float fadeTimeInv
     ) {
@@ -499,8 +498,6 @@ public class DrawBuffers {
         }
 
         this.updateFadeUniform(currentTime, fadeTimeMs, fadeTimeInv);
-
-        sectionData.getBufferSlice().set(sectionDataBuffer, 0, (int) sectionDataBuffer.getBufferSize());
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);

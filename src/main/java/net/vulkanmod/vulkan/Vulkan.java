@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.util.VkResult;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.vma.Vma;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
@@ -162,6 +163,7 @@ public class Vulkan {
             vulkanFunctions.set(Instance.instance, DeviceManager.vkDevice);
 
             VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.calloc(stack);
+            allocatorCreateInfo.flags(Vma.VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT);
             allocatorCreateInfo.physicalDevice(DeviceManager.physicalDevice);
             allocatorCreateInfo.device(DeviceManager.vkDevice);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
