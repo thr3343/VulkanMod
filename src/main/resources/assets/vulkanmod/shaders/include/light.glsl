@@ -16,7 +16,7 @@ vec4 sample_lightmap(sampler2D lightMap, ivec2 uv) {
 
 vec4 sample_lightmap2(sampler2D lightMap, uint uv) {
 //    const ivec2 lm = ivec2(bitfieldExtract(uv, 4, 4), bitfieldExtract(uv, 12, 4));
-    ivec2 lm = ivec2((uv >> 12) & 0xFu, (uv >> 4) & 0xFu);
+    ivec2 lm = ivec2((uv >> 4) & 0xFu, (uv >> 12) & 0xFu);
     return texelFetch(lightMap, lm, 0);
 }
 
