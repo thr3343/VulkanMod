@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.memory.buffer;
 
-import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
@@ -63,7 +62,6 @@ public class IndirectBuffer extends Buffer {
             return;
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
-        Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
 

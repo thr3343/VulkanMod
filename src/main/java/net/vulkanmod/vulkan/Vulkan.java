@@ -65,8 +65,13 @@ public class Vulkan {
         }
     }
 
-    public static final Set<String> REQUIRED_DEVICE_EXTENSIONS = Set.of(
+    public static final Set<String> REQUIRED_DEVICE_EXTENSIONS = new HashSet<>(Set.of(
             "VK_KHR_dynamic_rendering", "VK_KHR_synchronization2", "VK_KHR_swapchain"
+    ));
+
+    public static final Set<String> OPTIONAL_EXTENSION = Set.of(
+            "VK_AMD_buffer_marker", "VK_NV_device_diagnostic_checkpoints", "VK_EXT_multi_draw", "VK_KHR_portability_subset", // VanillaVK
+            EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME // VkMod-Specific
     );
 
     public static long window;
