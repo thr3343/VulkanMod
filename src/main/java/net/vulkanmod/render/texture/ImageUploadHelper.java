@@ -27,7 +27,9 @@ public class ImageUploadHelper {
 
         SpriteUpdateUtil.transitionLayouts();
 
-        queue.submitCommands(this.currentCmdBuffer, wait ? VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK13.VK_PIPELINE_STAGE_2_COPY_BIT : VK13.VK_PIPELINE_STAGE_2_NONE); // Wait for animation passes + texture writes
+        queue.addPending(this.currentCmdBuffer, wait ? VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK13.VK_PIPELINE_STAGE_2_COPY_BIT : VK13.VK_PIPELINE_STAGE_2_NONE); // Wait for animation passes + texture writes
+//        queue.executeImmediate(this.currentCmdBuffer, wait ? VK13.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK13.VK_PIPELINE_STAGE_2_COPY_BIT : VK13.VK_PIPELINE_STAGE_2_NONE); // Wait for animation passes + texture writes
+
 
         this.currentCmdBuffer = null;
     }

@@ -319,6 +319,7 @@ public class Renderer {
         mainPass.end(currentCmdBuffer);
 
         submitUploads();
+        DeviceManager.getGraphicsQueue().executePendingCmds();
         getStagingBuffer().reset();
 
         submitFrame();
@@ -437,6 +438,8 @@ public class Renderer {
             final var graphicsQueue = DeviceManager.getGraphicsQueue();
             final var transferQueue = DeviceManager.getTransferQueue();
 
+            graphicsQueue.executePendingCmds();
+
             var commandBufferSubmitInfo = VkCommandBufferSubmitInfo.calloc(1, stack)
                     .sType$Default()
                     .commandBuffer(currentCmdBuffer);
@@ -492,7 +495,8 @@ public class Renderer {
             if (UploadManager.INSTANCE.hasSubmit()) {
                 transferQueue.waitSubmits();
             }
-            transferQueue.submitCommands(transferCb, VK13.VK_PIPELINE_STAGE_2_COPY_BIT); // Ensure writes are finished before shader reads + main graphics execution (Sync Hazard Fixes)
+            transferQueue.addPending(transferCb, VK13.VK_PIPELINE_STAGE_2_COPY_BIT); // Ensure writes are finished before shader reads + main graphics execution (Sync Hazard Fixes)
+            transferQueue.executePendingCmds();
 
             transferCbs.set(currentFrame, transferQueue.getCommandPool().getCommandBuffer());
         }

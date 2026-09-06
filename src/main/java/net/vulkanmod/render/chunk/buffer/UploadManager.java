@@ -33,7 +33,7 @@ public class UploadManager {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
+        this.queue.executeImmediate(commandBuffer);
         this.sub = commandBuffer.fence;
 
         this.commandBuffer = null;
