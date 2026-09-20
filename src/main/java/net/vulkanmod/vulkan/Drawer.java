@@ -68,7 +68,7 @@ public class Drawer {
             );
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
-        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryType.HOST_MEM));
 
         if (this.indexBuffers != null) {
             Arrays.stream(this.indexBuffers).iterator().forEachRemaining(
@@ -76,7 +76,7 @@ public class Drawer {
             );
         }
         this.indexBuffers = new IndexBuffer[framesNum];
-        Arrays.setAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_IB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_IB_SIZE, MemoryType.HOST_MEM));
 
         if (this.uniformBuffers != null) {
             Arrays.stream(this.uniformBuffers).iterator().forEachRemaining(
@@ -84,7 +84,7 @@ public class Drawer {
             );
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
-        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.BAR_MEM));
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryType.BAR_MEM));
 
         this.getGpuBuffers().createBuffers(this.vertexBuffers, this.indexBuffers);
     }

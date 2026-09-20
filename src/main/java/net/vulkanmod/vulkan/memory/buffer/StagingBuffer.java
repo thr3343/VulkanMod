@@ -4,7 +4,7 @@ import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.texture.ImageUploadHelper;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -20,7 +20,7 @@ public class StagingBuffer extends Buffer {
     }
 
     public StagingBuffer(long size) {
-        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
+        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryType.HOST_MEM);
         this.createBuffer(size);
     }
 

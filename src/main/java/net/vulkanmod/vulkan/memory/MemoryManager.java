@@ -106,7 +106,7 @@ public class MemoryManager {
 //        images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+    public void createBuffer(long size, int usage, MemoryType memoryType, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
         try (MemoryStack stack = stackPush()) {
 
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
@@ -115,7 +115,8 @@ public class MemoryManager {
             bufferInfo.usage(usage);
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
-            allocationInfo.requiredFlags(properties);
+            allocationInfo.requiredFlags(memoryType.properties);
+            allocationInfo.memoryTypeBits(memoryType.typeBits);
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
@@ -129,20 +130,20 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void createBuffer(Buffer buffer, long size, int usage, int properties) {
+    public synchronized void createBuffer(Buffer buffer, long size, int usage, MemoryType memoryType) {
         try (MemoryStack stack = stackPush()) {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
+            this.createBuffer(size, usage, memoryType, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
             buffer.setBufferSize(size);
             // TODO: No usage/out of mem checks for BAR_LOCAL mem atm (i'm lazy)
-            switch (buffer.type.type) {
-                case DEVICE_LOCAL -> deviceMemory += size;
-                case BAR_LOCAL -> barMemory += size;
+            switch (buffer.type) {
+                case GPU_MEM -> deviceMemory += size;
+                case BAR_MEM -> barMemory += size;
                 case null, default -> nativeMemory += size;
             }
 
@@ -220,9 +221,9 @@ public class MemoryManager {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
         // TODO: No usage/out of mem checks for BAR_LOCAL mem atm (i'm lazy)
         switch (bufferInfo.type()) {
-            case DEVICE_LOCAL -> deviceMemory -= bufferInfo.bufferSize();
-            case BAR_LOCAL -> barMemory -= bufferInfo.bufferSize();
-            case null, default -> nativeMemory -= bufferInfo.bufferSize();
+            case GPU_MEM -> deviceMemory -= bufferInfo.bufferSize();
+            case BAR_MEM -> barMemory -= bufferInfo.bufferSize();
+            case HOST_MEM -> nativeMemory -= bufferInfo.bufferSize();
         }
 
         buffers.remove(bufferInfo.id());
@@ -319,7 +320,7 @@ public class MemoryManager {
     }
 
     public int getDeviceMemoryMB() {
-        return bytesInMb(MemoryTypes.GPU_MEM.vkMemoryHeap.size());
+        return bytesInMb(MemoryType.GPU_MEM.maxSize);
     }
 
     int bytesInMb(long bytes) {
@@ -332,7 +333,7 @@ public class MemoryManager {
 
             vmaGetHeapBudgets(ALLOCATOR, vmaBudgets);
 
-            VmaBudget vmaBudget = vmaBudgets.get(MemoryTypes.GPU_MEM.vkMemoryType.heapIndex());
+            VmaBudget vmaBudget = vmaBudgets.get(MemoryType.GPU_MEM.heapIndex);
             long usage = vmaBudget.usage();
             long budget = vmaBudget.budget();
 

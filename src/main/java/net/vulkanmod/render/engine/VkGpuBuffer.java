@@ -8,7 +8,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryType;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public class VkGpuBuffer extends GpuBuffer {
         boolean mappable = (usage & GpuBuffer.USAGE_MAP_READ) != 0 |
                            (usage & GpuBuffer.USAGE_MAP_WRITE) != 0 |
                            (usage & GpuBuffer.USAGE_HINT_CLIENT_STORAGE) != 0;
-        MemoryType memoryType = (usage & GpuBuffer.USAGE_UNIFORM) != 0 ? MemoryTypes.BAR_MEM : mappable ? MemoryTypes.HOST_MEM : MemoryTypes.GPU_MEM;
+        MemoryType memoryType = (usage & GpuBuffer.USAGE_UNIFORM) != 0 ? MemoryType.BAR_MEM : mappable ? MemoryType.HOST_MEM : MemoryType.GPU_MEM;
 
         String label = supplier != null ? supplier.get() : null;
         this.buffer = new Buffer(label, vkUsage, memoryType);

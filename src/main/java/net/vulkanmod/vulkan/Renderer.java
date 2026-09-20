@@ -340,7 +340,7 @@ public class Renderer {
                 VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
                 presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
-                presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
+                presentInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
 
                 presentInfo.swapchainCount(1);
                 presentInfo.pSwapchains(stack.longs(swapChain.getId()));
@@ -379,7 +379,7 @@ public class Renderer {
 
         final var waitPresent = swapChain.isAcquired();
 
-        var waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(waitPresent ? 3 : 2, stack);
+        var waitSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(waitPresent ? 2 : 2, stack);
             waitSemaphoreSubmitInfo.get().sType$Default()
                     .semaphore(graphicsQueue.getQueueSemaphore())
                     .stageMask(VK13.VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT) // Animation Pass completion (i.e. LightMap Sampler Pass)
@@ -393,21 +393,21 @@ public class Renderer {
         var mainSemaphoreSubmitInfo = VkSemaphoreSubmitInfo.calloc(waitPresent ? 2 : 1, stack);
             mainSemaphoreSubmitInfo.get().sType$Default()
                     .semaphore(graphicsQueue.getQueueSemaphore())
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_NONE)
+                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT)
                     .value(graphicsQueue.submitFenceAdd()); // Submit to graphics queue
 
 
-        if (waitPresent) {
-            waitSemaphoreSubmitInfo.get().sType$Default()
-                    .semaphore(imageAvailableSemaphores.get(currentFrame))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_CLEAR_BIT) // Attachment operations + Transition from present
-                    .value(0);
-
-            mainSemaphoreSubmitInfo.get().sType$Default()
-                    .semaphore(renderFinishedSemaphores.get(imageIndex))
-                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Transition to present
-                    .value(0);
-        }
+//        if (waitPresent) {
+//            waitSemaphoreSubmitInfo.get().sType$Default()
+//                    .semaphore(imageAvailableSemaphores.get(currentFrame))
+//                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Attachment operations + Transition from present
+//                    .value(0);
+////
+////            mainSemaphoreSubmitInfo.get().sType$Default()
+////                    .semaphore(renderFinishedSemaphores.get(imageIndex))
+////                    .stageMask(VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT) // Transition to present
+////                    .value(0);
+//        }
 
         var submitInfo = VkSubmitInfo2.calloc(1, stack)
                 .sType$Default()
