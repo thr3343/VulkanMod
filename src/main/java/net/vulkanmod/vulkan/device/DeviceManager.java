@@ -178,6 +178,7 @@ public abstract class DeviceManager {
             VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
             deviceVulkan12Features.sType$Default();
             deviceVulkan12Features.hostQueryReset(true);
+            deviceVulkan12Features.scalarBlockLayout(true);
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();

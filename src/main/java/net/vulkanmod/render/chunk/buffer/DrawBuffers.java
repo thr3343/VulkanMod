@@ -46,7 +46,7 @@ public class DrawBuffers {
     AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
-    private final UniformBuffer sectionDataBuffer = new UniformBuffer(ChunkAreaManager.AREA_SIZE * 2 * 4, MemoryTypes.HOST_MEM);
+    private final UniformBuffer sectionDataBuffer = new UniformBuffer(ChunkAreaManager.AREA_SIZE * 4, MemoryTypes.HOST_MEM);
 
     final long drawParamsPtr;
     final int[] sectionIndices = new int[512];
@@ -112,7 +112,7 @@ public class DrawBuffers {
             doUpload = true;
         }
 
-        int baseInstance = section.inAreaIndex;
+        int baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());;
 
         int offset = 0;
         for (int i = 0; i < QuadFacing.COUNT; i++) {
@@ -152,19 +152,15 @@ public class DrawBuffers {
             DrawParametersBuffer.setBaseInstance(paramPtr, baseInstance);
         }
 
-        updateUniformData(section);
+        updateUniformData(baseInstance, section.getCompiledSection());
 
         buffer.release();
     }
 
-    private void updateUniformData(RenderSection section) {
-        int encodedOffset = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
-        int ptrOffset = section.inAreaIndex * 4;
-        MemoryUtil.memPutInt(sectionDataBuffer.getPointer() + ptrOffset, encodedOffset);
-
-        if (section.getCompiledSection() == CompiledSection.UNCOMPILED) {
+    private void updateUniformData(int sectionOffset, CompiledSection compiledSection) {
+        if (compiledSection == CompiledSection.UNCOMPILED) {
             long buildTime = System.currentTimeMillis();
-            this.buildTimes[section.inAreaIndex] = buildTime;
+            this.buildTimes[sectionOffset] = buildTime;
 
             if (buildTime > this.latestBuildTime) {
                 this.latestBuildTime = buildTime;
@@ -174,7 +170,7 @@ public class DrawBuffers {
 
     private void updateFadeUniform(long currentTime, int fadeTimeMs, float fadeTimeInv) {
         if (this.lastFadeUpdate < this.latestBuildTime + fadeTimeMs) {
-            int ptrOffset = 512 * 4;
+            int ptrOffset = 0;
             for (int i = 0; i < 512; i++) {
                 long delta = currentTime - this.buildTimes[i];
                 float fade = fadeTimeMs > 0 ? Mth.clamp(delta * fadeTimeInv, 0.0f, 1.0f) : 1.0f;
@@ -209,10 +205,10 @@ public class DrawBuffers {
     }
 
     private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
-        final int xOffset1 = (xOffset & 127);
-        final int zOffset1 = (zOffset & 127);
-        final int yOffset1 = (yOffset - this.minHeight & 127);
-        return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
+        final int xOffset1 = (xOffset & 127) >> 4;
+        final int zOffset1 = (zOffset & 127) >> 4;
+        final int yOffset1 = (yOffset - this.minHeight & 127) >> 4;
+        return yOffset1 << 6 | zOffset1 << 3 | xOffset1;
     }
 
     private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
