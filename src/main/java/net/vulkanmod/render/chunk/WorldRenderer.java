@@ -48,7 +48,6 @@ import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import net.vulkanmod.vulkan.memory.buffer.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
@@ -384,15 +383,15 @@ public class WorldRenderer {
         float fadeTimeInv = fadeTime > 0 ? 1 / (fadeTime * 1000) : 1;
 
         IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
-        Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer, indexBuffer.indexType.value);
-
-        UBO sectionData = pipeline.getUBO(2);
-        sectionData.setUseGlobalBuffer(false);
+        final var commandBuffer = Renderer.getCommandBuffer();
+        Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer, indexBuffer.indexType.value);
 
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(renderType)) {
             renderType.setCutoutUniform();
+
+            renderer.uploadAndBindUBOs(pipeline);
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
@@ -401,12 +400,9 @@ public class WorldRenderer {
 
                 if (drawBuffers.getAreaBuffer(renderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, renderType,
-                                            sectionData,
-                                            camX, camY, camZ,
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, renderType,
+                            camX, camY, camZ,
                                             currentTimeMs, fadeTimeMs, fadeTimeInv);
-
-                    renderer.uploadAndBindUBOs(pipeline);
 
                     if (indirectDraw) {
                         drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, renderType);
@@ -421,12 +417,6 @@ public class WorldRenderer {
         if (renderType == TerrainRenderType.CUTOUT || renderType == TerrainRenderType.TRIPWIRE) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
-
-        // Need to reset push constants in case the pipeline will still be used for rendering
-        if (!indirectDraw) {
-            VRenderSystem.setModelOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
         }
 
         Renderer.popDebugSection();

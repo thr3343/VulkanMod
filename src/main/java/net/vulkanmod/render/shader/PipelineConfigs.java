@@ -23,11 +23,8 @@ public class PipelineConfigs {
                                                                   .addUniform("vec2", "TexelSize")
                                                                   .build();
 
-    public static final PipelineConfig.UB TERRAIN_UB2 = PipelineConfig.UB.builder("SectionData", 2, VK_SHADER_STAGE_VERTEX_BIT)
-                                                    .setSize(2048)
-                                                    .build();
-
     public static final PipelineConfig.UB TERRAIN_PC = PipelineConfig.UB.builder(0, VK_SHADER_STAGE_VERTEX_BIT) // Binding ignored
+                                                                 .addUniform("vec2", "ptr0")
                                                                  .addUniform("vec3", "ModelOffset")
                                                                   .build();
 
@@ -36,10 +33,9 @@ public class PipelineConfigs {
                                                         .withShader(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, "terrain/terrain")
                                                         .addUB(TERRAIN_UB0)
                                                         .addUB(TERRAIN_UB1)
-                                                        .addUB(TERRAIN_UB2)
                                                         .setPushConstants(TERRAIN_PC)
-                                                        .addImageDescriptor(3, "sampler2D", "Sampler0", 0)
-                                                        .addImageDescriptor(4, "sampler2D", "LightTexture", 2)
+                                                        .addImageDescriptor(2, "sampler2D", "Sampler0", 0)
+                                                        .addImageDescriptor(3, "sampler2D", "LightTexture", 2)
                                                         .build();
 
     static final PipelineConfig TERRAIN_EARLY_Z_CONFIG = PipelineConfig.builder()
@@ -47,10 +43,9 @@ public class PipelineConfigs {
                                                                        .withShader(SpirvCompiler.ShaderKind.FRAGMENT_SHADER, "terrain_earlyZ/terrain_earlyZ")
                                                                        .addUB(TERRAIN_UB0)
                                                                        .addUB(TERRAIN_UB1)
-                                                                       .addUB(TERRAIN_UB2)
                                                                        .setPushConstants(TERRAIN_PC)
-                                                                       .addImageDescriptor(3, "sampler2D", "Sampler0", 0)
-                                                                       .addImageDescriptor(4, "sampler2D", "LightTexture", 2)
+                                                                       .addImageDescriptor(2, "sampler2D", "Sampler0", 0)
+                                                                       .addImageDescriptor(3, "sampler2D", "LightTexture", 2)
                                                                        .build();
 
 }

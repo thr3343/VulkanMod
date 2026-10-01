@@ -179,6 +179,7 @@ public abstract class DeviceManager {
             deviceVulkan12Features.sType$Default();
             deviceVulkan12Features.hostQueryReset(true);
             deviceVulkan12Features.scalarBlockLayout(true);
+            deviceVulkan12Features.bufferDeviceAddress(true);
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
@@ -186,6 +187,7 @@ public abstract class DeviceManager {
             deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
             // TODO: Disable indirect draw option if unsupported.
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+            deviceFeatures.features().shaderInt64(true);
 
             // Must not set line width to anything other than 1.0 if this is not supported
             if (device.availableFeatures.features().wideLines()) {

@@ -4,7 +4,7 @@ layout(constant_id = 0) const bool USE_RGSS = false;
 #include "fog.glsl"
 #extension GL_KHR_shader_subgroup_quad : require
 #extension GL_KHR_shader_subgroup_ballot : require
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 2) uniform sampler2D Sampler0;
 
 layout(binding = 1) uniform UB1 {
     vec4 FogColor;

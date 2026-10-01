@@ -8,6 +8,7 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_BUFFER;
+import static org.lwjgl.vulkan.VK12.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 public class Buffer {
     public final String name;
@@ -22,10 +23,11 @@ public class Buffer {
     protected long offset;
 
     protected long dataPtr;
+    protected long gpuPtr;
 
     public Buffer(String name, int usage, MemoryType type) {
         this.name = name;
-        this.usage = usage;
+        this.usage = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT; // Doesn't seem to effect perf at all; just set everything to use BDA for now (easily reverted if an actual perf regression is found)
         this.type = type;
     }
 
@@ -41,6 +43,8 @@ public class Buffer {
         if (this.type.mappable()) {
             this.dataPtr = MemoryManager.getInstance().Map(this.allocation).get(0);
         }
+
+        this.gpuPtr = MemoryManager.getInstance().getGpuPtr(this.id);
     }
 
     public void resizeBuffer(long newSize) {
@@ -98,6 +102,10 @@ public class Buffer {
 
     public long getDataPtr() {
         return dataPtr;
+    }
+
+    public long getGpuPtr() {
+        return gpuPtr;
     }
 
     public void setBufferSize(long size) {

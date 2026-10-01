@@ -17,7 +17,9 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.util.vma.VmaBudget;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
+import org.lwjgl.vulkan.VkBufferDeviceAddressInfo;
 import org.lwjgl.vulkan.VkImageCreateInfo;
 
 import java.nio.LongBuffer;
@@ -210,6 +212,20 @@ public class MemoryManager {
         vmaMapMemory(ALLOCATOR, allocation, data);
 
         return data;
+    }
+
+    public long getGpuPtr(long id) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            final VkBufferDeviceAddressInfo bufferAddressInfo = VkBufferDeviceAddressInfo.calloc(stack);
+            bufferAddressInfo.sType$Default();
+            bufferAddressInfo.buffer(id);
+
+            final long ptr = VK12.vkGetBufferDeviceAddress(Vulkan.getVkDevice(), bufferAddressInfo);
+
+            if (ptr == VK_NULL_HANDLE) throw new RuntimeException(); // Should never throw, but just in case it does (e.g. buggy drivers)
+
+            return ptr;
+        }
     }
 
     public static void freeBuffer(long buffer, long allocation) {
