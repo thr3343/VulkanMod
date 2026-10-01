@@ -6,7 +6,7 @@ import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffers;
 import net.vulkanmod.vulkan.queue.Queue;
@@ -95,7 +95,6 @@ public class Vulkan {
         setupDepthFormat();
 
         createVma();
-        MemoryTypes.createMemoryTypes();
 
         createCommandPool();
     }

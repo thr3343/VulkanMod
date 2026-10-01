@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.memory.buffer.index;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
 import org.lwjgl.system.MemoryUtil;
 
@@ -56,7 +56,7 @@ public class AutoIndexBuffer {
         }
 
         int size = buffer.capacity();
-        this.indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM, indexType);
+        this.indexBuffer = new IndexBuffer(size, MemoryType.GPU_MEM, indexType);
         this.indexBuffer.copyBuffer(buffer, buffer.remaining());
 
         MemoryUtil.memFree(buffer);

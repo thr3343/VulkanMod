@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.texture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -46,7 +47,7 @@ public abstract class ImageUtil {
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
             MemoryManager.getInstance().createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                     MemoryType.HOST_MEM,
                                                      pStagingBuffer, pStagingAllocation);
 
             copyImageToBuffer(stack, commandBuffer.getHandle(), pStagingBuffer.get(0), image.getId(), 0, image.width,
