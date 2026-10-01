@@ -14,14 +14,13 @@ import static org.lwjgl.system.libc.LibCString.nmemcpy;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class StagingBuffer extends Buffer {
-    private static final long DEFAULT_SIZE = 64 * 1024 * 1024;
 
-    public StagingBuffer() {
-        this(DEFAULT_SIZE);
+    public StagingBuffer(boolean useGpuMem) {
+        this((useGpuMem ? 16 : 64) * 1024 * 1024, useGpuMem ? MemoryType.BAR_MEM : MemoryType.HOST_MEM);
     }
 
-    public StagingBuffer(long size) {
-        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryType.HOST_MEM);
+    public StagingBuffer(long size, MemoryType memoryType) {
+        super("Staging buffer", VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memoryType);
         this.createBuffer(size);
     }
 
@@ -57,8 +56,12 @@ public class StagingBuffer extends Buffer {
 
     private void submitUploads() {
         // Submit and wait all recorded uploads before resetting the buffer
-        UploadManager.INSTANCE.submitUploads();
-        ImageUploadHelper.INSTANCE.submitCommands(false);
+        if (this.type == MemoryType.BAR_MEM) {
+            UploadManager.INSTANCE.submitUploads();
+        }
+        else {
+            ImageUploadHelper.INSTANCE.submitCommands(false);
+        }
         Renderer.getInstance().flushCmds();
         Synchronization.INSTANCE.waitFences();
 

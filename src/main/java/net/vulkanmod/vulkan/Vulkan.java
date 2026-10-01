@@ -81,7 +81,8 @@ public class Vulkan {
 
     private static long allocator;
 
-    private static final StagingBuffers stagingBuffers = new StagingBuffers();
+    private static final StagingBuffers stagingBuffers = new StagingBuffers(false);
+    private static final StagingBuffers chunkStaging = new StagingBuffers(true);
 
     public static boolean use24BitsDepthFormat = true;
     public static boolean surfaceCapabilities2Supported = false;
@@ -115,6 +116,7 @@ public class Vulkan {
 
     static void createStagingBuffers() {
         stagingBuffers.updateFrameCount(Renderer.getFramesNum());
+        chunkStaging.updateFrameCount(Renderer.getFramesNum());
     }
 
     static void setupDepthFormat() {
@@ -153,6 +155,7 @@ public class Vulkan {
 
     private static void freeStagingBuffers() {
         stagingBuffers.free();
+        chunkStaging.free();
     }
 
     private static void createVma() {
@@ -236,8 +239,16 @@ public class Vulkan {
         return stagingBuffers.getStagingBuffer();
     }
 
+    public static StagingBuffer getChunkStaging() {
+        return chunkStaging.getStagingBuffer();
+    }
+
     public static StagingBuffers getStagingBuffers() {
         return stagingBuffers;
+    }
+
+    public static StagingBuffers getChunkStagings() {
+        return chunkStaging;
     }
 
     public static Device getDevice() {

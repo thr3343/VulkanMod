@@ -258,6 +258,7 @@ public class Renderer {
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
         Vulkan.getStagingBuffers().beginFrame(currentFrame);
+        Vulkan.getChunkStagings().beginFrame(currentFrame);
 
         this.preInitFrame();
 
@@ -410,6 +411,7 @@ public class Renderer {
             }
 
             Vulkan.getStagingBuffers().endFrame(currentFrame);
+            Vulkan.getChunkStagings().endFrame(currentFrame);
             currentScissorWidth = currentScissorHeight = 0;
             currentFrame = (currentFrame + 1) % framesNum;
             swapChain.setAcquired(false);

@@ -2,13 +2,19 @@ package net.vulkanmod.vulkan.memory.buffer;
 
 import it.unimi.dsi.fastutil.Stack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.memory.MemoryType;
 
 public class StagingBuffers {
     final Stack<StagingBuffer> availableBuffers = new ObjectArrayList<>();
+    private final boolean useGpuMem;
 
     ObjectArrayList<StagingBuffer>[] usedBuffersByFrame;
     StagingBuffer currentBuffer;
     boolean inFrame = false;
+
+    public StagingBuffers(boolean useGpuMem) {
+        this.useGpuMem = useGpuMem;
+    }
 
     public void updateFrameCount(int frames) {
         // Here we are sure every upload has finished,
@@ -22,7 +28,7 @@ public class StagingBuffers {
         }
         else {
             for (int i = 0; i < frames + 1; i++) {
-                availableBuffers.push(new StagingBuffer());
+                availableBuffers.push(new StagingBuffer(useGpuMem));
             }
         }
 
@@ -38,7 +44,7 @@ public class StagingBuffers {
     public StagingBuffer getStagingBuffer() {
         if (currentBuffer == null) {
             if (availableBuffers.isEmpty()) {
-                availableBuffers.push(new StagingBuffer());
+                availableBuffers.push(new StagingBuffer(useGpuMem));
             }
 
             currentBuffer = availableBuffers.pop();
@@ -65,7 +71,7 @@ public class StagingBuffers {
         }
 
         if (availableBuffers.isEmpty()) {
-            availableBuffers.push(new StagingBuffer());
+            availableBuffers.push(new StagingBuffer(useGpuMem));
         }
 
         currentBuffer = availableBuffers.pop();
