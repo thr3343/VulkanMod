@@ -150,7 +150,7 @@ public class WorldRenderer {
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
         for (int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.HOST_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.BAR_MEM);
         }
     }
 

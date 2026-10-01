@@ -50,7 +50,7 @@ public class VkGpuBuffer extends GpuBuffer {
                            (usage & GpuBuffer.USAGE_MAP_WRITE) != 0 |
                            (usage & GpuBuffer.USAGE_HINT_CLIENT_STORAGE) != 0;
 
-        MemoryType memoryType =  mappable ? MemoryType.HOST_MEM : MemoryType.GPU_MEM;
+        MemoryType memoryType = (usage & GpuBuffer.USAGE_UNIFORM) != 0 ? MemoryType.BAR_MEM : mappable ? MemoryType.HOST_MEM : MemoryType.GPU_MEM;
 
         String label = supplier != null ? supplier.get() : null;
         this.buffer = new Buffer(label, vkUsage, memoryType);

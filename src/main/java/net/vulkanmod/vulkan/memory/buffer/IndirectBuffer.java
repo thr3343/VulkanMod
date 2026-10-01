@@ -44,6 +44,21 @@ public class IndirectBuffer extends Buffer {
         usedBytes += size;
     }
 
+    public void reserveOffset(int size) {
+        if (size > this.bufferSize - this.usedBytes) {
+            long oldId = this.id;
+            long oldSize = this.bufferSize;
+            resizeBuffer((long) (this.bufferSize * 1.5f));
+
+            if (commandBuffer == null)
+                commandBuffer = DeviceManager.getTransferQueue().beginCommands();
+
+            TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), oldId, 0, this.getId(), 0, oldSize);
+        }
+
+        this.usedBytes += size;
+    }
+
     public void submitUploads() {
         if (commandBuffer == null)
             return;

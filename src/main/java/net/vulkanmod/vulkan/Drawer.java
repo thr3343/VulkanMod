@@ -84,7 +84,7 @@ public class Drawer {
             );
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
-        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryType.HOST_MEM));
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryType.BAR_MEM));
 
         this.getGpuBuffers().createBuffers(this.vertexBuffers, this.indexBuffers);
     }
