@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffers;
 import net.vulkanmod.vulkan.queue.Queue;
@@ -86,6 +85,7 @@ public class Vulkan {
 
     public static boolean use24BitsDepthFormat = true;
     public static boolean surfaceCapabilities2Supported = false;
+    private static boolean hasChunkUploads = false;
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
     public static void initVulkan(long window) {
@@ -249,6 +249,20 @@ public class Vulkan {
 
     public static StagingBuffers getChunkStagings() {
         return chunkStaging;
+    }
+
+    public static void pushChunkUploadStagingSection() {
+        if(!hasChunkUploads) {
+            chunkStaging.beginFrame(Renderer.getCurrentFrame());
+            hasChunkUploads = true;
+        }
+    }
+
+    public static void popChunkUploadStagingSection() {
+        if(hasChunkUploads) {
+            chunkStaging.endFrame(Renderer.getCurrentFrame());
+            hasChunkUploads = false;
+        }
     }
 
     public static Device getDevice() {
