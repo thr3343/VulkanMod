@@ -15,6 +15,7 @@ import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.vma.Vma;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.util.vma.VmaBudget;
 import org.lwjgl.vulkan.VK12;
@@ -118,8 +119,10 @@ public class MemoryManager {
             bufferInfo.usage(usage);
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
+            allocationInfo.flags(memoryType == GPU_MEM ? 0 : VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+            allocationInfo.usage(memoryType != HOST_MEM ? VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE : VMA_MEMORY_USAGE_AUTO);
             allocationInfo.requiredFlags(memoryType.properties);
-            allocationInfo.memoryTypeBits(memoryType.typeBits); // Used to "lock" the allocation to the correct heap / MemoryType (e.g. BAR being allocated as HOST)
+            allocationInfo.memoryTypeBits(memoryType.typeBits); // Used to "lock" the allocation to the correct heap / MemoryType (e.g. BAR being incorrectly allocated as HOST)
 
             int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if (result != VK_SUCCESS) {
