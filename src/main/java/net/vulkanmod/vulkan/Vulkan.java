@@ -86,6 +86,7 @@ public class Vulkan {
 
     public static boolean use24BitsDepthFormat = true;
     public static boolean surfaceCapabilities2Supported = false;
+    private static boolean hasChunkUploads = false;
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
     public static void initVulkan(long window) {
@@ -249,6 +250,20 @@ public class Vulkan {
 
     public static StagingBuffers getChunkStagings() {
         return chunkStaging;
+    }
+
+    public static void pushChunkUploadStagingSection() {
+        if(!hasChunkUploads) {
+            Vulkan.getChunkStagings().beginFrame(Renderer.getCurrentFrame());
+            hasChunkUploads = true;
+        }
+    }
+
+    public static void popChunkUploadStagingSection() {
+        if(hasChunkUploads) {
+            Vulkan.getChunkStagings().endFrame(Renderer.getCurrentFrame());
+            hasChunkUploads = false;
+        }
     }
 
     public static Device getDevice() {
