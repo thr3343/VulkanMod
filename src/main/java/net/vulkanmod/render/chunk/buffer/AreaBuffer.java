@@ -101,7 +101,7 @@ public class AreaBuffer {
         }
 
         Buffer dst = this.buffer;
-        UploadManager.INSTANCE.recordUpload(dst, segment.offset + offset, size, byteBuffer);
+        UploadManager.recordUpload(dst, segment.offset + offset, size, byteBuffer);
     }
 
     public Segment upload(ByteBuffer byteBuffer, int oldOffset, long paramsPtr) {
@@ -134,7 +134,7 @@ public class AreaBuffer {
         segment.paramsPtr = paramsPtr;
 
         Buffer dst = this.buffer;
-        UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
+        UploadManager.recordUpload(dst, segment.offset, size, byteBuffer);
 
         this.used += size;
 
@@ -178,7 +178,7 @@ public class AreaBuffer {
         this.size = newSize;
         Buffer dst = this.allocateBuffer();
 
-        UploadManager.INSTANCE.copyBuffer(this.buffer, dst);
+        UploadManager.copyBuffer(this.buffer, dst);
 
         // TODO: moving only used segments causes corruption
 //        moveUsedSegments(dst);
@@ -229,7 +229,7 @@ public class AreaBuffer {
                         this.first = segment;
                         segment.prev = null;
                     } else {
-                        UploadManager.INSTANCE.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
+                        UploadManager.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
 
                         dstOffset += uploadSize;
                     }
@@ -258,7 +258,7 @@ public class AreaBuffer {
         }
 
         if (uploadSize > 0) {
-            UploadManager.INSTANCE.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
+            UploadManager.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
         }
 
         if (prevUsed != null) {

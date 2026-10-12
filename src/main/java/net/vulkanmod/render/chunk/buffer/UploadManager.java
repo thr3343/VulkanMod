@@ -1,11 +1,12 @@
 package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.buffer.Buffer;
 import net.vulkanmod.vulkan.memory.buffer.StagingBuffer;
+import net.vulkanmod.vulkan.memory.buffer.StagingBuffers;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.TransferQueue;
@@ -18,41 +19,39 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class UploadManager {
-    public static UploadManager INSTANCE;
+public final class UploadManager {
+    private static final StagingBuffer chunkStaging = new StagingBuffer(true);
+    private static final Queue queue = DeviceManager.getTransferQueue();
+    private static CommandPool.CommandBuffer commandBuffer;
 
-    public static void createInstance() {
-        INSTANCE = new UploadManager();
+    private static final LongOpenHashSet dstBuffers = new LongOpenHashSet();
+
+    public static void free() {
+        chunkStaging.scheduleFree();
     }
 
-    Queue queue = DeviceManager.getTransferQueue();
-    CommandPool.CommandBuffer commandBuffer;
-
-    LongOpenHashSet dstBuffers = new LongOpenHashSet();
-
-    public void submitUploads() {
-        if (this.commandBuffer == null)
+    public static void submitUploads() {
+        if (commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
+        queue.submitCommands(commandBuffer);
 
-        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
+        Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
-        this.commandBuffer = null;
-        this.dstBuffers.clear();
+        commandBuffer = null;
+        dstBuffers.clear();
     }
 
-    public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
+    public static void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
 
-        Vulkan.pushChunkUploadStagingSection();
+        // Can get away with not needing n-buffered staging: Segments are not uploaded per frame
 
-        StagingBuffer stagingBuffer = Vulkan.getChunkStaging();
-        stagingBuffer.copyBuffer((int) bufferSize, src);
+        chunkStaging.copyBuffer((int) bufferSize, src);
 
         beginCommands();
-        VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
+        VkCommandBuffer commandBuffer = UploadManager.commandBuffer.getHandle();
 
-        if (!this.dstBuffers.add(buffer.getId())) {
+        if (!dstBuffers.add(buffer.getId())) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
                 barrier.sType$Default();
@@ -67,20 +66,20 @@ public class UploadManager {
                         null);
             }
 
-            this.dstBuffers.clear();
+            dstBuffers.clear();
         }
 
-        TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
+        TransferQueue.uploadBufferCmd(commandBuffer, chunkStaging.getId(), chunkStaging.getOffset(), buffer.getId(), dstOffset, bufferSize);
     }
 
-    public void copyBuffer(Buffer src, Buffer dst) {
+    public static void copyBuffer(Buffer src, Buffer dst) {
         copyBuffer(src, 0, dst, 0, src.getBufferSize());
     }
 
-    public void copyBuffer(Buffer src, long srcOffset, Buffer dst, long dstOffset, long size) {
+    public static void copyBuffer(Buffer src, long srcOffset, Buffer dst, long dstOffset, long size) {
         beginCommands();
 
-        VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
+        VkCommandBuffer commandBuffer = UploadManager.commandBuffer.getHandle();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
@@ -102,7 +101,7 @@ public class UploadManager {
                     null);
         }
 
-        this.dstBuffers.add(dst.getId());
+        dstBuffers.add(dst.getId());
 
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
@@ -113,9 +112,9 @@ public class UploadManager {
         Synchronization.INSTANCE.waitFences();
     }
 
-    private void beginCommands() {
-        if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+    private static void beginCommands() {
+        if (commandBuffer == null)
+            commandBuffer = queue.beginCommands();
     }
 
 }

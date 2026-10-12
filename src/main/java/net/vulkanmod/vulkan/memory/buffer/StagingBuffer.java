@@ -57,7 +57,7 @@ public class StagingBuffer extends Buffer {
     private void submitUploads() {
         // Submit and wait all recorded uploads before resetting the buffer
         if (this.type == MemoryType.BAR_MEM) {
-            UploadManager.INSTANCE.submitUploads();
+            UploadManager.submitUploads();
         }
         else {
             ImageUploadHelper.INSTANCE.submitCommands(false);

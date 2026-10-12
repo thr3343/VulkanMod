@@ -129,7 +129,6 @@ public class Renderer {
 
         Uniforms.setupDefaultUniforms();
         PipelineManager.init();
-        UploadManager.createInstance();
 
         allocateCommandBuffers();
         createSyncObjects();
@@ -228,7 +227,7 @@ public class Renderer {
         drawer.resetBuffers(currentFrame);
 
         WorldRenderer.getInstance().uploadSections();
-        UploadManager.INSTANCE.submitUploads();
+        UploadManager.submitUploads();
     }
 
     public void beginFrame() {
@@ -410,7 +409,6 @@ public class Renderer {
             }
 
             Vulkan.getStagingBuffers().endFrame(currentFrame);
-            popChunkUploadStagingSection();
             currentScissorWidth = currentScissorHeight = 0;
             currentFrame = (currentFrame + 1) % framesNum;
             swapChain.setAcquired(false);
@@ -582,7 +580,7 @@ public class Renderer {
         int newFramesNum = Initializer.CONFIG.frameQueueSize;
 
         if (framesNum != newFramesNum) {
-            UploadManager.INSTANCE.submitUploads();
+            UploadManager.submitUploads();
 
             framesNum = newFramesNum;
             MemoryManager.getInstance().freeAllBuffers();

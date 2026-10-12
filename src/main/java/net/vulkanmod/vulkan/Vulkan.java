@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan;
 
 import net.minecraft.util.Util;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
@@ -81,11 +82,9 @@ public class Vulkan {
     private static long allocator;
 
     private static final StagingBuffers stagingBuffers = new StagingBuffers(false);
-    private static final StagingBuffers chunkStaging = new StagingBuffers(true);
 
     public static boolean use24BitsDepthFormat = true;
     public static boolean surfaceCapabilities2Supported = false;
-    private static boolean hasChunkUploads = false;
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
     public static void initVulkan(long window) {
@@ -116,7 +115,6 @@ public class Vulkan {
 
     static void createStagingBuffers() {
         stagingBuffers.updateFrameCount(Renderer.getFramesNum());
-        chunkStaging.updateFrameCount(Renderer.getFramesNum());
     }
 
     static void setupDepthFormat() {
@@ -137,6 +135,7 @@ public class Vulkan {
         Renderer.getInstance().cleanUpResources();
 
         freeStagingBuffers();
+        UploadManager.free();
 
         try {
             MemoryManager.getInstance().freeAllBuffers();
@@ -155,7 +154,6 @@ public class Vulkan {
 
     private static void freeStagingBuffers() {
         stagingBuffers.free();
-        chunkStaging.free();
     }
 
     private static void createVma() {
@@ -239,30 +237,8 @@ public class Vulkan {
         return stagingBuffers.getStagingBuffer();
     }
 
-    public static StagingBuffer getChunkStaging() {
-        return chunkStaging.getStagingBuffer();
-    }
-
     public static StagingBuffers getStagingBuffers() {
         return stagingBuffers;
-    }
-
-    public static StagingBuffers getChunkStagings() {
-        return chunkStaging;
-    }
-
-    public static void pushChunkUploadStagingSection() {
-        if(!hasChunkUploads) {
-            chunkStaging.beginFrame(Renderer.getCurrentFrame());
-            hasChunkUploads = true;
-        }
-    }
-
-    public static void popChunkUploadStagingSection() {
-        if(hasChunkUploads) {
-            chunkStaging.endFrame(Renderer.getCurrentFrame());
-            hasChunkUploads = false;
-        }
     }
 
     public static Device getDevice() {
