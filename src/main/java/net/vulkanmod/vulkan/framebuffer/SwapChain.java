@@ -127,7 +127,8 @@ public class SwapChain extends Framebuffer {
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
 
-            if (DeviceManager.fullScreenExclusiveControl) {
+            // Branch optimized out by JIT
+            if (DeviceManager.checkExt(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
                 VkSurfaceFullScreenExclusiveInfoEXT fullScreenExclusiveInfo = VkSurfaceFullScreenExclusiveInfoEXT.calloc(stack);
                 fullScreenExclusiveInfo.sType(EXTFullScreenExclusive.VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT);
                 fullScreenExclusiveInfo.fullScreenExclusive(EXTFullScreenExclusive.VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
