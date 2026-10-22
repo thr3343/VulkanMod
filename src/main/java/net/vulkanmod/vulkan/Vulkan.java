@@ -385,8 +385,11 @@ public class Vulkan {
         private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
             VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
 
+            // False Positive w/ Sync Validation: only overlapping ranges require synchronization
+            final int id = callbackData.messageIdNumber();
             String message;
-            if ((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0) {
+            final boolean canLog =  id != 0xe4d96472 & (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0;
+            if (canLog) {
                 message = "\u001B[31m" + callbackData.pMessageString();
 
                 String callStack = STACK_WALKER.walk(
@@ -403,7 +406,7 @@ public class Vulkan {
 
 //            System.err.println(message);
 
-            if ((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
+            if (canLog)
                 System.nanoTime();
 
             return VK_FALSE;

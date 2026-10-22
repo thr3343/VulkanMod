@@ -24,8 +24,6 @@ public final class UploadManager {
     private static final Queue queue = DeviceManager.getTransferQueue();
     private static CommandPool.CommandBuffer commandBuffer;
 
-    private static final LongOpenHashSet dstBuffers = new LongOpenHashSet();
-
     public static void free() {
         chunkStaging.scheduleFree();
     }
@@ -39,7 +37,6 @@ public final class UploadManager {
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
 
         commandBuffer = null;
-        dstBuffers.clear();
     }
 
     public static void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
@@ -50,24 +47,9 @@ public final class UploadManager {
 
         beginCommands();
         VkCommandBuffer commandBuffer = UploadManager.commandBuffer.getHandle();
-
-        if (!dstBuffers.add(buffer.getId())) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                barrier.sType$Default();
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-
-                vkCmdPipelineBarrier(commandBuffer,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        0,
-                        barrier,
-                        null,
-                        null);
-            }
-
-            dstBuffers.clear();
-        }
+        
+		// False Positive: Apparently WaW Barrers are not needed if ranges do not overlap
+		// (SyncVal can only correctly track Sizes that are 4k-aligned apparently)
 
         TransferQueue.uploadBufferCmd(commandBuffer, chunkStaging.getId(), chunkStaging.getOffset(), buffer.getId(), dstOffset, bufferSize);
     }
@@ -82,11 +64,7 @@ public final class UploadManager {
         VkCommandBuffer commandBuffer = UploadManager.commandBuffer.getHandle();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-            barrier.sType$Default();
-
-            VkBufferMemoryBarrier.Buffer bufferMemoryBarriers = VkBufferMemoryBarrier.calloc(1, stack);
-            VkBufferMemoryBarrier bufferMemoryBarrier = bufferMemoryBarriers.get(0);
+            VkBufferMemoryBarrier.Buffer bufferMemoryBarrier = VkBufferMemoryBarrier.calloc(1, stack);
             bufferMemoryBarrier.sType$Default();
             bufferMemoryBarrier.buffer(src.getId());
             bufferMemoryBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
@@ -96,12 +74,10 @@ public final class UploadManager {
             vkCmdPipelineBarrier(commandBuffer,
                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
-                    barrier,
-                    bufferMemoryBarriers,
+                    null,
+                    bufferMemoryBarrier,
                     null);
         }
-
-        dstBuffers.add(dst.getId());
 
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
