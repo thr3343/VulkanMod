@@ -397,6 +397,10 @@ public class AreaBuffer {
         return used;
     }
 
+    public long getGpuPtr() {
+        return this.buffer.getGpuPtr();
+    }
+
     public static class Segment {
         int offset, size;
         boolean free = true;
