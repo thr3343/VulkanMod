@@ -18,8 +18,7 @@ layout (buffer_reference, buffer_reference_align = 2048, scalar) buffer readonly
 
 layout (buffer_reference, buffer_reference_align = 16, scalar) buffer readonly restrict Vertices {
     i16vec4 Position;
-    u16vec2 UV0;
-    uint PackedColor;
+    uint UV0, PackedColor;
 };
 
 layout (push_constant, scalar) uniform pushConstant {
@@ -64,6 +63,6 @@ void main() {
     const int rSectionIndex = gl_BaseInstance;
     fadeFactor = chunkAreaInfo.SectionFadeFactors[rSectionIndex];
 
-    texCoord0 = vertices[gl_VertexIndex].UV0 * UV_INV;
+    texCoord0 = unpackUnorm2x16(vertices[gl_VertexIndex].UV0);
 //    texCoord0 = UV0;
 }
