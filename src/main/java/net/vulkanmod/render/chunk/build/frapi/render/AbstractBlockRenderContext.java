@@ -229,14 +229,10 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
 		if (emissive) {
 			for (int i = 0; i < 4; i++) {
-				quad.color(i, ColorHelper.multiplyRGB(quad.color(i), data.br[i]));
-//				quad.lightmap(i, LightTexture.FULL_BRIGHT);
 				data.lm[i] = LightTexture.FULL_BRIGHT;
 			}
 		} else {
 			for (int i = 0; i < 4; i++) {
-				quad.color(i, ColorHelper.multiplyRGB(quad.color(i), data.br[i]));
-//				quad.lightmap(i, ColorHelper.maxBrightness(quad.lightmap(i), data.lm[i]));
 				data.lm[i] = ColorHelper.maxBrightness(quad.lightmap(i), data.lm[i]);
 			}
 		}

@@ -441,8 +441,9 @@ public class FluidRenderer implements FluidRendering.DefaultRenderer {
             final float x = xOffset + quad.getX(i);
             final float y = yOffset + quad.getY(i);
             final float z = zOffset + quad.getZ(i);
+            int aoTint = (int) (quadLightData.br[i] * 255f);
 
-            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.getU(i), quad.getV(i), quadLightData.lm[i], 0);
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.getU(i), quad.getV(i), quadLightData.lm[i], aoTint);
 
             k += (flip ? -1 : +1);
             k &= 0b11;
@@ -466,10 +467,9 @@ public class FluidRenderer implements FluidRendering.DefaultRenderer {
         QuadLightData quadLightData = resources.quadLightData;
 
         for (int i = 0; i < 4; i++) {
-            float br = quadLightData.br[i] * brightness;
-            float r1 = r * br;
-            float g1 = g * br;
-            float b1 = b * br;
+            float r1 = r * brightness;
+            float g1 = g * brightness;
+            float b1 = b * brightness;
 
             this.quadColors[i] = ColorUtil.RGBA.pack(r1, g1, b1, 1.0f);
         }

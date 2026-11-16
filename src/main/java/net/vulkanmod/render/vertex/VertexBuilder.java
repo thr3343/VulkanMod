@@ -77,7 +77,7 @@ public interface VertexBuilder {
 
         public static final float UV_CONV_MUL = 65535.0f;
 
-        public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
+        public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int aoTint) {
             final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
             final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET_CONV);
             final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET_CONV);
@@ -86,7 +86,7 @@ public interface VertexBuilder {
             MemoryUtil.memPutShort(ptr + 2, sY);
             MemoryUtil.memPutShort(ptr + 4, sZ);
 
-            final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
+            final short l = (short) (aoTint << 8 | ((light >>> 16) & 0xFFF0) | ((light >>> 4) & 0xF));
             MemoryUtil.memPutShort(ptr + 6, l);
 
             MemoryUtil.memPutShort(ptr + 8, (short) (u * UV_CONV_MUL));

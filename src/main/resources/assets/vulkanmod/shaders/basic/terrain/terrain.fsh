@@ -93,17 +93,15 @@ vec4 sampleRGSS(sampler2D source, vec2 uv, vec2 pixelSize) {
 }
 
 layout (location = 0) in vec4 vertexColor;
-layout (location = 1) in vec2 texCoord0;
-layout (location = 2) in float sphericalVertexDistance;
-layout (location = 3) in float cylindricalVertexDistance;
-layout (location = 4) in flat float fadeFactor;
+layout (location = 1) in vec4 UVFogDistances;
+layout (location = 2) in flat float fadeFactor;
 
 layout (location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = (USE_RGSS ? sampleRGSS(Sampler0, texCoord0, TexelSize) : sampleNearest(Sampler0, texCoord0, TexelSize)) * vertexColor;
+    vec4 color = (USE_RGSS ? sampleRGSS(Sampler0, UVFogDistances.xy, TexelSize) : sampleNearest(Sampler0, UVFogDistances.xy, TexelSize)) * vertexColor;
     if ((color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor)).a < AlphaCutout) {
         discard;
     }
-    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    fragColor = apply_fog(color, UVFogDistances.z, UVFogDistances.w, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }

@@ -136,7 +136,9 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             final float u = quad.getU(idx);
             final float v = quad.getV(idx);
 
-            bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
+            int aoTint = (int) (brightnessArr[idx] * 255f);
+
+            bufferBuilder.vertex(x, y, z, color, u, v, light, aoTint);
 
             idx = (idx + 1) & 0b11;
         }
